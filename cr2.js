@@ -2146,11 +2146,9 @@ openBtn.addEventListener("click", () => {
 });
 */
 
-
 /* ===============================
    🎁 Send Gift + Dual Notification
 ================================= */
-
 async function sendGift() {
   const receiver = hosts[currentIndex];
   if (!receiver?.id) return showGiftAlert("⚠️ No host selected.");
@@ -2159,11 +2157,13 @@ async function sendGift() {
   const giftStars = parseInt(giftSlider.value, 10);
   if (isNaN(giftStars) || giftStars <= 0)
     return showGiftAlert("Invalid star amount ❌");
-  if (originalText = giftBtn.textContent;
+
+  // === Preserve & Disable Button ===
+  const originalText = giftBtn.textContent.trim();
   const buttonWidth = giftBtn.offsetWidth + "px";
   giftBtn.style.width = buttonWidth;
   giftBtn.disabled = true;
-  giftBtn.innerHTML = `<span class="gift-spinner"></span>`;
+  giftBtn.innerHTML = `<span class="gift-spinner"></span> Sending...`;
 
   try {
     const senderRef = doc(db, "users", currentUser.uid);
@@ -2171,25 +2171,64 @@ async function sendGift() {
     const featuredReceiverRef = doc(db, "featuredHosts", receiver.id);
 
     await runTransaction(db, async (tx) => {
-      const senderSnap = await tx.get(senderRef);
-      const receiverSnap = await tx.get(receiverRef);
+      const [senderSnap, receiverSnap] = await Promise.all([
+        tx.get(senderRef),
+        tx.get(receiverRef)
+      ]);
 
-      if (!senderSnap.exists()) throw new Error("Your user record not found.");
-      if (!receiverSnap.exists())
-        tx.set(receiverRef, { stars: 0, starsGifted: 0, lastGiftSeen: {} }, { merge: true });
+      if (!senderSnap.exists()) {
+        throw new Error("Your user record not found.");
+      }
 
       const senderData = senderSnap.data();
-      if ((senderData.stars || 0) < giftStars)
-        throw new Error("Insufficient stars");
+      if ((senderData.stars || 0) < giftStars) {
+        throw new Error("Insufficient stars ⭐");
+      }
 
-      tx.update(senderRef, { stars: increment(-giftStars), starsGifted: increment(giftStars) });
-      tx.update(receiverRef, { stars: increment(giftStars) });
-      tx.set(featuredReceiverRef, { stars: increment(giftStars) }, { merge: true });
+      // Ensure receiver exists
+      if (!receiverSnap.exists()) {
+        tx.set(receiverRef, 
+          { stars: 0, starsGifted: 0, lastGiftSeen: {} }, 
+          { merge: true }
+        );
+      }
 
-      tx.update(receiverRef, {
-        [`lastGiftSeen.${currentUser.username || "Someone"}`]: giftStars
+      // Deduct from sender
+      tx.update(senderRef, {
+        stars: increment(-giftStars),
+        starsGifted: increment(giftStars)
       });
+
+      // Credit receiver
+      tx.update(receiverRef, {
+        stars: increment(giftStars),
+        [`lastGiftSeen.${currentUser.username || "Anonymous"}`]: giftStars
+      });
+
+      // Update featured host leaderboard
+      tx.set(featuredReceiverRef, 
+        { stars: increment(giftStars) }, 
+        { merge: true }
+      );
     });
+
+    // Success feedback
+    showGiftAlert(`✅ Sent ${giftStars} stars to @${receiver.username}!`);
+    
+    // Optional: Play sound, confetti, etc.
+    // playGiftSound();
+    // triggerConfetti();
+
+  } catch (error) {
+    console.error("Gift failed:", error);
+    showGiftAlert(`⚠️ ${error.message}`);
+  } finally {
+    // === Always restore button ===
+    giftBtn.disabled = false;
+    giftBtn.innerHTML = originalText;
+    giftBtn.style.width = "";
+  }
+}
 
     // ✅ Notify both sender and receiver
     const senderName = currentUser.username || "Someone";
