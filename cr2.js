@@ -2147,18 +2147,18 @@ openBtn.addEventListener("click", () => {
 */
 
 /* ===============================
-   🎁 Send Gift + Dual Notification
+   Send Gift + Dual Notification
 ================================= */
 async function sendGift() {
   const receiver = hosts[currentIndex];
-  if (!receiver?.id) return showGiftAlert("⚠️ No host selected.");
-  if (!currentUser?.uid) return showGiftAlert("Please log in to send stars ⭐");
+  if (!receiver?.id) return showGiftAlert("No host selected.");
+  if (!currentUser?.uid) return showGiftAlert("Please log in to send stars.");
 
   const giftStars = parseInt(giftSlider.value, 10);
   if (isNaN(giftStars) || giftStars <= 0)
-    return showGiftAlert("Invalid star amount ❌");
+    return showGiftAlert("Invalid star amount.");
 
-  // === Preserve & Disable Button ===
+  // ---- Preserve button UI ----
   const originalText = giftBtn.textContent.trim();
   const buttonWidth = giftBtn.offsetWidth + "px";
   giftBtn.style.width = buttonWidth;
@@ -2173,60 +2173,66 @@ async function sendGift() {
     await runTransaction(db, async (tx) => {
       const [senderSnap, receiverSnap] = await Promise.all([
         tx.get(senderRef),
-        tx.get(receiverRef)
+        tx.get(receiverRef),
       ]);
 
-      if (!senderSnap.exists()) {
-        throw new Error("Your user record not found.");
-      }
+      if (!senderSnap.exists()) throw new Error("Your user record not found.");
 
       const senderData = senderSnap.data();
-      if ((senderData.stars || 0) < giftStars) {
-        throw new Error("Insufficient stars ⭐");
-      }
+      if ((senderData.stars ?? 0) < giftStars)
+        throw new Error("Insufficient stars.");
 
       // Ensure receiver exists
       if (!receiverSnap.exists()) {
-        tx.set(receiverRef, 
-          { stars: 0, starsGifted: 0, lastGiftSeen: {} }, 
+        tx.set(
+          receiverRef,
+          { stars: 0, starsGifted: 0, lastGiftSeen: {} },
           { merge: true }
         );
       }
 
-      // Deduct from sender
+      // ---- Update balances ----
       tx.update(senderRef, {
         stars: increment(-giftStars),
-        starsGifted: increment(giftStars)
+        starsGifted: increment(giftStars),
       });
 
-      // Credit receiver
       tx.update(receiverRef, {
         stars: increment(giftStars),
-        [`lastGiftSeen.${currentUser.username || "Anonymous"}`]: giftStars
+        [`lastGiftSeen.${currentUser.username || "Anonymous"}`]: giftStars,
       });
 
-      // Update featured host leaderboard
-      tx.set(featuredReceiverRef, 
-        { stars: increment(giftStars) }, 
-        { merge: true }
-      );
+      tx.set(featuredReceiverRef, { stars: increment(giftStars) }, { merge: true });
     });
 
-    // Success feedback
-    showGiftAlert(`✅ Sent ${giftStars} stars to @${receiver.username}!`);
-    
-    // Optional: Play sound, confetti, etc.
-    // playGiftSound();
-    // triggerConfetti();
+    // ---- Dual Notification ----
+    const senderName = currentUser.username || "Someone";
+    const receiverName = receiver.username || receiver.chatId || "User";
 
-  } catch (error) {
-    console.error("Gift failed:", error);
-    showGiftAlert(`⚠️ ${error.message}`);
+    await Promise.all([
+      pushNotification(receiver.id, `${senderName} sent you ${giftStars} stars!`),
+      pushNotification(currentUser.uid, `You sent ${giftStars} stars to ${receiverName}`),
+    ]);
+
+    showGiftAlert(`You sent ${giftStars} stars to ${receiverName}!`);
+
+    // Show receiver-side alert if sending to self
+    if (currentUser.uid === receiver.id) {
+      setTimeout(() => {
+        showGiftAlert(`${senderName} sent you ${giftStars} stars!`);
+      }, 1000);
+    }
+
+    console.log(`Sent ${giftStars} stars to ${receiverName}`);
+
+  } catch (err) {
+    console.error("Gift sending failed:", err);
+    showGiftAlert(`Something went wrong: ${err.message}`);
   } finally {
-    // === Always restore button ===
+    // ---- Always restore button ----
     giftBtn.disabled = false;
     giftBtn.innerHTML = originalText;
-    giftBtn.style.width = "";
+    giftBtn.style.width = "auto";
   }
 }
 
