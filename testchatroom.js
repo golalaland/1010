@@ -3949,76 +3949,67 @@ function playFullVideo(video) {
   document.body.appendChild(modal);
 }
 /* ===============================
-   Twitch-style Auto-Scroll Chat
-   Works with your existing #messages
+   Twitch-style Auto-Scroll for #messages
+   Works with your flex + margin-bottom setup
 ================================= */
 
-// ---- 1. Identify the scrolling container ----
-const messagesDiv = document.getElementById('messages');
-const chatContainer = messagesDiv.parentElement; // usually the scroller
-
-// If #messages itself is the scroller, use:
- // const chatContainer = messagesDiv;
-
-// ---- 2. Create floating button if not in HTML ----
-let scrollBtn = document.getElementById('scrollToBottomBtn');
-if (!scrollBtn) {
-  scrollBtn = document.createElement('button');
-  scrollBtn.id = 'scrollToBottomBtn';
-  scrollBtn.className = 'scroll-to-bottom-btn';
-  scrollBtn.textContent = 'New';
-  scrollBtn.style.display = 'none';
-  chatContainer.style.position = 'relative'; // ensure button stays inside
-  chatContainer.appendChild(scrollBtn);
-}
-
-// ---- 3. Config ----
-const SCROLL_THRESHOLD = 150;  // px from bottom = "at bottom"
+const messagesDiv   = document.getElementById('messages');
+const scrollBtn     = document.getElementById('scrollToBottomBtn');
+const SCROLL_THRESHOLD = 150;   // px from bottom = "at bottom"
 let isUserAtBottom = true;
-let hasPendingMessages = false;
+let hasNewMessages = false;
 
-// ---- 4. Helper: scroll to bottom ----
+// ---- Scroll to bottom (smooth or instant) ----
 function scrollToBottom(smooth = true) {
-  chatContainer.scrollTo({
-    top: chatContainer.scrollHeight,
+  messagesDiv.scrollTo({
+    top: messagesDiv.scrollHeight,
     behavior: smooth ? 'smooth' : 'auto'
   });
 }
 
-// ---- 5. Check if user is near bottom ----
-function checkIfAtBottom() {
-  const distance = chatContainer.scrollHeight - chatContainer.scrollTop - chatContainer.clientHeight;
-  const wasAtBottom = isUserAtBottom;
-  isUserAtBottom = distance <= SCROLL_THRESHOLD;
+// ---- Check if user is near bottom ----
+function checkScroll() {
+  const distanceFromBottom =
+    messagesDiv.scrollHeight - messagesDiv.scrollTop - messagesDiv.clientHeight;
 
+  const wasAtBottom = isUserAtBottom;
+  isUserAtBottom = distanceFromBottom <= SCROLL_THRESHOLD;
+
+  // User just scrolled up → hide button
   if (wasAtBottom && !isUserAtBottom) {
-    // User scrolled up → hide button
     scrollBtn.style.display = 'none';
-    hasPendingMessages = false;
+    hasNewMessages = false;
   }
 }
 
-// ---- 6. When you ADD a message (REPLACE YOUR CURRENT METHOD) ----
+// ---- Add a message (REPLACE your current method) ----
 function addMessage(html) {
-  const msg = document.createElement('div');
-  msg.innerHTML = html;
-  messagesDiv.appendChild(msg);
+  const msgEl = document.createElement('div');
+  msgEl.className = 'msg';
+  msgEl.innerHTML = html;
+  messagesDiv.appendChild(msgEl);
 
   // Auto-scroll only if user is near bottom
   if (isUserAtBottom) {
     scrollToBottom();
   } else {
-    hasPendingMessages = true;
-    scrollBtn.style.display = 'block';
+    hasNewMessages = true;
+    scrollBtn.style.display = 'flex';  // use flex to center text
   }
 }
 
-// ---- 7. Button click ----
+// ---- Button click: go to bottom ----
 scrollBtn.addEventListener('click', () => {
   scrollToBottom();
   scrollBtn.style.display = 'none';
-  hasPendingMessages = false;
+  hasNewMessages = false;
 });
 
-// ---- 8. Scroll listener (debounced) ----
-chatContainer.addEventListener('scroll', () =>
+// ---- Listen to scroll (debounced) ----
+messagesDiv.addEventListener('scroll', () => {
+  clearTimeout(messagesDiv._scrollTimer);
+  messagesDiv._scrollTimer = setTimeout(checkScroll, 80);
+});
+
+// ---- Initialize ----
+checkScroll();=>
