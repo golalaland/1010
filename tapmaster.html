@@ -18,6 +18,12 @@
   --muted:#aaa;
   --glass-border: rgba(255,255,255,0.08);
 }
+html {
+  transform: scale(0.85);
+  transform-origin: top center;
+  width: 117.6%; /* 1 / 0.85 to avoid white gaps */
+  height: 117.6%;
+}
 
 *{box-sizing:border-box}
 html,body {height:100%;margin:0;background:var(--bg);color:#fff;font-family:'Montserrat',sans-serif; -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
