@@ -366,44 +366,32 @@ body.game-mode {
   50%  { box-shadow: 0 0 20px rgba(0,255,100,0.9); }
   100% { box-shadow: 0 0 0 rgba(0,255,100,0); }
 }
-/* Add to <style> */
-body { transition: background 0.5s ease; }
-.apple-tab-btn {
-  background:none;
+.tiny-action-btn {
+  width:52px;
+  height:52px;
+  border-radius:50%;
   border:none;
-  padding:0;
-  cursor:pointer;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  gap:6px;
-  width:64px;
-  color:#fff;
-  transition:all 0.2s;
-}
-.apple-tab-btn .emoji {
-  width:56px;
-  height:56px;
-  border-radius:18px;
   font-size:28px;
+  background:linear-gradient(135deg, #FFD700, #FF4500);
+  color:#000;
+  cursor:pointer;
+  transition:all 0.18s ease;
+  box-shadow:0 4px 15px rgba(255,215,0,0.4);
   display:flex;
   align-items:center;
   justify-content:center;
-  background:linear-gradient(135deg, #FFD700, #FF8C00);
-  box-shadow:0 6px 20px rgba(255,215,0,0.4);
 }
-#rulesBtn .emoji   { background:linear-gradient(135deg,#00D4FF,#0078FF); box-shadow:0 6px 20px rgba(0,212,255,0.35); }
-#bidBtn .emoji     { background:linear-gradient(135deg,#00FFA3,#00C853); box-shadow:0 6px 20px rgba(0,255,163,0.4); }
-
-.apple-tab-btn span {
-  font-size:10px;
-  font-weight:600;
-  color:#ccc;
-  letter-spacing:0.5px;
-  text-transform:uppercase;
+.tiny-action-btn:nth-child(2) { background:linear-gradient(135deg,#00D4FF,#0078FF); }
+.tiny-action-btn:nth-child(3) { background:linear-gradient(135deg,#00FFA3,#00C853); }
+.tiny-action-btn:active {
+  transform:scale(0.88);
+  filter:brightness(1.4);
 }
-.apple-tab-btn:active .emoji {
-  transform:scale(0.9);
+bar + footer */
+  min-height:100vh;
+}
+#appWrapper {
+  padding-bottom:100px;
 }
 </style>
 </head>
@@ -517,24 +505,14 @@ body { transition: background 0.5s ease; }
       </div>
     </div>
 
-    <!-- PERFECT: CIRCLES + TINY TEXT UNDERNEATH (Apple style) -->
-<div style="display:flex;justify-content:center;gap:28px;padding:14px 20px;background:rgba(255,255,255,0.08);border-radius:26px;border:1px solid rgba(255,255,255,0.12);backdrop-filter:blur(16px);width:90%;max-width:380px;margin:0 auto;box-shadow:0 -8px 30px rgba(0,0,0,0.6);">
-  
-  <button id="leaderboardBtn" class="circle-with-label" data-title="Leaderboard">
-    <div class="circle">Trophy</div>
-    <span>Leaderboard</span>
-  </button>
-  
-  <button id="rulesBtn" class="circle-with-label" data-title="Game Rules">
-    <div class="circle">Scroll</div>
-    <span>Rules</span>
-  </button>
-  
-  <button id="bidBtn" class="circle-with-label" data-title="PvP">
-    <div class="circle">Flag</div>
-    <span>PvP</span>
-  </button>
-  
+    <!-- Tiny 🤩 Action Bar (bottom of screen) -->
+    <div style="display:flex;justify-content:center;gap:18px;padding:8px 16px;background:rgba(255,255,255,0.08);border-radius:22px;border:1px solid rgba(255,255,255,0.12);backdrop-filter:blur(16px);width:86%;max-width:300px;margin:0 auto;box-shadow:0 -8px 30px rgba(0,0,0,0.6);">
+      <button id="leaderboardBtn" class="tiny-action-btn" data-title="Leaderboard">🏆</button>
+      <button id="rulesBtn"        class="tiny-action-btn" data-title="Game Rules">📋</button>
+      <button id="bidBtn"          class="tiny-action-btn" data-title="Place Bid">🏁</button>
+    </div>
+
+  </div>
 </div>
 
 
@@ -646,23 +624,18 @@ body { transition: background 0.5s ease; }
   <source src="night_city_jazz.mp3" type="audio/mpeg">
 </audio>
 
-<!-- DETTYVERSE ETERNAL FOOTER -->
-<footer style="margin-top:80px;padding:40px 20px 60px;background:linear-gradient(to bottom,#0e0e0e,rgba(14,14,14,0.95));text-align:center;color:#666;font-size:13px;line-height:1.8;">
-  <div style="margin-bottom:16px;font-size:20px;font-weight:800;background:linear-gradient(90deg,#FF1493,#00e676);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">
+<!-- Put this right before </body> (NOT inside #bottomBar) -->
+<footer style="padding:60px 20px 40px;text-align:center;color:#555;font-size:13px;line-height:1.8;background:#0e0e0e;">
+  <div style="font-size:18px;font-weight:800;background:linear-gradient(90deg,#FF1493,#00e676);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">
     ©5786 ገብር ነፍስህ (Own Your Vibe)
   </div>
-  <div>自分の雰囲気を自分のものにしよう • 자신의 분위기를 내 것으로 만들자</div>
+  <div style="margin:12px 0;">自分の雰囲気を自分のものにしよう • 자신의 분위기를 내 것으로 만들자</div>
   <div>Own your rhythm. Master the tap. Rule the verse.</div>
-  <div style="margin:16px 0;color:#888;">
-    3-1-1 Nihonbashi, Chuo-ku, Tokyo • Lagos • Seoul • The Metaverse
-  </div>
-  <div style="margin-top:20px;font-size:12px;">
-    <a href="privacy.html" style="color:#888;text-decoration:none;margin:0 8px;">Privacy Policy</a> •
-    <a href="terms.html" style="color:#888;text-decoration:none;margin:0 8px;">Terms of Service</a> •
+  <div style="margin:16px 0 24px;color:#777;">3-1-1 Nihonbashi • Lagos • Seoul • The Metaverse</div>
+  <div style="font-size:11px;">
+    <a href="#" style="color:#888;text-decoration:none;margin:0 10px;">Privacy</a>•
+    <a href="#" style="color:#888;text-decoration:none;margin:0 10px;">Terms</a>•
     <a href="https://x.com/dettyverse" style="color:#FF1493;text-decoration:none;">@dettyverse</a>
-  </div>
-  <div style="margin-top:20px;font-size:10px;color:#555;">
-    Built with chaos, love & 200 taps per second
   </div>
 </footer>
 
