@@ -275,7 +275,7 @@ body {
   display: flex;
   justify-content: center;
   align-items: flex-start;
-  padding: 18px 0 120px;
+ padding:18px 0 180px !important;   /* gives space for the fixed bottom bar */
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
   overflow-x: hidden;
@@ -499,29 +499,30 @@ body { transition: background 0.5s ease; }
 
   </div> <!-- end gamePage -->
 
-<!-- FINAL DETTYVERSE BOTTOM BAR (profile + tiny action bar) -->
-<div id="bottomBar" style="width:100%;padding:20px 0 40px;background:linear-gradient(to top,rgba(14,14,14,0.98),transparent);margin-top:50px;">
-  
-  <!-- Your Profile Card (unchanged) -->
-  <div style="background:rgba(255,255,255,0.05);padding:14px 16px;border-radius:16px;border:1px solid rgba(255,255,255,0.08);backdrop-filter:blur(12px);width:90%;max-width:420px;margin:0 auto 16px;text-align:center;">
-    <div id="profileName" style="font-size:16px;font-weight:700;color:#fff;">GUEST 0000</div>
-    <div style="margin-top:8px;font-size:14px;">
-      <strong style="background:linear-gradient(90deg,#00e676,#00b0ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">STARS:</strong>
-      <span id="starCount" style="color:#fff;">50</span>⭐
-    </div>
-    <div style="margin-top:4px;font-size:14px;">
-      <strong style="background:linear-gradient(90deg,#00e676,#00b0ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">CASH:</strong>
-      <span id="cashCount" style="color:#fff;">0</span>
-    </div>
-  </div>
+<!-- FINAL BOTTOM-LOCKED BAR (profile + tiny 🤩 buttons) -->
+<div id="bottomBar" style="position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;padding:16px 0 20px;background:linear-gradient(to top,rgba(14,14,14,0.98),transparent);z-index:997;pointer-events:none;">
+  <div style="pointer-events:auto;">
 
-  <!-- TINY PREMIUM ACTION BAR (smaller, tighter, perfect circles, same emoji 🤩) -->
-  <div style="display:flex;justify-content:center;gap:16px;padding:10px 20px;background:rgba(255,255,255,0.07);border-radius:20px;border:1px solid rgba(255,255,255,0.12);backdrop-filter:blur(16px);width:86%;max-width:360px;margin:0 auto;box-shadow:0 8px 25px rgba(0,0,0,0.5);">
-    
-    <button id="leaderboardBtn" class="tiny-action-btn" data-title="Leaderboard">🤩</button>
-    <button id="rulesBtn"        class="tiny-action-btn" data-title="Game Rules">🤩</button>
-    <button id="bidBtn"          class="tiny-action-btn" data-title="Place Bid">🤩</button>
-    
+    <!-- Profile Card -->
+    <div style="background:rgba(255,255,255,0.05);padding:14px 16px;border-radius:16px;border:1px solid rgba(255,255,255,0.08);backdrop-filter:blur(12px);width:90%;max-width:420px;margin:0 auto 14px;text-align:center;">
+      <div id="profileName" style="font-size:16px;font-weight:700;color:#fff;">GUEST 0000</div>
+      <div style="margin-top:8px;font-size:14px;">
+        <strong style="background:linear-gradient(90deg,#00e676,#00b0ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">STARS:</strong>
+        <span id="starCount" style="color:#fff;">50</span>⭐
+      </div>
+      <div style="margin-top:4px;font-size:14px;">
+        <strong style="background:linear-gradient(90deg,#00e676,#00b0ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">CASH:</strong>
+        <span id="cashCount" style="color:#fff;">0</span>
+      </div>
+    </div>
+
+    <!-- Tiny 🤩 Action Bar (bottom of screen) -->
+    <div style="display:flex;justify-content:center;gap:18px;padding:11px 20px;background:rgba(255,255,255,0.08);border-radius:22px;border:1px solid rgba(255,255,255,0.12);backdrop-filter:blur(16px);width:86%;max-width:360px;margin:0 auto;box-shadow:0 -8px 30px rgba(0,0,0,0.6);">
+      <button id="leaderboardBtn" class="tiny-action-btn" data-title="Leaderboard">🤩</button>
+      <button id="rulesBtn"        class="tiny-action-btn" data-title="Game Rules">🤩</button>
+      <button id="bidBtn"          class="tiny-action-btn" data-title="Place Bid">🤩</button>
+    </div>
+
   </div>
 </div>
 
