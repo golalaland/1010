@@ -624,653 +624,17 @@ bar + footer */
   <source src="night_city_jazz.mp3" type="audio/mpeg">
 </audio>
 
-
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
-<title>Tap Master</title>
-
-<!-- Fonts -->
-<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Montserrat:wght@500;700&display=swap" rel="stylesheet">
-
-<style>
-:root{
-  --bg:#0e0e0e;
-  --glass-bg: rgba(255,255,255,0.04);
-  --accent1:#FF1493;
-  --accent2:#FF8C00;
-  --green1:#00e676;
-  --muted:#aaa;
-  --glass-border: rgba(255,255,255,0.08);
-}
-
-*{box-sizing:border-box}
-html,body {height:100%;margin:0;background:var(--bg);color:#fff;font-family:'Montserrat',sans-serif; -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
-body {display:flex;justify-content:center;align-items:flex-start;padding:18px 0 120px; touch-action:manipulation; -webkit-tap-highlight-color: transparent; overflow-x:hidden;}
-#appWrapper {width:100%;max-width:480px;display:flex;flex-direction:column;align-items:center;}
-
-/* header */
-#gameHeader{text-align:center;margin-top:6px;}
-#welcomeText{font-family:'Press Start 2P',cursive;font-size:11px;color:var(--accent1)}
-#scrambleText{font-family:'Press Start 2P',cursive;font-size:20px;color:var(--accent1);margin-top:4px}
-
-/* glass terminal (tap stats + timer etc) */
-.glass-terminal {
-  width: 90%;
-  max-width: 420px;
-  margin: 18px auto;
-  padding: 14px 16px;
-  background: var(--glass-bg);
-  border: 1px solid var(--glass-border);
-  border-radius: 14px;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  box-shadow: 0 0 20px rgba(0,0,0,0.6);
-  color: #fff;
-  position: relative;
-  overflow: hidden;
-}
-.terminal-header { text-align:center; color:var(--accent1); font-size:11px; letter-spacing:2px; margin-bottom:8px; font-weight:700; }
-.terminal-line { font-size:13px; line-height:1.6; letter-spacing:1px; color:#fff; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center; }
-.terminal-line span { color:#00FF99; text-shadow:0 0 6px rgba(0,255,153,0.08); font-weight:700; }
-
-/* train bar (timer visual) */
-#trainBarContainer {
-  width:100%;
-  height:14px;
-  background: rgba(255,255,255,0.03);
-  border-radius: 999px;
-  overflow:hidden;
-  margin-top:8px;
-}
-#trainBar {
-  height:100%;
-  width:100%;
-  background: linear-gradient(90deg, var(--accent1), var(--accent2));
-  transform-origin: left center;
-  transition: width 0.2s linear;
-}
-
-/* stats row inside terminal */
-.stats-row { display:flex; justify-content:space-between; gap:12px; margin-top:8px; align-items:center; }
-.stat { flex:1; background: rgba(255,255,255,0.02); padding:8px; border-radius:8px; text-align:center; }
-.stat .label { font-size:11px; color:var(--muted); }
-.stat .value { font-size:16px; font-weight:800; color:#fff; }
-
-/* bonus bar (progress toward next bonus level) */
-#bonusContainer { width:100%; height:10px; background:#111; border-radius:999px; overflow:hidden; margin-top:12px; box-shadow:0 6px 16px rgba(0,0,0,0.6) inset; }
-#bonusBar { height:100%; width:0%; background:linear-gradient(90deg,var(--green1),#00b0ff); transition:width .15s linear; }
-
-/* -------------------------------------------------
-   3D Gem Tap Button – unique, addictive, mobile-ready
-   ------------------------------------------------- */
-#tapButton {
-  --gem: #00e676;          /* main gem color */
-  --glow: #00ffd0;         /* glow highlight */
-  --shadow: rgba(0,230,118,.35);
-  --pulse: 1.5s;
-
-  position: relative;
-  width: 84px; height: 84px;          /* a bit larger for 3D feel */
-  border: none;
-  border-radius: 50%;
-  background: radial-gradient(
-    circle at 30% 30%,
-    #fff    0%,
-    var(--gem) 30%,
-    #008b47 100%
-  );
-  box-shadow:
-    0 8px 20px var(--shadow),
-    inset 0 -4px 8px rgba(0,0,0,.2),
-    inset 0 4px 8px rgba(255,255,255,.4);
-  cursor: pointer;
-  overflow: hidden;
-  transition: transform .08s ease-out;
-  -webkit-tap-highlight-color: transparent;
-  user-select: none;
-}
-
-/* Inner text – slightly lifted for depth */
-#tapButton .inner {
-  position: relative;
-  z-index: 2;
-  font: 800 20px/1 "Arial", sans-serif;
-  color: #000;
-  text-shadow: 0 1px 1px rgba(255,255,255,.6);
-}
-
-/* Hover / Ready pulse (desktop) */
-#tapButton::before {
-  content: "";
-  position: absolute;
-  inset: -10px;
-  border-radius: 50%;
-  background: radial-gradient(circle, transparent 60%, var(--glow) 100%);
-  opacity: 0;
-  animation: pulse var(--pulse) infinite ease-out;
-  pointer-events: none;
-}
-#tapButton:hover::before { opacity: .4; }
-
-/* Mobile “ready” glow (no hover) */
-@media (hover: none) {
-  #tapButton::before { animation: pulse-mobile var(--pulse) infinite ease-out; }
-}
-
-/* 3D press animation */
-#tapButton:active {
-  transform: translateY(4px) scale(.94);
-  box-shadow:
-    0 4px 10px var(--shadow),
-    inset 0 -2px 4px rgba(0,0,0,.2),
-    inset 0 2px 4px rgba(255,255,255,.4);
-}
-
-/* Ripple effect */
-#tapButton .ripple {
-  position: absolute;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(255,255,255,.6) 10%, transparent 70%);
-  transform: scale(0);
-  animation: ripple .6s ease-out;
-  pointer-events: none;
-}
-#tapButton:active .ripple {
-  inset: 0;
-}
-
-/* -------------------------------------------------
-   Keyframes
-   ------------------------------------------------- */
-@keyframes pulse {
-  0%, 100% { transform: scale(1); opacity: 0; }
-  50%      { transform: scale(1.3); opacity: .4; }
-}
-@keyframes pulse-mobile {
-  0%, 100% { opacity: .15; }
-  50%      { opacity: .35; }
-}
-@keyframes ripple {
-  to { transform: scale(4); opacity: 0; }
-}
-
-/* Optional: tiny particle burst on tap (pure CSS) */
-#tapButton:active::after {
-  content: "";
-  position: absolute;
-  inset: 50%;
-  width: 6px; height: 6px;
-  margin: -3px;
-  background: var(--glow);
-  border-radius: 50%;
-  box-shadow:
-    0 0 8px 2px var(--glow),
-    20px -20px 0 -2px var(--glow),
-    -20px 20px 0 -2px var(--glow),
-    20px 20px 0 -2px var(--glow),
-    -20px -20px 0 -2px var(--glow);
-  animation: burst .4s ease-out forwards;
-}
-@keyframes burst {
-  to { transform: translateY(-30px); opacity: 0; }
-}
-
-/* ─────── 4 DOPE CONFETTI STYLES ─────── */
-.confetti-dot {
-  position: absolute;
-  width: 6px; height: 6px;
-  border-radius: 50%;
-  pointer-events: none;
-  z-index: 9999;
-  opacity: 1;
-}
-
-/* 1. Classic rainbow */
-.confetti-rainbow { background: hsl(var(--h),80%,60%); }
-@keyframes rainbowFall {
-  to { transform: translate(var(--dx), var(--dy)) rotate(720deg); opacity:0; }
-}
-
-/* 2. Neon spark */
-.confetti-spark { background:#0ff; box-shadow:0 0 6px #0ff; }
-@keyframes sparkBurst {
-  to { transform: translate(var(--dx), var(--dy)) scale(0); opacity:0; }
-}
-
-/* 3. Gold coin */
-.confetti-coin { background:#ff0; border-radius:0; width:8px; height:4px; }
-@keyframes coinFlip {
-  to { transform: translate(var(--dx), var(--dy)) rotateY(720deg); opacity:0; }
-}
-
-/* 4. Firework star */
-.confetti-star {
-  background: transparent;
-  width:0; height:0;
-  border-left: 4px solid transparent;
-  border-right:4px solid transparent;
-  border-bottom:8px solid #ff0;
-}
-@keyframes starBoom {
-  to { transform: translate(var(--dx), var(--dy)) rotate(360deg) scale(2); opacity:0; }
-}
-/* modal (normal fade-in centered) */
-.modal-backdrop {
-  position:fixed; inset:0; background: rgba(0,0,0,0.6); display:none; align-items:center; justify-content:center; z-index:9999;
-}
-.modal {
-  width:92%; max-width:420px; background:#0f0f0f; border-radius:12px; padding:16px; border:1px solid rgba(255,255,255,0.06);
-  box-shadow: 0 10px 30px rgba(0,0,0,0.6);
-}
-.modal h3{ margin:0 0 8px 0; color:var(--accent1); font-size:16px; }
-.modal .list { text-align:left; margin-top:12px; max-height:320px; overflow:auto; }
-.modal .list li { padding:8px 6px; border-bottom:1px dashed rgba(255,255,255,0.03); font-weight:700; }
-
-/* result panel (small) */
-#resultModalInner { display:none; margin-top:18px; }
-
-/* small helpers */
-.hidden { display:none!important; }
-button, input { font-size:16px; } /* prevents iOS zoom on tap */
-.active-tab {
-  background: linear-gradient(90deg,#FF1493,#FF8C00);
-  color: #fff;
-  font-weight: bold;
-}
-body {
-  margin: 0;
-  font-family: 'Montserrat', sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  background: var(--bg);
-  color: #fff;
-  min-height: 100vh;                    /* forces full height + more */
-  display: flex;
-  flex-direction: column;               /* important: stacks content vertically */
-  align-items: center;                  /* keeps everything centered horizontally */
-  padding: 18px 0 380px;                /* huge bottom space for fixed bar + footer */
-  touch-action: manipulation;
-  -webkit-tap-highlight-color: transparent;
-  overflow-x: hidden;
-  position: relative;
-}
-
-/* This makes the footer stick to the very bottom even on short pages */
-#appWrapper {
-  flex: 1;                              /* pushes footer down */
-  width: 100%;
-  max-width: 480px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-  /* blur effect */
-  position: relative;
-}
-
-body::before {
-  content: '';
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  z-index: -1; /* behind content */
-}
-
-body.start-mode {
-  background: url('https://cdn.shopify.com/s/files/1/0962/6648/6067/files/9F6F9EAC-F165-4C70-85CB-B2351A3B8C59.png?v=1763282422') no-repeat center center fixed;
-  background-size: cover;
-}
-
-body.start-mode::before {
-  display: none;
-}
-
-body.game-mode {
-  background: url('https://cdn.shopify.com/s/files/1/0962/6648/6067/files/64EB80F3-9BE7-4D39-8C96-5608B941E4DC.png?v=1763280746') no-repeat center center fixed;
-  background-size: cover;
-}
-
-.lb-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 6px;
-  padding: 8px 10px;
-  border-radius: 8px;
-}
-
-.lb-avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
-  object-fit: cover;
-}
-
-.lb-info {
-  display: flex;
-  flex-direction: column;
-}
-
-.lb-name {
-  font-size: 14px;
-  font-weight: 600;
-}
-
-.lb-score {
-  font-size: 12px;
-  opacity: 0.7;
-}
-/* Slider container */
-.slider-wrapper {
-  overflow: hidden;
-  width: 100%;
-  position: relative;
-}
-
-/* Track that moves */
-.slider-track {
-  display: flex;
-  transition: transform 0.6s ease; /* smooth sliding */
-  width: 100%;
-}
-
-/* Each slide */
-.leaderboard-slide {
-  width: 100%;
-  flex-shrink: 0;
-}
-/* iOS Haptic Fallback - Shake Effect */
-@keyframes shake {
-  0% { transform: translate(0, 0); }
-  25% { transform: translate(2px, 0); }
-  50% { transform: translate(-2px, 0); }
-  75% { transform: translate(2px, 0); }
-  100% { transform: translate(0, 0); }
-}
-.shake { 
-  animation: shake 0.1s ease-in-out; 
-}
-/* Add inside <style> */
-#bonusBar.flash {
-  animation: bonusFlash 0.4s ease-out;
-}
-@keyframes bonusFlash {
-  0%   { box-shadow: 0 0 0 rgba(0,255,100,0); }
-  50%  { box-shadow: 0 0 20px rgba(0,255,100,0.9); }
-  100% { box-shadow: 0 0 0 rgba(0,255,100,0); }
-}
-.tiny-action-btn {
-  width:52px;
-  height:52px;
-  border-radius:50%;
-  border:none;
-  font-size:28px;
-  background:linear-gradient(135deg, #FFD700, #FF4500);
-  color:#000;
-  cursor:pointer;
-  transition:all 0.18s ease;
-  box-shadow:0 4px 15px rgba(255,215,0,0.4);
-  display:flex;
-  align-items:center;
-  justify-content:center;
-}
-.tiny-action-btn:nth-child(2) { background:linear-gradient(135deg,#00D4FF,#0078FF); }
-.tiny-action-btn:nth-child(3) { background:linear-gradient(135deg,#00FFA3,#00C853); }
-.tiny-action-btn:active {
-  transform:scale(0.88);
-  filter:brightness(1.4);
-}
-</style>
-</head>
-<body>
-<div id="appWrapper">
-
-  <!-- Header -->
-  <div id="gameHeader">
-    <div id="welcomeText">WELCOME TO</div>
-    <div id="scrambleText">TAP MASTER</div>
-  </div>
-  
-
-<!-- Start Page -->
-<div id="startPage" style="width:100%;display:flex;flex-direction:column;align-items:center;margin-top:18px;">
-  <button id="startBtn" style="padding:12px 22px;border-radius:12px;background:linear-gradient(90deg,#00e676,#00b0ff);color:#000;font-weight:800;font-size:16px;border:none;cursor:pointer;">Play</button>
-</div>
-
-<!-- Play Confirmation Modal -->
-<div id="playModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:2000;justify-content:center;align-items:center;display:flex;">
-  <div style="background:#111;color:#fff;padding:20px;border-radius:12px;width:90%;max-width:320px;text-align:center;">
-    <h3 style="margin-bottom:12px;">Confirm Play</h3>
-    <p>Play Tap Master for <strong>⭐ 10 stars </strong>?</p>
-    <div style="display:flex;justify-content:space-between;margin-top:18px;">
-      <button id="cancelPlay" style="flex:1;margin-right:6px;padding:10px 12px;border:none;border-radius:8px;background:#444;color:#fff;font-weight:700;cursor:pointer;">Cancel</button>
-      <button id="confirmPlay" style="flex:1;margin-left:6px;padding:10px 12px;border:none;border-radius:8px;background:linear-gradient(90deg,#00e676,#00b0ff);color:#000;font-weight:700;cursor:pointer;">Confirm</button>
-    </div>
-  </div>
-</div>
-
-<!-- Spinner (loading animation) -->
-  <div id="spinner" class="hidden" style="margin-top:18px;">
-    <div style="width:44px;height:44px;border-radius:50%;border:6px solid #222;border-top:6px solid #00e676; animation:spin 1s linear infinite;margin:0 auto"></div>
-    <div style="margin-top:10px;color:#aaa;font-size:13px">Loading Tap Arena…</div>
-  </div>
-  
-
-  <!-- Game UI -->
-  <div id="gamePage" class="hidden" style="width:100%;display:flex;flex-direction:column;align-items:center;">
-
-    <!-- Glass terminal -->
-    <div id="tapTerminal" class="glass-terminal" aria-live="polite">
-      <div class="terminal-header">TAP TERMINAL</div>
-
-      <div class="terminal-line">
-        <div>⏱ Time Left</div>
-        <div><span id="timer">60</span>s</div>
-      </div>
-
-      <div class="terminal-line">
-        <div>✋🏽 Taps</div>
-        <div><span id="tapCount">0</span></div>
-      </div>
-
-      <div class="terminal-line">
-        <div>💵 Earnings</div>
-        <div>₦<span id="earnings">0.00</span></div>
-      </div>
-
-      <div id="trainBarContainer" style="margin-top:10px;">
-        <div id="trainBar" style="width:100%"></div>
-      </div>
-
-      <div class="stats-row" style="margin-top:10px">
-        <div class="stat">
-          <div class="label">TAP LVL</div>
-          <div class="value" id="bonusLevelVal">1</div>
-        </div>
-        <div class="stat">
-          <div class="label">SPEED</div>
-          <div class="value" id="speedVal">—</div>
-        </div>
-      </div>
-
-      <div id="bonusContainer" style="margin-top:12px;">
-        <div id="bonusBar"></div>
-      </div>
-    </div>
-
-<!-- TAP button (replace your old one) -->
-<button id="tapButton" aria-label="Tap" title="Tap fast!">
-  <span class="inner">TAP</span>
-  <div class="ripple"></div>
-</button>
-  
-    <!-- Result modal -->
-<div id="resultModal" class="modal-backdrop" style="display:none;align-items:center;justify-content:center;">
-  <div class="modal" style="padding:16px;border-radius:12px;max-width:380px;text-align:center;position:relative;">
-    <button id="closeResult" style="position:absolute;top:8px;right:8px;font-size:18px;border:none;background:none;cursor:pointer;">✖</button>
-    <div id="resultMessage" style="margin-top:10px;font-size:16px;font-weight:600;"></div>
-    <button id="playAgainBtn" style="margin-top:16px;padding:10px 16px;border-radius:8px;border:none;background:linear-gradient(90deg,#00e676,#00b0ff);color:#000;font-weight:800;cursor:pointer;">Play Again</button>
-  </div>
-</div>
-
-  </div> <!-- end gamePage -->
-
-<!-- FINAL BOTTOM-LOCKED BAR (profile + tiny 🤩 buttons) -->
-<div id="bottomBar" style="position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;padding:16px 0 20px;background:linear-gradient(to top,rgba(14,14,14,0.98),transparent);z-index:997;pointer-events:none;">
-  <div style="pointer-events:auto;">
-
-    <!-- Profile Card -->
-    <div style="background:rgba(255,255,255,0.05);padding:14px 16px;border-radius:16px;border:1px solid rgba(255,255,255,0.08);backdrop-filter:blur(12px);width:90%;max-width:420px;margin:0 auto 14px;text-align:center;">
-      <div id="profileName" style="font-size:16px;font-weight:700;color:#fff;">GUEST 0000</div>
-      <div style="margin-top:8px;font-size:14px;">
-        <strong style="background:linear-gradient(90deg,#00e676,#00b0ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">STARS COLLECTED:</strong>
-        <span id="starCount" style="color:#fff;">50</span>⭐
-      </div>
-      <div style="margin-top:4px;font-size:14px;">
-        <strong style="background:linear-gradient(90deg,#00e676,#00b0ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">CASH EARNED:</strong>
-        <span id="cashCount" style="color:#fff;">0</span>
-      </div>
-    </div>
-
-    <!-- Tiny 🤩 Action Bar (bottom of screen) -->
-    <div style="display:flex;justify-content:center;gap:18px;padding:8px 16px;background:rgba(255,255,255,0.08);border-radius:22px;border:1px solid rgba(255,255,255,0.12);backdrop-filter:blur(16px);width:86%;max-width:300px;margin:0 auto;box-shadow:0 -8px 30px rgba(0,0,0,0.6);">
-      <button id="leaderboardBtn" class="tiny-action-btn" data-title="Leaderboard">🏆</button>
-      <button id="rulesBtn"        class="tiny-action-btn" data-title="Game Rules">📋</button>
-      <button id="bidBtn"          class="tiny-action-btn" data-title="Place Bid">🏁</button>
-    </div>
-
-  </div>
-</div>
-
-
-  <!-- Leaderboard Modal -->
-<div id="leaderboardModal" class="modal-backdrop" role="dialog" aria-modal="true"
-     style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;
-            background:rgba(0,0,0,0.6);backdrop-filter:blur(3px);
-            justify-content:center;align-items:center;z-index:9999;">
-
-  <div class="modal"
-       style="width:92%;max-width:420px;max-height:90vh;overflow:hidden;
-              background:#111;border-radius:14px;padding:15px;
-              box-shadow:0 0 15px rgba(0,0,0,0.4);display:flex;flex-direction:column;">
-
-    <!-- Tabs -->
-    <div id="leaderboardTabs" style="display:flex;gap:10px;margin-bottom:12px;">
-      <button class="lb-tab active" data-period="weekly"
-        style="flex:1;padding:8px 0;border-radius:8px;border:none;
-               background:#ff1493;color:#fff;font-weight:700;cursor:pointer;">
-        This Week
-      </button>
-
-      <button class="lb-tab" data-period="daily"
-        style="flex:1;padding:8px 0;border-radius:8px;border:none;
-               background:#222;color:#ccc;font-weight:700;cursor:pointer;">
-        Today
-      </button>
-
-      <button class="lb-tab" data-period="monthly"
-        style="flex:1;padding:8px 0;border-radius:8px;border:none;
-               background:#222;color:#ccc;font-weight:700;cursor:pointer;">
-        This Month
-      </button>
-    </div>
-
-    <!-- DAILY TIMER -->
-    <div id="dailyTimer" style="text-align:center;font-size:14px;font-weight:600;color:#ff8c00;margin-bottom:10px;display:block;">
-      Reset in: <span id="dailyTimerValue">23:59:59</span>
-    </div>
-
- <!-- Image Slider -->
-<div id="leaderboardImageSlider"
-     style="position:relative;width:100%;height:180px;overflow:hidden;border-radius:8px;margin-bottom:10px;touch-action:pan-y;">
-
-  <div class="slider-track" style="display:flex;width:100%;height:100%;transition:transform 0.6s ease;">
-
-    <img src="https://cdn.shopify.com/s/files/1/0962/6648/6067/files/STRZ.jpg?v=1763196570"
-         class="leaderboard-slide"
-         style="width:100%;height:100%;object-fit:cover;flex-shrink:0;">
-
-    <img src="https://cdn.shopify.com/s/files/1/0962/6648/6067/files/STRZ.jpg?v=1763196570"
-         class="leaderboard-slide"
-         style="width:100%;height:100%;object-fit:cover;flex-shrink:0;">
-
-    <img src="https://cdn.shopify.com/s/files/1/0962/6648/6067/files/STRZ.jpg?v=1763196570"
-         class="leaderboard-slide"
-         style="width:100%;height:100%;object-fit:cover;flex-shrink:0;">
-
-    <img src="https://cdn.shopify.com/s/files/1/0962/6648/6067/files/STRZ.jpg?v=1763196570"
-         class="leaderboard-slide"
-         style="width:100%;height:100%;object-fit:cover;flex-shrink:0;">
-
-    <img src="https://cdn.shopify.com/s/files/1/0962/6648/6067/files/STRZ.jpg?v=1763196570"
-         class="leaderboard-slide"
-         style="width:100%;height:100%;object-fit:cover;flex-shrink:0;">
-
-    <img src="https://cdn.shopify.com/s/files/1/0962/6648/6067/files/STRZ.jpg?v=1763196570"
-         class="leaderboard-slide"
-         style="width:100%;height:100%;object-fit:cover;flex-shrink:0;">
-
-    <img src="https://cdn.shopify.com/s/files/1/0962/6648/6067/files/STRZ.jpg?v=1763196570"
-         class="leaderboard-slide"
-         style="width:100%;height:100%;object-fit:cover;flex-shrink:0;">
-
-  </div>
-</div>
-
-    <!-- Description -->
-    <p id="leaderboardDescription"
-       style="font-size:14px;color:#ccc;line-height:1.4;margin-bottom:10px;">
-      Today's top tappers dominate the hourly board. Tap fast and stay ahead!
-    </p>
-
-    <!-- Scrollable List -->
-    <ol id="leaderboardList"
-        style="list-style:none;padding-left:0;margin:0;flex:1;overflow-y:auto;
-               border-top:1px solid #222;padding-top:10px;">
-    </ol>
-
-    <!-- Close Button -->
-    <div style="margin-top:12px;text-align:right;">
-      <button id="closeLeaderboard"
-        style="padding:8px 12px;border-radius:8px;border:none;
-               background:linear-gradient(90deg,#FF1493,#FF8C00);
-               color:#fff;font-weight:800;cursor:pointer;">
-        Close
-      </button>
-    </div>
-
-  </div>
-</div>
-
-
-
-<!-- Audio -->
-<audio id="tapSound" src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg" preload="auto"></audio>
-
-<audio id="gameMusic" loop preload="auto">
-  <source src="night_city_jazz.mp3" type="audio/mpeg">
-</audio>
-
-
-<!-- FIXED FOOTER AT VERY BOTTOM -->
-<footer style="padding:40px 20px 60px;text-align:center;color:#666;font-size:13px;line-height:1.8;background:transparent;margin-top:auto;">
-  <div style="font-size:20px;font-weight:800;background:linear-gradient(90deg,#FF1493,#00e676);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:16px;">
+<!-- Put this right before </body> (NOT inside #bottomBar) -->
+<footer style="padding:60px 20px 40px;text-align:center;color:#555;font-size:13px;line-height:1.8;background:#0e0e0e;">
+  <div style="font-size:18px;font-weight:800;background:linear-gradient(90deg,#FF1493,#00e676);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">
     ©5786 ገብር ነፍስህ (Own Your Vibe)
   </div>
-  <div style="margin-bottom:12px;">自分の雰囲気を自分のものにしよう • 자신의 분위기를 내 것으로 만들자</div>
+  <div style="margin:12px 0;">自分の雰囲気を自分のものにしよう • 자신의 분위기를 내 것으로 만들자</div>
   <div>Own your rhythm. Master the tap. Rule the verse.</div>
-  <div style="margin:16px 0;color:#777;">3-1-1 Nihonbashi • Lagos • Seoul • The Metaverse</div>
+  <div style="margin:16px 0 24px;color:#777;">3-1-1 Nihonbashi • Lagos • Seoul • The Metaverse</div>
   <div style="font-size:11px;">
-    <a href="privacy.html" style="color:#888;text-decoration:none;margin:0 10px;">Privacy</a>•
-    <a href="terms.html" style="color:#888;text-decoration:none;margin:0 10px;">Terms</a>•
+    <a href="#" style="color:#888;text-decoration:none;margin:0 10px;">Privacy</a>•
+    <a href="#" style="color:#888;text-decoration:none;margin:0 10px;">Terms</a>•
     <a href="https://x.com/dettyverse" style="color:#FF1493;text-decoration:none;">@dettyverse</a>
   </div>
 </footer>
@@ -2368,8 +1732,54 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Initial run
   replaceStarsWithSVG();
-  
+
+});
+  const rack=document.getElementById('bottomRack');
+  const handle=document.getElementById('rackHandle');
+  let isOpen=false;
+
+  function toggleRack(){
+    isOpen=!isOpen;
+    rack.classList.toggle('closed',!isOpen);
+  }
+
+  handle.addEventListener('click',toggleRack);
+
+  // Optional: close rack when tapping a button
+  document.querySelectorAll('.icon-btn').forEach(btn=>{
+    btn.addEventListener('click',()=>{ 
+      console.log(btn.querySelector('.label').textContent+' clicked');
+      // toggleRack(); // uncomment if you want it to close after tap
+    });
   });
+
+  // Basic swipe support
+  let startY=0;
+  rack.addEventListener('touchstart',e=>startY=e.touches[0].clientY);
+  rack.addEventListener('touchmove',e=>{
+    const y=e.touches[0].clientY;
+    if(y-startY>50 && isOpen) toggleRack();
+    if(startY-y>50 && !isOpen) toggleRack();
+  });
+document.querySelectorAll('.tiny-action-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const title = btn.dataset.title;
+    const modal = document.createElement('div');
+    modal.className = 'modal-backdrop';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.75);display:flex;align-items:center;justify-content:center;z-index:9999;backdrop-filter:blur(8px);';
+    modal.innerHTML = `
+      <div style="background:#111;padding:30px 24px;border-radius:18px;border:1px solid rgba(255,255,255,0.1);text-align:center;max-width:320px;animation:pop 0.3s ease-out;">
+        <h3 style="margin:0 0 16px;color:#FF1493;font-size:19px;">${title}</h3>
+        <p style="color:#aaa;line-height:1.5;margin:16px 0;">Coming soon to Tap Master! 🔥</p>
+        <button onclick="this.closest('.modal-backdrop').remove()" 
+                style="padding:12px 28px;border:none;border-radius:12px;background:linear-gradient(90deg,#FF1493,#FF8C00);color:#fff;font-weight:800;cursor:pointer;">
+          Close
+        </button>
+      </div>
+    `;
+    document.body.appendChild(modal);
+  });
+});
 </script>
 </body>
 </html>
