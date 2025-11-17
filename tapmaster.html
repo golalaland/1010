@@ -253,47 +253,46 @@ button, input { font-size:16px; } /* prevents iOS zoom on tap */
   color: #fff;
   font-weight: bold;
 }
-/* ============================
-   HTML & Body Reset
-============================ */
 html, body {
   height: 100%;
   margin: 0;
   padding: 0;
-  overflow-x: hidden; /* prevent horizontal scroll */
 }
 
 body {
+  margin: 0;
   font-family: 'Montserrat', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background: var(--bg);
   color: #fff;
 
   display: flex;
   flex-direction: column;
   min-height: 100vh;
 
-  position: relative;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
+  overflow-x: hidden;
+  position: relative;
 }
 
-/* ============================
-   App Wrapper
-============================ */
 #appWrapper {
-  flex: 1; /* takes available space */
+  flex: 1; /* pushes footer down */
   width: 100%;
   max-width: 480px;
+
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: space-between; /* keeps content inside viewport */
 }
 
-/* ============================
-   Background Blur Overlay
-============================ */
+
+
+  /* blur effect */
+  position: relative;
+}
+
 body::before {
   content: '';
   position: fixed;
@@ -304,31 +303,21 @@ body::before {
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   z-index: -1; /* behind content */
-  pointer-events: none; /* allows clicks through overlay */
 }
 
-/* ============================
-   Start Mode Background
-============================ */
 body.start-mode {
   background: url('https://cdn.shopify.com/s/files/1/0962/6648/6067/files/9F6F9EAC-F165-4C70-85CB-B2351A3B8C59.png?v=1763282422') no-repeat center center fixed;
   background-size: cover;
-  overflow: hidden; /* no scroll */
 }
 
 body.start-mode::before {
-  display: none; /* remove blur on start mode */
+  display: none;
 }
 
-/* ============================
-   Game Mode Background
-============================ */
 body.game-mode {
   background: url('https://cdn.shopify.com/s/files/1/0962/6648/6067/files/64EB80F3-9BE7-4D39-8C96-5608B941E4DC.png?v=1763280746') no-repeat center center fixed;
   background-size: cover;
-  overflow: hidden; /* no scroll */
 }
-
 .lb-row {
   display: flex;
   align-items: center;
