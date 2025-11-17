@@ -199,30 +199,32 @@
     box-shadow: 0 12px 30px rgba(255,234,0,0.5);
   }
 
-  #fomoPopup {
+#fomoPopup {
   position: fixed;
-  top: 80px;
+  top: 90px;
   left: 50%;
   transform: translateX(-50%);
-  background: linear-gradient(135deg, #000, #111);
-  color: #ffea00;
-  padding: 1.3rem 2.5rem;
-  border-radius: 50px;
-  font-size: 1.35rem;
-  font-weight: 800;
+  background: #111;
+  color: #fff;
+  padding: 1rem 2rem;           /* ← was 0.6rem 1.2rem → now much bigger */
+  border-radius: 50px;          /* ← pill shape, looks premium */
+  font-size: 1.15rem;           /* ← was 0.85rem → now bold & readable */
+  font-weight: 600;
   opacity: 0;
-  transition: all 0.6s ease;
+  transition: opacity 0.5s, transform 0.6s;
   pointer-events: none;
   z-index: 10000;
-  box-shadow: 0 0 40px rgba(255,234,0,0.6);
-  border: 2px solid #ffea00;
-  min-width: 340px;
-  text-shadow: 0 0 10px #ffea00;
+  white-space: nowrap;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.6),
+              0 0 30px rgba(255,234,0,0.3);   /* ← subtle gold glow */
+  border: 1px solid rgba(255,234,0,0.3);
+  min-width: 320px;             /* ← forces it to be wide enough on small phones */
+  text-align: center;
 }
 
 #fomoPopup.show { 
   opacity: 1; 
-  transform: translateX(-50%) scale(1.05);
+  transform: translateX(-50%) translateY(-8px);
 }
 
   .message { text-align: center; min-height: 20px; margin: 0.5rem 0; font-size: 0.9rem; }
