@@ -410,23 +410,23 @@ body { transition: background 0.5s ease; }
   </div>
 </div>
 
- <!-- Spinner (loading animation) -->
-<div id="spinner" class="hidden" style="
-    position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    background: rgba(0,0,0,0.5);
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    z-index: 9999;
-    opacity: 0;
-    transition: opacity 0.3s ease;
+ <div id="spinner" class="hidden" style="
+  position: fixed;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
 ">
   <div style="width:44px;height:44px;border-radius:50%;border:6px solid #222;border-top:6px solid #00e676; animation:spin 1s linear infinite;"></div>
   <div style="margin-top:10px;color:#fff;font-size:13px;">Loading Tap Arena…</div>
 </div>
+
 
   
 
@@ -1329,28 +1329,16 @@ confirmPlay?.addEventListener("click", async () => {
     starCountEl.textContent = formatNumber(localStars);
   }
 
- // CLOSE MODAL
+// CLOSE MODAL
 if (playModal) playModal.style.display = "none";
 
 // HIDE START ELEMENTS
 posterImg && (posterImg.style.display = "none");
 startPage && (startPage.style.display = "none");
 
-// SHOW FULL-PAGE SPINNER WITH FADE
+// SHOW SPINNER
 if (spinner) {
-  spinner.style.position = "fixed";
-  spinner.style.top = "0";
-  spinner.style.left = "0";
-  spinner.style.width = "100%";
-  spinner.style.height = "100%";
-  spinner.style.background = "rgba(0,0,0,0.5)";
-  spinner.style.display = "flex";
-  spinner.style.flexDirection = "column";
-  spinner.style.justifyContent = "center";
-  spinner.style.alignItems = "center";
-  spinner.style.zIndex = "9999";
   spinner.style.opacity = "1";
-  spinner.style.transition = "opacity 0.3s ease";
   spinner.style.pointerEvents = "auto";
 }
 
@@ -1363,11 +1351,12 @@ body.classList.add("game-mode");
 setTimeout(() => {
   if (spinner) {
     spinner.style.opacity = "0";
-    spinner.style.pointerEvents = "none"; // allow interaction again
+    spinner.style.pointerEvents = "none";
   }
   if (gamePage) gamePage.style.display = "block";
   startSession();
 }, 700);
+
 
 
 /* ------------------------------
