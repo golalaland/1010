@@ -190,6 +190,46 @@ body {display:flex;justify-content:center;align-items:flex-start;padding:18px 0 
 @keyframes burst {
   to { transform: translateY(-30px); opacity: 0; }
 }
+
+/* ─────── 4 DOPE CONFETTI STYLES ─────── */
+.confetti-dot {
+  position: absolute;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 1;
+}
+
+/* 1. Classic rainbow */
+.confetti-rainbow { background: hsl(var(--h),80%,60%); }
+@keyframes rainbowFall {
+  to { transform: translate(var(--dx), var(--dy)) rotate(720deg); opacity:0; }
+}
+
+/* 2. Neon spark */
+.confetti-spark { background:#0ff; box-shadow:0 0 6px #0ff; }
+@keyframes sparkBurst {
+  to { transform: translate(var(--dx), var(--dy)) scale(0); opacity:0; }
+}
+
+/* 3. Gold coin */
+.confetti-coin { background:#ff0; border-radius:0; width:8px; height:4px; }
+@keyframes coinFlip {
+  to { transform: translate(var(--dx), var(--dy)) rotateY(720deg); opacity:0; }
+}
+
+/* 4. Firework star */
+.confetti-star {
+  background: transparent;
+  width:0; height:0;
+  border-left: 4px solid transparent;
+  border-right:4px solid transparent;
+  border-bottom:8px solid #ff0;
+}
+@keyframes starBoom {
+  to { transform: translate(var(--dx), var(--dy)) rotate(360deg) scale(2); opacity:0; }
+}
 /* leaderboard button */
 #leaderboardBtn {
   margin-top:14px;
@@ -318,6 +358,17 @@ body.game-mode {
 .leaderboard-slide {
   width: 100%;
   flex-shrink: 0;
+}
+/* iOS Haptic Fallback - Shake Effect */
+@keyframes shake {
+  0% { transform: translate(0, 0); }
+  25% { transform: translate(2px, 0); }
+  50% { transform: translate(-2px, 0); }
+  75% { transform: translate(2px, 0); }
+  100% { transform: translate(0, 0); }
+}
+.shake { 
+  animation: shake 0.1s ease-in-out; 
 }
 </style>
 </head>
@@ -612,6 +663,9 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
+// Prevent sound spam
+window.lastSoundTime = 0;
+
 // ---------- DOM ----------
 const startBtn = document.getElementById('startBtn');
 const playModal = document.getElementById('playModal');
@@ -880,22 +934,59 @@ function updateBonusBar(){
   bonusBar.style.width = Math.min(100,(progress/tapsForNext)*100)+'%';
 }
 
-// ---------- CONFETTI ----------
-function triggerConfetti(){
-  for(let i=0;i<15;i++){
-    const dot=document.createElement('div');
-    Object.assign(dot.style,{
-      position:'absolute', width:'6px', height:'6px',
-      background:`hsl(${Math.random()*360},80%,60%)`,
-      borderRadius:'50%', top: tapButton.offsetTop+'px',
-      left: tapButton.offsetLeft + tapButton.offsetWidth/2+'px',
-      pointerEvents:'none', zIndex:9999, opacity:1
-    });
+/* ─────── DOPE RANDOM CONFETTI + VIBRATION ─────── */
+function triggerConfetti() {
+  const types = ['rainbow', 'spark', 'coin', 'star'];
+  const chosen = types[Math.floor(Math.random() * types.length)];
+
+  const count = 22;                     // more particles = more wow
+  const rect   = tapButton.getBoundingClientRect();
+  const cx     = rect.left + rect.width  / 2;
+  const cy     = rect.top  + rect.height / 2;
+
+  for (let i = 0; i < count; i++) {
+    const dot = document.createElement('div');
+    dot.className = `confetti-dot confetti-${chosen}`;
+
+    // Random direction & distance
+    const angle = Math.random() * Math.PI * 2;
+    const dist  = 40 + Math.random() * 80;
+    const dx    = Math.cos(angle) * dist;
+    const dy    = Math.sin(angle) * dist - 60;   // upward bias
+
+    dot.style.setProperty('--dx', `${dx}px`);
+    dot.style.setProperty('--dy', `${dy}px`);
+    dot.style.left = `${cx}px`;
+    dot.style.top  = `${cy}px`;
+
+    // Random hue for rainbow type
+    if (chosen === 'rainbow') dot.style.setProperty('--h', Math.random() * 360);
+
     document.body.appendChild(dot);
-    const x=(Math.random()-0.5)*100; const y=-Math.random()*80;
-    dot.animate([{transform:'translate(0,0)',opacity:1},{transform:`translate(${x}px,${y}px)`,opacity:0}],
-      {duration:600, easing:'ease-out'});
-    setTimeout(()=>dot.remove(),600);
+
+    // Animation name per type
+    const animName = {
+      rainbow: 'rainbowFall',
+      spark:   'sparkBurst',
+      coin:    'coinFlip',
+      star:    'starBoom'
+    }[chosen];
+
+    dot.animate(
+      [{opacity:1, transform:'translate(0,0) rotate(0deg) scale(1)'},
+       {opacity:0, transform:`translate(${dx}px,${dy}px) rotate(${chosen==='coin'? '720deg' : '360deg'}) scale(${chosen==='star'?2:0})`}],
+      {duration: 600 + Math.random()*300, easing:'cubic-bezier(.2,.6,.4,1)'}
+    ).onfinish = () => dot.remove();
+  }
+
+  /* ─────── DOPE VIBRATION ON LEVEL-UP ─────── */
+  if ('vibrate' in navigator) {
+    // Long, punchy pattern – feels like a *win*
+    navigator.vibrate([80, 50, 100, 50, 80]);
+  } else if (navigator.userAgent.match(/iPhone|iPad|iPod/)) {
+    // iOS shake fallback (already in CSS)
+    tapButton.classList.add('shake');
+    setTimeout(() => tapButton.classList.remove('shake'), 400);
   }
 }
 
@@ -1073,10 +1164,9 @@ async function endSessionRecord() {
 }
 
 // ======================================================
-//   TAP HANDLER — NOW WITH COOL VIBES (Android) & iOS-SAFE
+//   TAP HANDLER — FIXED SOUND + CROSS-PLATFORM HAPTICS
 // ======================================================
 tapButton?.addEventListener(tapEvent, async e => {
-
   e.preventDefault();
 
   if (!running || tapLocked) return;
@@ -1113,14 +1203,24 @@ tapButton?.addEventListener(tapEvent, async e => {
   }
 
   flashTapGlow();
-  try { tapSound.currentTime = 0; tapSound.play().catch(()=>{}); } catch {}
-
-  // COOL VIBRATION UPGRADE
-  if ('vibrate' in navigator) {
-    // Android: Snappy pattern for that premium tap feel
-    navigator.vibrate([10, 5, 10]);
+  
+  // ✅ FIXED: Debounced sound (no auto-tap spam)
+  const now = Date.now();
+  if (!window.lastSoundTime || now - window.lastSoundTime > 100) {
+    try { 
+      tapSound.currentTime = 0; 
+      tapSound.play().catch(()=>{}); 
+    } catch {}
+    window.lastSoundTime = now;
   }
-  // iOS: Gracefully does nothing (no haptics possible via web)
+
+  // ✅ NEW: Cross-platform haptics
+  if ('vibrate' in navigator) {
+    navigator.vibrate([10, 5, 10]);
+  } else if (navigator.userAgent.match(/iPhone|iPad|iPod/)) {
+    tapButton.classList.add('shake');
+    setTimeout(() => tapButton.classList.remove('shake'), 100);
+  }
 
   updateUI();
   updateBonusBar();
