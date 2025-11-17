@@ -147,7 +147,6 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 
 /* messages */
 /* 🔥 Chat messages container */
-/* 🔥 Chat messages container */
 #messages {
   flex: 1;
   overflow-y: auto;
@@ -157,10 +156,9 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   gap: 6px;
   border-radius: 8px;
   background: #000;
-
-  /* ✅ give space so last message never hides behind bar */
-  margin-bottom: 70px;
+  margin-bottom: 70px;          /* your safe-zone for input bar */
   box-sizing: border-box;
+  position: relative;           /* already there – perfect! */
 }
 
 /* 🔥 Message bubble */
@@ -201,6 +199,31 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 
 #messages {
   position: relative; /* ensures modal positions correctly within chat */
+}
+
+.scroll-to-bottom-btn {
+  position: absolute;
+  right: 12px;
+  bottom: 80px;                 /* 70px (your margin) + 10px buffer */
+  background: #9147ff;
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  width: 44px;
+  height: 44px;
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+}
+
+.scroll-to-bottom-btn:hover {
+  background: #7c3aed;
 }
 /* 🔥 Keypad (chat input) - always at bottom */
 .send-area {
@@ -1749,7 +1772,7 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 <!-- Chat messages container -->
 <div id="messages"></div>
 
-<!-- Floating "New messages" button -->
+<!-- Twitch-style "New messages" button -->
 <button id="scrollToBottomBtn" class="scroll-to-bottom-btn" style="display:none;">
   New
 </button>
