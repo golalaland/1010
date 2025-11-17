@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=0.85, maximum-scale=0.85, user-scalable=no">
 <title>TAPTAP VIP</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
 <style>
   :root {
     --gold: #ffea00;
@@ -28,15 +29,24 @@
     background-attachment: fixed;
   }
 
-  h2 {
-    font-size: 4.2rem;
-    font-weight: 800;
-    background: linear-gradient(90deg, #fff, var(--gold), #fff);
+   h2 {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 4.8rem;
+    font-weight: 900;
+    background: linear-gradient(90deg, #ffea00, #ff0080, #00f0ff, #ffea00);
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
-    letter-spacing: 5px;
-    text-align: center;
+    text-shadow: 0 0 40px rgba(255,234,0,0.6);
+    letter-spacing: 10px;
     margin-bottom: 0.5rem;
+    animation: pulse 4s infinite;
+    text-transform: uppercase;
+  }
+
+  @keyframes pulse {
+    0%,100% { opacity: 0.95; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.04); }
   }
 
   .description {
@@ -189,25 +199,31 @@
     box-shadow: 0 12px 30px rgba(255,234,0,0.5);
   }
 
-  /* Original simple FOMO restored */
   #fomoPopup {
-    position: fixed;
-    top: 90px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: #111;
-    color: #fff;
-    padding: 0.6rem 1.2rem;
-    border-radius: 8px;
-    font-size: 0.85rem;
-    opacity: 0;
-    transition: opacity 0.5s;
-    pointer-events: none;
-    z-index: 10000;
-    white-space: nowrap;
-  }
+  position: fixed;
+  top: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(135deg, #000, #111);
+  color: #ffea00;
+  padding: 1.3rem 2.5rem;
+  border-radius: 50px;
+  font-size: 1.35rem;
+  font-weight: 800;
+  opacity: 0;
+  transition: all 0.6s ease;
+  pointer-events: none;
+  z-index: 10000;
+  box-shadow: 0 0 40px rgba(255,234,0,0.6);
+  border: 2px solid #ffea00;
+  min-width: 340px;
+  text-shadow: 0 0 10px #ffea00;
+}
 
-  #fomoPopup.show { opacity: 1; }
+#fomoPopup.show { 
+  opacity: 1; 
+  transform: translateX(-50%) scale(1.05);
+}
 
   .message { text-align: center; min-height: 20px; margin: 0.5rem 0; font-size: 0.9rem; }
 
