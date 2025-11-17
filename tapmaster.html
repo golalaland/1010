@@ -256,28 +256,37 @@ button, input { font-size:16px; } /* prevents iOS zoom on tap */
 html, body {
   height: 100%;
   margin: 0;
+  padding: 0;
 }
 
 body {
+  margin: 0;
+  font-family: 'Montserrat', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: var(--bg);
+  color: #fff;
+
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  background: var(--bg);
+
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  overflow-x: hidden;
+  position: relative;
 }
 
 #appWrapper {
-  flex: 1; /* this makes content stretch vertically */
+  flex: 1; /* pushes footer down */
+  width: 100%;
+  max-width: 480px;
+
   display: flex;
   flex-direction: column;
   align-items: center;
 }
-footer {
-  margin-top: auto; /* PUSHES FOOTER TO BOTTOM */
-  padding: 20px 0;
-  text-align: center;
-  color: #aaa;
-  width: 100%;
-}
+
 
 
   /* blur effect */
@@ -637,6 +646,10 @@ bar + footer */
   <source src="night_city_jazz.mp3" type="audio/mpeg">
 </audio>
 
+
+
+
+  
 <!-- Put this right before </body> (NOT inside #bottomBar) -->
 <footer style="padding:60px 20px 40px;text-align:center;color:#555;font-size:13px;line-height:1.8;background:#0e0e0e;">
   <div style="font-size:18px;font-weight:800;background:linear-gradient(90deg,#FF1493,#00e676);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">
