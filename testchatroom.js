@@ -3949,67 +3949,82 @@ function playFullVideo(video) {
   document.body.appendChild(modal);
 }
 /* ===============================
-   Twitch-style Auto-Scroll for #messages
-   Works with your flex + margin-bottom setup
+   BOTH: "New" Button + Center Arrow
+   Works with your #messages
 ================================= */
 
-const messagesDiv   = document.getElementById('messages');
-const scrollBtn     = document.getElementById('scrollToBottomBtn');
-const SCROLL_THRESHOLD = 150;   // px from bottom = "at bottom"
-let isUserAtBottom = true;
-let hasNewMessages = false;
+const messagesEl = document.getElementById("messages");
+const newMsgBtn  = document.getElementById("scrollToBottomBtn");
+const centerArrow = document.getElementById("centerScrollArrow");
 
-// ---- Scroll to bottom (smooth or instant) ----
-function scrollToBottom(smooth = true) {
-  messagesDiv.scrollTo({
-    top: messagesDiv.scrollHeight,
-    behavior: smooth ? 'smooth' : 'auto'
+// Config
+const NEAR_BOTTOM = 150;     // for auto-scroll
+const SHOW_ARROW_AT = 300;   // show center arrow if >300px from bottom
+let isAtBottom = true;
+
+// Scroll to bottom
+function scrollToBottom() {
+  messagesEl.scrollTo({
+    top: messagesEl.scrollHeight,
+    behavior: 'smooth'
   });
 }
 
-// ---- Check if user is near bottom ----
+// Check scroll position
 function checkScroll() {
-  const distanceFromBottom =
-    messagesDiv.scrollHeight - messagesDiv.scrollTop - messagesDiv.clientHeight;
+  const distance = messagesEl.scrollHeight - messagesEl.scrollTop - messagesEl.clientHeight;
+  const wasAtBottom = isAtBottom;
+  isAtBottom = distance <= NEAR_BOTTOM;
 
-  const wasAtBottom = isUserAtBottom;
-  isUserAtBottom = distanceFromBottom <= SCROLL_THRESHOLD;
-
-  // User just scrolled up → hide button
-  if (wasAtBottom && !isUserAtBottom) {
-    scrollBtn.style.display = 'none';
-    hasNewMessages = false;
+  // === "New" button (bottom-right) ===
+  if (isAtBottom) {
+    newMsgBtn.style.display = 'none';
+  } else if (distance > NEAR_BOTTOM) {
+    newMsgBtn.style.display = 'flex';
   }
-}
 
-// ---- Add a message (REPLACE your current method) ----
-function addMessage(html) {
-  const msgEl = document.createElement('div');
-  msgEl.className = 'msg';
-  msgEl.innerHTML = html;
-  messagesDiv.appendChild(msgEl);
-
-  // Auto-scroll only if user is near bottom
-  if (isUserAtBottom) {
-    scrollToBottom();
+  // === Center arrow ===
+  if (!isAtBottom && distance > SHOW_ARROW_AT) {
+    centerArrow.classList.add('show');
   } else {
-    hasNewMessages = true;
-    scrollBtn.style.display = 'flex';  // use flex to center text
+    centerArrow.classList.remove('show');
+  }
+
+  // Reset on manual scroll up
+  if (wasAtBottom && !isAtBottom) {
+    // user left bottom
   }
 }
 
-// ---- Button click: go to bottom ----
-scrollBtn.addEventListener('click', () => {
+// === Add Message (use this everywhere) ===
+function addMessage(html) {
+  const msg = document.createElement('div');
+  msg.className = 'msg';
+  msg.innerHTML = html;
+  messagesEl.appendChild(msg);
+
+  if (isAtBottom) {
+    scrollToBottom();
+  }
+  // otherwise: button/arrow will appear via scroll listener
+}
+
+// === Click handlers ===
+newMsgBtn.addEventListener('click', () => {
   scrollToBottom();
-  scrollBtn.style.display = 'none';
-  hasNewMessages = false;
+  newMsgBtn.style.display = 'none';
 });
 
-// ---- Listen to scroll (debounced) ----
-messagesDiv.addEventListener('scroll', () => {
-  clearTimeout(messagesDiv._scrollTimer);
-  messagesDiv._scrollTimer = setTimeout(checkScroll, 80);
+centerArrow.addEventListener('click', () => {
+  scrollToBottom();
+  centerArrow.classList.remove('show');
 });
 
-// ---- Initialize ----
-checkScroll();=>
+// === Scroll listener (one only) ===
+messagesEl.addEventListener('scroll', () => {
+  clearTimeout(messagesEl._scrollTimer);
+  messagesEl._scrollTimer = setTimeout(checkScroll, 80);
+});
+
+// === Init ===
+checkScroll();
