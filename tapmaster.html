@@ -549,13 +549,13 @@ body { transition: background 0.5s ease; }
 
     <!-- Tabs -->
     <div id="leaderboardTabs" style="display:flex;gap:10px;margin-bottom:12px;">
-      <button class="lb-tab active" data-period="daily"
+      <button class="lb-tab active" data-period="weekly"
         style="flex:1;padding:8px 0;border-radius:8px;border:none;
                background:#ff1493;color:#fff;font-weight:700;cursor:pointer;">
         This Week
       </button>
 
-      <button class="lb-tab" data-period="weekly"
+      <button class="lb-tab" data-period="daily"
         style="flex:1;padding:8px 0;border-radius:8px;border:none;
                background:#222;color:#ccc;font-weight:700;cursor:pointer;">
         Today
@@ -1539,7 +1539,7 @@ periodTabs.forEach(tab => {
     tab.style.color = "#fff";
 
     // Toggle timer
-    dailyTimerContainer.style.display = period === "weekly" ? "block" : "none";
+    dailyTimerContainer.style.display = period === "daily" ? "block" : "none";
 
     // Fetch leaderboard
     fetchLeaderboard(period);
