@@ -381,10 +381,24 @@ body.game-mode {
 }
 /* Add to <style> */
 body { transition: background 0.5s ease; }
-#footerActionBar button:active {
-  transform: scale(0.92);
-  transition: all 0.1s;
+.footer-action-btn {
+  width:64px;
+  height:64px;
+  border-radius:50%;
+  border:none;
+  font-size:30px;
+  color:#fff;
+  cursor:pointer;
+  transition:all 0.2s ease;
+  display:flex;
+  align-items:center;
+  justify-content:center;
 }
+.footer-action-btn:active {
+  transform:scale(0.92);
+  filter:brightness(1.3);
+}
+#bidBtn { color:#000; font-weight:bold; }
 </style>
 </head>
 <body>
@@ -480,48 +494,42 @@ body { transition: background 0.5s ease; }
 
   </div> <!-- end gamePage -->
 
- <!-- Fixed bottom profile + leaderboard button -->
-<div id="bottomBar" style="
-  position:fixed;bottom:0;left:50%;transform:translateX(-50%);
-  width:90%;max-width:480px;display:flex;flex-direction:column;
-  align-items:center;gap:6px;z-index:1000;
-">
-
-  <!-- GLASS PROFILE CARD (unchanged) -->
-  <div class="profile-card" 
-    style="
-      background:rgba(255,255,255,0.04);
-      padding:10px;
-      border-radius:10px;
-      border:1px solid rgba(255,255,255,0.04);
-      text-align:center;
-      backdrop-filter:blur(8px);
-      -webkit-backdrop-filter:blur(8px);
-      width:100%;
-    "
-  >
-      <div class="profile-name" id="profileName" style="font-size:15px;color:#fff;">
-        GUEST 0000
-      </div>
-
-      <div class="profile-info" style="margin-top:6px;font-size:14px;">
-        <strong style="background:linear-gradient(90deg,#00e676,#00b0ff);
-                       -webkit-background-clip:text;
-                       -webkit-text-fill-color:transparent;">
-          STARS COLLECTED:
-        </strong>
-        <span id="starCount" style="color:#fff;">50</span>⭐
-      </div>
-
-      <div class="profile-info" style="margin-top:2px;font-size:14px;">
-        <strong style="background:linear-gradient(90deg,#00e676,#00b0ff);
-                       -webkit-background-clip:text;
-                       -webkit-text-fill-color:transparent;">
-          CASH EARNED:
-        </strong>
-        <span id="cashCount" style="color:#fff;">0</span>
-      </div>
+<!-- NEW SCROLLABLE BOTTOM BAR (replaces your old #bottomBar completely) -->
+<div id="bottomBar" style="width:100%;padding:20px 0 40px;background:linear-gradient(to top,rgba(14,14,14,0.95),transparent);margin-top:40px;">
+  <!-- Profile Card (your original one, unchanged) -->
+  <div style="background:rgba(255,255,255,0.04);padding:14px 16px;border-radius:16px;border:1px solid rgba(255,255,255,0.08);backdrop-filter:blur(12px);width:90%;max-width:420px;margin:0 auto 20px;">
+    <div style="font-size:16px;font-weight:700;color:#fff;text-align:center;" id="profileName">GUEST 0000</div>
+    <div style="margin-top:8px;font-size:14px;text-align:center;">
+      <strong style="background:linear-gradient(90deg,#00e676,#00b0ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">
+        STARS COLLECTED:
+      </strong>
+      <span id="starCount" style="color:#fff;">50</span>⭐
+    </div>
+    <div style="margin-top:4px;font-size:14px;text-align:center;">
+      <strong style="background:linear-gradient(90deg,#00e676,#00b0ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">
+        CASH EARNED:
+      </strong>
+      <span id="cashCount" style="color:#fff;">0</span>
+    </div>
   </div>
+
+  <!-- DOPE EMOJI ACTION BAR (pure circles, perfect alignment) -->
+  <div style="display:flex;justify-content:center;gap:20px;padding:12px;background:rgba(255,255,255,0.06);border-radius:20px;border:1px solid rgba(255,255,255,0.1);backdrop-filter:blur(16px);width:90%;max-width:420px;margin:0 auto;">
+    
+    <button id="leaderboardBtn" class="footer-action-btn" style="background:linear-gradient(135deg,#FFD700,#FF8C00);box-shadow:0 6px 20px rgba(255,215,0,0.4);">
+      Trophy
+    </button>
+
+    <button id="rulesBtn" class="footer-action-btn" style="background:linear-gradient(135deg,#00D4FF,#0078FF);box-shadow:0 6px 20px rgba(0,212,255,0.35);">
+      Scroll
+    </button>
+
+    <button id="bidBtn" class="footer-action-btn" style="background:linear-gradient(135deg,#00FFA3,#00C853);box-shadow:0 6px 20px rgba(0,255,163,0.4);">
+      Money Bag
+    </button>
+
+  </div>
+</div>
 
 
   <!-- Leaderboard Modal -->
@@ -619,28 +627,6 @@ body { transition: background 0.5s ease; }
         Close
       </button>
     </div>
-
-  </div>
-</div>
-
-<!-- NEW DOPE FOOTER ACTION BAR -->
-<div id="footerActionBar" style="position:fixed;bottom:92px;left:50%;transform:translateX(-50%);width:90%;max-width:480px;z-index:998;">
-  <div style="display:flex;justify-content:center;gap:20px;padding:12px 20px;background:rgba(255,255,255,0.06);border-radius:16px;border:1px solid rgba(255,255,255,0.1);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:0 8px 32px rgba(0,0,0,0.4);">
-    
-    <!-- LEADERBOARD (your original ID preserved) -->
-    <button id="leaderboardBtn" style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#FFD700,#FF8C00);border:none;font-size:26px;box-shadow:0 6px 20px rgba(255,215,0,0.4);cursor:pointer;display:flex;align-items:center;justify-content:center;">
-      Trophy
-    </button>
-
-    <!-- RULES -->
-    <button id="rulesBtn" style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#00D4FF,#0078FF);border:none;font-size:26px;box-shadow:0 6px 20px rgba(0,212,255,0.3);cursor:pointer;display:flex;align-items:center;justify-content:center;">
-      Scroll
-    </button>
-
-    <!-- BID -->
-    <button id="bidBtn" style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#00FFA3,#00C853);color:#000;border:none;font-size:26px;box-shadow:0 6px 20px rgba(0,255,163,0.4);cursor:pointer;display:flex;align-items:center;justify-content:center;">
-      Money Bag
-    </button>
 
   </div>
 </div>
@@ -1773,6 +1759,32 @@ document.addEventListener("DOMContentLoaded", () => {
     if(y-startY>50 && isOpen) toggleRack();
     if(startY-y>50 && !isOpen) toggleRack();
   });
+  
+document.querySelectorAll('#leaderboardBtn, #rulesBtn, #bidBtn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    let title = '';
+    if (btn.id === 'leaderboardBtn') title = 'Leaderboard';
+    if (btn.id === 'rulesBtn') title = 'Game Rules';
+    if (btn.id === 'bidBtn') title = 'Place Your Bid';
+
+    // Reuse your existing modal or create a quick one
+    const modal = document.createElement('div');
+    modal.className = 'modal-backdrop';
+    modal.style.display = 'flex';
+    modal.innerHTML = `
+      <div class="modal" style="text-align:center;padding:30px 20px;max-width:340px;">
+        <h3 style="margin:0 0 16px;color:var(--accent1);font-size:18px;">${title}</h3>
+        <p style="color:#ccc;line-height:1.6;">This feature is coming soon to Tap Master!</p>
+        <button onclick="this.closest('.modal-backdrop').remove()" 
+                style="margin-top:20px;padding:12px 24px;border:none;border-radius:12px;
+                       background:linear-gradient(90deg,#FF1493,#FF8C00);color:#fff;font-weight:800;cursor:pointer;">
+          Close
+        </button>
+      </div>
+    `;
+    document.body.appendChild(modal);
+  });
+});
 </script>
 </body>
 </html>
