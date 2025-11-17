@@ -381,6 +381,51 @@ body.game-mode {
 }
 /* Add to <style> */
 body { transition: background 0.5s ease; }
+  .bottom-rack{
+    position:fixed;bottom:0;left:0;right:0;height:180px;z-index:999;
+    transition:transform .4s cubic-bezier(.22,.61,.36,1);
+  }
+  .bottom-rack.closed{transform:translateY(120px)}
+  .rack-handle{
+    position:absolute;top:-30px;left:50%;transform:translateX(-50%);
+    width:50px;height:5px;background:rgba(255,255,255,.3);
+    border-radius:3px;cursor:pointer;
+  }
+  .rack-panel{
+    background:linear-gradient(135deg,#1a1a2e,#16213e);
+    border-radius:24px 24px 0 0;height:100%;
+    box-shadow:0 -10px 40px rgba(0,0,0,.6);
+    backdrop-filter:blur(12px);
+    border:1px solid rgba(255,255,255,.08);
+    padding-top:20px;box-sizing:border-box;
+  }
+  .rack-buttons{
+    display:flex;justify-content:center;gap:32px;margin-top:20px;
+  }
+  .icon-btn{
+    width:72px;height:72px;border-radius:20px;
+    background:linear-gradient(145deg,#2a2a40,#1f1f33);
+    border:none;cursor:pointer;
+    display:flex;flex-direction:column;align-items:center;
+    justify-content:center;gap:6px;font-size:28px;color:#fff;
+    box-shadow:0 8px 20px rgba(0,0,0,.4),inset 0 2px 8px rgba(255,255,255,.08);
+    transition:all .3s ease;position:relative;overflow:hidden;
+  }
+  .icon-btn::before{
+    content:'';position:absolute;inset:0;
+    background:linear-gradient(145deg,rgba(255,215,0,.15),transparent);
+    opacity:0;transition:opacity .3s;
+  }
+  .icon-btn:hover::before,.icon-btn:active::before{opacity:1}
+  .icon-btn:active{transform:translateY(4px);box-shadow:0 4px 10px rgba(0,0,0,.5)}
+  .icon-btn span.label{
+    font-size:11px;font-weight:700;letter-spacing:.5px;
+    color:#ccc;text-transform:uppercase;
+  }
+  #leaderboardBtn{background:linear-gradient(145deg,#FFD700,#FF8C00);color:#111}
+  #rulesBtn       {background:linear-gradient(145deg,#00D4FF,#0078FF)}
+  #bidBtn         {background:linear-gradient(145deg,#00FFA3,#00C853);color:#111}
+</style>
 </style>
 </head>
 <body>
@@ -519,20 +564,32 @@ body { transition: background 0.5s ease; }
       </div>
   </div>
 
-  <!-- LEADERBOARD BUTTON -->
-  <button id="leaderboardBtn" 
-    style="
-      padding:10px 14px;
-      border-radius:10px;
-      background:linear-gradient(90deg,#FFD700,#FF8C00);
-      color:#111;font-weight:800;
-      border:none;cursor:pointer;
-      font-size:14px;
-    "
-  >
-    Leaderboard 🏆
-  </button>
+<!-- BOTTOM PULL-ABLE RACK (just paste this wherever you want it in your body) -->
+<div class="bottom-rack closed" id="bottomRack">
+  <div class="rack-handle" id="rackHandle"></div>
+  <div class="rack-panel">
+    <div class="rack-buttons">
+      
+      <!-- YOUR ORIGINAL LEADERBOARD BUTTON (ID unchanged) -->
+      <button id="leaderboardBtn" class="icon-btn">
+        <div>🏆</div>
+        <span class="label">Leaderboard</span>
+      </button>
 
+      <!-- RULES BUTTON -->
+      <button id="rulesBtn" class="icon-btn">
+        <div>📜</div>
+        <span class="label">Rules</span>
+      </button>
+
+      <!-- BID BUTTON -->
+      <button id="bidBtn" class="icon-btn">
+        <div>💰</div>
+        <span class="label">Bid</span>
+      </button>
+
+    </div>
+  </div>
 </div>
 
 
@@ -1732,6 +1789,33 @@ document.addEventListener("DOMContentLoaded", () => {
   replaceStarsWithSVG();
 
 });
+  const rack=document.getElementById('bottomRack');
+  const handle=document.getElementById('rackHandle');
+  let isOpen=false;
+
+  function toggleRack(){
+    isOpen=!isOpen;
+    rack.classList.toggle('closed',!isOpen);
+  }
+
+  handle.addEventListener('click',toggleRack);
+
+  // Optional: close rack when tapping a button
+  document.querySelectorAll('.icon-btn').forEach(btn=>{
+    btn.addEventListener('click',()=>{ 
+      console.log(btn.querySelector('.label').textContent+' clicked');
+      // toggleRack(); // uncomment if you want it to close after tap
+    });
+  });
+
+  // Basic swipe support
+  let startY=0;
+  rack.addEventListener('touchstart',e=>startY=e.touches[0].clientY);
+  rack.addEventListener('touchmove',e=>{
+    const y=e.touches[0].clientY;
+    if(y-startY>50 && isOpen) toggleRack();
+    if(startY-y>50 && !isOpen) toggleRack();
+  });
 </script>
 </body>
 </html>
