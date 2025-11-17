@@ -397,12 +397,17 @@ bar + footer */
 </head>
 <body>
 <div id="appWrapper">
+  
+  <audio id="dettyverseBeat" loop preload="auto">
+  <source src="https://www.bensound.com/bensound-music/track/afro-funk.mp3" type="audio/mpeg">
+</audio>
 
   <!-- Header -->
   <div id="gameHeader">
     <div id="welcomeText">WELCOME TO</div>
     <div id="scrambleText">TAP MASTER</div>
   </div>
+  
   
 
 <!-- Start Page -->
@@ -1847,6 +1852,14 @@ document.getElementById('bidModal').addEventListener('click', (e) => {
 document.getElementById('confirmBidBtn').addEventListener('click', () => {
   alert("You don enter the PvP war! No retreat, no surrender! 🔥");
   document.getElementById('bidModal').style.display = 'none';
+});
+// Music Music Music
+document.getElementById('tapButton').addEventListener('click', () => {
+  const audio = document.getElementById('dettyverseBeat');
+  if (audio.paused) {
+    audio.volume = 0.5; // chill volume
+    audio.play();
+  }
 });
 </script>
 </body>
