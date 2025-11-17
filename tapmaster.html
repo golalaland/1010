@@ -1285,29 +1285,57 @@ document.head.appendChild(style);
 // ---------- INITIALIZE ----------
 initializePot();
 loadCurrentUserForGame();
-
+  
 // ---------- START FLOW ----------
-startBtn?.addEventListener("click",()=>{ if(playModal) playModal.style.display="flex"; });
-cancelPlay?.addEventListener("click",()=>{ if(playModal) playModal.style.display="none"; });
-confirmPlay?.addEventListener("click",async ()=>{
-  let localStars=parseInt(starCountEl?.textContent.replace(/,/g,'')||"0",10);
-  if(currentUser?.uid){
-    const r=await tryDeductStarsForJoin(STAR_COST);
-    if(!r.ok){ alert(r.message||"Not enough stars"); return; }
-  } else {
-    if(localStars<STAR_COST){ alert("Not enough stars"); return; }
-    localStars-=STAR_COST; starCountEl.textContent=formatNumber(localStars);
-  }
-  if(playModal) playModal.style.display="none";
-  if(posterImg) posterImg.style.display="none";
-  if(startPage) startPage.style.display="none";
-  if(spinner) spinner.classList.remove("hidden");
-  setTimeout(()=>{
-    if(spinner) spinner.classList.add("hidden");
-    if(gamePage) gamePage.classList.remove("hidden");
-    startSession();
-  },700);
+startBtn?.addEventListener("click", () => {
+  if (playModal) playModal.style.display = "flex";
 });
+
+cancelPlay?.addEventListener("click", () => {
+  if (playModal) playModal.style.display = "none";
+});
+
+confirmPlay?.addEventListener("click", async () => {
+  let localStars = parseInt(starCountEl?.textContent.replace(/,/g, '') || "0", 10);
+
+  if (currentUser?.uid) {
+    const r = await tryDeductStarsForJoin(STAR_COST);
+    if (!r.ok) {
+      alert(r.message || "Not enough stars");
+      return;
+    }
+  } else {
+    if (localStars < STAR_COST) {
+      alert("Not enough stars");
+      return;
+    }
+    localStars -= STAR_COST;
+    starCountEl.textContent = formatNumber(localStars);
+  }
+
+  // CLOSE MODAL
+  if (playModal) playModal.style.display = "none";
+
+  // HIDE START ELEMENTS
+  if (posterImg) posterImg.style.display = "none";
+  if (startPage) startPage.style.display = "none";
+
+  // SHOW SPINNER
+  if (spinner) spinner.classList.remove("hidden");
+
+  // 🔵 ADD BACKGROUND TRANSITION HERE
+  body.style.transition = "background 0.5s ease";
+  body.classList.remove("start-mode");
+  body.classList.add("game-mode");
+
+  // ENTER GAME AFTER DELAY
+  setTimeout(() => {
+    if (spinner) spinner.classList.add("hidden");
+    if (gamePage) gamePage.classList.remove("hidden");
+    startSession();
+  }, 700);
+});
+
 /* ------------------------------
    LEADERBOARD SETUP (FIXED + CLEAN)
 ------------------------------- */
