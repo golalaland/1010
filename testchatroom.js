@@ -3948,3 +3948,77 @@ function playFullVideo(video) {
   modal.onclick = () => modal.remove();
   document.body.appendChild(modal);
 }
+/* ===============================
+   Twitch-style Auto-Scroll Chat
+   Works with your existing #messages
+================================= */
+
+// ---- 1. Identify the scrolling container ----
+const messagesDiv = document.getElementById('messages');
+const chatContainer = messagesDiv.parentElement; // usually the scroller
+
+// If #messages itself is the scroller, use:
+ // const chatContainer = messagesDiv;
+
+// ---- 2. Create floating button if not in HTML ----
+let scrollBtn = document.getElementById('scrollToBottomBtn');
+if (!scrollBtn) {
+  scrollBtn = document.createElement('button');
+  scrollBtn.id = 'scrollToBottomBtn';
+  scrollBtn.className = 'scroll-to-bottom-btn';
+  scrollBtn.textContent = 'New';
+  scrollBtn.style.display = 'none';
+  chatContainer.style.position = 'relative'; // ensure button stays inside
+  chatContainer.appendChild(scrollBtn);
+}
+
+// ---- 3. Config ----
+const SCROLL_THRESHOLD = 150;  // px from bottom = "at bottom"
+let isUserAtBottom = true;
+let hasPendingMessages = false;
+
+// ---- 4. Helper: scroll to bottom ----
+function scrollToBottom(smooth = true) {
+  chatContainer.scrollTo({
+    top: chatContainer.scrollHeight,
+    behavior: smooth ? 'smooth' : 'auto'
+  });
+}
+
+// ---- 5. Check if user is near bottom ----
+function checkIfAtBottom() {
+  const distance = chatContainer.scrollHeight - chatContainer.scrollTop - chatContainer.clientHeight;
+  const wasAtBottom = isUserAtBottom;
+  isUserAtBottom = distance <= SCROLL_THRESHOLD;
+
+  if (wasAtBottom && !isUserAtBottom) {
+    // User scrolled up → hide button
+    scrollBtn.style.display = 'none';
+    hasPendingMessages = false;
+  }
+}
+
+// ---- 6. When you ADD a message (REPLACE YOUR CURRENT METHOD) ----
+function addMessage(html) {
+  const msg = document.createElement('div');
+  msg.innerHTML = html;
+  messagesDiv.appendChild(msg);
+
+  // Auto-scroll only if user is near bottom
+  if (isUserAtBottom) {
+    scrollToBottom();
+  } else {
+    hasPendingMessages = true;
+    scrollBtn.style.display = 'block';
+  }
+}
+
+// ---- 7. Button click ----
+scrollBtn.addEventListener('click', () => {
+  scrollToBottom();
+  scrollBtn.style.display = 'none';
+  hasPendingMessages = false;
+});
+
+// ---- 8. Scroll listener (debounced) ----
+chatContainer.addEventListener('scroll', () =>
