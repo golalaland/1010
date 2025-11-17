@@ -370,6 +370,15 @@ body.game-mode {
 .shake { 
   animation: shake 0.1s ease-in-out; 
 }
+/* Add inside <style> */
+#bonusBar.flash {
+  animation: bonusFlash 0.4s ease-out;
+}
+@keyframes bonusFlash {
+  0%   { box-shadow: 0 0 0 rgba(0,255,100,0); }
+  50%  { box-shadow: 0 0 20px rgba(0,255,100,0.9); }
+  100% { box-shadow: 0 0 0 rgba(0,255,100,0); }
+}
 </style>
 </head>
 <body>
@@ -939,7 +948,7 @@ function triggerConfetti() {
   const types = ['rainbow', 'spark', 'coin', 'star'];
   const chosen = types[Math.floor(Math.random() * types.length)];
 
-  const count = 22;                     // more particles = more wow
+  const count = 22;
   const rect   = tapButton.getBoundingClientRect();
   const cx     = rect.left + rect.width  / 2;
   const cy     = rect.top  + rect.height / 2;
@@ -948,23 +957,20 @@ function triggerConfetti() {
     const dot = document.createElement('div');
     dot.className = `confetti-dot confetti-${chosen}`;
 
-    // Random direction & distance
     const angle = Math.random() * Math.PI * 2;
     const dist  = 40 + Math.random() * 80;
     const dx    = Math.cos(angle) * dist;
-    const dy    = Math.sin(angle) * dist - 60;   // upward bias
+    const dy    = Math.sin(angle) * dist - 60;
 
     dot.style.setProperty('--dx', `${dx}px`);
     dot.style.setProperty('--dy', `${dy}px`);
     dot.style.left = `${cx}px`;
     dot.style.top  = `${cy}px`;
 
-    // Random hue for rainbow type
     if (chosen === 'rainbow') dot.style.setProperty('--h', Math.random() * 360);
 
     document.body.appendChild(dot);
 
-    // Animation name per type
     const animName = {
       rainbow: 'rainbowFall',
       spark:   'sparkBurst',
@@ -979,14 +985,20 @@ function triggerConfetti() {
     ).onfinish = () => dot.remove();
   }
 
-  /* ─────── DOPE VIBRATION ON LEVEL-UP ─────── */
+  /* ─────── DOPE VIBRATION ─────── */
   if ('vibrate' in navigator) {
-    // Long, punchy pattern – feels like a *win*
     navigator.vibrate([80, 50, 100, 50, 80]);
   } else if (navigator.userAgent.match(/iPhone|iPad|iPod/)) {
-    // iOS shake fallback (already in CSS)
     tapButton.classList.add('shake');
     setTimeout(() => tapButton.classList.remove('shake'), 400);
+  }
+
+  /* ─────── SEXY DOINK SOUND ─────── */
+  const doink = document.getElementById('doinkSound');
+  if (doink) {
+    doink.currentTime = 0;
+    doink.volume = 0.7;
+    doink.play().catch(() => {});
   }
 }
 
