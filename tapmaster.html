@@ -379,6 +379,8 @@ body.game-mode {
   50%  { box-shadow: 0 0 20px rgba(0,255,100,0.9); }
   100% { box-shadow: 0 0 0 rgba(0,255,100,0); }
 }
+/* Add to <style> */
+body { transition: background 0.5s ease; }
 </style>
 </head>
 <body>
@@ -1178,65 +1180,78 @@ async function endSessionRecord() {
 // ======================================================
 //   TAP HANDLER — FIXED SOUND + CROSS-PLATFORM HAPTICS
 // ======================================================
-tapButton?.addEventListener(tapEvent, async e => {
-  e.preventDefault();
+function debounce(fn, delay) {
+  let timeout;
+  return (...args) => {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => fn(...args), delay);
+  };
+}
 
-  if (!running || tapLocked) return;
+tapButton?.addEventListener(
+  tapEvent,
+  debounce(async e => {
 
-  tapLocked = true;
-  setTimeout(() => tapLocked = false, 50);
+    if (!running || tapLocked) return;
 
-  taps++;
-  currentUser && (currentUser.totalTaps = (currentUser.totalTaps || 0) + 1);
+    tapLocked = true;
+    setTimeout(() => (tapLocked = false), 50);
 
-  progress++;
-  cashCounter++;
-  showFloatingPlus(tapButton, "+1");
-
-  // CASH AWARD
-  if (cashCounter >= cashThreshold) {
-    cashCounter = 0;
-    cashThreshold = randomInt(1, 12);
-
-    const pot = getStoredPot() ?? DAILY_INITIAL_POT;
-    if (pot > 0) {
-      earnings += CASH_PER_AWARD;
-      setStoredPot(Math.max(0, pot - CASH_PER_AWARD));
-      await giveCashToUser(CASH_PER_AWARD);
+    taps++;
+    if (currentUser) {
+      currentUser.totalTaps = (currentUser.totalTaps || 0) + 1;
     }
-  }
 
-  // BONUS LEVEL
-  if (progress >= tapsForNext) {
-    progress = 0;
-    bonusLevel++;
-    tapsForNext = 100 + (bonusLevel - 1) * 50;
-    triggerConfetti();
-  }
+    progress++;
+    cashCounter++;
+    showFloatingPlus(tapButton, "+1");
 
-  flashTapGlow();
-  
-  // ✅ FIXED: Debounced sound (no auto-tap spam)
-  const now = Date.now();
-  if (!window.lastSoundTime || now - window.lastSoundTime > 100) {
-    try { 
-      tapSound.currentTime = 0; 
-      tapSound.play().catch(()=>{}); 
-    } catch {}
-    window.lastSoundTime = now;
-  }
+    // CASH AWARD
+    if (cashCounter >= cashThreshold) {
+      cashCounter = 0;
+      cashThreshold = randomInt(1, 12);
 
-  // ✅ NEW: Cross-platform haptics
-  if ('vibrate' in navigator) {
-    navigator.vibrate([10, 5, 10]);
-  } else if (navigator.userAgent.match(/iPhone|iPad|iPod/)) {
-    tapButton.classList.add('shake');
-    setTimeout(() => tapButton.classList.remove('shake'), 100);
-  }
+      const pot = getStoredPot() ?? DAILY_INITIAL_POT;
+      if (pot > 0) {
+        earnings += CASH_PER_AWARD;
+        setStoredPot(Math.max(0, pot - CASH_PER_AWARD));
+        await giveCashToUser(CASH_PER_AWARD);
+      }
+    }
 
-  updateUI();
-  updateBonusBar();
-});
+    // BONUS LEVEL
+    if (progress >= tapsForNext) {
+      progress = 0;
+      bonusLevel++;
+      tapsForNext = 100 + (bonusLevel - 1) * 50;
+      triggerConfetti();
+    }
+
+    flashTapGlow();
+
+    // SOUND — debounced
+    const now = Date.now();
+    if (!window.lastSoundTime || now - window.lastSoundTime > 100) {
+      try {
+        tapSound.currentTime = 0;
+        tapSound.play().catch(() => {});
+      } catch {}
+      window.lastSoundTime = now;
+    }
+
+    // HAPTICS
+    if ("vibrate" in navigator) {
+      navigator.vibrate([10, 5, 10]);
+    } else if (/iPhone|iPad|iPod/.test(navigator.userAgent)) {
+      tapButton.classList.add("shake");
+      setTimeout(() => tapButton.classList.remove("shake"), 100);
+    }
+
+    updateUI();
+    updateBonusBar();
+
+  }, 50)
+);
 
 
 // ---------- UI & TAP GLOW ----------
