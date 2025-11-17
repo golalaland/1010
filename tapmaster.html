@@ -230,19 +230,6 @@ body {display:flex;justify-content:center;align-items:flex-start;padding:18px 0 
 @keyframes starBoom {
   to { transform: translate(var(--dx), var(--dy)) rotate(360deg) scale(2); opacity:0; }
 }
-/* leaderboard button */
-#leaderboardBtn {
-  margin-top:14px;
-  padding:10px 14px;
-  border-radius:10px;
-  background: linear-gradient(90deg,#FFD700,#FF8C00);
-  color:#111;
-  font-weight:800;
-  border:none;
-  cursor:pointer;
-  font-size:14px;
-}
-
 /* modal (normal fade-in centered) */
 .modal-backdrop {
   position:fixed; inset:0; background: rgba(0,0,0,0.6); display:none; align-items:center; justify-content:center; z-index:9999;
@@ -507,20 +494,20 @@ body { transition: background 0.5s ease; }
     <div style="background:rgba(255,255,255,0.05);padding:14px 16px;border-radius:16px;border:1px solid rgba(255,255,255,0.08);backdrop-filter:blur(12px);width:90%;max-width:420px;margin:0 auto 14px;text-align:center;">
       <div id="profileName" style="font-size:16px;font-weight:700;color:#fff;">GUEST 0000</div>
       <div style="margin-top:8px;font-size:14px;">
-        <strong style="background:linear-gradient(90deg,#00e676,#00b0ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">STARS:</strong>
+        <strong style="background:linear-gradient(90deg,#00e676,#00b0ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">STARS COLLECTED:</strong>
         <span id="starCount" style="color:#fff;">50</span>⭐
       </div>
       <div style="margin-top:4px;font-size:14px;">
-        <strong style="background:linear-gradient(90deg,#00e676,#00b0ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">CASH:</strong>
+        <strong style="background:linear-gradient(90deg,#00e676,#00b0ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">CASH EARNED:</strong>
         <span id="cashCount" style="color:#fff;">0</span>
       </div>
     </div>
 
     <!-- Tiny 🤩 Action Bar (bottom of screen) -->
-    <div style="display:flex;justify-content:center;gap:18px;padding:11px 20px;background:rgba(255,255,255,0.08);border-radius:22px;border:1px solid rgba(255,255,255,0.12);backdrop-filter:blur(16px);width:86%;max-width:360px;margin:0 auto;box-shadow:0 -8px 30px rgba(0,0,0,0.6);">
-      <button id="leaderboardBtn" class="tiny-action-btn" data-title="Leaderboard">🤩</button>
-      <button id="rulesBtn"        class="tiny-action-btn" data-title="Game Rules">🤩</button>
-      <button id="bidBtn"          class="tiny-action-btn" data-title="Place Bid">🤩</button>
+    <div style="display:flex;justify-content:center;gap:18px;padding:8px 16px;background:rgba(255,255,255,0.08);border-radius:22px;border:1px solid rgba(255,255,255,0.12);backdrop-filter:blur(16px);width:86%;max-width:300px;margin:0 auto;box-shadow:0 -8px 30px rgba(0,0,0,0.6);">
+      <button id="leaderboardBtn" class="tiny-action-btn" data-title="Leaderboard">🏆</button>
+      <button id="rulesBtn"        class="tiny-action-btn" data-title="Game Rules">📋</button>
+      <button id="bidBtn"          class="tiny-action-btn" data-title="Place Bid">🏁</button>
     </div>
 
   </div>
