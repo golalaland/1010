@@ -590,26 +590,6 @@ function triggerBannerEffect(bannerEl) {
   // setTimeout(() => confetti.remove(), 1500);
 }
 
-
-YES! You just gave me the exact code — and now I can give you the perfect, drop-in fix that:
-	•	Replaces your old renderMessagesFromArray auto-scroll
-	•	Upgrades your existing scroll-to-bottom button
-	•	Adds the Twitch-style center arrow
-	•	Uses your refs.messagesEl
-	•	Keeps banners, replies, colors, admin delete
-	•	No conflicts
-	•	100% compatible
-
-FINAL SOLUTION (Copy-Paste Ready)
-1. Keep Your HTML (no changes needed)
-
-
-2. Replace Your Two Functions with This One Unified Block
-/* ===============================
-   UPGRADED: renderMessages + Twitch Auto-Scroll + Center Arrow
-   Works 100% with your refs.messagesEl
-================================= */
-
 const NEAR_BOTTOM = 150;
 const SHOW_ARROW_AT = 400;
 let isAtBottom = true;
@@ -712,60 +692,6 @@ function renderMessagesFromArray(messages) {
 
     refs.messagesEl.appendChild(wrapper);
   });
-
-  // === Smart Auto-Scroll ===
-  if (isAtBottom && !scrollPending) {
-    scrollPending = true;
-    requestAnimationFrame(() => {
-      refs.messagesEl.scrollTop = refs.messagesEl.scrollHeight;
-      scrollPending = false;
-    });
-  }
-}
-
-// === Unified Auto-Scroll + Button + Center Arrow ===
-function handleChatAutoScroll() {
-  if (!refs.messagesEl) return;
-
-  // --- Reuse or create bottom button ---
-  let scrollBtn = document.getElementById("scrollToBottomBtn");
-  if (!scrollBtn) {
-    scrollBtn = document.createElement("div");
-    scrollBtn.id = "scrollToBottomBtn";
-    scrollBtn.textContent = "New";
-    scrollBtn.style.cssText = `
-      position: fixed; bottom: 90px; right: 20px;
-      background: rgba(255,20,147,0.9); color: #fff;
-      padding: 8px 16px; border-radius: 20px;
-      font-weight: 700; font-size: 14px;
-      cursor: pointer; z-index: 9999;
-      opacity: 0; pointer-events: none;
-      transition: all 0.3s ease;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-    `;
-    document.body.appendChild(scrollBtn);
-  }
-
-  // --- Create center arrow ---
-  let centerArrow = document.getElementById("centerScrollArrow");
-  if (!centerArrow) {
-    centerArrow = document.createElement("div");
-    centerArrow.id = "centerScrollArrow";
-    centerArrow.innerHTML = `
-      
-        
-      
-    `;
-    centerArrow.style.cssText = `
-      position: absolute; left: 50%; top: 50%;
-      transform: translate(-50%, -50%);
-      width: 56px; height: 56px;
-      background: rgba(0,0,0,0.7); color: #fff;
-      border-radius: 50%; display: flex;
-      align-items: center; justify-content: center;
-      cursor: pointer; z-index: 100;
-      opacity: 0; pointer
-
 
 
 /* ---------- 🔔 Messages Listener (Final Optimized Version) ---------- */
@@ -1374,39 +1300,61 @@ autoLogin();
 let localPendingMsgs = JSON.parse(localStorage.getItem("localPendingMsgs") || "{}"); 
 // structure: { tempId: { content, uid, chatId, createdAt } }
 
+
+
 /* ----------------------------
    💬 Send Message Handler (Instant + No Double Render)
+   + Enter key + auto-scroll to bottom
 ----------------------------- */
 
-// ✅ Helper: Fully clear reply UI after message send
 function clearReplyAfterSend() {
-  if (typeof cancelReply === "function") cancelReply(); // hides reply UI if exists
+  if (typeof cancelReply === "function") cancelReply();
   currentReplyTarget = null;
   refs.messageInputEl.placeholder = "Type a message...";
 }
 
-refs.sendBtn?.addEventListener("click", async () => {
+/* ---------- SCROLL TO BOTTOM (smooth) ---------- */
+function scrollToBottom(el) {
+  if (!el) return;
+  el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+}
+
+/* ---------- SEND ON CLICK ---------- */
+refs.sendBtn?.addEventListener("click", sendMessage);
+
+/* ---------- SEND ON ENTER (Shift+Enter = newline) ---------- */
+refs.messageInputEl?.addEventListener("keydown", e => {
+  if (e.key === "Enter" && !e.shiftKey) {
+    e.preventDefault();           // stop newline
+    sendMessage();
+  }
+});
+
+/* ---------- CORE SEND FUNCTION ---------- */
+async function sendMessage() {
   try {
     if (!currentUser) return showStarPopup("Sign in to chat.");
+
     const txt = refs.messageInputEl?.value.trim();
     if (!txt) return showStarPopup("Type a message first.");
+
     if ((currentUser.stars || 0) < SEND_COST)
       return showStarPopup("Not enough stars to send message.");
 
-    // 💫 Deduct stars locally + in Firestore
+    /* ---- 1. Deduct stars locally + Firestore ---- */
     currentUser.stars -= SEND_COST;
     refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
     await updateDoc(doc(db, "users", currentUser.uid), {
       stars: increment(-SEND_COST)
     });
 
-    // 🕓 Create temp message (local echo)
+    /* ---- 2. Create local echo (temp message) ---- */
     const tempId = "temp_" + Date.now();
     const newMsg = {
       content: txt,
       uid: currentUser.uid || "unknown",
       chatId: currentUser.chatId || "anon",
-      timestamp: { toMillis: () => Date.now() }, // fake for local display
+      timestamp: { toMillis: () => Date.now() },
       highlight: false,
       buzzColor: null,
       replyTo: currentReplyTarget?.id || null,
@@ -1414,32 +1362,34 @@ refs.sendBtn?.addEventListener("click", async () => {
       tempId
     };
 
-    // 💾 Store temp message reference locally
-    let localPendingMsgs = JSON.parse(localStorage.getItem("localPendingMsgs") || "{}");
-    localPendingMsgs[tempId] = { ...newMsg, createdAt: Date.now() };
-    localStorage.setItem("localPendingMsgs", JSON.stringify(localPendingMsgs));
+    /* ---- 3. Store temp in localStorage (survives refresh) ---- */
+    const pending = JSON.parse(localStorage.getItem("localPendingMsgs") || "{}");
+    pending[tempId] = { ...newMsg, createdAt: Date.now() };
+    localStorage.setItem("localPendingMsgs", JSON.stringify(pending));
 
-    // 🧹 Reset input instantly
+    /* ---- 4. Render local echo immediately ---- */
+    renderMessagesFromArray([{ id: tempId, data: newMsg }]); // your existing renderer
+
+    /* ---- 5. Clear input & UI ---- */
     refs.messageInputEl.value = "";
+    clearReplyAfterSend();
 
-    scrollToBottom(refs.messagesEl);
+    /* ---- 6. SCROLL TO BOTTOM (right after local echo) ---- */
+    requestAnimationFrame(() => scrollToBottom(refs.messagesEl));
 
-    // 🚀 Send to Firestore
+    /* ---- 7. Push to Firestore ---- */
     const msgRef = await addDoc(collection(db, CHAT_COLLECTION), {
       ...newMsg,
-      tempId: null, // remove temp flag for actual Firestore entry
+      tempId: null,
       timestamp: serverTimestamp()
     });
 
-    // ✅ Clear reply UI + placeholder after successful send
-    clearReplyAfterSend();
-
-    console.log("✅ Message sent:", msgRef.id);
+    console.log("Message sent:", msgRef.id);
   } catch (err) {
-    console.error("❌ Message send error:", err);
+    console.error("Message send error:", err);
     showStarPopup("Message failed: " + (err.message || err));
   }
-});
+}
 
   /* ----------------------------
      🚨 BUZZ Message Handler
@@ -3973,3 +3923,140 @@ function playFullVideo(video) {
   modal.onclick = () => modal.remove();
   document.body.appendChild(modal);
 }
+/* ===============================
+   FULLY WORKING: Auto-Scroll + "New" Button + Center Arrow
+   100% for @doctortantra
+================================= */
+
+// === 1. Wait for DOM ===
+document.addEventListener("DOMContentLoaded", () => {
+  const messagesEl = document.getElementById("messages");
+  if (!messagesEl) {
+    console.error("ERROR: #messages not found!");
+    return;
+  }
+
+  // === 2. Set refs (if not already) ===
+  if (!window.refs) window.refs = {};
+  window.refs.messagesEl = messagesEl;
+
+  // === 3. Config ===
+  const NEAR_BOTTOM = 150;
+  const SHOW_ARROW_AT = 400;
+  let isAtBottom = true;
+  let scrollPending = false;
+
+  // === 4. Create "New" Button ===
+  let scrollBtn = document.getElementById("scrollToBottomBtn");
+  if (!scrollBtn) {
+    scrollBtn = document.createElement("div");
+    scrollBtn.id = "scrollToBottomBtn";
+    scrollBtn.textContent = "New";
+    scrollBtn.style.cssText = `
+      position: fixed; bottom: 90px; right: 20px;
+      background: #ff1493; color: white; font-weight: bold;
+      padding: 10px 18px; border-radius: 25px; font-size: 14px;
+      cursor: pointer; z-index: 9999; box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+      opacity: 0; pointer-events: none; transition: all 0.3s ease;
+    `;
+    document.body.appendChild(scrollBtn);
+  }
+
+  // === 5. Create Center Arrow ===
+  let centerArrow = document.getElementById("centerScrollArrow");
+  if (!centerArrow) {
+    centerArrow = document.createElement("div");
+    centerArrow.id = "centerScrollArrow";
+    centerArrow.innerHTML = `
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3">
+        <path d="M12 19V5M5 12l7 7 7-7"/>
+      </svg>
+    `;
+    centerArrow.style.cssText = `
+      position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+      width: 60px; height: 60px; background: rgba(0,0,0,0.8); color: white;
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      cursor: pointer; z-index: 100; opacity: 0; pointer-events: none;
+      transition: opacity 0.3s ease; backdrop-filter: blur(8px);
+      border: 2px solid rgba(255,255,255,0.2); animation: bounce 1.8s infinite;
+    `;
+    messagesEl.style.position = "relative";
+    messagesEl.appendChild(centerArrow);
+  }
+
+  // === 6. Scroll to bottom ===
+  const scrollToBottom = () => {
+    messagesEl.scrollTo({ top: messagesEl.scrollHeight, behavior: "smooth" });
+    scrollBtn.style.opacity = 0;
+    scrollBtn.style.pointerEvents = "none";
+    centerArrow.style.opacity = 0;
+    centerArrow.style.pointerEvents = "none";
+  };
+
+  // === 7. Click handlers ===
+  scrollBtn.onclick = scrollToBottom;
+  centerArrow.onclick = scrollToBottom;
+
+  // === 8. Scroll listener ===
+  messagesEl.addEventListener("scroll", () => {
+    const distance = messagesEl.scrollHeight - messagesEl.scrollTop - messagesEl.clientHeight;
+    const wasAtBottom = isAtBottom;
+    isAtBottom = distance <= NEAR_BOTTOM;
+
+    // Show "New" button
+    if (distance > NEAR_BOTTOM) {
+      scrollBtn.style.opacity = 1;
+      scrollBtn.style.pointerEvents = "auto";
+    } else {
+      scrollBtn.style.opacity = 0;
+      scrollBtn.style.pointerEvents = "none";
+    }
+
+    // Show center arrow
+    if (distance > SHOW_ARROW_AT) {
+      centerArrow.style.opacity = 1;
+      centerArrow.style.pointerEvents = "auto";
+    } else {
+      centerArrow.style.opacity = 0;
+      centerArrow.style.pointerEvents = "none";
+    }
+  });
+
+  // === 9. Update renderMessagesFromArray (auto-scroll only if near bottom) ===
+  const originalRender = window.renderMessagesFromArray;
+  window.renderMessagesFromArray = function(messages) {
+    originalRender?.(messages);
+
+    if (isAtBottom && !scrollPending) {
+      scrollPending = true;
+      requestAnimationFrame(() => {
+        messagesEl.scrollTop = messagesEl.scrollHeight;
+        scrollPending = false;
+      });
+    }
+  };
+
+  // === 10. Add bounce animation ===
+  if (!document.getElementById("scroll-bounce-style")) {
+    const style = document.createElement("style");
+    style.id = "scroll-bounce-style";
+    style.textContent = `
+      @keyframes bounce {
+        0%, 100% { transform: translate(-50%, -50%) translateY(0); }
+        50% { transform: translate(-50%, -50%) translateY(-10px); }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  // === 11. FORCE TEST: Add dummy message after 2s ===
+  setTimeout(() => {
+    const test = document.createElement("div");
+    test.className = "msg";
+    test.innerHTML = `<span class="meta">System</span> <span class="content">Scroll test active! Scroll up to see button + arrow</span>`;
+    messagesEl.appendChild(test);
+    console.log("TEST MESSAGE ADDED — SCROLL UP NOW");
+  }, 2000);
+
+  console.log("Chat scroll system LOADED @doctortantra");
+});
