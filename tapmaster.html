@@ -395,6 +395,20 @@ bar + footer */
 }
 </style>
 </head>
+<!-- Put this right before </body> (NOT inside #bottomBar) -->
+<footer style="padding:60px 20px 40px;text-align:center;color:#555;font-size:13px;line-height:1.8;background:#0e0e0e;">
+  <div style="font-size:18px;font-weight:800;background:linear-gradient(90deg,#FF1493,#00e676);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">
+    ©5786 ገብር ነፍስህ (Own Your Vibe)
+  </div>
+  <div style="margin:12px 0;">自分の雰囲気を自分のものにしよう • 자신의 분위기를 내 것으로 만들자</div>
+  <div>Own your rhythm. Master the tap. Rule the verse.</div>
+  <div style="margin:16px 0 24px;color:#777;">3-1-1 Nihonbashi • Lagos • Seoul • The Metaverse</div>
+  <div style="font-size:11px;">
+    <a href="#" style="color:#888;text-decoration:none;margin:0 10px;">Privacy</a>•
+    <a href="#" style="color:#888;text-decoration:none;margin:0 10px;">Terms</a>•
+    <a href="https://x.com/dettyverse" style="color:#FF1493;text-decoration:none;">@dettyverse</a>
+  </div>
+</footer>
 <body>
 <div id="appWrapper">
 
@@ -1258,22 +1272,6 @@ body.game-mode {
 <audio id="gameMusic" loop preload="auto">
   <source src="night_city_jazz.mp3" type="audio/mpeg">
 </audio>
-
-<!-- Put this right before </body> (NOT inside #bottomBar) -->
-<footer style="padding:60px 20px 40px;text-align:center;color:#555;font-size:13px;line-height:1.8;background:#0e0e0e;">
-  <div style="font-size:18px;font-weight:800;background:linear-gradient(90deg,#FF1493,#00e676);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">
-    ©5786 ገብር ነፍስህ (Own Your Vibe)
-  </div>
-  <div style="margin:12px 0;">自分の雰囲気を自分のものにしよう • 자신의 분위기를 내 것으로 만들자</div>
-  <div>Own your rhythm. Master the tap. Rule the verse.</div>
-  <div style="margin:16px 0 24px;color:#777;">3-1-1 Nihonbashi • Lagos • Seoul • The Metaverse</div>
-  <div style="font-size:11px;">
-    <a href="#" style="color:#888;text-decoration:none;margin:0 10px;">Privacy</a>•
-    <a href="#" style="color:#888;text-decoration:none;margin:0 10px;">Terms</a>•
-    <a href="https://x.com/dettyverse" style="color:#FF1493;text-decoration:none;">@dettyverse</a>
-  </div>
-</footer>
-
 
 
 <!-- FIXED FOOTER AT VERY BOTTOM -->
@@ -2385,52 +2383,6 @@ document.addEventListener("DOMContentLoaded", () => {
   // Initial run
   replaceStarsWithSVG();
 
-});
-  const rack=document.getElementById('bottomRack');
-  const handle=document.getElementById('rackHandle');
-  let isOpen=false;
-
-  function toggleRack(){
-    isOpen=!isOpen;
-    rack.classList.toggle('closed',!isOpen);
-  }
-
-  handle.addEventListener('click',toggleRack);
-
-  // Optional: close rack when tapping a button
-  document.querySelectorAll('.icon-btn').forEach(btn=>{
-    btn.addEventListener('click',()=>{ 
-      console.log(btn.querySelector('.label').textContent+' clicked');
-      // toggleRack(); // uncomment if you want it to close after tap
-    });
-  });
-
-  // Basic swipe support
-  let startY=0;
-  rack.addEventListener('touchstart',e=>startY=e.touches[0].clientY);
-  rack.addEventListener('touchmove',e=>{
-    const y=e.touches[0].clientY;
-    if(y-startY>50 && isOpen) toggleRack();
-    if(startY-y>50 && !isOpen) toggleRack();
-  });
-document.querySelectorAll('.tiny-action-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    const title = btn.dataset.title;
-    const modal = document.createElement('div');
-    modal.className = 'modal-backdrop';
-    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.75);display:flex;align-items:center;justify-content:center;z-index:9999;backdrop-filter:blur(8px);';
-    modal.innerHTML = `
-      <div style="background:#111;padding:30px 24px;border-radius:18px;border:1px solid rgba(255,255,255,0.1);text-align:center;max-width:320px;animation:pop 0.3s ease-out;">
-        <h3 style="margin:0 0 16px;color:#FF1493;font-size:19px;">${title}</h3>
-        <p style="color:#aaa;line-height:1.5;margin:16px 0;">Coming soon to Tap Master! 🔥</p>
-        <button onclick="this.closest('.modal-backdrop').remove()" 
-                style="padding:12px 28px;border:none;border-radius:12px;background:linear-gradient(90deg,#FF1493,#FF8C00);color:#fff;font-weight:800;cursor:pointer;">
-          Close
-        </button>
-      </div>
-    `;
-    document.body.appendChild(modal);
-  });
 });
 </script>
 </body>
