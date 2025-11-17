@@ -410,24 +410,11 @@ body { transition: background 0.5s ease; }
   </div>
 </div>
 
- <div id="spinner" class="hidden" style="
-  position: fixed;
-  top: 0; left: 0; width: 100%; height: 100%;
-  background: rgba(0,0,0,0.5);
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  z-index: 9999;
-  opacity: 0;
-  transition: opacity 0.3s ease;
-  pointer-events: none;
-">
-  <div style="width:44px;height:44px;border-radius:50%;border:6px solid #222;border-top:6px solid #00e676; animation:spin 1s linear infinite;"></div>
-  <div style="margin-top:10px;color:#fff;font-size:13px;">Loading Tap Arena…</div>
-</div>
-
-
+<!-- Spinner (loading animation) -->
+  <div id="spinner" class="hidden" style="margin-top:18px;">
+    <div style="width:44px;height:44px;border-radius:50%;border:6px solid #222;border-top:6px solid #00e676; animation:spin 1s linear infinite;margin:0 auto"></div>
+    <div style="margin-top:10px;color:#aaa;font-size:13px">Loading Tap Arena…</div>
+  </div>
   
 
   <!-- Game UI -->
@@ -1329,34 +1316,29 @@ confirmPlay?.addEventListener("click", async () => {
     starCountEl.textContent = formatNumber(localStars);
   }
 
-// CLOSE MODAL
-if (playModal) playModal.style.display = "none";
 
-// HIDE START ELEMENTS
-posterImg && (posterImg.style.display = "none");
-startPage && (startPage.style.display = "none");
+ // CLOSE MODAL
+  if (playModal) playModal.style.display = "none";
 
-// SHOW SPINNER
-if (spinner) {
-  spinner.style.opacity = "1";
-  spinner.style.pointerEvents = "auto";
-}
+  // HIDE START ELEMENTS
+  if (posterImg) posterImg.style.display = "none";
+  if (startPage) startPage.style.display = "none";
 
-// 🔵 BACKGROUND TRANSITION
-body.style.transition = "background 0.5s ease";
-body.classList.remove("start-mode");
-body.classList.add("game-mode");
+  // SHOW SPINNER
+  if (spinner) spinner.classList.remove("hidden");
 
-// ENTER GAME AFTER DELAY
-setTimeout(() => {
-  if (spinner) {
-    spinner.style.opacity = "0";
-    spinner.style.pointerEvents = "none";
-  }
-  if (gamePage) gamePage.style.display = "block";
-  startSession();
-}, 700);
+  // 🔵 ADD BACKGROUND TRANSITION HERE
+  body.style.transition = "background 0.5s ease";
+  body.classList.remove("start-mode");
+  body.classList.add("game-mode");
 
+  // ENTER GAME AFTER DELAY
+  setTimeout(() => {
+    if (spinner) spinner.classList.add("hidden");
+    if (gamePage) gamePage.classList.remove("hidden");
+    startSession();
+  }, 700);
+});
 
 
 /* ------------------------------
