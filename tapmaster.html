@@ -381,31 +381,20 @@ body.game-mode {
 }
 /* Add to <style> */
 body { transition: background 0.5s ease; }
-.floating-cluster {
-  position: fixed;
-  top: 20px; 
-  right: 16px;
-  z-index: 999;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+.side-tab-main {
+  position:fixed; right:16px; top:50%; transform:translateY(-50%);
+  z-index:999; transition:all 0.4s cubic-bezier(0.68,-0.55,0.27,1.55);
 }
-.fab-btn {
-  width: 56px; height: 56px;
-  border-radius: 50%;
-  border: none;
-  font-size: 24px;
-  color: white;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.4);
-  cursor: pointer;
-  transition: all 0.25s ease;
-  backdrop-filter: blur(10px);
+.side-tab-main.closed .side-btn:not(.main) { transform:translateX(80px); opacity:0; }
+.side-btn {
+  display:block; width:56px; height:56px; margin:8px 0;
+  border-radius:50%; border:none; font-size:24px;
+  box-shadow:0 4px 20px rgba(0,0,0,0.5);
+  transition:all 0.3s; cursor:pointer;
 }
-.fab-btn:hover { transform: scale(1.1); }
-.fab-btn:active { transform: scale(0.95); }
-.gold   { background: linear-gradient(135deg, #FFD700, #FF8C00); }
-.blue   { background: linear-gradient(135deg, #00D4FF, #0099FF); }
-.green  { background: linear-gradient(135deg, #00FFA3, #00C853); color:#000; }
+.main  { background:#FFD700; color:#000; }
+.side-btn:nth-child(2) { background:#00D4FF; }
+.side-btn:nth-child(3) { background:#00FFA3; color:#000; }
 </style>
 </head>
 <body>
@@ -544,17 +533,10 @@ body { transition: background 0.5s ease; }
       </div>
   </div>
 
-<!-- Floating Action Cluster (paste anywhere in body) -->
-<div class="floating-cluster">
-  <button id="leaderboardBtn" class="fab-btn gold">
-    <span>🏆</span>
-  </button>
-  <button id="rulesBtn" class="fab-btn blue">
-    <span>📜</span>
-  </button>
-  <button id="bidBtn" class="fab-btn green">
-    <span>💰</span>
-  </button>
+<div class="side-tab-main" id="sideTab">
+  <button id="leaderboardBtn" class="side-btn main">🏆</button>
+  <button id="rulesBtn" class="side-btn">📜</button>
+  <button id="bidBtn" class="side-btn">💰</button>
 </div>
 
 
@@ -697,6 +679,10 @@ const db = getFirestore(app);
 
 // Prevent sound spam
 window.lastSoundTime = 0;
+
+document.getElementById('leaderboardBtn').onclick = () => {
+  document.getElementById('sideTab').classList.toggle('closed');
+};
 
 // ---------- DOM ----------
 const body = document.body;
