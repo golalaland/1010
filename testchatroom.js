@@ -3651,20 +3651,35 @@ function renderCards(videosToRender) {
     const videoContainer = document.createElement("div");
     Object.assign(videoContainer.style, { height: "320px", overflow: "hidden", position: "relative" });
 
+        // === UPGRADED VIDEO ELEMENT (AUTOPLAY UNLOCKED + EARLY LOAD) ===
     const videoEl = document.createElement("video");
-    videoEl.src = video.previewClip || video.highlightVideo;
-    videoEl.muted = true;
-    videoEl.controls = false;
+    
+    // Unlocked → full video + sound | Locked → preview or full but blurred
+    videoEl.src = isUnlocked ? video.highlightVideo : (video.previewClip || video.highlightVideo);
+    
     videoEl.loop = true;
-    videoEl.preload = "metadata";
+    videoEl.playsInline = true;
+    videoEl.muted = !isUnlocked;  // Sound ON only for unlocked
+    videoEl.volume = 0.6;
+    
+    // Critical: unlocked videos load fully ASAP
+    videoEl.preload = isUnlocked ? "auto" : "metadata";
+    
+    // Autoplay unlocked videos immediately when card is visible
+    if (isUnlocked) {
+      videoEl.autoplay = true;
+    }
+    
     videoEl.poster = video.thumbnail || `https://image-thumbnails-service/?video=${encodeURIComponent(video.highlightVideo)}&blur=10`;
+    
     videoEl.style.cssText = `
-      width:100%;height:100%;object-fit:cover;
+      width:100%; height:100%; object-fit:cover;
       filter: ${isUnlocked ? 'none' : 'blur(6px)'};
       transition: filter 0.5s ease;
+      background: #000;
     `;
 
-    // === LOCK OVERLAY (only if locked) ===
+    // === LOCK OVERLAY (only for locked) ===
     if (!isUnlocked) {
       const lock = document.createElement("div");
       lock.innerHTML = `
@@ -3679,26 +3694,29 @@ function renderCards(videosToRender) {
 
     videoContainer.appendChild(videoEl);
 
-    // === HOVER PLAYBACK LOGIC ===
-    if (isUnlocked) {
-      // UNLOCKED: Play full video on hover (clear, optional sound)
-      videoContainer.onmouseenter = () => {
-        videoEl.muted = false;  // Optional: unmute for premium feel
-        videoEl.play().catch(() => {});
-      };
-      videoContainer.onmouseleave = () => {
-        videoEl.pause();
-        videoEl.currentTime = 0;
-        videoEl.muted = true;
-      };
-    } else {
-      // LOCKED: Play blurred preview on hover
+    // === PLAYBACK LOGIC (only hover preview for locked) ===
+    if (!isUnlocked) {
+      // Locked → play blurred preview only on hover
       videoContainer.onmouseenter = () => videoEl.play().catch(() => {});
       videoContainer.onmouseleave = () => {
         videoEl.pause();
         videoEl.currentTime = 0;
       };
     }
+    // Unlocked → autoplay already handled above, no hover needed
+
+    // === CLICK ANYWHERE ON CARD → FULLSCREEN (both locked/unlocked) ===
+    videoContainer.onclick = (e) => {
+      e.stopPropagation();
+      if (isUnlocked) {
+        playFullVideo(video);
+      } else {
+        showUnlockConfirm(video, () => {
+          unlockedVideos = JSON.parse(localStorage.getItem("userUnlockedVideos") || "[]");
+          renderCards(videos);
+        });
+      }
+    };
 
     // === CLICK TO UNLOCK / PLAY ===
     videoContainer.onclick = (e) => {
