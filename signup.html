@@ -273,7 +273,7 @@
 <div id="vipMessage">You're in VIP zone, way to go!</div>
 
 <button id="submitBtn">
-  <span class="btn-text">Enter</span>
+  <span class="btn-text">Sign Up</span>
   <span class="spinner" id="spinner"></span>
 </button>
 
@@ -371,17 +371,16 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
 function triggerSprayConfetti() {
-  // VIP-only colors: pure gold, champagne, diamond white
   const vipColors = ['#FFD700', '#FFED97', '#E5C100', '#FFFFFF', '#B29700', '#C9A03F'];
-
+  
   const toggle = document.getElementById('vipToggle');
   const rect = toggle.getBoundingClientRect();
 
-  // EXACT same origin as your original — bottom center of toggle
+  // EXACT same origin as your ORIGINAL code → shoots from the BOTTOM of the toggle
   const startX = rect.left + rect.width / 2 + window.scrollX;
-  const startY = rect.bottom + window.scrollY;   // ← THIS is what makes it shoot from the button
+  const startY = rect.bottom + window.scrollY;   // ← THIS is what you had and what makes it perfect
 
-  for (let i = 0; i < 80; i++) {  // More particles = richer
+  for (let i = 0; i < 85; i++) {
     const p = document.createElement('div');
     const color = vipColors[Math.floor(Math.random() * vipColors.length)];
     const isDiamond = Math.random() > 0.7;
@@ -391,30 +390,29 @@ function triggerSprayConfetti() {
     p.style.top = `${startY}px`;
     p.style.pointerEvents = 'none';
     p.style.zIndex = '99999';
-    p.style.opacity = '1';
 
     if (isDiamond) {
-      p.style.width = '12px';
-      p.style.height = '12px';
+      p.style.width = '13px';
+      p.style.height = '13px';
       p.style.background = 'transparent';
-      p.style.border = `2px solid ${color}`;
-      p.style.borderRadius = '2px';
+      p.style.border = `2.5px solid ${color}`;
+      p.style.borderRadius = '3px';
       p.style.transform = 'rotate(45deg)';
-      p.style.boxShadow = `0 0 20px ${color}`;
+      p.style.boxShadow = `0 0 22px ${color}`;
     } else {
-      p.style.width = '7px';
-      p.style.height = '22px';
+      p.style.width = '8px';
+      p.style.height = '24px';
       p.style.backgroundColor = color;
       p.style.borderRadius = '4px';
-      p.style.boxShadow = `0 0 18px ${color}`;
+      p.style.boxShadow = `0 0 20px ${color}`;
     }
 
     document.body.appendChild(p);
 
-    // EXACT same upward fan physics as your original — but stronger & prettier
-    const angle = (Math.random() * Math.PI / 2.2) - Math.PI / 4.4;  // Tight upward cone
-    const speed = 420 + Math.random() * 280;       // Stronger pop
-    const duration = 2200 + Math.random() * 800;   // Longer air time
+    // EXACT same upward fan physics as your original, just stronger & richer
+    const angle = (Math.random() * Math.PI / 2.1) - Math.PI / 4.2;  // Beautiful upward cone
+    const speed = 480 + Math.random() * 300;       // Strong pop
+    const duration = 2400 + Math.random() * 800;
 
     const start = performance.now();
 
@@ -422,9 +420,9 @@ function triggerSprayConfetti() {
       const t = (time - start) / duration;
       if (t < 1) {
         const dx = Math.sin(angle) * speed * t;
-        const dy = -Math.cos(angle) * speed * t + (180 * t * t);  // Gentle gravity
+        const dy = -Math.cos(angle) * speed * t + 200 * t * t;  // Gentle gravity
 
-        p.style.transform = `translate(${dx}px, ${dy}px) rotate(${t * 900}deg)`;
+        p.style.transform = `translate(${dx}px, ${dy}px) rotate(${t * 1080}deg)`;
         p.style.opacity = `${1 - t}`;
 
         requestAnimationFrame(animate);
@@ -434,14 +432,14 @@ function triggerSprayConfetti() {
     })(start);
   }
 
-  // Optional golden flash at the toggle
+  // Golden flash from the exact same point
   const flash = document.createElement('div');
   flash.style.position = 'fixed';
-  flash.style.left = (startX - 80) + 'px';
-  flash.style.top = (startY - 80) + 'px';
-  flash.style.width = '160px';
-  flash.style.height = '160px';
-  flash.style.background = 'radial-gradient(circle, #FFD700 20%, transparent 70%)';
+  flash.style.left = `${startX - 90}px`;
+  flash.style.top = `${startY - 90}px`;
+  flash.style.width = '180px';
+  flash.style.height = '180px';
+  flash.style.background = 'radial-gradient(circle, #FFD700 15%, transparent 70%)';
   flash.style.borderRadius = '50%';
   flash.style.pointerEvents = 'none';
   flash.style.zIndex = '99998';
@@ -449,10 +447,9 @@ function triggerSprayConfetti() {
 
   flash.animate([
     { transform: 'scale(0)', opacity: 0.9 },
-    { transform: 'scale(1.8)', opacity: 0 }
-  ], { duration: 700 }).onfinish = () => flash.remove();
+    { transform: 'scale(2)', opacity: 0 }
+  ], { duration: 800 }).onfinish = () => flash.remove();
 }
-
 
   const today = new Date();
   const maxDate = new Date(today.getFullYear()-18,today.getMonth(),today.getDate());
