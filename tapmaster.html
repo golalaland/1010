@@ -785,10 +785,10 @@ const profileNameEl = document.getElementById('profileName');
 
 
 
-// ========== FINAL CUTE BLACK END MODAL (TAPS + ₦ EARNINGS) ==========
+// ========== FINAL WORKING CUTE BLACK MODAL (TAPS + ₦) ==========
 const endGameModal = document.createElement('div');
 endGameModal.id = "endGameModal";
-endGameModal.style = `
+endGameModal.style.cssText = `
   position:fixed; top:0; left:0; width:100%; height:100%;
   background:rgba(0,0,0,0.94); backdrop-filter:blur(12px);
   display:none; justify-content:center; align-items:center;
@@ -796,25 +796,18 @@ endGameModal.style = `
 `;
 
 endGameModal.innerHTML = `
-  <div style="
-    background:#0a0a0a; color:#fff; width:100%; max-width:360px;
+  <div style="background:#0a0a0a; color:#fff; max-width:360px; width:100%;
     border-radius:22px; text-align:center; padding:30px 20px;
     border:2px solid #0f9; box-shadow:0 0 30px rgba(0,255,150,0.3);
-    animation:pop 0.5s ease-out;
-  ">
-    <!-- Header -->
-    <h2 style="margin:0 0 20px; font-size:24px; color:#0f9;">
-      ROUND COMPLETE!
-    </h2>
+    animation:pop 0.5s ease-out;">
+    
+    <h2 style="margin:0 0 20px; font-size:24px; color:#0f9;">ROUND COMPLETE!</h2>
 
-    <!-- Body - The exact line you wanted -->
-    <p style="
-      font-size:19px; line-height:1.6; margin:20px 0;
+    <p style="font-size:19px; line-height:1.6; margin:20px 0;
       background:rgba(0,255,150,0.1); padding:18px; border-radius:14px;
-      border-left:4px solid #0f9;
-    ">
-      You got <strong style="color:#0ff; font-size:22px;" id="finalTaps">0</strong> taps<br>
-      and earned <strong style="color:#0f9; font-size:24px;" id="finalEarnings">₦0</strong><br>
+      border-left:4px solid #0f9;">
+      You got <strong id="finalTaps" style="color:#0ff; font-size:22px;">0</strong> taps<br>
+      and earned <strong id="finalEarnings" style="color:#0f9; font-size:24px;">₦0</strong><br>
       on this tap session.
     </p>
 
@@ -822,56 +815,47 @@ endGameModal.innerHTML = `
       <span id="playerName">Player</span> — keep dominating!
     </p>
 
-    <!-- Buttons -->
     <div style="display:flex; gap:14px; margin-top:28px;">
-      <button id="shareBtn" style="
-        flex:1; padding:15px; border:none; border-radius:14px;
+      <button id="shareBtn" style="flex:1; padding:15px; border:none; border-radius:14px;
         background:#00ffaa; color:#000; font-weight:bold; font-size:16px;
-        cursor:pointer; box-shadow:0 5px 15px rgba(0,255,170,0.4);
-      ">SHARE SCORE</button>
+        cursor:pointer;">SHARE SCORE</button>
 
-      <button id="playAgainBtn" style="
-        flex:1; padding:15px; border:none; border-radius:14px;
+      <button id="playAgainBtn" style="flex:1; padding:15px; border:none; border-radius:14px;
         background:#ff00aa; color:#fff; font-weight:bold; font-size:16px;
-        cursor:pointer; box-shadow:0 5px 15px rgba(255,0,170,0.4);
-      ">PLAY AGAIN</button>
+        cursor:pointer;">PLAY AGAIN</button>
     </div>
   </div>
 
   <style>
-    @keyframes pop{0%{transform:scale(0.6) rotate(5deg);opacity:0}100%{transform:scale(1) rotate(0);opacity:1}}
+    @keyframes pop{0%{transform:scale(0.6) rotate(5deg);opacity:0}100%{transform:scale(1);opacity:1}}
     button:active{transform:scale(0.95)}
   </style>
 `;
 
+// ADD MODAL TO PAGE FIRST
 document.body.appendChild(endGameModal);
 
-// Elements
-const finalTapsEl = document.getElementById('finalTaps');
-const finalEarningsEl = document.getElementById('finalEarnings');
-const playerNameEl = document.getElementById('playerName');
-const shareBtn = document.getElementById('shareBtn');
-const playAgainBtn = document.getElementById('playAgainBtn');
+// NOW attach the buttons (this is the fix!)
+document.getElementById('playAgainBtn').addEventListener('click', () => {
+  location.reload();          // FULL RELOAD – works every time
+});
 
-// SHARE
-shareBtn.onclick = () => {
-  const text = `${playerNameEl.textContent} just got ${taps.toLocaleString()} taps and earned ₦${earnings.toLocaleString()} in one round! Can you beat that?`;
+document.getElementById('shareBtn').addEventListener('click', () => {
+  const name = document.getElementById('playerName').textContent;
+  const text = `${name} just got ${taps.toLocaleString()} taps and earned ₦${earnings.toLocaleString()}! Can you beat me?`;
   if (navigator.share) {
     navigator.share({ title: "My Tap Score", text, url: location.href });
   } else {
     navigator.clipboard.writeText(text + " " + location.href);
-    alert("Score copied — go flex!");
+    alert("Score copied!");
   }
-};
+});
 
-// PLAY AGAIN = FULL RELOAD
-playAgainBtn.onclick = () => location.reload();
-
-// SHOW MODAL — only call this when game ends
+// SHOW FUNCTION
 function showEndGameModal() {
-  finalTapsEl.textContent = taps.toLocaleString();
-  finalEarningsEl.textContent = `₦${earnings.toLocaleString()}`;
-  playerNameEl.textContent = currentUser?.handle || "Tapper";
+  document.getElementById('finalTaps').textContent = taps.toLocaleString();
+  document.getElementById('finalEarnings').textContent = `₦${earnings.toLocaleString()}`;
+  document.getElementById('playerName').textContent = currentUser?.handle || "Tapper";
 
   // Victory sound
   new Audio('https://assets.mixkit.co/sfx/preview/mixkit-achievement-bell-600.mp3').play().catch(()=>{});
@@ -1148,7 +1132,7 @@ function endSessionImmediate() {
   tapButton.disabled = true;
   clearInterval(intervalId);
 
-  showEndGameModal(); // That’s literally all you need now
+  showEndGameModal();   // This now works perfectly
 }
 
 // ======================================================
