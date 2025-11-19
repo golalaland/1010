@@ -712,6 +712,30 @@ bar + footer */
 </div>
 
 
+<!-- CONFIRMATION MODAL (appears after clicking ENTER 50⭐️) -->
+<div id="confirmBidModal" class="modal-backdrop" style="display:none;">
+  <div class="modal" style="width:88%;max-width:340px;background:#0f0f0f;border:3px solid #ff4444;border-radius:18px;box-shadow:0 0 60px rgba(255,0,0,0.6);">
+    <div style="padding:20px;text-align:center;">
+      <h3 style="margin:0 0 12px;color:#ff4444;font-size:18px;font-family:'Press Start 2P',cursive;">
+        LOCK IN YOUR BID?
+      </h3>
+      <p style="margin:0 0 20px;color:#eee;font-size:15px;">
+        This will deduct <strong>50 ⭐️ Stars</strong> permanently.<br>
+        No refunds. No mercy.
+      </p>
+      <div style="display:flex;gap:12px;justify-content:center;">
+        <button id="finalConfirmBtn" style="flex:1;padding:14px;background:#ff4444;color:#fff;border:none;border-radius:12px;font-weight:800;font-size:16px;cursor:pointer;">
+          YES, DEDUCT & ENTER
+        </button>
+        <button id="finalCancelBtn" style="flex:1;padding:14px;background:#333;color:#aaa;border:1px solid #555;border-radius:12px;font-weight:600;cursor:pointer;">
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
 
 <!-- Audio -->
 <audio id="tapSound" src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg" preload="auto"></audio>
@@ -1787,27 +1811,90 @@ document.getElementById('rulesModal').addEventListener('click', (e) => {
   }
 });
 
-//*Bid / PvP button
+const BID_COST = 50;
+const CURRENT_ROUND_ID = "round_nov19_2025"; // change per round or generate dynamically
+
+// Open bid modal
 document.getElementById('bidBtn').addEventListener('click', (e) => {
   e.preventDefault();
   e.stopPropagation();
   document.getElementById('bidModal').style.display = 'flex';
 });
 
+// Close bid modal
 document.getElementById('closeBidBtn').addEventListener('click', () => {
   document.getElementById('bidModal').style.display = 'none';
 });
-
 document.getElementById('bidModal').addEventListener('click', (e) => {
   if (e.target === document.getElementById('bidModal')) {
     document.getElementById('bidModal').style.display = 'none';
   }
 });
 
-// Optional: Confirm button (you can hook real logic later)
+// Step 1: User clicks "ENTER 50⭐️"
 document.getElementById('confirmBidBtn').addEventListener('click', () => {
-  alert("You don enter the PvP war! No retreat, no surrender! 🔥");
   document.getElementById('bidModal').style.display = 'none';
+  document.getElementById('confirmBidModal').style.display = 'flex';
+});
+
+// Step 2: Close confirmation modal
+document.getElementById('finalCancelBtn').addEventListener('click', () => {
+  document.getElementById('confirmBidModal').style.display = 'none';
+});
+document.getElementById('confirmBidModal').addEventListener('click', (e) => {
+  if (e.target === document.getElementById('confirmBidModal')) {
+    document.getElementById('confirmBidModal').style.display = 'none';
+  }
+});
+
+// Step 3: FINAL CONFIRM — Deduct stars + create bid document
+document.getElementById('finalConfirmBtn').addEventListener('click', async () => {
+  document.getElementById('finalConfirmBtn').disabled = true;
+  document.getElementById('finalConfirmBtn').textContent = "Processing...";
+
+  if (!currentUser?.uid) {
+    alert("You must be logged in");
+    document.getElementById('confirmBidModal').style.display = 'none';
+    return;
+  }
+
+  // 1. Deduct stars
+  const deductResult = await tryDeductStarsForJoin(BID_COST);
+  if (!deductResult.ok) {
+    alert("❌ " + deductResult.message);
+    document.getElementById('finalConfirmBtn').disabled = false;
+    document.getElementById('finalConfirmBtn').textContent = "YES, DEDUCT & ENTER";
+    return;
+  }
+
+  // 2. Create bid document in Firestore
+  try {
+    const bidRef = await addDoc(collection(db, "bids"), {
+      uid: currentUser.uid,
+      username: currentUser.username || currentUser.displayName || "Anonymous",
+      invitedBy: currentUser.invitedBy || null,        // assuming you store this in user doc
+      roundId: CURRENT_ROUND_ID,
+      starsBid: BID_COST,
+      status: "active",                               // can be active, won, lost later
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    });
+
+    // Success!
+    alert("✅ You’re IN the war! 50 ⭐️ deducted. Prepare for battle 🔥");
+    console.log("Bid registered:", bidRef.id);
+
+  } catch (err) {
+    console.error("Failed to register bid:", err);
+    // Optionally refund stars if bid fails (rare)
+    await giveCashToUser(0); // dummy call to force reload, or implement refund
+    alert("Bid registration failed. Please contact support.");
+  }
+
+  // Close modal & cleanup
+  document.getElementById('confirmBidModal').style.display = 'none';
+  document.getElementById('finalConfirmBtn').disabled = false;
+  document.getElementById('finalConfirmBtn').textContent = "YES, DEDUCT & ENTER";
 });
 // Music Music Music
 document.getElementById('tapButton').addEventListener('click', () => {
