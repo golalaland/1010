@@ -701,11 +701,11 @@ bar + footer */
     <!-- Action Buttons -->
     <div style="padding:16px 20px 20px;text-align:center;background:rgba(0,0,0,0.4);">
       <button id="confirmBidBtn" style="padding:14px 40px;border:none;border-radius:14px;background:linear-gradient(90deg,#00FFA3,#00C853);color:#000;font-weight:800;font-size:17px;cursor:pointer;min-width:200px;margin-bottom:10px;">
-        ENTER 50⭐️ stars
+        ENTER
       </button>
       <br>
       <button id="closeBidBtn" style="color:#888;background:none;border:none;font-size:14px;cursor:pointer;">
-        nah, i’m scared
+        Nah, i’m scared
       </button>
     </div>
   </div>
@@ -1956,36 +1956,6 @@ document.getElementById('finalConfirmBtn').addEventListener('click', async () =>
     document.getElementById('confirmBidModal').style.display = 'none';
   }
 });
-// ====================== SOUND SYSTEM — WORKS ON PHONE ======================
-let userHasInteracted = false;  // This unlocks sound forever
-
-// Unlock audio on first ANY user tap/click
-document.body.addEventListener('click', unlockAudio, { once: true });
-document.body.addEventListener('touchstart', unlockAudio, { once: true });
-
-function unlockAudio() {
-  userHasInteracted = true;
-  console.log("Audio unlocked — user interacted");
-}
-
-// ——— DETTYVERSE BEAT (background music) ———
-let beatAudio = null;
-document.getElementById('tapButton')?.addEventListener('click', () => {
-  if (!userHasInteracted) return; // do nothing until unlocked
-
-  if (!beatAudio) {
-    beatAudio = new Audio("https://www.chosic.com/wp-content/uploads/2022/07/dettyverse-beat.mp3"); // ← your real beat
-    beatAudio.loop = true;
-    beatAudio.volume = 0.4;
-  }
-
-  if (beatAudio.paused) {
-    beatAudio.play().catch(e => console.log("Beat play failed:", e));
-  }
-});
-
-// ——— BUTTON CLICK SOUND (for ALL buttons except tapButton) ———
-const clickSound = new Audio("
 </script>
 </body>
 </html>
