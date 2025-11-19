@@ -1875,15 +1875,6 @@ function showNiceAlert(message) {
   });
 }
 
-// Optional: Auto daily round (remove if you want to keep manual)
-function getTodayRound() {
-  const d = new Date();
-  d.setHours(d.getHours() + 1); // Lagos is UTC+1
-  return "round_" + d.toISOString().split('T')[0]; // e.g. round_2025-11-19
-}
-const CURRENT_ROUND_ID = getTodayRound(); // or keep your manual one
-const BID_COST = 50;
-
 // Your full original listeners (unchanged)
 document.getElementById('bidBtn').addEventListener('click', (e) => {
   e.preventDefault(); e.stopPropagation();
@@ -2021,40 +2012,43 @@ document.querySelectorAll('button').forEach(btn => {
     btn.addEventListener('click', playClickSound);
   }
 });
-// LIVE PRIZE + PLAYERS + COUNTDOWN — NEVER HANGS, EVEN IF ELEMENTS LOAD LATE
+
+// ONE AND ONLY — used by bid system, live stats, countdown, EVERYTHING
 const PRIZE_PER_PLAYER = 5000;
+const BID_COST = 50;
 
 function getTodayRound() {
   const d = new Date();
-  const lagos = new Date(d.getTime() + 60*60*1000); // UTC+1
-  return "round_" + lagos.toISOString().split('T')[0];
+  const lagos = new Date(d.getTime() + 60*60*1000); // UTC+1 = Lagos time
+  return "round_" + lagos.toISOString().split('T')[0]; // e.g. round_2025-11-19
 }
 
-// Safe countdown — waits for element
+// This is the round ID your bid system uses
+const CURRENT_ROUND_ID = getTodayRound();
+
+
+// LIVE COUNTDOWN + PRIZE + PLAYERS — 100% SAFE
 function startCountdown() {
   const timerEl = document.getElementById('countdownTimer');
-  if (!timerEl) {
-    console.log("Countdown element not found yet — will retry...");
-    setTimeout(startCountdown, 500); // retry every 0.5s
-    return;
-  }
+  if (!timerEl) { setTimeout(startCountdown, 500); return; }
 
   const update = () => {
     const now = new Date();
     const lagos = new Date(now.getTime() + 60*60*1000);
     const today = lagos.toISOString().split('T')[0];
-    const target = new Date(today + "T22:59:59.000Z");
+    const target = new Date(today + "T22:59:59.000Z"); // 11:59:59 PM Lagos
 
     const diff = target - lagos;
+
     if (diff <= 0) {
       timerEl.textContent = "LIVE NOW!";
       timerEl.style.color = "#ff2d55";
       return;
     }
 
-    const h = String(Math.floor(diff / (3600000))).padStart(2, '0');
-    const m = String(Math.floor((diff % 3600000) / 60000)).padStart(2, '0');
-    const s = String(Math.floor((diff % 60000) / 1000)).padStart(2, '0');
+    const h = String(Math.floor(diff / 3600000)).padStart(2,'0');
+    const m = String(Math.floor((diff % 3600000) / 60000)).padStart(2,'0');
+    const s = String(Math.floor((diff % 60000) / 1000)).padStart(2,'0');
     timerEl.textContent = `${h}:${m}:${s}`;
   };
 
@@ -2062,31 +2056,26 @@ function startCountdown() {
   setInterval(update, 1000);
 }
 
-// Safe live stats — waits for elements
 function startLiveStats() {
   const playersEl = document.getElementById('livePlayers');
   const prizeEl = document.getElementById('livePrize');
-
-  if (!playersEl || !prizeEl) {
-    console.log("Live stats elements not ready — retrying...");
-    setTimeout(startLiveStats, 500);
-    return;
-  }
+  if (!playersEl || !prizeEl) { setTimeout(startLiveStats, 500); return; }
 
   const q = query(
     collection(db, "bids"),
-    where("roundId", "==", getTodayRound()),
+    where("roundId", "==", CURRENT_ROUND_ID),  // ← same ID!
     where("status", "==", "active")
   );
 
   onSnapshot(q, (snap) => {
+    {
     const count = snap.size;
     playersEl.textContent = count;
     prizeEl.textContent = "₦" + (count * PRIZE_PER_PLAYER).toLocaleString();
   });
 }
 
-// Run safely — only once
+// RUN ONLY ONCE — NO HANG EVER
 if (!window.bidStatsInitialized) {
   window.bidStatsInitialized = true;
   startCountdown();
