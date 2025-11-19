@@ -712,25 +712,97 @@ bar + footer */
 </div>
 
 
-<!-- CONFIRMATION MODAL (appears after clicking ENTER 50⭐️) -->
+<!-- CONFIRMATION MODAL – COMPACT & DEADLY EDITION -->
 <div id="confirmBidModal" class="modal-backdrop" style="display:none;">
-  <div class="modal" style="width:88%;max-width:340px;background:#0f0f0f;border:3px solid #ff4444;border-radius:18px;box-shadow:0 0 60px rgba(255,0,0,0.6);">
-    <div style="padding:20px;text-align:center;">
-      <h3 style="margin:0 0 12px;color:#ff4444;font-size:18px;font-family:'Press Start 2P',cursive;">
-        LOCK IN YOUR BID?
+  <div class="modal" style="width:88%;max-width:340px;background:#0f0f0f;border:3px solid #ff2d55;border-radius:18px;box-shadow:0 0 60px rgba(255,45,85,0.5);">
+    <div style="padding:20px 18px;text-align:center;">
+      
+      <!-- Title -->
+      <h3 style="margin:0 0 10px;color:#ff2d55;font-size:16px;font-family:'Press Start 2P',cursive;letter-spacing:0.5px;">
+        LOCK IN BID?
       </h3>
-      <p style="margin:0 0 20px;color:#eee;font-size:15px;">
-        This will deduct <strong>50 ⭐️ Stars</strong> permanently.<br>
-        No refunds. No mercy.
+      
+      <!-- Warning Text -->
+      <p style="margin:12px 0 18px;color:#ff6b6b;font-size:14px;line-height:1.5;font-weight:500;">
+        This deducts <strong style="color:#fff;">50 Stars</strong> permanently.<br>
+        <span style="color:#ff2d55;font-size:13px;">No refund. No escape.</span>
       </p>
-      <div style="display:flex;gap:12px;justify-content:center;">
-        <button id="finalConfirmBtn" style="flex:1;padding:14px;background:#ff4444;color:#fff;border:none;border-radius:12px;font-weight:800;font-size:16px;cursor:pointer;">
-          YES, DEDUCT & ENTER
+      
+      <!-- Buttons – Smaller, Sleeker, Deadly -->
+      <div style="display:flex;gap:10px;justify-content:center;">
+        <button id="finalConfirmBtn" style="
+          flex:1;
+          padding:11px 16px;
+          background:#ff2d55;
+          color:#fff;
+          border:none;
+          border-radius:10px;
+          font-weight:900;
+          font-size:14px;
+          letter-spacing:0.5px;
+          cursor:pointer;
+          box-shadow:0 4px 12px rgba(255,45,85,0.4);
+          transition:all 0.2s;
+        " onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+          YES, ENTER WAR
         </button>
-        <button id="finalCancelBtn" style="flex:1;padding:14px;background:#333;color:#aaa;border:1px solid #555;border-radius:12px;font-weight:600;cursor:pointer;">
-          Cancel
+        
+        <button id="finalCancelBtn" style="
+          flex:1;
+          padding:11px 16px;
+          background:#222;
+          color:#999;
+          border:1px solid #444;
+          border-radius:10px;
+          font-weight:600;
+          font-size:14px;
+          cursor:pointer;
+          transition:all 0.2s;
+        " onmouseover="this.style.background='#333'" onmouseout="this.style.background='#222'">
+          nah, i'm good
         </button>
       </div>
+      
+      <!-- Tiny evil footer -->
+      <div style="margin-top:16px;font-size:11px;color:#666;font-style:italic;">
+        Lagos no dey play
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- REUSABLE MESSAGE MODAL – COMPACT DETTYVERSE EDITION -->
+<div id="messageModal" class="modal-backdrop" style="display:none;">
+  <div class="modal" style="width:88%;max-width:340px;background:#0f0f0f;border-radius:18px;overflow:hidden;">
+    
+    <div id="messageHeader" style="padding:18px 16px 14px;text-align:center;background:rgba(0,255,163,0.1);">
+      <div id="messageIcon" style="font-size:36px;margin-bottom:8px;">Checkmark</div>
+      <h3 id="messageTitle" style="margin:0;font-family:'Press Start 2P',cursive;font-size:15px;color:#00FFA3;">
+        Success!
+      </h3>
+    </div>
+
+    <div style="padding:0 20px 20px;text-align:center;">
+      <p id="messageText" style="margin:14px 0 20px;color:#ddd;font-size:14px;line-height:1.5;">
+        Your action was successful.
+      </p>
+      
+      <button id="messageCloseBtn" style="
+        padding:11px 32px;
+        background:linear-gradient(90deg,#00FFA3,#00C853);
+        color:#000;
+        border:none;
+        border-radius:10px;
+        font-weight:900;
+        font-size:14px;
+        cursor:pointer;
+        min-width:140px;
+        box-shadow:0 4px 15px rgba(0,255,163,0.4);
+        transition:all 0.2s;
+      ">
+        GOT IT
+      </button>
     </div>
   </div>
 </div>
@@ -1812,90 +1884,114 @@ document.getElementById('rulesModal').addEventListener('click', (e) => {
 });
 
 const BID_COST = 50;
-const CURRENT_ROUND_ID = "round_nov19_2025"; // change per round or generate dynamically
+const CURRENT_ROUND_ID = "round_nov19_2025"; // Update per round
 
-// Open bid modal
-document.getElementById('bidBtn').addEventListener('click', (e) => {
+// Reusable Message Modal Function
+function showMessageModal(type = "success", title = "Done!", text = "Action completed.") {
+  const modal = document.getElementById('messageModal');
+  const titleEl = document.getElementById('messageTitle');
+  const textEl = document.getElementById('messageText');
+  const header = document.getElementById('messageHeader');
+  const btn = document.getElementById('messageCloseBtn');
+
+  const config = {
+    success: { color: "#00FFA3", gradient: "linear-gradient(90deg,#00FFA3,#00C853)", icon: "Checkmark" },
+    error:   { color: "#ff2d55", gradient: "linear-gradient(90deg,#ff2d55,#ff1744)", icon: "Cross" },
+    warning: { color: "#FFD700", gradient: "linear-gradient(90deg,#FFD700,#FFA000)", icon: "Warning" }
+  };
+
+  const c = config[type] || config.success;
+
+  modal.style.display = 'flex';
+  titleEl.textContent = title;
+  titleEl.style.color = c.color;
+  textEl.textContent = text;
+  document.getElementById('messageIcon').textContent = c.icon;
+  header.style.background = c.color + "15";
+  btn.style.background = c.gradient;
+
+  return new Promise(resolve => {
+    const close = () => {
+      modal.style.display = 'none';
+      resolve();
+    };
+    document.getElementById('messageCloseBtn').onclick = close;
+    modal.onclick = (e) => e.target === modal && close();
+  });
+}
+
+// ——————————————————————————————— BID FLOW ——————————————————————
+
+document.getElementById('bidBtn')?.addEventListener('click', (e) => {
   e.preventDefault();
   e.stopPropagation();
   document.getElementById('bidModal').style.display = 'flex';
 });
 
-// Close bid modal
-document.getElementById('closeBidBtn').addEventListener('click', () => {
+document.getElementById('closeBidBtn')?.addEventListener('click', () => {
   document.getElementById('bidModal').style.display = 'none';
 });
-document.getElementById('bidModal').addEventListener('click', (e) => {
+
+document.getElementById('bidModal')?.addEventListener('click', (e) => {
   if (e.target === document.getElementById('bidModal')) {
     document.getElementById('bidModal').style.display = 'none';
   }
 });
 
-// Step 1: User clicks "ENTER 50⭐️"
-document.getElementById('confirmBidBtn').addEventListener('click', () => {
+// Step 1 → Open Confirmation Modal
+document.getElementById('confirmBidBtn')?.addEventListener('click', () => {
   document.getElementById('bidModal').style.display = 'none';
   document.getElementById('confirmBidModal').style.display = 'flex';
 });
 
-// Step 2: Close confirmation modal
-document.getElementById('finalCancelBtn').addEventListener('click', () => {
+// Cancel Confirmation
+document.getElementById('finalCancelBtn')?.addEventListener('click', () => {
   document.getElementById('confirmBidModal').style.display = 'none';
 });
-document.getElementById('confirmBidModal').addEventListener('click', (e) => {
+
+document.getElementById('confirmBidModal')?.addEventListener('click', (e) => {
   if (e.target === document.getElementById('confirmBidModal')) {
     document.getElementById('confirmBidModal').style.display = 'none';
   }
 });
 
-// Step 3: FINAL CONFIRM — Deduct stars + create bid document
-document.getElementById('finalConfirmBtn').addEventListener('click', async () => {
-  document.getElementById('finalConfirmBtn').disabled = true;
-  document.getElementById('finalConfirmBtn').textContent = "Processing...";
+// FINAL CONFIRM — WITH SECURITY + NO ALERTS
+document.getElementById('finalConfirmBtn')?.addEventListener('click', async () => {
+  const btn = document.getElementById('finalConfirmBtn');
+  btn.disabled = true;
+  btn.textContent = "Processing...";
 
-  if (!currentUser?.uid) {
-    alert("You must be logged in");
-    document.getElementById('confirmBidModal').style.display = 'none';
-    return;
-  }
-
-  // 1. Deduct stars
-  const deductResult = await tryDeductStarsForJoin(BID_COST);
-  if (!deductResult.ok) {
-    alert("❌ " + deductResult.message);
-    document.getElementById('finalConfirmBtn').disabled = false;
-    document.getElementById('finalConfirmBtn').textContent = "YES, DEDUCT & ENTER";
-    return;
-  }
-
-  // 2. Create bid document in Firestore
   try {
-    const bidRef = await addDoc(collection(db, "bids"), {
+    if (!currentUser?.uid) {
+      throw new Error("You must be logged in to join the war!");
+
+    // ——— SECURITY CHECK: Prevent Double Bidding ———
+    const existingBidQuery = query(
+      collection(db, "bids"),
+      where("uid", "==", currentUser.uid),
+      where("roundId", "==", CURRENT_ROUND_ID),
+      where("status", "in", ["active", "pending"])
+    );
+
+    const existing = await getDocs(existingBidQuery);
+    if (!existing.empty) {
+      await showMessageModal("warning", "Already In!", "You’ve already joined this PvP round. No double-dipping not allowed", "Warning");
+      document.getElementById('confirmBidModal').style.display = 'none';
+      return;
+    }
+
+    // ——— Deduct Stars ———
+    const deduct = await tryDeductStarsForJoin(BID_COST);
+    if (!deduct.ok) {
+      throw new Error(deduct.message || "Not enough stars");
+    }
+
+    // ——— Register Bid ———
+    await addDoc(collection(db, "bids"), {
       uid: currentUser.uid,
-      username: currentUser.username || currentUser.displayName || "Anonymous",
-      invitedBy: currentUser.invitedBy || null,        // assuming you store this in user doc
-      roundId: CURRENT_ROUND_ID,
-      starsBid: BID_COST,
-      status: "active",                               // can be active, won, lost later
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp()
-    });
-
-    // Success!
-    alert("✅ You’re IN the war! 50 ⭐️ deducted. Prepare for battle 🔥");
-    console.log("Bid registered:", bidRef.id);
-
-  } catch (err) {
-    console.error("Failed to register bid:", err);
-    // Optionally refund stars if bid fails (rare)
-    await giveCashToUser(0); // dummy call to force reload, or implement refund
-    alert("Bid registration failed. Please contact support.");
-  }
-
-  // Close modal & cleanup
-  document.getElementById('confirmBidModal').style.display = 'none';
-  document.getElementById('finalConfirmBtn').disabled = false;
-  document.getElementById('finalConfirmBtn').textContent = "YES, DEDUCT & ENTER";
-});
+      username: currentUser
+      
+      
 // Music Music Music
 document.getElementById('tapButton').addEventListener('click', () => {
   const audio = document.getElementById('dettyverseBeat');
