@@ -1838,27 +1838,23 @@ document.addEventListener("DOMContentLoaded", () => {
 
 });
 
-//* RULES BUTTON ONLY — NO CONFLICT WITH LEADERBOARD OR BID
-document.getElementById('rulesBtn').addEventListener('click', (e) => {
-  e.preventDefault();
-  e.stopPropagation();                    // ← this one kills the old "Coming soon" script dead
-  document.getElementById('rulesModal').style.display = 'flex';
-});
+/* ============================================================
+   TAPMASTER — FULLY WORKING, NO HANG, CLEAN VERSION
+   ============================================================ */
 
-// Close button inside modal
-document.getElementById('closeRulesBtn').addEventListener('click', () => {
-  document.getElementById('rulesModal').style.display = 'none';
-});
+// CONFIG
+const PRIZE_PER_PLAYER = 5000;
+const BID_COST = 50;
 
-// Close when clicking backdrop
-document.getElementById('rulesModal').addEventListener('click', (e) => {
-  if (e.target === document.getElementById('rulesBtn')) return; // safety
-  if (e.target === document.getElementById('rulesModal')) {
-    document.getElementById('rulesModal').style.display = 'none';
-  }
-});
+// ONE AND ONLY — Lagos time round ID (used everywhere)
+function getTodayRound() {
+  const d = new Date();
+  const lagos = new Date(d.getTime() + 60*60*1000); // UTC+1
+  return "round_" + lagos.toISOString().split('T')[0];
+}
+const CURRENT_ROUND_ID = getTodayRound();
 
-// Simple custom alert — replaces browser alert()
+// CUSTOM ALERT (replaces browser alert)
 function showNiceAlert(message) {
   document.getElementById('niceAlertMessage').textContent = message;
   document.getElementById('niceAlert').style.display = 'flex';
@@ -1869,43 +1865,54 @@ function showNiceAlert(message) {
       resolve();
     };
     document.getElementById('niceAlertBtn').onclick = close;
-    document.getElementById('niceAlert').onclick = (e) => {
+    document.getElementById('niceAlert').onclick = e => {
       if (e.target === document.getElementById('niceAlert')) close();
     };
   });
 }
 
-// Your full original listeners (unchanged)
-document.getElementById('bidBtn').addEventListener('click', (e) => {
+/* ====================== MODALS ====================== */
+document.getElementById('rulesBtn')?.addEventListener('click', e => {
+  e.preventDefault(); e.stopPropagation();
+  document.getElementById('rulesModal').style.display = 'flex';
+});
+document.getElementById('closeRulesBtn')?.addEventListener('click', () => {
+  document.getElementById('rulesModal').style.display = 'none';
+});
+document.getElementById('rulesModal')?.addEventListener('click', e => {
+  if (e.target === document.getElementById('rulesModal')) {
+    document.getElementById('rulesModal').style.display = 'none';
+  }
+});
+
+document.getElementById('bidBtn')?.addEventListener('click', e => {
   e.preventDefault(); e.stopPropagation();
   document.getElementById('bidModal').style.display = 'flex';
 });
-
-document.getElementById('closeBidBtn').addEventListener('click', () => {
+document.getElementById('closeBidBtn')?.addEventListener('click', () => {
   document.getElementById('bidModal').style.display = 'none';
 });
-document.getElementById('bidModal').addEventListener('click', (e) => {
+document.getElementById('bidModal')?.addEventListener('click', e => {
   if (e.target === document.getElementById('bidModal')) {
     document.getElementById('bidModal').style.display = 'none';
   }
 });
 
-document.getElementById('confirmBidBtn').addEventListener('click', () => {
+document.getElementById('confirmBidBtn')?.addEventListener('click', () => {
   document.getElementById('bidModal').style.display = 'none';
   document.getElementById('confirmBidModal').style.display = 'flex';
 });
-
-document.getElementById('finalCancelBtn').addEventListener('click', () => {
+document.getElementById('finalCancelBtn')?.addEventListener('click', () => {
   document.getElementById('confirmBidModal').style.display = 'none';
 });
-document.getElementById('confirmBidModal').addEventListener('click', (e) => {
+document.getElementById('confirmBidModal')?.addEventListener('click', e => {
   if (e.target === document.getElementById('confirmBidModal')) {
     document.getElementById('confirmBidModal').style.display = 'none';
   }
 });
 
-// FINAL CONFIRM — WITH SECURITY + CUSTOM ALERT
-document.getElementById('finalConfirmBtn').addEventListener('click', async () => {
+/* ====================== FINAL BID ====================== */
+document.getElementById('finalConfirmBtn')?.addEventListener('click', async () => {
   const btn = document.getElementById('finalConfirmBtn');
   btn.disabled = true;
   btn.textContent = "...";
@@ -1917,13 +1924,12 @@ document.getElementById('finalConfirmBtn').addEventListener('click', async () =>
       return;
     }
 
-    // SECURITY: Prevent double join
+    // Prevent double join
     const check = await getDocs(query(
       collection(db, "bids"),
       where("uid", "==", currentUser.uid),
       where("roundId", "==", CURRENT_ROUND_ID)
     ));
-
     if (!check.empty) {
       await showNiceAlert("You already joined today's conquest!");
       document.getElementById('confirmBidModal').style.display = 'none';
@@ -1931,16 +1937,16 @@ document.getElementById('finalConfirmBtn').addEventListener('click', async () =>
     }
 
     // Deduct stars
-    const deductResult = await tryDeductStarsForJoin(BID_COST);
-    if (!deductResult.ok) {
-      await showNiceAlert("Not enough stars: " + deductResult.message);
+    const deduct = await tryDeductStarsForJoin(BID_COST);
+    if (!deduct.ok) {
+      await showNiceAlert("Not enough stars: " + (deduct.message || ""));
       btn.disabled = false;
       btn.textContent = "YES!";
       return;
     }
 
     // Create bid
-    const bidRef = await addDoc(collection(db, "bids"), {
+    await addDoc(collection(db, "bids"), {
       uid: currentUser.uid,
       username: currentUser.username || currentUser.displayName || "Anonymous",
       invitedBy: currentUser.invitedBy || null,
@@ -1952,8 +1958,6 @@ document.getElementById('finalConfirmBtn').addEventListener('click', async () =>
     });
 
     await showNiceAlert("You’re IN the war!\n50 Stars deducted. Get ready to tap!");
-    console.log("Bid ID:", bidRef.id);
-
   } catch (err) {
     console.error(err);
     await showNiceAlert("Something went wrong. Try again.");
@@ -1964,94 +1968,61 @@ document.getElementById('finalConfirmBtn').addEventListener('click', async () =>
   }
 });
 
-// **====================== SOUND SYSTEM — NEVER HANGS, WORKS 100% ON PHONES ======================
+/* ====================== SOUND SYSTEM ====================== */
 let audioUnlocked = false;
-
-// Unlock audio on FIRST user tap/click (required by iOS/Android)
 function unlockAllAudio() {
   if (audioUnlocked) return;
   audioUnlocked = true;
-
-  // Create a silent sound and play it to unlock audio context
-  const silent = new Audio("data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=");
-  silent.play().catch(() => {});
-
-  console.log("Audio unlocked");
+  new Audio("data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=").play().catch(()=>{});
 }
-document.body.addEventListener('touchstart', unlockAllAudio, { once: true });
-document.body.addEventListener('click', unlockAllAudio, { once: true });
-
+document.body.addEventListener('touchstart', unlockAllAudio, {once: true});
+document.body.addEventListener('click', unlockAllAudio, {once: true});
 
 document.getElementById('tapButton')?.addEventListener('click', () => {
   if (!audioUnlocked) return;
-
   const beat = document.getElementById('beatAudio');
-  beat.src = "your-dettyverse-beat.mp3";        // ← put your real file here
+  beat.src = "your-dettyverse-beat.mp3";  // ← change to your beat
   beat.volume = 0.45;
-  beat.play().catch(() => {});
+  beat.play().catch(()=>{});
 });
 
 const click = document.getElementById('clickAudio');
 click.src = "https://assets.mixkit.co/sfx/preview/mixkit-arcade-game-jump-coin-216.mp3";
 click.volume = 0.6;
-
 let lastClick = 0;
 function playClickSound() {
   if (!audioUnlocked) return;
   const now = Date.now();
-  if (now - lastClick < 80) return;  // anti-spam
+  if (now - lastClick < 80) return;
   lastClick = now;
-
   click.currentTime = 0;
-  click.play().catch(() => {});
+  click.play().catch(()=>{});
 }
-
-// Add click sound to EVERY button except the tap button
 document.querySelectorAll('button').forEach(btn => {
-  if (btn.id !== 'tapButton') {
-    btn.addEventListener('click', playClickSound);
-  }
+  if (btn.id !== 'tapButton') btn.addEventListener('click', playClickSound);
 });
 
-// ONE AND ONLY — used by bid system, live stats, countdown, EVERYTHING
-const PRIZE_PER_PLAYER = 5000;
-const BID_COST = 50;
-
-function getTodayRound() {
-  const d = new Date();
-  const lagos = new Date(d.getTime() + 60*60*1000); // UTC+1 = Lagos time
-  return "round_" + lagos.toISOString().split('T')[0]; // e.g. round_2025-11-19
-}
-
-// This is the round ID your bid system uses
-const CURRENT_ROUND_ID = getTodayRound();
-
-
-// LIVE COUNTDOWN + PRIZE + PLAYERS — 100% SAFE
+/* ====================== LIVE PRIZE + PLAYERS + COUNTDOWN ====================== */
 function startCountdown() {
-  const timerEl = document.getElementById('countdownTimer');
-  if (!timerEl) { setTimeout(startCountdown, 500); return; }
+  const el = document.getElementById('countdownTimer');
+  if (!el) { setTimeout(startCountdown, 500); return; }
 
   const update = () => {
-    const now = new Date();
-    const lagos = new Date(now.getTime() + 60*60*1000);
+    const lagos = new Date(Date.now() + 60*60*1000);
     const today = lagos.toISOString().split('T')[0];
-    const target = new Date(today + "T22:59:59.000Z"); // 11:59:59 PM Lagos
-
+    const target = new Date(today + "T22:59:59.000Z");
     const diff = target - lagos;
 
     if (diff <= 0) {
-      timerEl.textContent = "LIVE NOW!";
-      timerEl.style.color = "#ff2d55";
+      el.textContent = "LIVE NOW!";
+      el.style.color = "#ff2d55";
       return;
     }
-
     const h = String(Math.floor(diff / 3600000)).padStart(2,'0');
     const m = String(Math.floor((diff % 3600000) / 60000)).padStart(2,'0');
     const s = String(Math.floor((diff % 60000) / 1000)).padStart(2,'0');
-    timerEl.textContent = `${h}:${m}:${s}`;
+    el.textContent = `${h}:${m}:${s}`;
   };
-
   update();
   setInterval(update, 1000);
 }
@@ -2063,21 +2034,20 @@ function startLiveStats() {
 
   const q = query(
     collection(db, "bids"),
-    where("roundId", "==", CURRENT_ROUND_ID),  // ← same ID!
+    where("roundId", "==", CURRENT_ROUND_ID),
     where("status", "==", "active")
   );
 
-  onSnapshot(q, (snap) => {
-    {
+  onSnapshot(q, snap => {
     const count = snap.size;
     playersEl.textContent = count;
     prizeEl.textContent = "₦" + (count * PRIZE_PER_PLAYER).toLocaleString();
   });
 }
 
-// RUN ONLY ONCE — NO HANG EVER
-if (!window.bidStatsInitialized) {
-  window.bidStatsInitialized = true;
+// RUN ONLY ONCE — NEVER HANGS
+if (!window.appReady) {
+  window.appReady = true;
   startCountdown();
   startLiveStats();
 }
