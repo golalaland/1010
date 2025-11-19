@@ -785,134 +785,99 @@ const profileNameEl = document.getElementById('profileName');
 
 
 
-// ---------- CUTE LANDSCAPE END GAME MODAL (WITH SHARE BUTTON) ----------
+// ========== TINY CUTE BLACK END MODAL (TAPS = SCORE) ==========
 const endGameModal = document.createElement('div');
 endGameModal.id = "endGameModal";
 endGameModal.style = `
   position:fixed; top:0; left:0; width:100%; height:100%;
-  background:radial-gradient(circle at center, #0f0d1a 0%, #0a001f 100%);
-  color:#fff; display:none; justify-content:center; align-items:center;
-  z-index:9999; font-family:'Poppins', sans-serif; overflow:hidden;
-  backdrop-filter: blur(10px); padding:20px; box-sizing:border-box;
+  background:rgba(0,0,0,0.92); backdrop-filter:blur(10px);
+  display:none; justify-content:center; align-items:center;
+  z-index:9999; font-family:'Poppins',sans-serif; padding:20px; box-sizing:border-box;
 `;
-
-// Vitality = earnings (your main score)
-let currentVitality = 0;
-let currentUsername = "Player";
 
 endGameModal.innerHTML = `
   <div style="
-    position:relative; width:100%; max-width:700px; height:380px;
-    background:linear-gradient(135deg, #1a0033, #00111c);
-    border-radius:28px; overflow:hidden; box-shadow:0 20px 50px rgba(0,0,0,0.8);
-    border:3px solid rgba(0,255,150,0.4); display:flex; align-items:center;
-    animation:modalPop 0.7s ease-out; background-image:
-      radial-gradient(circle at 20% 80%, rgba(0,255,150,0.15) 0%, transparent 50%),
-      radial-gradient(circle at 80% 20%, rgba(0,255,255,0.15) 0%, transparent 50%);
+    background:#0d0d0d; width:100%; max-width:340px; border-radius:20px;
+    overflow:hidden; box-shadow:0 15px 40px rgba(0,255,100,0.2);
+    border:2px solid #0f0; text-align:center; color:#fff;
+    animation:pop 0.5s ease-out;
   ">
-    <!-- Floating cute particles -->
-    <div style="position:absolute; inset:0; overflow:hidden; pointer-events:none;">
-      ${Array(20).fill().map(() => `
-        <div style="
-          position:absolute; width:8px; height:8px; background:#0ff;
-          border-radius:50%; box-shadow:0 0 10px #0ff; opacity:0.6;
-          animation:float 4s infinite ease-in-out;
-          left:${Math.random()*100}%; top:${Math.random()*100}%;
-          animation-delay:${Math.random()*4}s;
-        "></div>
-      `).join('')}
-      ${Array(10).fill().map(() => `
-        <div style="
-          position:absolute; font-size:20px; opacity:0.4; animation:float 6s infinite linear;
-          left:${Math.random()*100}%; top:${Math.random()*100}%;
-          animation-delay:${Math.random()*6}s;
-        ">✦</div>
-      `).join('')}
+    <!-- HEADER -->
+    <div style="background:#0f0; color:#000; padding:16px 20px; font-size:20px; font-weight:bold;">
+      ROUND OVER!
     </div>
 
-    <!-- Left side - Big Vitality Score -->
-    <div style="flex:1; padding:40px; text-align:center;">
-      <h1 style="
-        margin:0 0 15px; font-size:48px; line-height:1;
-        background:linear-gradient(90deg, #0f0, #0ff);
-        -webkit-background-clip:text; -webkit-text-fill-color:transparent;
-      ">₦${currentVitality.toLocaleString()}</h1>
-      <p style="margin:0; font-size:22px; opacity:0.9;">Your Vitality Score</p>
-      <p style="margin:10px 0 0; font-size:16px; color:#0f0;">${currentUsername}'s Legend!</p>
-    </div>
-
-    <!-- Right side - Message + Buttons -->
-    <div style="flex:1.3; padding:30px 40px; display:flex; flex-direction:column; justify-content:center; gap:20px;">
-      <div id="creativeMessage" style="
-        font-size:18px; line-height:1.6; background:rgba(0,255,150,0.12);
-        padding:18px; border-radius:16px; border-left:5px solid #0f0;
-        min-height:100px; text-align:left;
-      "></div>
-
-      <div style="display:flex; gap:15px; justify-content:center;">
-        <!-- Share Button -->
-        <button id="shareScoreBtn" style="
-          flex:1; padding:14px; border:none; border-radius:16px;
-          background:linear-gradient(45deg, #00ff9d, #00bfc0);
-          color:#000; font-weight:bold; font-size:17px; cursor:pointer;
-          box-shadow:0 6px 20px rgba(0,255,150,0.4); transition:all 0.3s;
-        ">
-          📤 SHARE MY SCORE
-        </button>
-
-        <!-- Play Again Button -->
-        <button id="closeEndGame" style="
-          flex:1; padding:14px; border:none; border-radius:16px;
-          background:linear-gradient(45deg, #ff00c8, #ff6bd6);
-          color:#fff; font-weight:bold; font-size:17px; cursor:pointer;
-          box-shadow:0 6px 20px rgba(255,0,200,0.4); transition:all 0.3s;
-        ">
-          🚀 PLAY AGAIN
-        </button>
+    <!-- BODY -->
+    <div style="padding:30px 20px;">
+      <div style="font-size:48px; font-weight:900; margin:10px 0; color:#0ff;">
+        ${taps.toLocaleString()}
       </div>
+      <div style="font-size:18px; opacity:0.9; margin:8px 0;">
+        Lightning Taps
+      </div>
+      <div style="font-size:15px; color:#0f0; margin-top:12px;">
+        ${currentUser?.handle || "Player"} smashed it!
+      </div>
+    </div>
+
+    <!-- BUTTONS -->
+    <div style="padding:0 20px 25px; display:flex; gap:12px;">
+      <button id="shareScoreBtn" style="
+        flex:1; padding:14px; border:none; border-radius:14px;
+        background:#00ff9d; color:#000; font-weight:bold; font-size:16px;
+        cursor:pointer; box-shadow:0 4px 15px rgba(0,255,150,0.4);
+      ">SHARE</button>
+
+      <button id="playAgainBtn" style="
+        flex:1; padding:14px; border:none; border-radius:14px;
+        background:#ff00c8; color:#fff; font-weight:bold; font-size:16px;
+        cursor:pointer; box-shadow:0 4px 15px rgba(255,0,200,0.4);
+      ">PLAY AGAIN</button>
     </div>
   </div>
 
   <style>
-    @keyframes modalPop {
-      0% { transform:scale(0.8) translateY(50px); opacity:0; }
-      100% { transform:scale(1) translateY(0); opacity:1; }
-    }
-    @keyframes float {
-      0%, 100% { transform:translateY(0) rotate(0deg); }
-      50% { transform:translateY(-30px) rotate(180deg); }
-    }
-    button:hover { transform:translateY(-3px) scale(1.05); }
+    @keyframes pop{0%{transform:scale(0.8);opacity:0}100%{transform:scale(1);opacity:1}}
+    button:active{transform:scale(0.95)}
   </style>
 `;
 
 document.body.appendChild(endGameModal);
 
 // Elements
-const creativeMessageEl = document.getElementById('creativeMessage');
 const shareScoreBtn = document.getElementById('shareScoreBtn');
-const closeEndGameBtn = document.getElementById('closeEndGame');
+const playAgainBtn = document.getElementById('playAgainBtn');
 
-// Share functionality (Web Share API - works perfectly on mobile + most modern browsers)
-shareScoreBtn.addEventListener('click', async () => {
-  const shareText = `${currentUsername} just scored ₦${currentVitality.toLocaleString()} Vitality in Tap Blitz! 💥 Can you beat me?`;
-  
+// SHARE BUTTON (mobile + desktop)
+shareScoreBtn.onclick = () => {
+  const text = `${currentUser?.handle || "I"} just tapped ${taps.toLocaleString()} times in 10 seconds! Can you beat me?`;
   if (navigator.share) {
-    try {
-      await navigator.share({
-        title: 'My Tap Blitz Score!',
-        text: shareText,
-        url: window.location.href
-      });
-    } catch(err) {
-      alert("Sharing cancelled or not supported 😢");
-    }
+    navigator.share({ title: "My Tap Score!", text: text, url: location.href });
   } else {
-    // Fallback: copy to clipboard
-    navigator.clipboard.writeText(shareText + " " + window.location.href);
-    alert("Score copied to clipboard! Paste it anywhere to flex 💪");
+    navigator.clipboard.writeText(text + " " + location.href);
+    alert("Score copied! Paste & flex");
   }
-});
+};
+
+// PLAY AGAIN → FULL RELOAD (100% clean reset)
+playAgainBtn.onclick = () => {
+  location.reload();
+};
+
+// SHOW MODAL (only needs taps now)
+function showEndGameModal() {
+  endGameModal.querySelector('.background-#0f0').nextElementSibling.innerHTML = `
+    <div style="font-size:48px; font-weight:900; margin:10px 0; color:#0ff;">
+      ${taps.toLocaleString()}
+    </div>
+    <div style="font-size:18px; opacity:0.9; margin:8px 0;">Lightning Taps</div>
+    <div style="font-size:15px; color:#0f0; margin-top:12px;">
+      ${currentUser?.handle || "Player"} smashed it!
+    </div>
+  `;
+  endGameModal.style.display = "flex";
+}
+
 
 // Creative messages (updated to focus only on Vitality)
 function generateCreativeMessage(username, vitality) {
@@ -1213,24 +1178,16 @@ function startSession() {
 // ======================================================
 //   INSTANT END — UI FREEZE, BLOCK TAPS (FIXED!)
 // ======================================================
-// Preload sound (put this near the top)
-const victorySound = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-achievement-bell-600.mp3');
-victorySound.volume = 0.6;
-
-// Inside endSessionImmediate()
 function endSessionImmediate() {
   running = false;
   tapLocked = true;
   tapButton.disabled = true;
   clearInterval(intervalId);
 
-  victorySound.currentTime = 0;
-  victorySound.play().catch(() => {}); // silently ignore if blocked
+  // Optional victory sound
+  new Audio('https://assets.mixkit.co/sfx/preview/mixkit-achievement-bell-600.mp3').play();
 
-  showEndGameModal({
-    vitality: earnings,
-    username: currentUser?.handle || "Tap Master"
-  });
+  showEndGameModal(); // Only needs taps (already in global scope)
 }
 
 
