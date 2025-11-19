@@ -2076,7 +2076,7 @@ document.addEventListener('DOMContentLoaded', () => {
         el.className = 'sm-listing';
         el.innerHTML = `
           <div>
-            <h4>Star ${formatNUMBER(d.amount)} Stars</h4>
+           <h4>Star ${formatNumber(d.amount)} Stars</h4>
             <small>by ${d.sellerName || 'User'} • ₦${formatNumber(d.price)}</small>
           </div>
           <button class="sm-buy-btn" data-id="${doc.id}" data-amt="${d.amount}" data-price="${d.price}">
