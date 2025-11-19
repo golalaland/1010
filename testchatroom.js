@@ -2494,10 +2494,13 @@ confirmBtn.onclick = async () => {
 // ================================
 // 💰 $ell Content (Highlight Upload)
 // ================================
-document.addEventListener("DOMContentLoaded", () => {
-  const uploadBtn = document.getElementById("uploadHighlightBtn");
-  if (!uploadBtn) return;
+function waitForElement(id, callback) {
+  const el = document.getElementById(id);
+  if (el) return callback(el);
+  setTimeout(() => waitForElement(id, callback), 50);
+}
 
+waitForElement("uploadHighlightBtn", (uploadBtn) => {
   uploadBtn.addEventListener("click", async () => {
     const statusEl = document.getElementById("highlightUploadStatus");
     const fileInput = document.getElementById("highlightUploadInput");
@@ -2505,32 +2508,32 @@ document.addEventListener("DOMContentLoaded", () => {
     const descInput = document.getElementById("highlightDescInput");
     const priceInput = document.getElementById("highlightPriceInput");
 
-    console.log({statusEl, fileInput, titleInput, descInput, priceInput});
-
-    // extra safety checks
-    if (!fileInput || !titleInput || !descInput || !priceInput || !statusEl) {
-      console.error("Highlight upload elements not found");
+    // Safety check: if any element is missing, stop
+    if (!statusEl || !fileInput || !titleInput || !descInput || !priceInput) {
+      console.error("Highlight upload elements missing", {
+        statusEl, fileInput, titleInput, descInput, priceInput
+      });
       return;
     }
 
     const title = titleInput.value.trim();
     const desc = descInput.value.trim();
     const price = parseInt(priceInput.value || "0");
+    const file = fileInput.files[0];
 
     statusEl.textContent = "";
-    if (!currentUser) return statusEl.textContent = "⚠️ Please sign in first";
 
-    if (!fileInput.files[0]) return statusEl.textContent = "⚠️ Please select a video";
+    if (!currentUser) return statusEl.textContent = "⚠️ Please sign in first";
+    if (!file) return statusEl.textContent = "⚠️ Please select a video";
     if (!title) return statusEl.textContent = "⚠️ Add a title";
     if (price < 10) return statusEl.textContent = "⚠️ Minimum price is 10 ⭐";
-
-    const file = fileInput.files[0];
     if (!file.type.startsWith("video/")) return statusEl.textContent = "⚠️ Must be a video file";
     if (file.size > 600 * 1024 * 1024) return statusEl.textContent = "⚠️ Video too big (max ~600 MB)";
 
     statusEl.textContent = "⏳ Uploading video to your store…";
 
     try {
+      // 🔹 Upload video via your Node backend
       const form = new FormData();
       form.append("file", file);
 
@@ -2562,7 +2565,7 @@ document.addEventListener("DOMContentLoaded", () => {
       });
 
       statusEl.innerHTML = "✅ Highlight uploaded & live!";
-      setTimeout(() => (statusEl.textContent = ""), 5000);
+      setTimeout(() => statusEl.textContent = "", 5000);
 
       // Reset form
       fileInput.value = "";
