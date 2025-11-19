@@ -2494,95 +2494,85 @@ confirmBtn.onclick = async () => {
 // ================================
 // 💰 $ell Content (Highlight Upload)
 // ================================
-function waitForElement(id, callback) {
-  const el = document.getElementById(id);
-  if (el) return callback(el);
-  setTimeout(() => waitForElement(id, callback), 50);
-}
+document.getElementById("uploadHighlightBtn").addEventListener("click", async () => {
+  const statusEl = document.getElementById("highlightUploadStatus");
+  statusEl.textContent = "";
 
-waitForElement("uploadHighlightBtn", (uploadBtn) => {
-  uploadBtn.addEventListener("click", async () => {
-    const statusEl = document.getElementById("highlightUploadStatus");
-    const fileInput = document.getElementById("highlightUploadInput");
-    const titleInput = document.getElementById("highlightTitleInput");
-    const descInput = document.getElementById("highlightDescInput");
-    const priceInput = document.getElementById("highlightPriceInput");
-    const urlInput = document.getElementById("highlightUrlInput");
+  if (!currentUser) {
+    statusEl.textContent = "⚠️ Please sign in first!";
+    return;
+  }
 
-    // Safety check
-    if (!statusEl || !fileInput || !titleInput || !descInput || !priceInput || !urlInput) {
-      console.error("Some highlight upload elements missing");
-      return;
+  const fileInput = document.getElementById("highlightUploadInput");
+  const urlInput = document.getElementById("highlightVideoInput"); // manual URL input
+  const titleInput = document.getElementById("highlightTitleInput");
+  const descInput = document.getElementById("highlightDescInput");
+  const priceInput = document.getElementById("highlightPriceInput");
+
+  // Values
+  const file = fileInput?.files[0];
+  const manualUrl = urlInput?.value.trim();
+  const title = titleInput?.value.trim();
+  const desc = descInput?.value.trim();
+  const price = parseInt(priceInput?.value.trim() || "0");
+
+  // Validation
+  if (!title || !price || (!file && !manualUrl)) {
+    statusEl.textContent = "⚠️ Fill in all required fields (file or URL, title, price)";
+    return;
+  }
+
+  try {
+    statusEl.textContent = "⏳ Uploading highlight…";
+
+    let videoUrl = manualUrl;
+
+    // If file is selected, upload via Node backend
+    if (file) {
+      if (!file.type.startsWith("video/")) throw new Error("⚠️ Must be a video file");
+      if (file.size > 600 * 1024 * 1024) throw new Error("⚠️ Video too big (~600MB max)");
+
+      const form = new FormData();
+      form.append("file", file);
+
+      const response = await fetch("http://localhost:3000/upload-video", { method: "POST", body: form });
+      if (!response.ok) throw new Error("⚠️ File upload failed");
+
+      const data = await response.json();
+      videoUrl = data.url; // Shopify CDN URL
     }
 
-    const title = titleInput.value.trim();
-    const desc = descInput.value.trim();
-    const price = parseInt(priceInput.value || "0");
-    const file = fileInput.files[0];
-    const manualUrl = urlInput.value.trim();
+    // Save to database
+    const userId = currentUser.uid;
+    const emailId = (currentUser.email || "").replace(/\./g, ",");
+    const chatId = currentUser.chatId || currentUser.displayName || "Anonymous";
 
-    statusEl.textContent = "";
+    await addDoc(collection(db, "highlightVideos"), {
+      uploaderId: userId,
+      uploaderEmail: emailId,
+      uploaderName: chatId,
+      highlightVideo: videoUrl,
+      highlightVideoPrice: price,
+      title,
+      description: desc || "",
+      createdAt: serverTimestamp(),
+    });
 
-    if (!currentUser) return statusEl.textContent = "⚠️ Please sign in first";
-    if (!title) return statusEl.textContent = "⚠️ Add a title";
-    if (price < 10) return statusEl.textContent = "⚠️ Minimum price is 10 ⭐";
+    statusEl.textContent = "✅ Highlight uploaded successfully!";
+    setTimeout(() => (statusEl.textContent = ""), 4000);
 
-    // Either file OR manual URL must be provided
-    if (!file && !manualUrl) return statusEl.textContent = "⚠️ Select a file or paste a URL";
-
-    try {
-      let videoUrl = manualUrl;
-
-      // If a file is provided, upload it via Node backend
-      if (file) {
-        if (!file.type.startsWith("video/")) return statusEl.textContent = "⚠️ Must be a video file";
-        if (file.size > 600 * 1024 * 1024) return statusEl.textContent = "⚠️ Video too big (max ~600 MB)";
-
-        statusEl.textContent = "⏳ Uploading video to your store…";
-
-        const form = new FormData();
-        form.append("file", file);
-
-        const response = await fetch("http://localhost:3000/upload-video", { method: "POST", body: form });
-        if (!response.ok) throw new Error("Upload failed");
-
-        const data = await response.json();
-        videoUrl = data.url; // Shopify CDN URL
-      }
-
-      statusEl.textContent = "⏳ Saving highlight to database…";
-
-      const userId = currentUser.uid;
-      const emailId = (currentUser.email || "").replace(/\./g, ",");
-      const chatId = currentUser.chatId || currentUser.displayName || "Anonymous";
-
-      await addDoc(collection(db, "highlightVideos"), {
-        uploaderId: userId,
-        uploaderEmail: emailId,
-        uploaderName: chatId,
-        highlightVideo: videoUrl,
-        highlightVideoPrice: price,
-        title,
-        description: desc || "",
-        createdAt: serverTimestamp(),
-      });
-
-      statusEl.innerHTML = "✅ Highlight uploaded & live!";
-      setTimeout(() => statusEl.textContent = "", 5000);
-
-      // Reset form
-      fileInput.value = "";
-      titleInput.value = "";
-      descInput.value = "";
-      priceInput.value = "50";
-      urlInput.value = "";
-
-    } catch (err) {
-      console.error(err);
-      statusEl.textContent = "❌ Upload failed — try again";
-    }
-  });
+    // Reset
+    fileInput.value = "";
+    urlInput.value = "";
+    titleInput.value = "";
+    descInput.value = "";
+    priceInput.value = "50";
+  } catch (err) {
+    console.error("❌ Upload error:", err);
+    statusEl.textContent = err.message || "⚠️ Failed to upload. Try again.";
+  }
 });
+
 
 
 
