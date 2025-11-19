@@ -575,7 +575,8 @@ bar + footer */
       </div>
 
       <p id="leaderboardDescription" style="font-size:13.8px;color:#ddd;line-height:1.5;margin:10px 0;text-align:center;">
-        Checkout today's top tappers who dominate the leaderboard. Tap fast to stay ahead!
+        Checkout today's top tappers who dominate the leaderboard.
+         Tap fast to stay ahead!
       </p>
 
       <ol id="leaderboardList" style="list-style:none;padding:0;margin:14px 0 10px;flex:1;">
@@ -623,8 +624,8 @@ bar + footer */
 
       <div style="background:rgba(255,215,0,0.15);padding:14px;border-radius:12px;margin-bottom:16px;">
         <strong style="color:#FFD700;">3. Rewards</strong><br>
-        • Top 33 daily → Real cash<br>
-        • Top 5 weekly → Bonus Stars + Crown<br>
+        • Top 33 tappers everyday win cash rewards<br>
+        • Top 5 tappers every week win cash rewards<br>
         • You will win if you tap fast enough
       </div>
 
@@ -636,7 +637,7 @@ bar + footer */
       </div>
 
       <div style="margin-top:20px;text-align:center;font-size:13px;color:#777;font-style:italic;">
-        Lagos built. Chaos powered. Dettyverse certified.
+        自分の雰囲気を自分のものにしよう
       </div>
     </div>
 
@@ -820,10 +821,14 @@ endGameModal.innerHTML = `
         SHARE SCORE
       </button>
 
-      <button id="playAgainBtn" style="flex:1;padding:15px;border:none;border-radius:14px;
-        background:#ff00aa;color:#fff;font-weight:bold;font-size:16px;cursor:pointer;">
-        PLAY AGAIN
-      </button>
+<button id="playAgainBtn" 
+        style="flex:1;padding:15px;border:none;border-radius:14px;
+               background:#ff00aa;color:#fff;font-weight:bold;font-size:16px;
+               cursor:pointer;position:relative;z-index:999999;
+               box-shadow:0 5px 15px rgba(255,0,170,0.4);"
+        onclick="location.reload(true)">
+  PLAY AGAIN
+</button>
     </div>
   </div>
 `;
