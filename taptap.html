@@ -66,16 +66,42 @@ body.start-mode #bgWrapper::after{display:none;}
   z-index:1;
 }
 body.game-mode #dettyFooter{display:none;}   /* hide only in game */
+/* FULL-SCREEN BACKGROUND THAT DOESN'T AFFECT LAYOUT */
+#bgLayer {
+  position: fixed;
+  inset: 0;
+  background: url('https://cdn.shopify.com/s/files/1/0962/6648/6067/files/9F6F9EAC-F165-4C70-85CB-B2351A3B8C59.png?v=1763282422') center/cover no-repeat;
+  z-index: -1;
+}
+body.game-mode #bgLayer {
+  background-image: url('https://cdn.shopify.com/s/files/1/0962/6648/6067/files/64EB80F3-9BE7-4D39-8C96-5608B941E4DC.png?v=1763280746');
+}
+
+/* Blur layer only in game mode */
+#bgLayer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+body.start-mode #bgLayer::after { display: none; }
+
+/* Force footer to bottom – no matter what */
+html, body { height: 100%; margin:0; }
+body { display: flex; flex-direction: column; min-height: 100vh; }
+#appWrapper { flex: 1; }           /* this pushes footer down */
+#dettyFooter { flex-shrink: 0; }   /* footer never collapses */
 </style>
 </head>
 
-<body class="start-mode">   <!-- start-mode = footer visible -->
+<body class="start-mode">
 
-  <!-- FULL-SCREEN BACKGROUND (does NOT affect layout) -->
-  <div id="bgWrapper"></div>
+  <!-- FULL-SCREEN BACKGROUND (doesn't push anything) -->
+  <div id="bgLayer"></div>
 
-  <!-- SCROLLABLE CONTENT -->
   <div id="appWrapper">
+    <!-- ALL YOUR EXISTING CONTENT (header, start page, game page, modals, etc.) -->
     
     <!-- ALL YOUR EXISTING CONTENT GOES HERE -->
     <!-- Header, startPage, gamePage, modals, audio, everything exactly as before -->
@@ -87,8 +113,9 @@ body.game-mode #dettyFooter{display:none;}   /* hide only in game */
 
   </div>
 
-  <!-- DETTYVERSE FOOTER – ALWAYS BELOW EVERYTHING -->
-  <footer id="dettyFooter">
+
+  <!-- DETTYVERSE FOOTER – ALWAYS AT REAL BOTTOM -->
+  <footer id="dettyFooter" style="padding:60px 20px 40px; text-align:center; color:#555; font-size:13px; line-height:1.8; background:#0e0e0e;">
     <div style="font-size:18px;font-weight:800;background:linear-gradient(90deg,#FF1493,#00e676);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">
       ©5786 ገብር ነፍስህ (Own Your Vibe)
     </div>
@@ -102,10 +129,7 @@ body.game-mode #dettyFooter{display:none;}   /* hide only in game */
     </div>
   </footer>
 
-  <!-- Your fixed bottom bar (profile + tiny buttons) -->
-  <div id="bottomBar" style="position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;z-index:997;pointer-events:none;">
-    <!-- your existing bottomBar code -->
-  </div>
+ 
 
 </body>
 </html>
