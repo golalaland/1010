@@ -628,7 +628,7 @@ bar + footer */
       <div id="profileName" style="font-size:16px;font-weight:700;color:#fff;">GUEST 0000</div>
       <div style="margin-top:8px;font-size:14px;">
         <strong style="background:linear-gradient(90deg,#00e676,#00b0ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">STARS COLLECTED:</strong>
-        <span id="starCount" style="color:#fff;">50</span> ⭐️
+        <span id="starCount" style="color:#fff;">50</span>⭐️
       </div>
       <div style="margin-top:4px;font-size:14px;">
         <strong style="background:linear-gradient(90deg,#00e676,#00b0ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">CASH EARNED:</strong>
@@ -1004,12 +1004,6 @@ bar + footer */
   const auth = getAuth(app);
   const db = getFirestore(app);
 
-// Prevent sound spam
-window.lastSoundTime = 0;
-
-document.getElementById('leaderboardBtn').onclick = () => {
-  document.getElementById('sideTab').classList.toggle('closed');
-};
 
 // ---------- DOM ----------
 const body = document.body;
@@ -1626,7 +1620,6 @@ confirmPlay?.addEventListener("click", async () => {
     startSession();
   }, 700);
 });
-
 
 /* ------------------------------
    LEADERBOARD SETUP (FIXED + CLEAN)
