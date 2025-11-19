@@ -1859,7 +1859,13 @@ document.getElementById('rulesModal').addEventListener('click', (e) => {
 });
 
 
-const CURRENT_ROUND_ID = "round_nov19_2025"; // or keep your manual one
+// Optional: Auto daily round (remove if you want to keep manual)
+function getTodayRound() {
+  const d = new Date();
+  d.setHours(d.getHours() + 1); // Lagos is UTC+1
+  return "round_" + d.toISOString().split('T')[0]; // e.g. round_2025-11-19
+}
+const CURRENT_ROUND_ID = getTodayRound(); // or keep your manual one
 const BID_COST = 50;
 
 // Your full original listeners (unchanged)
@@ -1891,32 +1897,15 @@ document.getElementById('confirmBidModal').addEventListener('click', (e) => {
   }
 });
 
-// Simple custom alert — replaces browser alert()
-function showNiceAlert(message) {
-  document.getElementById('niceAlertMessage').textContent = message;
-  document.getElementById('niceAlert').style.display = 'flex';
-
-  return new Promise(resolve => {
-    const close = () => {
-      document.getElementById('niceAlert').style.display = 'none';
-      resolve();
-    };
-    document.getElementById('niceAlertBtn').onclick = close;
-    document.getElementById('niceAlert').onclick = (e) => {
-      if (e.target === document.getElementById('niceAlert')) close();
-    };
-  });
-}
-
 // FINAL CONFIRM — WITH SECURITY + CUSTOM ALERT
 document.getElementById('finalConfirmBtn').addEventListener('click', async () => {
   const btn = document.getElementById('finalConfirmBtn');
   btn.disabled = true;
-  btn.textContent = "Processing...";
+  btn.textContent = "...";
 
   try {
     if (!currentUser?.uid) {
-      await showNiceAlert("You must be logged in");
+      await showNiceAlert("You must be logged in to play buddy");
       document.getElementById('confirmBidModal').style.display = 'none';
       return;
     }
@@ -1929,7 +1918,7 @@ document.getElementById('finalConfirmBtn').addEventListener('click', async () =>
     ));
 
     if (!check.empty) {
-      await showNiceAlert("You already joined today's war!");
+      await showNiceAlert("You already joined today's conquest!");
       document.getElementById('confirmBidModal').style.display = 'none';
       return;
     }
@@ -1939,7 +1928,7 @@ document.getElementById('finalConfirmBtn').addEventListener('click', async () =>
     if (!deductResult.ok) {
       await showNiceAlert("Not enough stars: " + deductResult.message);
       btn.disabled = false;
-      btn.textContent = "YES, DEDUCT & ENTER";
+      btn.textContent = "YES!";
       return;
     }
 
@@ -1963,7 +1952,7 @@ document.getElementById('finalConfirmBtn').addEventListener('click', async () =>
     await showNiceAlert("Something went wrong. Try again.");
   } finally {
     btn.disabled = false;
-    btn.textContent = "YES, DEDUCT & ENTER";
+    btn.textContent = "YES!";
     document.getElementById('confirmBidModal').style.display = 'none';
   }
 });
