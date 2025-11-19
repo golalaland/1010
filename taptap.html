@@ -7,107 +7,105 @@
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Montserrat:wght@500;700&display=swap" rel="stylesheet">
 
 <style>
-:root{
-  --bg:#0e0e0e;
-  --glass-bg: rgba(255,255,255,0.04);
-  --accent1:#FF1493;
-  --accent2:#FF8C00;
-  --green1:#00e676;
-  --muted:#aaa;
-  --glass-border: rgba(255,255,255,0.08);
-}
-* { box-sizing:border-box; margin:0; padding:0; }
-
-html { height:100%; }
-body {
+*{box-sizing:border-box;margin:0;padding:0;}
+html{height:100%;}
+body{
   min-height:100vh;
-  background:var(--bg);
-  color:#fff;
   font-family:'Montserrat',sans-serif;
+  color:#fff;
   display:flex;
   flex-direction:column;
-  padding:18px 0 140px;
-  touch-action:manipulation;
-  overflow-x:hidden;
 }
-#appWrapper {
-  width:100%; max-width:480px;
+
+/* ─────── BACKGROUND IMAGES ─────── */
+#bgWrapper{
+  position:fixed;
+  inset:0;
+  z-index:-2;
+  background:url('https://cdn.shopify.com/s/files/1/0962/6648/6067/files/9F6F9EAC-F165-4C70-85CB-B2351A3B8C59.png?v=1763282422') center/cover no-repeat;
+}
+body.game-mode #bgWrapper{
+  background-image:url('https://cdn.shopify.com/s/files/1/0962/6648/6067/files/64EB80F3-9BE7-4D39-8C96-5608B941E4DC.png?v=1763280746');
+}
+
+/* Optional blur layer (you already had this) */
+#bgWrapper::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  backdrop-filter:blur(8px);
+  -webkit-backdrop-filter:blur(8px);
+}
+body.start-mode #bgWrapper::after{display:none;}
+
+/* ─────── MAIN CONTENT (scrollable) ─────── */
+#appWrapper{
+  width:100%;
+  max-width:480px;
   margin:0 auto;
-  flex:1;                    /* ← pushes footer down */
+  flex:1;
   display:flex;
   flex-direction:column;
   align-items:center;
+  padding:18px 0 160px;   /* space for fixed bottom bar + footer */
+  position:relative;
+  z-index:1;
 }
 
-/* ─────── DETTYVERSE FOOTER – ALWAYS AT BOTTOM ─────── */
-#dettyFooter {
+/* ─────── DETTYVERSE FOOTER – ALWAYS AT VERY BOTTOM ─────── */
+#dettyFooter{
+  width:100%;
   padding:60px 20px 40px;
   text-align:center;
   color:#555;
   font-size:13px;
   line-height:1.8;
   background:#0e0e0e;
-  width:100%;
   flex-shrink:0;
+  position:relative;
+  z-index:1;
 }
-/* Hide footer only when game is active */
-body.game-mode #dettyFooter { display:none; }
-
-/* (All your existing styles stay exactly the same below – I didn’t touch anything else) */
-#gameHeader { text-align:center; margin-top:6px; }
-#welcomeText { font-family:'Press Start 2P',cursive; font-size:11px; color:var(--accent1); }
-#scrambleText { font-family:'Press Start 2P',cursive; font-size:20px; color:var(--accent1); margin-top:4px; }
-/* … keep every single one of your original styles here … */
+body.game-mode #dettyFooter{display:none;}   /* hide only in game */
 </style>
 </head>
 
-<body class="start-mode"> <!-- ← this makes footer appear instantly -->
+<body class="start-mode">   <!-- start-mode = footer visible -->
 
-<div id="appWrapper">
-  <!-- ALL YOUR EXISTING CONTENT (header, startPage, gamePage, modals, etc.) goes here exactly as before -->
-  <!-- I’m just showing the important parts so you see where to paste -->
+  <!-- FULL-SCREEN BACKGROUND (does NOT affect layout) -->
+  <div id="bgWrapper"></div>
 
-  <!-- Header -->
-  <div id="gameHeader">
-    <div id="welcomeText">WELCOME TO</div>
-    <div id="scrambleText">TAP MASTER</div>
+  <!-- SCROLLABLE CONTENT -->
+  <div id="appWrapper">
+    
+    <!-- ALL YOUR EXISTING CONTENT GOES HERE -->
+    <!-- Header, startPage, gamePage, modals, audio, everything exactly as before -->
+    
+    <div id="gameHeader">…</div>
+    <div id="startPage">…</div>
+    <div id="gamePage" class="hidden">…</div>
+    <!-- all your modals, tap button, etc. -->
+
   </div>
 
-  <!-- Start Page -->
-  <div id="startPage" style="width:100%;display:flex;flex-direction:column;align-items:center;margin-top:18px;">
-    <button id="startBtn" style="padding:12px 22px;border-radius:12px;background:linear-gradient(90deg,#00e676,#00b0ff);color:#000;font-weight:800;font-size:16px;border:none;cursor:pointer;">
-      Play
-    </button>
+  <!-- DETTYVERSE FOOTER – ALWAYS BELOW EVERYTHING -->
+  <footer id="dettyFooter">
+    <div style="font-size:18px;font-weight:800;background:linear-gradient(90deg,#FF1493,#00e676);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">
+      ©5786 ገብር ነፍስህ (Own Your Vibe)
+    </div>
+    <div style="margin:12px 0;">自分の雰囲気を自分のものにしよう • 자신의 분위기를 내 것으로 만들자</div>
+    <div>Own your rhythm. Master the tap. Rule the verse.</div>
+    <div style="margin:16px 0 24px;color:#777;">3-1-1 Nihonbashi • Lagos • Seoul • The Metaverse</div>
+    <div style="font-size:11px;">
+      <a href="#" style="color:#888;text-decoration:none;margin:0 10px;">Privacy</a>•
+      <a href="#" style="color:#888;text-decoration:none;margin:0 10px;">Terms</a>•
+      <a href="https://x.com/dettyverse" style="color:#FF1493;text-decoration:none;">@dettyverse</a>
+    </div>
+  </footer>
+
+  <!-- Your fixed bottom bar (profile + tiny buttons) -->
+  <div id="bottomBar" style="position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;z-index:997;pointer-events:none;">
+    <!-- your existing bottomBar code -->
   </div>
-
-  <!-- Game UI (hidden by default) -->
-  <div id="gamePage" class="hidden" style="width:100%;display:flex;flex-direction:column;align-items:center;">
-    <!-- your glass terminal, tap button, etc. -->
-  </div>
-
-  <!-- all your modals, audio, etc. -->
-
-</div> <!-- end #appWrapper -->
-
-<!-- DETTYVERSE FOOTER – PERFECTLY AT BOTTOM -->
-<footer id="dettyFooter">
-  <div style="font-size:18px;font-weight:800;background:linear-gradient(90deg,#FF1493,#00e676);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">
-    ©5786 ገብር ነፍስህ (Own Your Vibe)
-  </div>
-  <div style="margin:12px 0;">自分の雰囲気を自分のものにしよう • 자신의 분위기를 내 것으로 만들자</div>
-  <div>Own your rhythm. Master the tap. Rule the verse.</div>
-  <div style="margin:16px 0 24px;color:#777;">3-1-1 Nihonbashi • Lagos • Seoul • The Metaverse</div>
-  <div style="font-size:11px;">
-    <a href="#" style="color:#888;text-decoration:none;margin:0 10px;">Privacy</a>•
-    <a href="#" style="color:#888;text-decoration:none;margin:0 10px;">Terms</a>•
-    <a href="https://x.com/dettyverse" style="color:#FF1493;text-decoration:none;">@dettyverse</a>
-  </div>
-</footer>
-
-<!-- Your fixed bottom bar (profile + tiny buttons) -->
-<div id="bottomBar" style="position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;z-index:997;pointer-events:none;">
-  <!-- your existing bottomBar code -->
-</div>
 
 </body>
 </html>
