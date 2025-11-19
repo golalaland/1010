@@ -1666,28 +1666,21 @@ periodTabs.forEach(tab => {
 });
 
 
-/* -------------------------------------------
-   DAILY COUNTDOWN
--------------------------------------------- */
-function startDailyCountdown() {
-  const countdownEl = document.getElementById("dailyTimerValue");
+// Leaderboard daily reset timer (resets at midnight Lagos time)
+function updateLeaderboardTimer() {
+  const el = document.getElementById("dailyTimerValue");
+  if (!el) return;
 
-  function updateCountdown() {
-    const now = new Date();
-    const nextReset = new Date();
-    nextReset.setHours(24, 0, 0, 0);
+  const lagosNow = new Date(Date.now() + 60*60*1000); // UTC+1
+  const midnight = new Date(lagosNow);
+  midnight.setHours(24, 0, 0, 0); // next midnight
 
-    const diff = Math.max(0, Math.floor((nextReset - now) / 1000));
+  const diff = Math.floor((midnight - lagosNow) / 1000);
+  const h = String(Math.floor(diff / 3600)).padStart(2,'0');
+  const m = String(Math.floor((diff % 3600) / 60)).padStart(2,'0');
+  const s = String(diff % 60).padStart(2,'0');
 
-    const h = String(Math.floor(diff / 3600)).padStart(2, "0");
-    const m = String(Math.floor((diff % 3600) / 60)).padStart(2, "0");
-    const s = String(diff % 60).padStart(2, "0");
-
-    countdownEl.textContent = `${h}:${m}:${s}`;
-  }
-
-  updateCountdown();
-  setInterval(updateCountdown, 1000);
+  el.textContent = `${h}:${m}:${s}`;
 }
 
 
@@ -2115,13 +2108,12 @@ function startDailyBidEngine() {
   // ——— LIVE SECOND-BY-SECOND TICK (PERFECT, NO JUMP) ———
   let lastSecond = -1;
   function liveTick() {
-    const currentSecond = Math.floor(getLagosTime() / 1000);
-    if (currentSecond !== lastSecond) {
-      lastSecond = currentSecond;
-      updateCountdown();
-      updateLiveStats();
-    }
-    requestAnimationFrame(liveTick);
+  const currentSecond = Math.floor(getLagosTime() / 1000);
+  if (currentSecond !== lastSecond) {
+    lastSecond = currentSecond;
+    updateCountdown();         // Bid Royale timer
+    updateLiveStats();         // Players + prize
+    updateLeaderboardTimer();  // ← NEW: leaderboard midnight timer
   }
   requestAnimationFrame(liveTick);
 }
