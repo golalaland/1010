@@ -400,6 +400,17 @@ bar + footer */
 .upgrade-item:hover {
   filter: brightness(1.3);
 }
+html { height: 100%; }
+body { 
+  min-height: 100%; 
+  display: flex; 
+  flex-direction: column; 
+}
+#appWrapper { 
+  flex: 1; 
+  display: flex; 
+  flex-direction: column; 
+}
 </style>
 </head>
 <body>
@@ -794,6 +805,22 @@ bar + footer */
 <audio id="gameMusic" loop preload="auto">
   <source src="night_city_jazz.mp3" type="audio/mpeg">
 </audio>
+
+
+<!-- DETTYVERSE FOOTER – ONLY ON START PAGE -->
+<footer id="dettyFooter" style="display:none; padding:60px 20px 40px; text-align:center; color:#555; font-size:13px; line-height:1.8; background:#0e0e0e; margin-top:auto;">
+  <div style="font-size:18px; font-weight:800; background:linear-gradient(90deg,#FF1493,#00e676); -webkit-background-clip:text; -webkit-text-fill-color:transparent;">
+    ©5786 ገብር ነፍስህ (Own Your Vibe)
+  </div>
+  <div style="margin:12px 0;">自分の雰囲気を自分のものにしよう • 자신의 분위기를 내 것으로 만들자</div>
+  <div>Own your rhythm. Master the tap. Rule the verse.</div>
+  <div style="margin:16px 0 24px; color:#777;">3-1-1 Nihonbashi • Lagos • Seoul • The Metaverse</div>
+  <div style="font-size:11px;">
+    <a href="#" style="color:#888; text-decoration:none; margin:0 10px;">Privacy</a>•
+    <a href="#" style="color:#888; text-decoration:none; margin:0 10px;">Terms</a>•
+    <a href="https://x.com/dettyverse" style="color:#FF1493; text-decoration:none;">@dettyverse</a>
+  </div>
+</footer>
 
 
 <script type="module">
@@ -1941,6 +1968,21 @@ document.getElementById('tapButton').addEventListener('click', () => {
     audio.play();
   }
 });
+// Show footer ONLY when on start page (when body has no .game-mode or when #startPage is visible)
+function updateFooterVisibility() {
+  const isStartPage = document.body.classList.contains('start-mode') || 
+                      document.getElementById('startPage').offsetParent !== null;
+  
+  document.getElementById('dettyFooter').style.display = isStartPage ? 'block' : 'none';
+}
+
+// Run on load + whenever page switches
+window.addEventListener('load', updateFooterVisibility);
+document.addEventListener('DOMContentLoaded', updateFooterVisibility);
+
+// Also call it when you switch modes (you probably already have code that adds/removes .start-mode / .game-mode)
+const observer = new MutationObserver(updateFooterVisibility);
+observer.observe(document.body, { attributes: true, attributeFilter: ['class'] });
 </script>
 </body>
 </html>
