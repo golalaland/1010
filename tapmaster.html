@@ -724,7 +724,7 @@ bar + footer */
       
       <!-- Warning Text -->
       <p style="margin:12px 0 18px;color:#ff6b6b;font-size:14px;line-height:1.5;font-weight:500;">
-        This deducts <strong style="color:#fff;">50 Stars</strong> permanently.<br>
+        This deducts <strong style="color:#fff;">50 $STRZ ⭐️</strong> permanently.<br>
         <span style="color:#ff2d55;font-size:13px;">No refund. No escape.</span>
       </p>
       
@@ -1905,7 +1905,7 @@ document.getElementById('finalConfirmBtn').addEventListener('click', async () =>
 
   try {
     if (!currentUser?.uid) {
-      await showNiceAlert("You must be logged in to play buddy");
+      await showNiceAlert("You must be logged in");
       document.getElementById('confirmBidModal').style.display = 'none';
       return;
     }
@@ -1956,31 +1956,36 @@ document.getElementById('finalConfirmBtn').addEventListener('click', async () =>
     document.getElementById('confirmBidModal').style.display = 'none';
   }
 });
-      
-// Music Music Music
-document.getElementById('tapButton').addEventListener('click', () => {
-  const audio = document.getElementById('dettyverseBeat');
-  if (audio.paused) {
-    audio.volume = 0.5; // chill volume
-    audio.play();
+// ====================== SOUND SYSTEM — WORKS ON PHONE ======================
+let userHasInteracted = false;  // This unlocks sound forever
+
+// Unlock audio on first ANY user tap/click
+document.body.addEventListener('click', unlockAudio, { once: true });
+document.body.addEventListener('touchstart', unlockAudio, { once: true });
+
+function unlockAudio() {
+  userHasInteracted = true;
+  console.log("Audio unlocked — user interacted");
+}
+
+// ——— DETTYVERSE BEAT (background music) ———
+let beatAudio = null;
+document.getElementById('tapButton')?.addEventListener('click', () => {
+  if (!userHasInteracted) return; // do nothing until unlocked
+
+  if (!beatAudio) {
+    beatAudio = new Audio("https://www.chosic.com/wp-content/uploads/2022/07/dettyverse-beat.mp3"); // ← your real beat
+    beatAudio.loop = true;
+    beatAudio.volume = 0.4;
+  }
+
+  if (beatAudio.paused) {
+    beatAudio.play().catch(e => console.log("Beat play failed:", e));
   }
 });
-// ====================== GAME BUTTON SOUND SYSTEM (EXCLUDES TAP BUTTON) ======================
-// Sexy, short, satisfying "click" for ALL buttons except tapButton
-const buttonSound = new Audio("https://www.chosic.com/wp-content/uploads/2022/05/button-click-sound-effect.mp3"); 
-buttonSound.volume = 0.55; // perfect loudness
-buttonSound.preload = "auto";
 
-// Play sound with anti-spam (max 6 sounds/sec)
-let lastButtonPlay = 0;
-function playButtonSound() {
-  const now = Date.now();
-  if (now - lastButtonPlay > 80) {           // 80ms = feels instant, no spam
-    buttonSound.currentTime = 0;
-    buttonSound.play().catch(() => {});      // iOS/Android silent fail = fine
-    lastButtonPlay = now;
-  }
-}
+// ——— BUTTON CLICK SOUND (for ALL buttons except tapButton) ———
+const clickSound = new Audio("
 </script>
 </body>
 </html>
