@@ -785,59 +785,61 @@ const profileNameEl = document.getElementById('profileName');
 
 
 
-// ========== TINY CUTE BLACK END MODAL (TAPS = SCORE) ==========
+// ========== FINAL CUTE BLACK END MODAL (TAPS + ₦ EARNINGS) ==========
 const endGameModal = document.createElement('div');
 endGameModal.id = "endGameModal";
 endGameModal.style = `
   position:fixed; top:0; left:0; width:100%; height:100%;
-  background:rgba(0,0,0,0.92); backdrop-filter:blur(10px);
+  background:rgba(0,0,0,0.94); backdrop-filter:blur(12px);
   display:none; justify-content:center; align-items:center;
-  z-index:9999; font-family:'Poppins',sans-serif; padding:20px; box-sizing:border-box;
+  z-index:9999; font-family:'Poppins',sans-serif; padding:20px;
 `;
 
 endGameModal.innerHTML = `
   <div style="
-    background:#0d0d0d; width:100%; max-width:340px; border-radius:20px;
-    overflow:hidden; box-shadow:0 15px 40px rgba(0,255,100,0.2);
-    border:2px solid #0f0; text-align:center; color:#fff;
+    background:#0a0a0a; color:#fff; width:100%; max-width:360px;
+    border-radius:22px; text-align:center; padding:30px 20px;
+    border:2px solid #0f9; box-shadow:0 0 30px rgba(0,255,150,0.3);
     animation:pop 0.5s ease-out;
   ">
-    <!-- HEADER -->
-    <div style="background:#0f0; color:#000; padding:16px 20px; font-size:20px; font-weight:bold;">
-      ROUND OVER!
-    </div>
+    <!-- Header -->
+    <h2 style="margin:0 0 20px; font-size:24px; color:#0f9;">
+      ROUND COMPLETE!
+    </h2>
 
-    <!-- BODY -->
-    <div style="padding:30px 20px;">
-      <div style="font-size:48px; font-weight:900; margin:10px 0; color:#0ff;">
-        ${taps.toLocaleString()}
-      </div>
-      <div style="font-size:18px; opacity:0.9; margin:8px 0;">
-        Lightning Taps
-      </div>
-      <div style="font-size:15px; color:#0f0; margin-top:12px;">
-        ${currentUser?.handle || "Player"} smashed it!
-      </div>
-    </div>
+    <!-- Body - The exact line you wanted -->
+    <p style="
+      font-size:19px; line-height:1.6; margin:20px 0;
+      background:rgba(0,255,150,0.1); padding:18px; border-radius:14px;
+      border-left:4px solid #0f9;
+    ">
+      You got <strong style="color:#0ff; font-size:22px;" id="finalTaps">0</strong> taps<br>
+      and earned <strong style="color:#0f9; font-size:24px;" id="finalEarnings">₦0</strong><br>
+      on this tap session.
+    </p>
 
-    <!-- BUTTONS -->
-    <div style="padding:0 20px 25px; display:flex; gap:12px;">
-      <button id="shareScoreBtn" style="
-        flex:1; padding:14px; border:none; border-radius:14px;
-        background:#00ff9d; color:#000; font-weight:bold; font-size:16px;
-        cursor:pointer; box-shadow:0 4px 15px rgba(0,255,150,0.4);
-      ">SHARE</button>
+    <p style="margin:15px 0 0; font-size:16px; opacity:0.9;">
+      <span id="playerName">Player</span> — keep dominating!
+    </p>
+
+    <!-- Buttons -->
+    <div style="display:flex; gap:14px; margin-top:28px;">
+      <button id="shareBtn" style="
+        flex:1; padding:15px; border:none; border-radius:14px;
+        background:#00ffaa; color:#000; font-weight:bold; font-size:16px;
+        cursor:pointer; box-shadow:0 5px 15px rgba(0,255,170,0.4);
+      ">SHARE SCORE</button>
 
       <button id="playAgainBtn" style="
-        flex:1; padding:14px; border:none; border-radius:14px;
-        background:#ff00c8; color:#fff; font-weight:bold; font-size:16px;
-        cursor:pointer; box-shadow:0 4px 15px rgba(255,0,200,0.4);
+        flex:1; padding:15px; border:none; border-radius:14px;
+        background:#ff00aa; color:#fff; font-weight:bold; font-size:16px;
+        cursor:pointer; box-shadow:0 5px 15px rgba(255,0,170,0.4);
       ">PLAY AGAIN</button>
     </div>
   </div>
 
   <style>
-    @keyframes pop{0%{transform:scale(0.8);opacity:0}100%{transform:scale(1);opacity:1}}
+    @keyframes pop{0%{transform:scale(0.6) rotate(5deg);opacity:0}100%{transform:scale(1) rotate(0);opacity:1}}
     button:active{transform:scale(0.95)}
   </style>
 `;
@@ -845,75 +847,37 @@ endGameModal.innerHTML = `
 document.body.appendChild(endGameModal);
 
 // Elements
-const shareScoreBtn = document.getElementById('shareScoreBtn');
+const finalTapsEl = document.getElementById('finalTaps');
+const finalEarningsEl = document.getElementById('finalEarnings');
+const playerNameEl = document.getElementById('playerName');
+const shareBtn = document.getElementById('shareBtn');
 const playAgainBtn = document.getElementById('playAgainBtn');
 
-// SHARE BUTTON (mobile + desktop)
-shareScoreBtn.onclick = () => {
-  const text = `${currentUser?.handle || "I"} just tapped ${taps.toLocaleString()} times in 10 seconds! Can you beat me?`;
+// SHARE
+shareBtn.onclick = () => {
+  const text = `${playerNameEl.textContent} just got ${taps.toLocaleString()} taps and earned ₦${earnings.toLocaleString()} in one round! Can you beat that?`;
   if (navigator.share) {
-    navigator.share({ title: "My Tap Score!", text: text, url: location.href });
+    navigator.share({ title: "My Tap Score", text, url: location.href });
   } else {
     navigator.clipboard.writeText(text + " " + location.href);
-    alert("Score copied! Paste & flex");
+    alert("Score copied — go flex!");
   }
 };
 
-// PLAY AGAIN → FULL RELOAD (100% clean reset)
-playAgainBtn.onclick = () => {
-  location.reload();
-};
+// PLAY AGAIN = FULL RELOAD
+playAgainBtn.onclick = () => location.reload();
 
-// SHOW MODAL (only needs taps now)
+// SHOW MODAL — only call this when game ends
 function showEndGameModal() {
-  endGameModal.querySelector('.background-#0f0').nextElementSibling.innerHTML = `
-    <div style="font-size:48px; font-weight:900; margin:10px 0; color:#0ff;">
-      ${taps.toLocaleString()}
-    </div>
-    <div style="font-size:18px; opacity:0.9; margin:8px 0;">Lightning Taps</div>
-    <div style="font-size:15px; color:#0f0; margin-top:12px;">
-      ${currentUser?.handle || "Player"} smashed it!
-    </div>
-  `;
+  finalTapsEl.textContent = taps.toLocaleString();
+  finalEarningsEl.textContent = `₦${earnings.toLocaleString()}`;
+  playerNameEl.textContent = currentUser?.handle || "Tapper";
+
+  // Victory sound
+  new Audio('https://assets.mixkit.co/sfx/preview/mixkit-achievement-bell-600.mp3').play().catch(()=>{});
+
   endGameModal.style.display = "flex";
 }
-
-
-// Creative messages (updated to focus only on Vitality)
-function generateCreativeMessage(username, vitality) {
-  const messages = [
-    `🌟 ${username} just harvested an INSANE ₦${vitality.toLocaleString()} Vitality! The cash gods are speechless! 👑`,
-    `BOOM! ${username} tapped their way to ₦${vitality.toLocaleString()}! That’s not a score—that’s a LEGACY! 🔥`,
-    `Holy energy surge! ${username} claimed ₦${vitality.toLocaleString()} Vitality! The leaderboard is shaking in fear 😈`,
-    `✦ ${username} is UNSTOPPABLE! ₦${vitality.toLocaleString()} Vitality in one round? Absolute domination! 🏆`,
-    `${username} didn’t just play—they CONQUERED! ₦${vitality.toLocaleString()} Vitality secured. Who’s next? 💪`,
-    `💸 CHA-CHING! ${username} walks away with ₦${vitality.toLocaleString()} Vitality! The vault is empty and the crown is yours!`,
-  ];
-  return messages[Math.floor(Math.random() * messages.length)];
-}
-
-// Updated show function (only vitality + username needed)
-function showEndGameModal({ vitality, username = "Player" }) {
-  currentVitality = vitality;
-  currentUsername = username;
-  
-  // Update big score
-  endGameModal.querySelector('h1').textContent = `₦${vitality.toLocaleString()}`;
-  endGameModal.querySelector('p:nth-of-type(2)').textContent = `${username}'s Legend!`;
-  
-  creativeMessageEl.innerHTML = generateCreativeMessage(username, vitality);
-  endGameModal.style.display = "flex";
-}
-
-// Close → back to start
-closeEndGameBtn.addEventListener('click', () => {
-  // Smooth fade out before full reload
-  endGameModal.style.opacity = '0';
-  setTimeout(() => location.reload(), 400);
-});
-
-// Example usage:
-// showEndGameModal({ taps: 156, earnings: 7800, bonusLevel: 3, speed: 4.2, username: "@doctortantra" });
 
 // ---------- CONFIG ----------
 const STAR_COST = 10;
@@ -1184,12 +1148,8 @@ function endSessionImmediate() {
   tapButton.disabled = true;
   clearInterval(intervalId);
 
-  // Optional victory sound
-  new Audio('https://assets.mixkit.co/sfx/preview/mixkit-achievement-bell-600.mp3').play();
-
-  showEndGameModal(); // Only needs taps (already in global scope)
+  showEndGameModal(); // That’s literally all you need now
 }
-
 
 // ======================================================
 //   FIRESTORE — ASYNC RECORDING
