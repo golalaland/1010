@@ -592,31 +592,32 @@ bar + footer */
 
   </div> <!-- end gamePage -->
 
-<!-- FINAL BOTTOM-LOCKED BAR (profile + tiny 🤩 buttons) -->
-<div id="bottomBar" style="position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;padding:0;background:transparent;z-index:997;pointer-events:none;">
+<!-- FINAL BOTTOM-LOCKED BAR (Profile + Action Buttons) - FIXED & CLEAN -->
+<div id="bottomBar" style="position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;padding:14px 0 20px;background:transparent;z-index:997;pointer-events:none;">
   <div style="pointer-events:auto;">
 
-
     <!-- Profile Card -->
-    <div style="background:rgba(255,255,255,0.05);padding:14px 16px;border-radius:16px;border:1px solid rgba(255,255,255,0.08);backdrop-filter:blur(12px);width:90%;max-width:420px;margin:0 auto 14px;text-align:center;">
+    <div style="background:rgba(255,255,255,0.05);padding:14px 16px;border-radius:16px;border:1px solid rgba(255,255,255,0.08);backdrop-filter:blur(12px);width:90%;max-width:420px;margin:0 auto 16px;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.4);">
       <div id="profileName" style="font-size:16px;font-weight:700;color:#fff;">GUEST 0000</div>
       <div style="margin-top:8px;font-size:14px;">
         <strong style="background:linear-gradient(90deg,#00e676,#00b0ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">STARS COLLECTED:</strong>
-        <span id="starCount" style="color:#fff;">50</span>⭐
+        <span id="starCount" style="color:#fff;">50</span> Star
       </div>
       <div style="margin-top:4px;font-size:14px;">
         <strong style="background:linear-gradient(90deg,#00e676,#00b0ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">CASH EARNED:</strong>
-        <span id="cashCount" style="color:#fff;">0</span>
+        <span id="cashCount" style="color:#fff;">₦0</span>
       </div>
     </div>
 
-    <!-- Tiny 🤩 Action Bar (bottom of screen) -->
+    <!-- Tiny Action Bar (Leaderboard + Rules + Bid + STORE) -->
+    <div style="display:flex;justify-content:center;gap:18px;padding:10px 18px;background:rgba(255,255,255,0.09);border-radius:24px;border:1px solid rgba(255,255,255,0.14);backdrop-filter:blur(16px);width:88%;max-width:320px;margin:0 auto;box-shadow:0 -8px 30px rgba(0,0,0,0.6);">
+      <button id="leaderboardBtn" class="tiny-action-btn" data-title="Leaderboard">🏆</button>
+      <button id="rulesBtn"        class="tiny-action-btn" data-title="Game Rules">📋</button>
+      <button id="bidBtn"          class="tiny-action-btn" data-title="Place Bid">🏁</button>
+      <button id="starMarketBtn"   class="tiny-action-btn" data-title="Star Market">🏪</button>
+    </div>
 
-<div style="display:flex;justify-content:center;gap:18px;padding:8px 16px;background:rgba(255,255,255,0.08);border-radius:22px;border:1px solid rgba(255,255,255,0.12);backdrop-filter:blur(16px);width:86%;max-width:300px;margin:0 auto;box-shadow:0 -8px 30px rgba(0,0,0,0.6);position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:1000;">
-  <button id="leaderboardBtn" class="tiny-action-btn" data-title="Leaderboard">🏆</button>
-  <button id="rulesBtn"        class="tiny-action-btn" data-title="Game Rules">📋</button>
-  <button id="bidBtn"          class="tiny-action-btn" data-title="Place Bid">🏁</button>
-  <button id="starMarketBtn"   class="tiny-action-btn" data-title="Star Market">🏪</button>
+  </div>
 </div>
 
 
