@@ -397,10 +397,6 @@ bar + footer */
   opacity: 1;
   transition: opacity 0.4s ease-out;
 }
-@keyframes pulse {
-  0%, 100% { transform: scaleX(1); }
-  50% { transform: scaleX(1.03); }
-}
 </style>
 </head>
 <body>
@@ -1074,46 +1070,77 @@ function showFloatingPlus(parent,text){
 }
 
 // ---------- BONUS BAR ----------
-// ========== BONUS BAR — FIXED & BUTTERY SMOOTH ==========
-const PULSE_KEYFRAMES = `
-@keyframes pulse{0%,100%{transform:scaleX(1)}50%{transform:scaleX(1.04)}}
-`;
-if (!document.getElementById('pulse-style')) {
-  const s = document.createElement('style');
-  s.id = 'pulse-style';
-  s.textContent = PULSE_KEYFRAMES;
-  document.head.appendChild(s);
+function updateBonusBar(){
+  if(!bonusBar) return;
+  const colors = [
+    `linear-gradient(90deg, #ff416c, #ff4b2b)`,
+    `linear-gradient(90deg, #00c6ff, #0072ff)`,
+    `linear-gradient(90deg, #f7971e, #ffd200)`,
+    `linear-gradient(90deg, #a1ffce, #faffd1)`,
+    `linear-gradient(90deg, #ff9a9e, #fad0c4)`,
+    `linear-gradient(90deg, #ffecd2, #fcb69f)`
+  ];
+  const idx = randomInt(0, colors.length-1);
+  bonusBar.style.background = colors[idx];
+  bonusBar.style.width = Math.min(100,(progress/tapsForNext)*100)+'%';
 }
 
-function updateBonusBar() {
-  if (!bonusBar) return;
+/* ─────── DOPE RANDOM CONFETTI + VIBRATION ─────── */
+function triggerConfetti() {
+  const types = ['rainbow', 'spark', 'coin', 'star'];
+  const chosen = types[Math.floor(Math.random() * types.length)];
 
-  const progressPercent = Math.min(100, (progress / tapsForNext) * 100);
+  const count = 22;
+  const rect   = tapButton.getBoundingClientRect();
+  const cx     = rect.left + rect.width  / 2;
+  const cy     = rect.top  + rect.height / 2;
 
-  // Only change background when it actually matters
-  if (progressPercent === 100 || progress === 0 || progressPercent % 10 < 0.5) {
-    const gradients = [
-      'linear-gradient(90deg,#ff416c,#ff4b2b,#ff0844)',
-      'linear-gradient(90deg,#00c6ff,#0072ff,#00d4ff)',
-      'linear-gradient(90deg,#f7971e,#ffd200,#ffb800)',
-      'linear-gradient(90deg,#667eea,#764ba2,#a65fdc)',
-      'linear-gradient(90deg,#f093fb,#f5576c,#ff9ff3)'
-    ];
-    bonusBar.style.background = gradients[randomInt(0, gradients.length - 1)];
+  for (let i = 0; i < count; i++) {
+    const dot = document.createElement('div');
+    dot.className = `confetti-dot confetti-${chosen}`;
+
+    const angle = Math.random() * Math.PI * 2;
+    const dist  = 40 + Math.random() * 80;
+    const dx    = Math.cos(angle) * dist;
+    const dy    = Math.sin(angle) * dist - 60;
+
+    dot.style.setProperty('--dx', `${dx}px`);
+    dot.style.setProperty('--dy', `${dy}px`);
+    dot.style.left = `${cx}px`;
+    dot.style.top  = `${cy}px`;
+
+    if (chosen === 'rainbow') dot.style.setProperty('--h', Math.random() * 360);
+
+    document.body.appendChild(dot);
+
+    const animName = {
+      rainbow: 'rainbowFall',
+      spark:   'sparkBurst',
+      coin:    'coinFlip',
+      star:    'starBoom'
+    }[chosen];
+
+    dot.animate(
+      [{opacity:1, transform:'translate(0,0) rotate(0deg) scale(1)'},
+       {opacity:0, transform:`translate(${dx}px,${dy}px) rotate(${chosen==='coin'? '720deg' : '360deg'}) scale(${chosen==='star'?2:0})`}],
+      {duration: 600 + Math.random()*300, easing:'cubic-bezier(.2,.6,.4,1)'}
+    ).onfinish = () => dot.remove();
   }
 
-  bonusBar.style.width = progressPercent + '%';
+  /* ─────── DOPE VIBRATION ─────── */
+  if ('vibrate' in navigator) {
+    navigator.vibrate([80, 50, 100, 50, 80]);
+  } else if (navigator.userAgent.match(/iPhone|iPad|iPod/)) {
+    tapButton.classList.add('shake');
+    setTimeout(() => tapButton.classList.remove('shake'), 400);
+  }
 
-  // Cheap, pre-baked glow states
-  if (progressPercent > 92) {
-    bonusBar.style.boxShadow = '0 0 32px #ff00aa';
-    bonusBar.style.animation = 'pulse 0.9s infinite';
-  } else if (progressPercent > 70) {
-    bonusBar.style.boxShadow = '0 0 24px #00ffff';
-    bonusBar.style.animation = 'pulse 1.4s infinite';
-  } else {
-    bonusBar.style.boxShadow = '0 4px 12px rgba(0,0,0,0.4)';
-    bonusBar.style.animation = 'none';
+  /* ─────── SEXY DOINK SOUND ─────── */
+  const doink = document.getElementById('doinkSound');
+  if (doink) {
+    doink.currentTime = 0;
+    doink.volume = 0.7;
+    doink.play().catch(() => {});
   }
 }
 
@@ -1285,63 +1312,60 @@ function debounce(fn, delay) {
 tapButton?.addEventListener(
   tapEvent,
   debounce(async e => {
+
     if (!running || tapLocked) return;
 
     tapLocked = true;
-    setTimeout(() => (tapLocked = false), 42);
+    setTimeout(() => (tapLocked = false), 50);
 
     taps++;
-    currentUser && (currentUser.totalTaps = (currentUser.totalTaps || 0) + 1);
-    progress++;
-    cashCounter++;
-
-    // LIGHT JUICE EVERY TAP (fast & smooth)
-    showFloatingPlus(tapButton, `+${tapValue}`, getRandomJuicyColor());
-    flashTapGlow();
-
-    // HEAVY CONFETTI ONLY ON MILESTONES
-    if (progress % 10 === 0) {
-      triggerConfetti();  // Big burst every 10 taps
+    if (currentUser) {
+      currentUser.totalTaps = (currentUser.totalTaps || 0) + 1;
     }
 
-    // CASH DROP
+    progress++;
+    cashCounter++;
+    showFloatingPlus(tapButton, "+1");
+
+    // CASH AWARD
     if (cashCounter >= cashThreshold) {
       cashCounter = 0;
-      cashThreshold = randomInt(3, 14);
+      cashThreshold = randomInt(1, 12);
+
       const pot = getStoredPot() ?? DAILY_INITIAL_POT;
       if (pot > 0) {
         earnings += CASH_PER_AWARD;
         setStoredPot(Math.max(0, pot - CASH_PER_AWARD));
         await giveCashToUser(CASH_PER_AWARD);
-        triggerBigWinCelebration(); // your gold rain + bling
       }
     }
 
-    // BONUS LEVEL UP
-    const wasLevelUp = progress >= tapsForNext;
-    if (wasLevelUp) {
+    // BONUS LEVEL
+    if (progress >= tapsForNext) {
       progress = 0;
       bonusLevel++;
       tapsForNext = 100 + (bonusLevel - 1) * 50;
-      triggerConfetti();           // NUCLEAR EXPLOSION
-      triggerLevelUpExplosion();   // extra celebration
+      triggerConfetti();
     }
 
-    // SOUND & HAPTICS
-    const now = Date.now();
-    const sinceLast = now - (window.lastSoundTime || 0);
-    if (sinceLast > 180) playSound('tapSlow');
-    else if (sinceLast < 60) playSound('tapFrenzy');
-    else playSound('tapNormal');
-    window.lastSoundTime = now;
+    flashTapGlow();
 
+    // SOUND — debounced
+    const now = Date.now();
+    if (!window.lastSoundTime || now - window.lastSoundTime > 100) {
+      try {
+        tapSound.currentTime = 0;
+        tapSound.play().catch(() => {});
+      } catch {}
+      window.lastSoundTime = now;
+    }
+
+    // HAPTICS
     if ("vibrate" in navigator) {
-      const pattern = wasLevelUp
-        ? [200,100,200,100,300]
-        : progress > tapsForNext * 0.8
-          ? [20,15,25,15,35]
-          : [12,8,15];
-      navigator.vibrate(pattern);
+      navigator.vibrate([10, 5, 10]);
+    } else if (/iPhone|iPad|iPod/.test(navigator.userAgent)) {
+      tapButton.classList.add("shake");
+      setTimeout(() => tapButton.classList.remove("shake"), 100);
     }
 
     updateUI();
@@ -1350,46 +1374,6 @@ tapButton?.addEventListener(
   }, 50)
 );
 
-
-function triggerConfetti() {
-  if (!tapButton) return;
-  const count = progress % 25 === 0 ? 85 : progress % 10 === 0 ? 52 : 0;
-  if (!count) return;
-
-  const rect = tapButton.getBoundingClientRect();
-  const cx = rect.left + rect.width / 2;
-  const cy = rect.top + rect.height / 2;
-
-  const types = ['rainbow', 'spark', 'coin', 'star'];
-  const chosen = types[Math.floor(Math.random() * types.length)];
-
-  for (let i = 0; i < count; i++) {
-    const dot = document.createElement('div');
-    dot.className = `confetti-dot confetti-${chosen}`;
-
-    const angle = Math.random() * Math.PI * 2;
-    const force = 80 + Math.random() * 140;
-    const dist = progress % 25 === 0 ? force * 1.9 : force * 1.35;
-
-    dot.style.setProperty('--dx', Math.cos(angle) * dist + 'px');
-    dot.style.setProperty('--dy', Math.sin(angle) * dist - 90 + 'px');
-    dot.style.left = cx + 'px';
-    dot.style.top = cy + 'px';
-
-    if (chosen === 'rainbow') dot.style.setProperty('--h', Math.random() * 360);
-
-    document.body.appendChild(dot);
-
-    // Use pure CSS animation + animationend (zero timers!)
-    dot.addEventListener('animationend', () => dot.remove(), { once: true });
-  }
-
-  if (progress % 25 === 0) {
-    navigator.vibrate?.([100,80,150,80,200,80,150]);
-    document.body.style.animation = 'screenShake 0.8s';
-    setTimeout(() => document.body.style.animation = '', 800);
-  }
-}
 
 // ---------- UI & TAP GLOW ----------
 function updateUI(){
