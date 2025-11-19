@@ -666,7 +666,8 @@ bar + footer */
     <div style="flex:1;overflow-y:auto;padding:16px 18px 10px;font-size:14px;color:#eee;">
 
       <div id="leaderboardTabs" style="display:flex;gap:8px;margin-bottom:12px;">
-        <button class="lb-tab active" data-period="weekly"
+        <button class="lb-tab
+           active" data-period="weekly"
           style="flex:1;padding:10px 0;border-radius:10px;border:none;background:#FFD700;color:#000;font-weight:800;font-size:11.5px;cursor:pointer;box-shadow:0 4px 15px rgba(255,215,0,0.5);letter-spacing:0.5px;">
           THIS WEEK
         </button>
@@ -967,35 +968,41 @@ bar + footer */
 <audio id="clickAudio" preload="auto"></audio>
 
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-import { 
-  getFirestore, 
-  doc, 
-  getDoc, 
-  runTransaction, 
-  collection, 
-  addDoc, 
-  serverTimestamp,
-  getDocs,     // <-- needed for reading queries
-  query,       // <-- needed for queries
-  where        // <-- needed for filtering
-} from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+  
+  // AUTH — onAuthStateChanged lives here
+  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+  
+  // FIRESTORE — everything else
+  import { 
+    getFirestore,
+    doc,
+    getDoc,
+    runTransaction,
+    collection,
+    addDoc,
+    serverTimestamp,
+    getDocs,
+    query,
+    where,
+    orderBy,
+    onSnapshot
+  } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
+  // ---------- FIREBASE CONFIG ----------
+  const firebaseConfig = {
+    apiKey: "AIzaSyDbKz4ef_eUDlCukjmnK38sOwueYuzqoao",
+    authDomain: "metaverse-1010.firebaseapp.com",
+    projectId: "metaverse-1010",
+    storageBucket: "metaverse-1010.appspot.com",
+    messagingSenderId: "1044064238233",
+    appId: "1:1044064238233:web:2fbdfb811cb0a3ba349608",
+    measurementId: "G-S77BMC266C"
+  };
 
-
-// ---------- FIREBASE ----------
-const firebaseConfig = {
-  apiKey: "AIzaSyDbKz4ef_eUDlCukjmnK38sOwueYuzqoao",
-  authDomain: "metaverse-1010.firebaseapp.com",
-  projectId: "metaverse-1010",
-  storageBucket: "metaverse-1010.appspot.com",
-  messagingSenderId: "1044064238233",
-  appId: "1:1044064238233:web:2fbdfb811cb0a3ba349608",
-  measurementId: "G-S77BMC266C",
-  databaseURL: "https://metaverse-1010-default-rtdb.firebaseio.com/"
-};
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
 
 // Prevent sound spam
 window.lastSoundTime = 0;
