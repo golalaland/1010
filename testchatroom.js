@@ -2494,71 +2494,85 @@ confirmBtn.onclick = async () => {
 // ================================
 // 💰 $ell Content (Highlight Upload)
 // ================================
-document.getElementById("uploadHighlightBtn").addEventListener("click", async () => {
-  const statusEl = document.getElementById("highlightUploadStatus");
-  const fileInput = document.getElementById("highlightUploadInput");
-  const title = document.getElementById("highlightTitleInput").value.trim();
-  const desc = document.getElementById("highlightDescInput").value.trim();
-  const price = parseInt(document.getElementById("highlightPriceInput").value || "0");
+document.addEventListener("DOMContentLoaded", () => {
+  const uploadBtn = document.getElementById("uploadHighlightBtn");
+  if (!uploadBtn) return; // safety check
 
-  statusEl.textContent = "";
-  if (!currentUser) return statusEl.textContent = "⚠️ Please sign in first";
+  uploadBtn.addEventListener("click", async () => {
+    const statusEl = document.getElementById("highlightUploadStatus");
+    const fileInput = document.getElementById("highlightUploadInput");
+    const titleInput = document.getElementById("highlightTitleInput");
+    const descInput = document.getElementById("highlightDescInput");
+    const priceInput = document.getElementById("highlightPriceInput");
 
-  if (!fileInput.files[0]) return statusEl.textContent = "⚠️ Please select a video";
-  if (!title) return statusEl.textContent = "⚠️ Add a title";
-  if (price < 10) return statusEl.textContent = "⚠️ Minimum price is 10 ⭐";
+    // extra safety checks
+    if (!fileInput || !titleInput || !descInput || !priceInput || !statusEl) {
+      console.error("Highlight upload elements not found");
+      return;
+    }
 
-  const file = fileInput.files[0];
-  if (!file.type.startsWith("video/")) return statusEl.textContent = "⚠️ Must be a video file";
-  if (file.size > 600 * 1024 * 1024) return statusEl.textContent = "⚠️ Video too big (max ~600 MB)";
+    const title = titleInput.value.trim();
+    const desc = descInput.value.trim();
+    const price = parseInt(priceInput.value || "0");
 
-  statusEl.textContent = "⏳ Uploading video to your store…";
+    statusEl.textContent = "";
+    if (!currentUser) return statusEl.textContent = "⚠️ Please sign in first";
 
-  try {
-    // 🔹 Upload video via your Node backend
-    const form = new FormData();
-    form.append("file", file);
+    if (!fileInput.files[0]) return statusEl.textContent = "⚠️ Please select a video";
+    if (!title) return statusEl.textContent = "⚠️ Add a title";
+    if (price < 10) return statusEl.textContent = "⚠️ Minimum price is 10 ⭐";
 
-    const response = await fetch("http://localhost:3000/upload-video", {  // your Node server
-      method: "POST",
-      body: form,
-    });
+    const file = fileInput.files[0];
+    if (!file.type.startsWith("video/")) return statusEl.textContent = "⚠️ Must be a video file";
+    if (file.size > 600 * 1024 * 1024) return statusEl.textContent = "⚠️ Video too big (max ~600 MB)";
 
-    if (!response.ok) throw new Error("Upload failed");
+    statusEl.textContent = "⏳ Uploading video to your store…";
 
-    const data = await response.json();
-    const shopifyVideoUrl = data.url;
+    try {
+      const form = new FormData();
+      form.append("file", file);
 
-    statusEl.textContent = "⏳ Saving highlight to database…";
+      const response = await fetch("http://localhost:3000/upload-video", {
+        method: "POST",
+        body: form,
+      });
 
-    const userId = currentUser.uid;
-    const emailId = (currentUser.email || "").replace(/\./g, ",");
-    const chatId = currentUser.chatId || currentUser.displayName || "Anonymous";
+      if (!response.ok) throw new Error("Upload failed");
 
-    await addDoc(collection(db, "highlightVideos"), {
-      uploaderId: userId,
-      uploaderEmail: emailId,
-      uploaderName: chatId,
-      highlightVideo: shopifyVideoUrl,
-      highlightVideoPrice: price,
-      title,
-      description: desc || "",
-      createdAt: serverTimestamp(),
-    });
+      const data = await response.json();
+      const shopifyVideoUrl = data.url;
 
-    statusEl.innerHTML = "✅ Highlight uploaded & live!";
-    setTimeout(() => statusEl.textContent = "", 5000);
+      statusEl.textContent = "⏳ Saving highlight to database…";
 
-    // Reset form
-    fileInput.value = "";
-    document.getElementById("highlightTitleInput").value = "";
-    document.getElementById("highlightDescInput").value = "";
-    document.getElementById("highlightPriceInput").value = "50";
+      const userId = currentUser.uid;
+      const emailId = (currentUser.email || "").replace(/\./g, ",");
+      const chatId = currentUser.chatId || currentUser.displayName || "Anonymous";
 
-  } catch (err) {
-    console.error(err);
-    statusEl.textContent = "❌ Upload failed — try again";
-  }
+      await addDoc(collection(db, "highlightVideos"), {
+        uploaderId: userId,
+        uploaderEmail: emailId,
+        uploaderName: chatId,
+        highlightVideo: shopifyVideoUrl,
+        highlightVideoPrice: price,
+        title,
+        description: desc || "",
+        createdAt: serverTimestamp(),
+      });
+
+      statusEl.innerHTML = "✅ Highlight uploaded & live!";
+      setTimeout(() => (statusEl.textContent = ""), 5000);
+
+      // Reset form
+      fileInput.value = "";
+      titleInput.value = "";
+      descInput.value = "";
+      priceInput.value = "50";
+
+    } catch (err) {
+      console.error(err);
+      statusEl.textContent = "❌ Upload failed — try again";
+    }
+  });
 });
 
 
