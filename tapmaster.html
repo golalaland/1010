@@ -771,14 +771,15 @@ bar + footer */
   </div>
 </div>
 
-<!-- DETTYVERSE CUSTOM ALERT MODAL (ONE TIME ONLY) -->
-<div id="dettyAlert" class="modal-backdrop" style="display:none;z-index:99999;">
-  <div class="modal" style="width:88%;max-width:340px;background:#0f0f0f;border:3px solid #00FFA3;border-radius:18px;box-shadow:0 0 70px rgba(0,255,163,0.6);">
-    <div style="padding:26px 20px;text-align:center;">
-      <div id="dettyAlertIcon" style="font-size:52px;margin-bottom:14px;">Checkmark</div>
-      <h3 id="dettyAlertTitle" style="margin:0 0 12px;color:#00FFA3;font-family:'Press Start 2P',cursive;font-size:17px;">WARRIOR!</h3>
-      <p id="dettyAlertMsg" style="margin:0 0 24px;color:#eee;font-size:15px;line-height:1.5;">Message here</p>
-      <button id="dettyAlertOk" style="padding:13px 50px;background:linear-gradient(90deg,#00FFA3,#00C853);color:#000;border:none;border-radius:12px;font-weight:900;font-size:15px;cursor:pointer;">OKAY</button>
+<!-- SIMPLE CUSTOM ALERT – matches your style perfectly -->
+<div id="simpleAlert" class="modal-backdrop" style="display:none;z-index:9999;">
+  <div class="modal" style="width:88%;max-width:340px;background:#0f0f0f;border:3px solid #00FFA3;border-radius:18px;box-shadow:0 0 60px rgba(0,255,163,0.6);">
+    <div style="padding:24px 20px;text-align:center;">
+      <h3 style="margin:0 0 16px;color:#00FFA3;font-family:'Press Start 2P',cursive;font-size:16px;">MESSAGE</h3>
+      <p id="simpleAlertText" style="margin:0 0 24px;color:#eee;font-size:15px;line-height:1.5;">Loading...</p>
+      <button id="simpleAlertOk" style="padding:12px 50px;background:linear-gradient(90deg,#00FFA3,#00C853);color:#000;border:none;border-radius:12px;font-weight:800;font-size:15px;cursor:pointer;">
+        OKAY
+      </button>
     </div>
   </div>
 </div>
@@ -1859,107 +1860,73 @@ document.getElementById('rulesModal').addEventListener('click', (e) => {
 });
 
 
-function getTodayRoundId() {
-  const now = new Date();
-  // Force WAT (West Africa Time) — Lagos time
- 2025
-  const watOffset = 1 * 60; // UTC+1
-  const watTime = new Date(now.getTime() + watOffset * 60 * 1000);
-  return `round_${watTime.toISOString().slice(0,10)}`; // e.g. round_2025-11-19
+// AUTO DAILY ROUND — changes every day at midnight Lagos time
+function getTodayRound() {
+  const date = new Date();
+  const wat = new Date(date.getTime() + 60*60*1000); // UTC+1
+  return "round_" + wat.toISOString().slice(0,10); // e.g. round_2025-11-19
 }
-const CURRENT_ROUND_ID = getTodayRoundId();
+const CURRENT_ROUND_ID = getTodayRound();
 const BID_COST = 50;
 
-// DETTY ALERT — replaces all alert()
-async function dettyAlert(msg, type = "success") {
-  const modal = document.getElementById('dettyAlert');
-  const title = document.getElementById('dettyAlertTitle');
-  const icon  = document.getElementById('dettyAlertIcon');
-  const text  = document.getElementById('dettyAlertMsg');
-  const btn   = document.getElementById('dettyAlertOk');
-
-  const config = {
-    success: { title: "WARRIOR!", icon: "Checkmark", color: "#00FFA3" },
-    error:   { title: "CHAI!",    icon: "Cross",     color: "#ff2d55" },
-    warning: { title: "HOLD UP",  icon: "Warning",   color: "#FFD700" }
-  };
-
-  const c = config[type];
-  title.textContent = c.title;
-  title.style.color = c.color;
-  icon.textContent = c.icon;
-  text.textContent = msg;
-  modal.style.display = 'flex';
-
-  return new Promise(resolve => {
-    const close = () => { modal.style.display = 'none'; resolve(); };
-    btn.onclick = close;
-    modal.onclick = e => e.target === modal && close();
-  });
-}
-
-// ——————————————— BID SYSTEM (WITH SECURITY) ———————————————
-document.getElementById('finalConfirmBtn')?.addEventListener('click', async () => {
+// Your full bid flow — now with security + custom alert
+document.getElementById('finalConfirmBtn').addEventListener('click', async () => {
   const btn = document.getElementById('finalConfirmBtn');
   btn.disabled = true;
   btn.textContent = "Processing...";
 
   try {
     if (!currentUser?.uid) {
-      await dettyAlert("You must log in first!", "error");
+      await showAlert("You must be logged in");
       document.getElementById('confirmBidModal').style.display = 'none';
       return;
     }
 
-    // SECURITY: Prevent double bid today
-    const existing = await getDocs(query(
+    // SECURITY: Prevent joining twice today
+    const alreadyJoined = await getDocs(query(
       collection(db, "bids"),
       where("uid", "==", currentUser.uid),
       where("roundId", "==", CURRENT_ROUND_ID)
     ));
 
-    if (!existing.empty) {
-      await dettyAlert("You don already join today war!", "warning");
+    if (!alreadyJoined.empty) {
+      await showAlert("You already joined today's war!");
       document.getElementById('confirmBidModal').style.display = 'none';
       return;
     }
 
     // Deduct stars
-    const deduct = await tryDeductStarsForJoin(BID_COST);
-    if (!deduct.ok) {
-      await dettyAlert(deduct.message || "You no get enough stars!", "error");
+    const result = await tryDeductStarsForJoin(BID_COST);
+    if (!result.ok) {
+      await showAlert(result.message || "Not enough stars");
       btn.disabled = false;
       btn.textContent = "YES, DEDUCT & ENTER";
       return;
     }
 
-    // CREATE BID + READY FOR TAPS SUBCOLLECTION
-    const bidRef = await addDoc(collection(db, "bids"), {
+    // Create bid document
+    await addDoc(collection(db, "bids"), {
       uid: currentUser.uid,
-      username: currentUser.username || currentUser.displayName || "Warrior",
+      username: currentUser.username || currentUser.displayName || "Anonymous",
       invitedBy: currentUser.invitedBy || null,
       roundId: CURRENT_ROUND_ID,
       starsBid: BID_COST,
-      tapCount: 0,                  // we'll increment this live
       status: "active",
       createdAt: serverTimestamp(),
-      lastTapAt: null
+      updatedAt: serverTimestamp()
     });
 
-    await dettyAlert("YOU DON ENTER WAR!\n50 Stars don comot. Tap like mad when e reach 12!", "success");
-    console.log("Bid created:", bidRef.id);
+    await showAlert("You’re IN the war!\n50 Stars deducted. Get ready to tap!");
+    document.getElementById('confirmBidModal').style.display = 'none';
 
-  } catch (err) {
-    console.error(err);
-    await dettyAlert("War entrance fail. Contact support.", "error");
+  } catch (error) {
+    console.error(error);
+    await showAlert("Something went wrong. Try again.");
   } finally {
     btn.disabled = false;
     btn.textContent = "YES, DEDUCT & ENTER";
-    document.getElementById('confirmBidModal').style.display = 'none';
   }
 });
-
-
   // Close modal & cleanup
   document.getElementById('confirmBidModal').style.display = 'none';
   document.getElementById('finalConfirmBtn').disabled = false;
