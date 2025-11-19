@@ -2496,7 +2496,7 @@ confirmBtn.onclick = async () => {
 // ================================
 document.addEventListener("DOMContentLoaded", () => {
   const uploadBtn = document.getElementById("uploadHighlightBtn");
-  if (!uploadBtn) return; // safety check
+  if (!uploadBtn) return;
 
   uploadBtn.addEventListener("click", async () => {
     const statusEl = document.getElementById("highlightUploadStatus");
@@ -2504,6 +2504,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const titleInput = document.getElementById("highlightTitleInput");
     const descInput = document.getElementById("highlightDescInput");
     const priceInput = document.getElementById("highlightPriceInput");
+
+    console.log({statusEl, fileInput, titleInput, descInput, priceInput});
 
     // extra safety checks
     if (!fileInput || !titleInput || !descInput || !priceInput || !statusEl) {
