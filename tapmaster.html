@@ -744,7 +744,7 @@ bar + footer */
           box-shadow:0 4px 12px rgba(255,45,85,0.4);
           transition:all 0.2s;
         " onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
-          YES, ENTER WAR
+          YES
         </button>
         
         <button id="finalCancelBtn" style="
@@ -759,7 +759,7 @@ bar + footer */
           cursor:pointer;
           transition:all 0.2s;
         " onmouseover="this.style.background='#333'" onmouseout="this.style.background='#222'">
-          nah, i'm good
+          Nah
         </button>
       </div>
       
@@ -771,6 +771,17 @@ bar + footer */
   </div>
 </div>
 
+<!-- DETTYVERSE CUSTOM ALERT MODAL (ONE TIME ONLY) -->
+<div id="dettyAlert" class="modal-backdrop" style="display:none;z-index:99999;">
+  <div class="modal" style="width:88%;max-width:340px;background:#0f0f0f;border:3px solid #00FFA3;border-radius:18px;box-shadow:0 0 70px rgba(0,255,163,0.6);">
+    <div style="padding:26px 20px;text-align:center;">
+      <div id="dettyAlertIcon" style="font-size:52px;margin-bottom:14px;">Checkmark</div>
+      <h3 id="dettyAlertTitle" style="margin:0 0 12px;color:#00FFA3;font-family:'Press Start 2P',cursive;font-size:17px;">WARRIOR!</h3>
+      <p id="dettyAlertMsg" style="margin:0 0 24px;color:#eee;font-size:15px;line-height:1.5;">Message here</p>
+      <button id="dettyAlertOk" style="padding:13px 50px;background:linear-gradient(90deg,#00FFA3,#00C853);color:#000;border:none;border-radius:12px;font-weight:900;font-size:15px;cursor:pointer;">OKAY</button>
+    </div>
+  </div>
+</div>
 
 
 <!-- Audio -->
@@ -1847,85 +1858,107 @@ document.getElementById('rulesModal').addEventListener('click', (e) => {
   }
 });
 
+
+function getTodayRoundId() {
+  const now = new Date();
+  // Force WAT (West Africa Time) — Lagos time
+ 2025
+  const watOffset = 1 * 60; // UTC+1
+  const watTime = new Date(now.getTime() + watOffset * 60 * 1000);
+  return `round_${watTime.toISOString().slice(0,10)}`; // e.g. round_2025-11-19
+}
+const CURRENT_ROUND_ID = getTodayRoundId();
 const BID_COST = 50;
-const CURRENT_ROUND_ID = "round_nov19_2025"; // change per round or generate dynamically
 
-// Open bid modal
-document.getElementById('bidBtn').addEventListener('click', (e) => {
-  e.preventDefault();
-  e.stopPropagation();
-  document.getElementById('bidModal').style.display = 'flex';
-});
+// DETTY ALERT — replaces all alert()
+async function dettyAlert(msg, type = "success") {
+  const modal = document.getElementById('dettyAlert');
+  const title = document.getElementById('dettyAlertTitle');
+  const icon  = document.getElementById('dettyAlertIcon');
+  const text  = document.getElementById('dettyAlertMsg');
+  const btn   = document.getElementById('dettyAlertOk');
 
-// Close bid modal
-document.getElementById('closeBidBtn').addEventListener('click', () => {
-  document.getElementById('bidModal').style.display = 'none';
-});
-document.getElementById('bidModal').addEventListener('click', (e) => {
-  if (e.target === document.getElementById('bidModal')) {
-    document.getElementById('bidModal').style.display = 'none';
-  }
-});
+  const config = {
+    success: { title: "WARRIOR!", icon: "Checkmark", color: "#00FFA3" },
+    error:   { title: "CHAI!",    icon: "Cross",     color: "#ff2d55" },
+    warning: { title: "HOLD UP",  icon: "Warning",   color: "#FFD700" }
+  };
 
-// Step 1: User clicks "ENTER 50⭐️"
-document.getElementById('confirmBidBtn').addEventListener('click', () => {
-  document.getElementById('bidModal').style.display = 'none';
-  document.getElementById('confirmBidModal').style.display = 'flex';
-});
+  const c = config[type];
+  title.textContent = c.title;
+  title.style.color = c.color;
+  icon.textContent = c.icon;
+  text.textContent = msg;
+  modal.style.display = 'flex';
 
-// Step 2: Close confirmation modal
-document.getElementById('finalCancelBtn').addEventListener('click', () => {
-  document.getElementById('confirmBidModal').style.display = 'none';
-});
-document.getElementById('confirmBidModal').addEventListener('click', (e) => {
-  if (e.target === document.getElementById('confirmBidModal')) {
-    document.getElementById('confirmBidModal').style.display = 'none';
-  }
-});
+  return new Promise(resolve => {
+    const close = () => { modal.style.display = 'none'; resolve(); };
+    btn.onclick = close;
+    modal.onclick = e => e.target === modal && close();
+  });
+}
 
-// Step 3: FINAL CONFIRM — Deduct stars + create bid document
-document.getElementById('finalConfirmBtn').addEventListener('click', async () => {
-  document.getElementById('finalConfirmBtn').disabled = true;
-  document.getElementById('finalConfirmBtn').textContent = "Processing...";
+// ——————————————— BID SYSTEM (WITH SECURITY) ———————————————
+document.getElementById('finalConfirmBtn')?.addEventListener('click', async () => {
+  const btn = document.getElementById('finalConfirmBtn');
+  btn.disabled = true;
+  btn.textContent = "Processing...";
 
-  if (!currentUser?.uid) {
-    alert("You must be logged in");
-    document.getElementById('confirmBidModal').style.display = 'none';
-    return;
-  }
-
-  // 1. Deduct stars
-  const deductResult = await tryDeductStarsForJoin(BID_COST);
-  if (!deductResult.ok) {
-    alert("❌ " + deductResult.message);
-    document.getElementById('finalConfirmBtn').disabled = false;
-    document.getElementById('finalConfirmBtn').textContent = "YES, DEDUCT & ENTER";
-    return;
-  }
-
-  // 2. Create bid document in Firestore
   try {
+    if (!currentUser?.uid) {
+      await dettyAlert("You must log in first!", "error");
+      document.getElementById('confirmBidModal').style.display = 'none';
+      return;
+    }
+
+    // SECURITY: Prevent double bid today
+    const existing = await getDocs(query(
+      collection(db, "bids"),
+      where("uid", "==", currentUser.uid),
+      where("roundId", "==", CURRENT_ROUND_ID)
+    ));
+
+    if (!existing.empty) {
+      await dettyAlert("You don already join today war!", "warning");
+      document.getElementById('confirmBidModal').style.display = 'none';
+      return;
+    }
+
+    // Deduct stars
+    const deduct = await tryDeductStarsForJoin(BID_COST);
+    if (!deduct.ok) {
+      await dettyAlert(deduct.message || "You no get enough stars!", "error");
+      btn.disabled = false;
+      btn.textContent = "YES, DEDUCT & ENTER";
+      return;
+    }
+
+    // CREATE BID + READY FOR TAPS SUBCOLLECTION
     const bidRef = await addDoc(collection(db, "bids"), {
       uid: currentUser.uid,
-      username: currentUser.username || currentUser.displayName || "Anonymous",
-      invitedBy: currentUser.invitedBy || null,        // assuming you store this in user doc
+      username: currentUser.username || currentUser.displayName || "Warrior",
+      invitedBy: currentUser.invitedBy || null,
       roundId: CURRENT_ROUND_ID,
       starsBid: BID_COST,
-      status: "active",                               // can be active, won, lost later
+      tapCount: 0,                  // we'll increment this live
+      status: "active",
       createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp()
+      lastTapAt: null
     });
 
-    // Success!
-    alert("✅ You’re IN the war! 50 ⭐️ deducted. Prepare for battle 🔥");
-    console.log("Bid registered:", bidRef.id);
+    await dettyAlert("YOU DON ENTER WAR!\n50 Stars don comot. Tap like mad when e reach 12!", "success");
+    console.log("Bid created:", bidRef.id);
 
   } catch (err) {
-    console.error("Failed to register bid:", err);
-    // Optionally refund stars if bid fails (rare)
-    await giveCashToUser(0); // dummy call to force reload, or implement refund
-    alert("Bid registration failed. Please contact support.");
+    console.error(err);
+    await dettyAlert("War entrance fail. Contact support.", "error");
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "YES, DEDUCT & ENTER";
+    document.getElementById('confirmBidModal').style.display = 'none';
   }
+});
+
 
   // Close modal & cleanup
   document.getElementById('confirmBidModal').style.display = 'none';
