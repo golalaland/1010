@@ -724,7 +724,7 @@ bar + footer */
       
       <!-- Warning Text -->
       <p style="margin:12px 0 18px;color:#ff6b6b;font-size:14px;line-height:1.5;font-weight:500;">
-        This deducts <strong style="color:#fff;">50 $STRZ ⭐️</strong> permanently.<br>
+        This deducts <strong style="color:#fff;">50 starz ⭐️</strong> permanently.<br>
         <span style="color:#ff2d55;font-size:13px;">No refund. No escape.</span>
       </p>
       
@@ -787,9 +787,9 @@ bar + footer */
 <!-- Audio -->
 <audio id="tapSound" src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg" preload="auto"></audio>
 
-<audio id="gameMusic" loop preload="auto">
-  <source src="night_city_jazz.mp3" type="audio/mpeg">
-</audio>
+<!-- Put this anywhere in your <body> (one time only) -->
+<audio id="beatAudio" loop preload="none"></audio>
+<audio id="clickAudio" preload="auto"></audio>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
@@ -1954,6 +1954,56 @@ document.getElementById('finalConfirmBtn').addEventListener('click', async () =>
     btn.disabled = false;
     btn.textContent = "YES!";
     document.getElementById('confirmBidModal').style.display = 'none';
+  }
+});
+<script>
+// ====================== SOUND SYSTEM — NEVER HANGS, WORKS 100% ON PHONES ======================
+let audioUnlocked = false;
+
+// Unlock audio on FIRST user tap/click (required by iOS/Android)
+function unlockAllAudio() {
+  if (audioUnlocked) return;
+  audioUnlocked = true;
+
+  // Create a silent sound and play it to unlock audio context
+  const silent = new Audio("data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=");
+  silent.play().catch(() => {});
+
+  console.log("Audio unlocked");
+}
+document.body.addEventListener('touchstart', unlockAllAudio, { once: true });
+document.body.addEventListener('click', unlockAllAudio, { once: true });
+
+// ——— BACKGROUND BEAT (plays when user taps the big tap button) ———
+document.getElementById('tapButton')?.addEventListener('click', () => {
+  if (!audioUnlocked) return;
+
+  const beat = document.getElementById('beatAudio');
+  beat.src = "your-dettyverse-beat.mp3";        // ← put your real file here
+  beat.volume = 0.45;
+  beat.play().catch(() => {});
+});
+
+// ——— CLICK SOUND FOR ALL OTHER BUTTONS ———
+const click = document.getElementById('clickAudio');
+click.src = "https://assets.mixkit.co/sfx/preview/mixkit-arcade-game-jump-coin-216.mp3";
+click.volume = 0.6;
+
+let lastClick = 0;
+function playClickSound() {
+  if (!audioUnlocked) return;
+  const now = Date.now();
+  if (now - lastClick < 80) return;  // anti-spam
+  lastClick = now;
+
+  click.currentTime = 0;
+  click.play().catch(() => {});
+}
+
+// Add click sound to EVERY button except the tap button
+document.querySelectorAll('button').forEach(btn => {
+  if (btn.id !== 'tapButton') {
+    btn.addEventListener('click', playClickSound);
   }
 });
 </script>
