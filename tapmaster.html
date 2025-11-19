@@ -1860,6 +1860,38 @@ document.getElementById('tapButton').addEventListener('click', () => {
     audio.play();
   }
 });
+// ====================== GAME BUTTON SOUND SYSTEM (EXCLUDES TAP BUTTON) ======================
+// Sexy, short, satisfying "click" for ALL buttons except tapButton
+const buttonSound = new Audio("https://www.chosic.com/wp-content/uploads/2022/05/button-click-sound-effect.mp3"); 
+buttonSound.volume = 0.55; // perfect loudness
+buttonSound.preload = "auto";
+
+// Play sound with anti-spam (max 6 sounds/sec)
+let lastButtonPlay = 0;
+function playButtonSound() {
+  const now = Date.now();
+  if (now - lastButtonPlay > 80) {           // 80ms = feels instant, no spam
+    buttonSound.currentTime = 0;
+    buttonSound.play().catch(() => {});      // iOS/Android silent fail = fine
+    lastButtonPlay = now;
+  }
+}
+
+// AUTO-APPLY TO EVERY CURRENT + FUTURE BUTTON (skips tapButton)
+document.addEventListener("click", (e) => {
+  const btn = e.target.closest("button, .tiny-action-btn");
+  if (btn && !btn.disabled && btn.id !== 'tapButton') {  // ← EXCLUDES tapButton
+    playButtonSound();
+  }
+}, true); // "true" = capture phase so it catches even stopPropagation()
+
+// Optional: also trigger on touch for extra mobile juice (same exclusion)
+document.addEventListener("touchstart", (e) => {
+  const btn = e.target.closest("button, .tiny-action-btn");
+  if (btn && !btn.disabled && btn.id !== 'tapButton') {  // ← EXCLUDES tapButton
+    playButtonSound();
+  }
+}, { passive: true });
 </script>
 </body>
 </html>
