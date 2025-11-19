@@ -397,8 +397,6 @@ bar + footer */
   opacity: 1;
   transition: opacity 0.4s ease-out;
 }
-  #countdownTimer { font-family: 'Courier New', monospace; letter-spacing: 2px; }
-  #livePrize { font-family: 'Press Start 2P', cursive; text-shadow: 0 0 20px #00FFA3; }
 </style>
 </head>
 <body>
@@ -2019,7 +2017,7 @@ document.querySelectorAll('button').forEach(btn => {
 });
 
 
-/* ====================== DAILY BID ROYALE — 00:33 AM → 11:59 PM (LAGOS) ====================== */
+/* ====================== DAILY BID ROYALE — PERFECT SYNC, NO JUMP ON RELOAD ====================== */
 let bidActive = false;
 
 function startDailyBidEngine() {
@@ -2032,72 +2030,85 @@ function startDailyBidEngine() {
     return;
   }
 
-  // TODAY'S ROUND ID (used in bids collection)
+  // TODAY'S ROUND (Lagos date)
   window.CURRENT_ROUND_ID = (() => {
     const d = new Date();
-    const lagos = new Date(d.getTime() + 60*60*1000); // UTC+1
+    const lagos = new Date(d.getTime() + 60*60*1000);
     return "round_" + lagos.toISOString().split('T')[0];
   })();
 
+  let serverTimeOffset = 0;
+
+  // Get REAL server time once (eliminates client clock drift)
+  const getServerTime = async () => {
+    try {
+      const snap = await getDoc(doc(db, "server", "time"));
+      if (snap.exists()) {
+        const serverNow = snap.data().timestamp.toMillis();
+        serverTimeOffset = serverNow - Date.now();
+      }
+    } catch (e) { /* fallback to local time if fails */ }
+  };
+  getServerTime();
+
+  function getLagosNow() {
+    return new Date(Date.now() + serverTimeOffset + 60*60*1000); // UTC+1
+  }
+
   function updateCountdown() {
-    const now = Date.now();
-    const lagosOffset = 60 * 60 * 1000; // UTC+1
-    const lagosNow = new Date(now + lagosOffset);
-
+    const lagosNow = getLagosNow();
     const today = lagosNow.toISOString().split('T')[0];
-    const bidStart = new Date(`${today}T00:33:00.000+01:00`).getTime() - lagosOffset;
-    const bidEnd   = new Date(`${today}T23:59:00.000+01:00`).getTime() - lagosOffset;
 
-    if (now >= bidStart && now < bidEnd + 60000) { // active + 1 min grace
+    const bidStart = new Date(`${today}T00:33:00+01:00`).getTime();
+    const bidEnd   = new Date(`${today}T23:59:00+01:00`).getTime();
+    const now      = lagosNow.getTime();
+
+    if (now >= bidStart && now < bidEnd + 60000) {
       bidActive = true;
-      const diff = bidEnd - now;
+      const diff = Math.max(0, Math.floor((bidEnd - now) / 1000));
 
-      const h = String(Math.floor(diff / 3600000)).padStart(2, '0');
-      const m = String(Math.floor((diff % 3600000) / 60000)).padStart(2, '0');
-      const s = String(Math.floor((diff % 60000) / 1000)).padStart(2, '0');
+      const h = String(Math.floor(diff / 3600)).padStart(2, '0');
+      const m = String(Math.floor((diff % 3600) / 60)).padStart(2, '0');
+      const s = String(diff % 60).padStart(2, '0');
 
       timerEl.textContent = `${h}:${m}:${s}`;
-      timerEl.style.color = diff < 600000 ? "#ff0066" : "#00ff88"; // red last 10 min
+      timerEl.style.color = diff < 600 ? "#ff0066" : "#00ff88";
       timerEl.style.fontWeight = "900";
 
-      // Auto-declare winners ONCE at midnight
-      if (diff < 1000 && !timerEl.dataset.declared) {
+      // Declare winners exactly once
+      if (diff === 0 && !timerEl.dataset.declared) {
         timerEl.dataset.declared = "true";
         declareWinnersAndReset();
       }
 
     } else if (now < bidStart) {
-      // Before 00:33 → show "starts in"
       bidActive = false;
-      const diff = bidStart - now;
-      const h = String(Math.floor(diff / 3600000)).padStart(2, '0');
-      const m = String(Math.floor((diff % 3600000) / 60000)).padStart(2, '0');
+      const diff = Math.floor((bidStart - now) / 1000);
+      const h = String(Math.floor(diff / 3600)).padStart(2, '0');
+      const m = String(Math.floor((diff % 3600) / 60)).padStart(2, '0');
       timerEl.textContent = `Starts in ${h}:${m}`;
       timerEl.style.color = "#888";
     } else {
-      // After 11:59 PM → show next bid
       bidActive = false;
-      timerEl.textContent = "Next bid tomorrow 00:33";
+      timerEl.textContent = "Next bid 00:33";
       timerEl.style.color = "#666";
     }
   }
 
-  // LIVE PLAYERS & PRIZE (only when active)
-  let unsubscribe = null;
+  // Live stats
+  let unsub = null;
   function updateLiveStats() {
-    if (unsubscribe) unsubscribe();
-
+    if (unsub) unsub();
     if (bidActive) {
       const q = query(
         collection(db, "bids"),
         where("roundId", "==", window.CURRENT_ROUND_ID),
         where("status", "==", "active")
       );
-
-      unsubscribe = onSnapshot(q, snap => {
+      unsub = onSnapshot(q, snap => {
         const count = snap.size;
         playersEl.textContent = count;
-        prizeEl.textContent = "₦" + (count * 5000).toLocaleString(); // ₦5,000 per player
+        prizeEl.textContent = "₦" + (count * 5000).toLocaleString();
       });
     } else {
       playersEl.textContent = "0";
@@ -2113,14 +2124,13 @@ function startDailyBidEngine() {
   }, 1000);
 }
 
-// DECLARE WINNERS (plug your payout logic here)
+// Keep your declare function
 async function declareWinnersAndReset() {
-  console.log("BID ENDED — DECLARING TOP 5 WINNERS NOW");
-  // ← Your existing top 5 + payout code goes here
-  // This runs exactly ONCE per day at 11:59 PM
+  console.log("BID ENDED — PAYING TOP 5 NOW");
+  // Your payout code here
 }
 
-// RUN ONCE AND ONLY ONCE
+// Create this document once in Firestore (path: server/time)
 if (!window.bidEngineStarted) {
   window.bidEngineStarted = true;
   startDailyBidEngine();
