@@ -2507,12 +2507,11 @@ waitForElement("uploadHighlightBtn", (uploadBtn) => {
     const titleInput = document.getElementById("highlightTitleInput");
     const descInput = document.getElementById("highlightDescInput");
     const priceInput = document.getElementById("highlightPriceInput");
+    const urlInput = document.getElementById("highlightUrlInput");
 
-    // Safety check: if any element is missing, stop
-    if (!statusEl || !fileInput || !titleInput || !descInput || !priceInput) {
-      console.error("Highlight upload elements missing", {
-        statusEl, fileInput, titleInput, descInput, priceInput
-      });
+    // Safety check
+    if (!statusEl || !fileInput || !titleInput || !descInput || !priceInput || !urlInput) {
+      console.error("Some highlight upload elements missing");
       return;
     }
 
@@ -2520,32 +2519,36 @@ waitForElement("uploadHighlightBtn", (uploadBtn) => {
     const desc = descInput.value.trim();
     const price = parseInt(priceInput.value || "0");
     const file = fileInput.files[0];
+    const manualUrl = urlInput.value.trim();
 
     statusEl.textContent = "";
 
     if (!currentUser) return statusEl.textContent = "⚠️ Please sign in first";
-    if (!file) return statusEl.textContent = "⚠️ Please select a video";
     if (!title) return statusEl.textContent = "⚠️ Add a title";
     if (price < 10) return statusEl.textContent = "⚠️ Minimum price is 10 ⭐";
-    if (!file.type.startsWith("video/")) return statusEl.textContent = "⚠️ Must be a video file";
-    if (file.size > 600 * 1024 * 1024) return statusEl.textContent = "⚠️ Video too big (max ~600 MB)";
 
-    statusEl.textContent = "⏳ Uploading video to your store…";
+    // Either file OR manual URL must be provided
+    if (!file && !manualUrl) return statusEl.textContent = "⚠️ Select a file or paste a URL";
 
     try {
-      // 🔹 Upload video via your Node backend
-      const form = new FormData();
-      form.append("file", file);
+      let videoUrl = manualUrl;
 
-      const response = await fetch("http://localhost:3000/upload-video", {
-        method: "POST",
-        body: form,
-      });
+      // If a file is provided, upload it via Node backend
+      if (file) {
+        if (!file.type.startsWith("video/")) return statusEl.textContent = "⚠️ Must be a video file";
+        if (file.size > 600 * 1024 * 1024) return statusEl.textContent = "⚠️ Video too big (max ~600 MB)";
 
-      if (!response.ok) throw new Error("Upload failed");
+        statusEl.textContent = "⏳ Uploading video to your store…";
 
-      const data = await response.json();
-      const shopifyVideoUrl = data.url;
+        const form = new FormData();
+        form.append("file", file);
+
+        const response = await fetch("http://localhost:3000/upload-video", { method: "POST", body: form });
+        if (!response.ok) throw new Error("Upload failed");
+
+        const data = await response.json();
+        videoUrl = data.url; // Shopify CDN URL
+      }
 
       statusEl.textContent = "⏳ Saving highlight to database…";
 
@@ -2557,7 +2560,7 @@ waitForElement("uploadHighlightBtn", (uploadBtn) => {
         uploaderId: userId,
         uploaderEmail: emailId,
         uploaderName: chatId,
-        highlightVideo: shopifyVideoUrl,
+        highlightVideo: videoUrl,
         highlightVideoPrice: price,
         title,
         description: desc || "",
@@ -2572,6 +2575,7 @@ waitForElement("uploadHighlightBtn", (uploadBtn) => {
       titleInput.value = "";
       descInput.value = "";
       priceInput.value = "50";
+      urlInput.value = "";
 
     } catch (err) {
       console.error(err);
@@ -2579,6 +2583,7 @@ waitForElement("uploadHighlightBtn", (uploadBtn) => {
     }
   });
 });
+
 
 
   // --- Initial random values for first load ---
