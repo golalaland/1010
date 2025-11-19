@@ -2023,192 +2023,59 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // STAR MARKETPLACE — FINAL 100% WORKING VERSION (2025)
 document.addEventListener('DOMContentLoaded', () => {
-  const smModal       = document.getElementById('sm-modal');
-  const smOpenBtn     = document.getElementById('starMarketBtn');
-  const smCloseBtn    = document.querySelector('.sm-close');
-  const smListings    = document.getElementById('sm-listings-container');
-  const smMyListings  = document.getElementById('sm-my-listings');
-  const smUserStarsEl = document.getElementById('sm-user-stars');
+  const smModal = document.getElementById('sm-modal');
+  const smOpenBtn = document.getElementById('starMarketBtn');
+  const smListings = document.getElementById('sm-listings-container');
+  const smMyListings = document.getElementById('sm-my-listings');
+  const smUserStars = document.getElementById('sm-user-stars');
 
-  if (!smModal || !smOpenBtn) {
-    console.warn('Star Market modal not in DOM');
-    return;
-  }
+  if (!smModal || !smOpenBtn) return;
 
-  // OPEN & CLOSE MODAL
-  smOpenBtn.onclick = () => {
+  smOpenBtn.onclick = async () => {
     smModal.style.display = 'flex';
-    loadStarMarket();
-  };
-  smCloseBtn.onclick = () => smModal.style.display = 'none';
-  smModal.onclick = e => { if (e.target === smModal) smModal.style.display = 'none'; };
+    smUserStars.textContent = (currentUser?.stars || 0).toLocaleString();
 
-  // TAB SWITCHING
-  document.querySelectorAll('.sm-tab-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.sm-tab-btn').forEach(b => b.classList.remove('sm-active'));
-      document.querySelectorAll('.sm-tab-content').forEach(c => c.classList.remove('sm-active'));
-      btn.classList.add('sm-active');
-      document.getElementById('sm-' + btn.dataset.tab + '-tab').classList.add('sm-active');
-      if (btn.dataset.tab === 'buy') loadPublicListings();
-      if (btn.dataset.tab === 'sell') loadMyListings();
-    });
-  });
-
-  function loadStarMarket() {
-    smUserStarsEl.textContent = formatNumber(currentUser?.stars || 0);
-    document.querySelector('.sm-tab-btn.sm-active')?.click();
-  }
-
-  // BUY TAB
-  async function loadPublicListings() {
-    if (!smListings) return;
-    smListings.innerHTML = '<p class="sm-empty">Loading...</p>';
-
+    // FORCE LOAD LISTINGS — NO ERRORS ALLOWED
     try {
-      const q = query(collection(db, "starListings"), where("status", "==", "active"), orderBy("createdAt", "desc"));
+      const q = query(collection(db, "starListings"), where("status", "==", "active"));
       const snap = await getDocs(q);
-      if (snap.empty) {
-        smListings.innerHTML = '<p class="sm-empty">No stars for sale right now</p>';
-        return;
-      }
 
+      // CLEAR
       smListings.innerHTML = '';
-      snap.forEach(doc => {
-        const d = doc.data();
-        if (d.sellerId === currentUser?.uid) return;
-
-        const el = document.createElement('div');
-        el.className = 'sm-listing';
-        el.innerHTML = `
-          <div>
-           <h4>Star ${formatNumber(d.amount)} Stars</h4>
-            <small>by ${d.sellerName || 'User'} • ₦${formatNumber(d.price)}</small>
-          </div>
-          <button class="sm-buy-btn" data-id="${doc.id}" data-amt="${d.amount}" data-price="${d.price}">
-            Buy ₦${formatNumber(d.price)}
-          </button>
-        `;
-        smListings.appendChild(el);
-      });
-
-      // Buy button (demo version — real one comes with Cloud Function)
-      document.querySelectorAll('.sm-buy-btn').forEach(btn => {
-        btn.onclick = () => {
-          const amt = btn.dataset.amt;
-          const price = btn.dataset.price;
-          if (confirm(`Buy ${amt} stars for ₦${price}?`)) {
-            alert(`Success! You bought ${amt} stars! (Real transfer coming soon)`);
-            // Real version: call Cloud Function here
-          }
-        };
-      });
-
-    } catch (e) {
-      smListings.innerHTML = '<p class="sm-empty">Error loading listings</p>';
-    }
-  }
-
-  // SELL TAB — Your listings
-  async function loadMyListings() {
-    if (!smMyListings) return;
-    try {
-      const q = query(collection(db, "starListings"), where("sellerId", "==", currentUser?.uid), where("status", "==", "active"));
-      const snap = await getDocs(q);
+      smMyListings.innerHTML = '';
 
       if (snap.empty) {
-        smMyListings.innerHTML = '<p class="sm-empty">No active listings</p>';
+        smListings.innerHTML = '<p class="sm-empty">No active listings right now</p>';
         return;
       }
 
-      smMyListings.innerHTML = '';
       snap.forEach(doc => {
         const d = doc.data();
-        const el = document.createElement('div');
-        el.className = 'sm-listing';
-        el.innerHTML = `
+        const isMine = d.sellerId === currentUser?.uid;
+
+        const div = document.createElement('div');
+        div.className = 'sm-listing';
+        div.innerHTML = `
           <div>
             <strong>${d.amount} Stars → ₦${d.price}</strong><br>
-            <small>${timeAgo(d.createdAt.toDate())}</small>
+            <small>by ${d.sellerName || 'Someone'}</small>
           </div>
-          <button class="sm-cancel-btn" data-id="${doc.id}">Cancel</button>
+          ${isMine ? '<button class="sm-cancel-btn">Cancel</button>' : '<button class="sm-buy-btn">Buy</button>'}
         `;
-        smMyListings.appendChild(el);
-      });
 
-      // Cancel listing
-      document.querySelectorAll('.sm-cancel-btn').forEach(btn => {
-        btn.onclick = async () => {
-          if (!confirm("Cancel listing and get stars back?")) return;
-          const id = btn.dataset.id;
-          try {
-            await deleteDoc(doc(db, "starListings", id));
-            alert("Listing cancelled, stars returned!");
-            loadMyListings();
-          } catch (e) {
-            alert("Failed to cancel");
-          }
-        };
+        if (isMine) smMyListings.appendChild(div);
+        else smListings.appendChild(div);
       });
 
     } catch (e) {
-      smMyListings.innerHTML = '<p class="sm-empty">Error loading listings</p>';
+      console.error("Failed to load listings:", e);
+      smListings.innerHTML = '<p class="sm-empty">Error loading listings</p>';
     }
-  }
+  };
 
-  // LIST FOR SALE — FULLY WORKING (deducts stars instantly)
-  document.getElementById('sm-list-btn')?.addEventListener('click', async () => {
-    const amount = Number(document.getElementById('sm-sell-amount').value);
-    const price  = Number(document.getElementById('sm-sell-price').value);
-
-    if (!amount || amount < 100 || amount % 100 !== 0) return alert("Min 100 stars, multiples of 100 only");
-    if (!price || price < 50) return alert("Price too low");
-    if ((currentUser?.stars || 0) < amount) return alert("Not enough stars!");
-
-    if (!confirm(`Deduct ${amount} stars and list for ₦${price}?\nNo refund!`)) return;
-
-    const btn = document.getElementById('sm-list-btn');
-    const old = btn.textContent;
-    btn.disabled = true;
-    btn.textContent = "Listing...";
-
-    try {
-      const userRef = doc(db, "users", currentUser.uid);
-
-      await runTransaction(db, async (t) => {
-        const snap = await t.get(userRef);
-        const stars = snap.data().stars || 0;
-        if (stars < amount) throw "no stars";
-        t.update(userRef, { stars: stars - amount });
-      });
-
-      await addDoc(collection(db, "starListings"), {
-        sellerId: currentUser.uid,
-        sellerName: currentUser.chatId || "User",
-        amount, price, status: "active",
-        createdAt: serverTimestamp()
-      });
-
-      currentUser.stars -= amount;
-      document.getElementById('starCount').textContent = formatNumber(currentUser.stars);
-      smUserStarsEl.textContent = formatNumber(currentUser.stars);
-      document.getElementById('sm-sell-amount').value = '';
-      document.getElementById('sm-sell-price').value = '';
-
-      alert(`Success! ${amount} stars listed for ₦${price}`);
-      loadMyListings();
-
-    } catch (e) {
-      alert("Failed. Try again.");
-    } finally {
-      btn.disabled = false;
-      btn.textContent = old;
-    }
-  });
-
-  window.starMarketDebug = { loadPublicListings, loadMyListings };
+  // Close modal
+  smModal.onclick = e => { if (e.target === smModal) smModal.style.display = 'none'; };
 });
-
 /* ============================================================
    TAPMASTER — FULLY WORKING, NO HANG, CLEAN VERSION
    ============================================================ */
