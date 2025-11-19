@@ -2021,14 +2021,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
 });
 
-// STAR MARKETPLACE — FINAL 100% WORKING VERSION (2025)
 document.addEventListener('DOMContentLoaded', () => {
-  const smModal        = document.getElementById('sm-modal');
-  const smOpenBtn      = document.getElementById('starMarketBtn');
-  const smCloseBtn     = document.querySelector('.sm-close');
-  const smListings     = document.getElementById('sm-listings-container');
-  const smMyListings   = document.getElementById('sm-my-listings');
-  const smUserStars    = document.getElementById('sm-user-stars');
+  const smModal       = document.getElementById('sm-modal');
+  const smOpenBtn     = document.getElementById('starMarketBtn');
+  const smCloseBtn    = document.querySelector('.sm-close');
+  const smListings    = document.getElementById('sm-listings-container');  // Buy tab
+  const smMyListings  = document.getElementById('sm-my-listings');         // Sell tab
+  const smUserStars   = document.getElementById('sm-user-stars');
 
   if (!smModal || !smOpenBtn) return;
 
@@ -2036,46 +2035,48 @@ document.addEventListener('DOMContentLoaded', () => {
   smOpenBtn.onclick = () => {
     smModal.style.display = 'flex';
     smUserStars.textContent = (currentUser?.stars || 0).toLocaleString();
-    loadAllListings();  // This loads both tabs
-    switchTab('buy');   // default to Buy tab
+    loadBuyTab();
+    loadSellTab();
+    switchToTab('buy');  // default
   };
 
-  // CLOSE MODAL
+  // CLOSE
   smCloseBtn.onclick = () => smModal.style.display = 'none';
   smModal.onclick = e => { if (e.target === smModal) smModal.style.display = 'none'; };
 
-  // TAB SWITCHING — FIXED & WORKING
+  // TAB SWITCHING
   document.querySelectorAll('.sm-tab-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
+    btn.onclick = () => {
       document.querySelectorAll('.sm-tab-btn').forEach(b => b.classList.remove('sm-active'));
       document.querySelectorAll('.sm-tab-content').forEach(c => c.classList.remove('sm-active'));
       btn.classList.add('sm-active');
       document.getElementById('sm-' + btn.dataset.tab + '-tab').classList.add('sm-active');
-    });
+    };
   });
 
-  function switchTab(tab) {
+  function switchToTab(tab) {
     document.querySelector(`.sm-tab-btn[data-tab="${tab}"]`).click();
   }
 
-  // LOAD ALL LISTINGS (Buy + Sell tabs)
-  async function loadAllListings() {
+  // BUY TAB — only OTHER people's listings
+  async function loadBuyTab() {
     smListings.innerHTML = '<p class="sm-empty">Loading...</p>';
-    smMyListings.innerHTML = '';
-
     try {
-      const q = query(collection(db, "starListings"), where("status", "==", "active"), orderBy("createdAt", "desc"));
+      const q = query(collection(db, "starListings"), where("status", "==", "active"));
       const snap = await getDocs(q);
 
       smListings.innerHTML = '';
       if (snap.empty) {
         smListings.innerHTML = '<p class="sm-empty">No stars for sale right now</p>';
+        return;
       }
 
+      let hasListings = false;
       snap.forEach(doc => {
         const d = doc.data();
-        const isMine = d.sellerId === currentUser?.uid;
+        if (d.sellerId === currentUser?.uid) return; // hide own
 
+        hasListings = true;
         const div = document.createElement('div');
         div.className = 'sm-listing';
         div.innerHTML = `
@@ -2083,60 +2084,75 @@ document.addEventListener('DOMContentLoaded', () => {
             <strong>${d.amount} Stars → ₦${d.price}</strong><br>
             <small>by ${d.sellerName || 'User'}</small>
           </div>
-          ${isMine 
-            ? `<button class="sm-cancel-btn" data-id="${doc.id}">Cancel</button>`
-            : `<button class="sm-buy-btn" data-id="${doc.id}" data-amt="${d.amount}" data-price="${d.price}">Buy</button>`
-          }
+          <button class="sm-buy-btn" data-id="${doc.id}" data-amt="${d.amount}" data-price="${d.price}">
+            Buy
+          </button>
         `;
-
-        if (isMine) {
-          smMyListings.appendChild(div);
-        } else {
-          smListings.appendChild(div);
-        }
+        smListings.appendChild(div);
       });
 
-      // RE-ATTACH BUTTONS AFTER DOM UPDATE
-      attachBuyButtons();
-      attachCancelButtons();
+      if (!hasListings) smListings.innerHTML = '<p class="sm-empty">No one selling right now</p>';
+
+      // Attach buy buttons
+      document.querySelectorAll('.sm-buy-btn').forEach(b => {
+        b.onclick = () => alert(`Buy ${b.dataset.amt} stars for ₦${b.dataset.price}? (Real purchase soon)`);
+      });
 
     } catch (e) {
       console.error(e);
-      smListings.innerHTML = '<p class="sm-empty">Error loading</p>';
+      smListings.innerHTML = '<p class="sm-empty">Error</p>';
     }
   }
 
-  function attachBuyButtons() {
-    document.querySelectorAll('.sm-buy-btn').forEach(btn => {
-      btn.onclick = () => {
-        const amt = btn.dataset.amt;
-        const price = btn.dataset.price;
-        if (confirm(`Buy ${amt} stars for ₦${price}?`)) {
-          alert("Purchase successful! (Real version coming with Cloud Function)");
-          // Later: call Cloud Function here
-        }
-      };
-    });
+  // SELL TAB — only YOUR listings
+  async function loadSellTab() {
+    smMyListings.innerHTML = '';
+    try {
+      const q = query(collection(db, "starListings"), 
+        where("status", "==", "active"),
+        where("sellerId", "==", currentUser?.uid)
+      );
+      const snap = await getDocs(q);
+
+      if (snap.empty) {
+        smMyListings.innerHTML = '<p class="sm-empty">You have no active listings</p>';
+        return;
+      }
+
+      snap.forEach(doc => {
+        const d = doc.data();
+        const div = document.createElement('div');
+        div.className = 'sm-listing';
+        div.innerHTML = `
+          <div>
+            <strong>${d.amount} Stars → ₦${d.price}</strong><br>
+            <small>Listed just now</small>
+          </div>
+          <button class="sm-cancel-btn" data-id="${doc.id}">Cancel</button>
+        `;
+        smMyListings.appendChild(div);
+      });
+
+      // Cancel button
+      document.querySelectorAll('.sm-cancel-btn').forEach(b => {
+        b.onclick = async () => {
+          if (confirm("Cancel and get stars back?")) {
+            await deleteDoc(doc(db, "starListings", b.dataset.id));
+            loadSellTab();
+            loadBuyTab(); // refresh both
+          }
+        };
+      });
+
+    } catch (e) {
+      smMyListings.innerHTML = '<p class="sm-empty">Error</p>';
+    }
   }
 
-  function attachCancelButtons() {
-    document.querySelectorAll('.sm-cancel-btn').forEach(btn => {
-      btn.onclick = async () => {
-        if (!confirm("Cancel listing and get stars back?")) return;
-        try {
-          await deleteDoc(doc(db, "starListings", btn.dataset.id));
-          alert("Cancelled! Stars returned.");
-          loadAllListings();
-        } catch (e) {
-          alert("Failed to cancel");
-        }
-      };
-    });
-  }
-
-  // Expose for debugging
-  window.reloadMarket = loadAllListings;
+  // Public functions
+  window.reloadMarket = () => { loadBuyTab(); loadSellTab(); };
 });
+
 /* ============================================================
    TAPMASTER — FULLY WORKING, NO HANG, CLEAN VERSION
    ============================================================ */
