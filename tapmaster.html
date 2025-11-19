@@ -1838,64 +1838,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
 });
 
-
-// AUTO DAILY ROUND + LIVE PRIZE + LIVE PLAYERS + LIVE COUNTDOWN
-const PRIZE_PER_PLAYER = 5000; // ₦5000 per entry
-
-function getTodayRound() {
-  const d = new Date();
-  d.setHours(d.getHours() + 1); // Lagos = UTC+1
-  return "round_" + d.toISOString().split('T')[0];
-}
-
-// Next war starts at 11:59 PM WAT every day
-function startCountdown() {
-  const update = () => {
-    const now = new Date();
-    const lagos = new Date(now.getTime() + 60*60*1000); // UTC+1
-
-    const today = lagos.toISOString().split('T')[0];
-    const target = new Date(`${today}T22:59:00.000Z`); // 11:59 PM WAT
-
-    const diff = target - lagos;
-    if (diff <= 0) {
-      document.getElementById('countdownTimer').textContent = "LIVE NOW!";
-      return;
-    }
-
-    const h = Math.floor(diff / (1000*60*60)).toString().padStart(2,'0');
-    const m = Math.floor((diff % (1000*60*60)) / (1000*60)).toString().padStart(2,'0');
-    const s = Math.floor((diff % (1000*60)) / 1000).toString().padStart(2,'0');
-
-    document.getElementById('countdownTimer').textContent = `${h}:${m}:${s}`;
-  };
-
-  update();
-  setInterval(update, 1000);
-}
-
-// Live prize + player count
-function startLiveStats() {
-  const q = query(
-    collection(db, "bids"),
-    where("roundId", "==", getTodayRound()),
-    where("status", "==", "active")
-  );
-
-  onSnapshot(q, (snap) => {
-    const count = snap.size;
-    const prize = count * PRIZE_PER_PLAYER;
-
-    document.getElementById('livePlayers').textContent = count;
-    document.getElementById('livePrize').textContent = "₦" + prize.toLocaleString();
-  });
-}
-
-// Run everything
-startCountdown();
-startLiveStats();
-
-
 //* RULES BUTTON ONLY — NO CONFLICT WITH LEADERBOARD OR BID
 document.getElementById('rulesBtn').addEventListener('click', (e) => {
   e.preventDefault();
@@ -2078,6 +2020,85 @@ document.querySelectorAll('button').forEach(btn => {
   if (btn.id !== 'tapButton') {
     btn.addEventListener('click', playClickSound);
   }
+});
+// LIVE PRIZE + PLAYERS + COUNTDOWN — 100% SAFE & FAST
+const PRIZE_PER_PLAYER = 5000;
+
+// 1. Get today’s round ID (Lagos time)
+function getTodayRound() {
+  const d = new Date();
+  const lagosOffset = 60 * 60 * 1000; // UTC+1
+  const lagos = new Date(d.getTime() + lagosOffset);
+  return "round_" + lagos.toISOString().split('T')[0]; // e.g. round_2025-11-19
+}
+
+// 2. Countdown timer — war starts 11:59 PM Lagos time
+function startCountdown() {
+  const timerEl = document.getElementById('countdownTimer');
+  if (!timerEl) return; // safety
+
+  const update = () => {
+    const now = new Date();
+    const lagos = new Date(now.getTime() + 60*60*1000); // UTC+1
+
+    const today = lagos.toISOString().split('T')[0];
+    const target = new Date(today + "T22:59:59.000Z"); // 11:59:59 PM WAT
+
+    const diff = target - lagos;
+
+    if (diff <= 0) {
+      timerEl.textContent = "LIVE NOW!";
+      timerEl.style.color = "#ff2d55";
+      return;
+    }
+
+    const h = String(Math.floor(diff / (1000*60*60))).padStart(2, '0');
+    const m = String(Math.floor((diff % (1000*60*60)) / (1000*60))).padStart(2, '0');
+    const s = String(Math.floor((diff % (1000*60)) / 1000)).padStart(2, '0');
+
+    timerEl.textContent = `${h}:${m}:${s}`;
+  };
+
+  update();                    // run once immediately
+  setInterval(update, 1000);   // then every second
+}
+
+// 3. Live player count & prize pool
+function startLiveStats() {
+  const playersEl = document.getElementById('livePlayers');
+  const prizeEl = document.getElementById('livePrize');
+  if (!playersEl || !prizeEl) return;
+
+  const q = query(
+    collection(db, "bids"),
+    where("roundId", "==", getTodayRound()),
+    where("status", "==", "active")
+  );
+
+  // Only attach ONE listener — this prevents hanging
+  try {
+    onSnapshot(q, (snapshot) => {
+      const count = snapshot.size;
+      const prize = count * PRIZE_PER_PLAYER;
+
+      playersEl.textContent = count;
+      prizeEl.textContent = "₦" + prize.toLocaleString();
+    });
+  } catch (e) {
+    console.log("Live stats off (offline?)");
+  }
+}
+
+// RUN ONLY ONCE — THIS WAS THE HANG CAUSE
+if (!window.bidStatsInitialized) {
+  window.bidStatsInitialized = true;
+  startCountdown();
+  startLiveStats();
+}
+
+// Optional: refresh when user opens modal
+document.getElementById('bidBtn')?.addEventListener('click', () => {
+  document.getElementById('bidModal').style.display = 'flex';
 });
 </script>
 </body>
