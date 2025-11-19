@@ -397,33 +397,39 @@ bar + footer */
   opacity: 1;
   transition: opacity 0.4s ease-out;
 }
-/* === STAR MARKETPLACE - FULLY ISOLATED === */
+
+/* STAR MARKETPLACE – FINAL COMPACT & SCROLLABLE VERSION */
 .sm-backdrop {
   position: fixed; inset: 0; background: rgba(0,0,0,0.88);
-  backdrop-filter: blur(12px); display: flex;
+  backdrop-filter: blur(14px); display: flex;
   align-items: center; justify-content: center;
-  z-index: 9999; animation: smFadeIn 0.3s ease;
+  z-index: 9999; animation: smFadeIn 0.32s ease-out;
 }
 @keyframes smFadeIn { from { opacity: 0; } to { opacity: 1; } }
 
 .sm-modal {
-  width: 92%; max-width: 440px; border-radius: 26px;
-  background: rgba(20,20,40,0.98); color: white;
+  width: 92%; max-width: 400px;                 /* smaller */
+  max-height: 90vh;                             /* never taller than screen */
+  background: rgba(20,20,40,0.98);
+  border-radius: 26px;
   border: 1px solid rgba(255,255,255,0.18);
   box-shadow: 0 30px 80px rgba(0,0,0,0.7);
   overflow: hidden;
+  display: flex; flex-direction: column;        /* important for scroll */
   font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+  color: white;
 }
 
 .sm-header {
-  padding: 22px; text-align: center;
+  padding: 20px; Wesleyan: center;
   background: linear-gradient(135deg, #ffd700, #ff9d00);
-  color: #000; font-weight: 800; font-size: 20px;
+  color: #000; font-weight: 800; font-size: 19px;
+  flex-shrink: 0;
   position: relative;
 }
 
 .sm-close {
-  position: absolute; top: 14px; right: 14px;
+  position: absolute; top: 12px; right: 12px;
   width: 40px; height: 40px; border-radius: 50%;
   background: rgba(0,0,0,0.4); border: none; color: white;
   font-size: 22px; cursor: pointer;
@@ -431,66 +437,82 @@ bar + footer */
 
 .sm-tabs {
   display: flex; background: rgba(255,255,255,0.08);
+  flex-shrink: 0;
 }
 
 .sm-tab-btn {
   flex: 1; padding: 16px; background: none; border: none;
-  color: #aaa; font-size: 16px; font-weight: 600; cursor: pointer;
+  color: #ccc; font-size: 16px; font-weight: 600; cursor: pointer;
 }
-
 .sm-tab-btn.sm-active {
-  background: #ffd700; color: #000;
+  background: #ffd700; color: #000; font-weight: bold;
 }
 
-.sm-tab-content { padding: 20px; min-height: 420px; display: none; }
-.sm-tab-content.sm-active { display: block; }
+/* MAIN SCROLLABLE AREA */
+.sm-content {
+  flex: 1; overflow: hidden; display: flex; flex-direction: column;
+}
 
+.sm-tab-content {
+  display: none; flex-direction: column; height: 100%;
+}
+.sm-tab-content.sm-active { display: flex; }
+
+.sm-scroll {
+  flex: 1; overflow-y: auto; padding: 0 20px 20px;
+  scrollbar-width: thin; scrollbar-color: #ffd700 transparent;
+}
+.sm-scroll::-webkit静-scrollbar { width: 6px; }
+.sm-scroll::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); border-radius: 10px; }
+.sm-scroll::-webkit-scrollbar-thumb { background: #ffd700; border-radius: 10px; }
+
+/* LISTINGS */
 .sm-listing {
   background: rgba(255,255,255,0.07);
-  padding: 16px; border-radius: 16px; margin-bottom: 12px;
+  padding: 16px; border-radius: 16px; margin-top: 12px;
   border: 1px solid rgba(255,215,0,0.25);
   display: flex; justify-content: space-between; align-items: center;
 }
-
 .sm-listing h4 { margin: 0; color: #ffd700; font-size: 18px; }
-.sm-listing small { opacity: 0.8; }
+.sm-listing small { opacity: 0.85; font-size: 13px; }
 
+/* BUTTONS */
 .sm-buy-btn {
   background: #ffd700; color: #000; border: none;
   padding: 11px 22px; border-radius: 14px; font-weight: bold;
   cursor: pointer; transition: transform 0.2s;
 }
 .sm-buy-btn:hover { transform: scale(1.06); }
-.sm-buy-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
+.sm-cancel-btn {
+  background: #ff4444; color: white; border: none;
+  padding: 8px 16px; border-radius: 10px; font-size: 13px;
+}
+
+/* SELL FORM */
+.sm-sell-form {
+  background: rgba(255,255,255,0.06);
+  padding: 20px; border-radius: 18px; margin: 20px;
+  border: 1px solid rgba(255,255,255,0.1);
+}
 .sm-sell-form input {
   width: 100%; padding: 15px; margin: 12px 0;
   background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
   border-radius: 14px; color: white; font-size: 16px;
 }
-
 .sm-btn-primary {
-  width: 100%; padding: 17px; margin-top: 10px;
+  width: 100%; padding: 17px; margin-top: 16px;
   background: #ffd700; color: #000; border: none;
   border-radius: 16px; font-size: 18px; font-weight: bold;
   cursor: pointer;
 }
 
-.sm-info {
-  text-align: center; font-size: 13px; opacity: 0.8; margin-top: 12px;
+.sm-my-listings-title {
+  color: #ffd700; margin: 24px 20px 8px; font-size: 17px;
 }
 
 .sm-empty {
   text-align: center; padding: 60px 20px; opacity: 0.7; font-size: 17px;
-}
-
-.sm-my-listings-title {
-  color: #ffd700; margin: 30px 0 15px; font-size: 18px;
-}
-
-.sm-cancel-btn {
-  background: #ff4444; color: white; border: none;
-  padding: 8px 16px; border-radius: 10px; font-size: 13px;
 }
 </style>
 </head>
@@ -892,11 +914,11 @@ bar + footer */
   </div>
 </div>
 
-<!-- STAR MARKETPLACE MODAL (100% namespaced) -->
+<!-- STAR MARKETPLACE MODAL – SMALLER & SCROLLABLE -->
 <div id="sm-modal" class="sm-backdrop" style="display:none;">
   <div class="sm-modal">
     <div class="sm-header">
-      <h2>Store <span style="font-size:28px">Star Marketplace</span></h2>
+      <h2>Store Star Marketplace</h2>
       <button class="sm-close">Cross</button>
     </div>
 
@@ -905,23 +927,28 @@ bar + footer */
       <button class="sm-tab-btn" data-tab="sell">Sell Stars</button>
     </div>
 
-    <!-- BUY TAB -->
-    <div id="sm-buy-tab" class="sm-tab-content sm-active">
-      <div id="sm-listings-container"></div>
-    </div>
-
-    <!-- SELL TAB -->
-    <div id="sm-sell-tab" class="sm-tab-content">
-      <div class="sm-sell-form">
-        <p>You have: <strong id="sm-user-stars">0</strong> Stars</p>
-        <input type="number" id="sm-sell-amount" min="100" placeholder="Amount (min 100, multiples of 100)" />
-        <input type="number" id="sm-sell-price" min="50" placeholder="Price for this pack (₦)" />
-        <button id="sm-list-btn" class="sm-btn-primary">List Stars for Sale</button>
-        <p class="sm-info">Stars deducted immediately • No refunds • Cancel anytime</p>
+    <!-- SCROLLABLE CONTENT AREA -->
+    <div class="sm-content">
+      <!-- BUY TAB -->
+      <div id="sm-buy-tab" class="sm-tab-content sm-active">
+        <div id="sm-listings-container" class="sm-scroll"></div>
       </div>
 
-      <h3 class="sm-my-listings-title">Your Active Listings</h3>
-      <div id="sm-my-listings"></div>
+      <!-- SELL TAB -->
+      <div id="sm-sell-tab" class="sm-tab-content">
+        <div class="sm-scroll">
+          <div class="sm-sell-form">
+            <p>Your stars: <strong id="sm-user-stars">0</strong> Stars</p>
+            <input type="number" id="sm-sell-amount" placeholder="Amount (100, 200, 300...)" min="100" step="100">
+            <input type="number" id="sm-sell-price" placeholder="Price in ₦ (e.g. 800)" min="50">
+            <button id="sm-list-btn" class="sm-btn-primary">List for Sale</button>
+            <small style="color:#ff6b6b;">Stars deducted instantly • No refund</small>
+          </div>
+
+          <h3 class="sm-my-listings-title">Your Listings</h3>
+          <div id="sm-my-listings"></div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -1983,154 +2010,49 @@ document.addEventListener("DOMContentLoaded", () => {
 
 });
 
-// STAR MARKETPLACE — FULLY FIXED & SAFE (2025 version)
-document.addEventListener('DOMContentLoaded', () => {
-  // All DOM elements
-  const smModal         = document.getElementById('sm-modal');
-  const smOpenBtn       = document.getElementById('starMarketBtn');
-  const smCloseBtn      = document.querySelector('.sm-close');
-  const smListings      = document.getElementById('sm-listings-container');
-  const smMyListings    = document.getElementById('sm-my-listings');
-  const smUserStarsEl   = document.getElementById('sm-user-stars');
+document.getElementById('sm-list-btn').onclick = async () => {
+  const amount = Number(document.getElementById('sm-sell-amount').value);
+  const price  = Number(document.getElementById('sm-sell-price').value);
 
-  // Safety check — if modal not found, stop everything silently
-  if (!smModal || !smOpenBtn) {
-    console.warn('Star Market modal not found in DOM yet. Will retry...');
-    return;
-  }
+  if (!amount || amount < 100 || amount % 100 !== 0) return alert("Minimum 100 stars, multiples of 100 only");
+  if (!price || price < 50) return alert("Enter a valid price");
 
-  // OPEN MODAL
-  smOpenBtn.onclick = () => {
-    smModal.style.display = 'flex';
-    loadStarMarket();
-  };
+  if ((currentUser?.stars || 0) < amount) return alert("Not enough stars!");
 
-  // CLOSE MODAL
-  smCloseBtn.onclick = () => smModal.style.display = 'none';
-  smModal.onclick = (e) => {
-    if (e.target === smModal) smModal.style.display = 'none';
-  };
+  if (!confirm(`Deduct ${amount} stars and list for ₦${price}?`)) return;
 
-  // TAB SWITCHING
-  document.querySelectorAll('.sm-tab-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.sm-tab-btn').forEach(b => b.classList.remove('sm-active'));
-      document.querySelectorAll('.sm-tab-content').forEach(c => c.classList.remove('sm-active'));
-      btn.classList.add('sm-active');
-      document.getElementById('sm-' + btn.dataset.tab + '-tab').classList.add('sm-active');
-
-      if (btn.dataset.tab === 'buy') loadPublicListings();
-      if (btn.dataset.tab === 'sell') loadMyListings();
+  try {
+    const userRef = doc(db, "users", currentUser.uid);
+    await runTransaction(db, async (t) => {
+      const snap = await t.get(userRef);
+      const newStars = snap.data().stars - amount;
+      if (newStars < 0) throw "not enough";
+      t.update(userRef, { stars: newStars });
     });
-  });
 
-  // Load data when modal opens
-  function loadStarMarket() {
-    smUserStarsEl.textContent = formatNumber((currentUser?.stars || 0));
-    // Trigger active tab
-    const activeTab = document.querySelector('.sm-tab-btn.sm-active');
-    if (activeTab) activeTab.click();
+    // Also save the listing (so it appears instantly)
+    await addDoc(collection(db, "starListings"), {
+      sellerId: currentUser.uid,
+      sellerName: currentUser.chatId || "User",
+      amount: amount,
+      price: price,
+      status: "active",
+      createdAt: serverTimestamp()
+    });
+
+    // Update UI instantly
+    currentUser.stars -= amount;
+    document.getElementById('starCount').textContent = formatNumber(currentUser.stars);
+    document.getElementById('sm-user-stars').textContent = formatNumber(currentUser.stars);
+    document.getElementById('sm-sell-amount').value = '';
+    document.getElementById('sm-sell-price').value = '';
+    alert(`${amount} stars listed for ₦${price}!`);
+    loadMyListings();
+
+  } catch (e) {
+    alert("Failed. Try again.");
   }
-
-  // BUY TAB — Public listings
-  async function loadPublicListings() {
-    if (!smListings) return;
-    smListings.innerHTML = '<p class="sm-empty">Loading listings...</p>';
-
-    try {
-      const q = query(collection(db, "starListings"), 
-        where("status", "==", "active"), 
-        orderBy("createdAt", "desc"));
-      const snap = await getDocs(q);
-
-      if (snap.empty) {
-        smListings.innerHTML = '<p class="sm-empty">No stars for sale right now</p>';
-        return;
-      }
-
-      smListings.innerHTML = '';
-      snap.forEach(doc => {
-        const d = doc.data();
-        if (d.sellerId === currentUser?.uid) return;
-
-        const el = document.createElement('div');
-        el.className = 'sm-listing';
-        el.innerHTML = `
-          <div>
-            <h4>Star ${formatNumber(d.amount)} Stars</h4>
-            <small>by ${d.sellerName || 'User'} • ₦${formatNumber(d.price)}</small>
-          </div>
-          <button class="sm-buy-btn" 
-                  data-id="${doc.id}" 
-                  data-amt="${d.amount}" 
-                  data-price="${d.price}">
-            Buy ₦${formatNumber(d.price)}
-          </button>
-        `;
-        smListings.appendChild(el);
-      });
-
-      // Attach buy buttons
-      document.querySelectorAll('.sm-buy-btn').forEach(b => {
-        b.onclick = () => buyListing(b.dataset.id, b.dataset.amt, b.dataset.price);
-      });
-
-    } catch (err) {
-      console.error("Load listings error:", err);
-      smListings.innerHTML = '<p class="sm-empty">Error loading listings</p>';
-    }
-  }
-
-  // SELL TAB — Your listings
-  async function loadMyListings() {
-    if (!smMyListings) return;
-    try {
-      const q = query(collection(db, "starListings"),
-        where("sellerId", "==", currentUser?.uid),
-        where("status", "==", "active"));
-      const snap = await getDocs(q);
-
-      if (snap.empty) {
-        smMyListings.innerHTML = '<p class="sm-empty">No active listings</p>';
-        return;
-      }
-
-      smMyListings.innerHTML = '';
-      snap.forEach(doc => {
-        const d = doc.data();
-        const el = document.createElement('div');
-        el.className = 'sm-listing';
-        el.innerHTML = `
-          <div>
-            <strong>${d.amount} Stars → ₦${d.price}</strong><br>
-            <small>${timeAgo(d.createdAt.toDate())}</small>
-          </div>
-          <button class="sm-cancel-btn" data-id="${doc.id}">Cancel</button>
-        `;
-        smMyListings.appendChild(el);
-      });
-    } catch (err) {
-      smMyListings.innerHTML = '<p class="sm-empty">Error loading your listings</p>';
-    }
-  }
-
-  // LIST STARS BUTTON
-  document.getElementById('sm-list-btn')?.addEventListener('click', async () => {
-    const amount = Number(document.getElementById('sm-sell-amount').value);
-    const price = Number(document.getElementById('sm-sell-price').value);
-
-    if (!amount || amount < 100 || amount % 100 !== 0) return alert("Minimum 100 stars, multiples of 100 only");
-    if (!price || price < 50) return alert("Price too low");
-
-    if (!confirm(`List ${amount} stars for ₦${price}?\nStars will be deducted immediately — no refund!`)) return;
-
-    alert("Cloud Function not connected yet — coming in next step!");
-    // Call your HTTPS callable function here
-  });
-
-  // Optional: expose for debugging
-  window.starMarketDebug = { loadPublicListings, loadMyListings };
-});
+};
 
 /* ============================================================
    TAPMASTER — FULLY WORKING, NO HANG, CLEAN VERSION
