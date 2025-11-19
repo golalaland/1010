@@ -1971,55 +1971,53 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   <h4 style="text-align:center; margin-bottom:10px; font-weight:600;">
     Highlights ($ell Content) 🎬
   </h4>
-
   <p style="font-size:12.5px; color:#ccc; text-align:center; margin:0 0 12px;">
-    Upload short video highlights to showcase or sell.  
-    Users can unlock your videos using ⭐ stars — your way to earn visibility and rewards.
+    Upload short video highlights to showcase or sell · Earn ⭐ stars when people unlock them
   </p>
 
   <div style="max-width:360px; margin:0 auto; display:flex; flex-direction:column; gap:12px;">
 
-    <h3 style="font-size:14px; font-weight:600; color:#fff; margin:0;">Upload Video</h3>
-    <input type="file" id="highlightUploadInput" accept="video/*"
-           style="padding:6px 10px; font-size:13px; border-radius:6px; border:1px solid #ccc; outline:none;" />
-
-    <h3 style="font-size:14px; font-weight:600; color:#fff; margin:0;">Paste Video Link</h3>
-    <input type="text" id="highlightVideoInput" placeholder="Paste video URL (Shopify/CDN)"
-           style="padding:6px 10px; font-size:13px; border-radius:6px; border:1px solid #ccc; outline:none;" />
-
-    <h3 style="font-size:14px; font-weight:600; color:#fff; margin:0;">Title</h3>
-    <input type="text" id="highlightTitleInput" placeholder="Video title"
-           style="padding:6px 10px; font-size:13px; border-radius:6px; border:1px solid #ccc; outline:none;" />
-
-    <h3 style="font-size:14px; font-weight:600; color:#fff; margin:0;">Video Description</h3>
-    <textarea id="highlightDescInput" placeholder="Description (optional)"
-              style="padding:6px 10px; font-size:13px; border-radius:6px; border:1px solid #ccc; outline:none; 
-                     resize:vertical; min-height:40px;"></textarea>
-
-    <h3 style="font-size:14px; font-weight:600; color:#fff; margin:0;">Set Video Unlock Price</h3>
-
-    <!-- ⭐ Input aligned with rest -->
-    <div style="display:flex; align-items:center; gap:6px;">
-      <input type="tel" id="highlightPriceInput" placeholder="0"
-             style="flex:0 0 80px; padding:6px 10px; font-size:13px; border-radius:6px; border:1px solid #ccc; outline:none;"
-             min="10" />
-      <span style="font-size:16px;">⭐️</span>
+    <!-- Direct video upload (this is now the main way) -->
+    <div>
+      <h3 style="font-size:14px; font-weight:600; color:#fff; margin:0 0 6px;">Video File</h3>
+      <input type="file" id="highlightUploadInput" accept="video/*"
+             style="padding:8px; font-size:14px; border-radius:8px; border:1px solid #444; background:#111; color:#fff;" />
+      <small style="color:#888; font-size:11px;">Max ~500 MB · MP4 works best</small>
     </div>
 
-    <!-- Smaller centered upload button -->
-    <div style="text-align:center;">
-      <button id="uploadHighlightBtn"
-              style="padding:6px 14px; background:linear-gradient(90deg,#ff0099,#ff6600);
-                     color:#fff; border:none; border-radius:6px; font-weight:600; font-size:13px; cursor:pointer;"
-              onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
-        Upload
-      </button>
+    <!-- Title & Description -->
+    <div>
+      <h3 style="font-size:14px; font-weight:600; color:#fff; margin:0 0 6px;">Title</h3>
+      <input type="text" id="highlightTitleInput" placeholder="e.g. Insane clutch play"
+             style="width:100%; padding:10px; font-size:14px; border-radius:8px; border:1px solid #444; background:#111; color:#fff;" />
     </div>
 
-    <div id="highlightUploadStatus" style="font-size:12px; color:#ffcc00; text-align:center;"></div>
+    <div>
+      <h3 style="font-size:14px; font-weight:600; color:#fff; margin:0 0 6px;">Description (optional)</h3>
+      <textarea id="highlightDescInput" placeholder="What happened in this clip?"
+                style="width:100%; padding:10px; font-size:14px; border-radius:8px; border:1px solid #444; background:#111; color:#fff; resize:vertical; min-height:60px;"></textarea>
+    </div>
+
+    <!-- Price -->
+    <div>
+      <h3 style="font-size:14px; font-weight:600; color:#fff; margin:0 0 6px;">Unlock Price</h3>
+      <div style="display:flex; align-items:center; gap:8px;">
+        <input type="tel" id="highlightPriceInput" value="50" min="10"
+               style="width:100px; padding:10px; font-size:16px; border-radius:8px; border:1px solid #444; background:#111; color:#fff; text-align:center;" />
+        <span style="font-size:20px;">⭐</span>
+      </div>
+    </div>
+
+    <!-- Upload button + status -->
+    <button id="uploadHighlightBtn"
+            style="padding:12px; background:linear-gradient(90deg,#ff0099,#ff6600); color:white; border:none; border-radius:10px; font-weight:700; font-size:15px; cursor:pointer;">
+      Upload Highlight
+    </button>
+
+    <div id="highlightUploadStatus" style="text-align:center; font-weight:600; min-height:24px;"></div>
   </div>
 </div>
-
+  
       <!-- Messages / Additional Info -->
       <div id="hostMessagesContainer" style="padding:6px 0;">
         <!-- Messages or host-specific info will be dynamically loaded here -->
