@@ -1033,13 +1033,10 @@ const profileNameEl = document.getElementById('profileName');
 
 // Prevent sound spam
 window.lastSoundTime = 0;
-const sideTab = document.getElementById('sideTab');
 
-if (leaderboardBtn && sideTab) {
-  leaderboardBtn.onclick = () => {
-    sideTab.classList.toggle('closed');
-  };
-}
+document.getElementById('leaderboardBtn').onclick = () => {
+  document.getElementById('sideTab').classList.toggle('closed');
+};
 
 
 // ========= ULTRA-RELIABLE BLACK CUTE MODAL (TAPS + ₦) =========
