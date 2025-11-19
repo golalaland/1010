@@ -1889,25 +1889,29 @@ const CURRENT_ROUND_ID = "round_nov19_2025"; // Update per round
 // Reusable Message Modal Function
 function showMessageModal(type = "success", title = "Done!", text = "Action completed.") {
   const modal = document.getElementById('messageModal');
-  const titleEl = document.getElementById('messageTitle');
-  const textEl = document.getElementById('messageText');
-  const header = document.getElementById('messageHeader');
-  const btn = document.getElementById('messageCloseBtn');
+  if (!modal) return alert(text); // fallback
 
+  const titleEl = document.getElementById('messageTitle');
+  const textEl   = document.getElementById('messageText');
+  const iconEl   = document.getElementById('messageIcon');
+  const header   = document.getElementById('messageHeader');
+  const btn      = document.getElementById('messageCloseBtn');
+
+  // Real emojis (works everywhere, no CSS needed)
   const config = {
-    success: { color: "#00FFA3", gradient: "linear-gradient(90deg,#00FFA3,#00C853)", icon: "Checkmark" },
-    error:   { color: "#ff2d55", gradient: "linear-gradient(90deg,#ff2d55,#ff1744)", icon: "Cross" },
-    warning: { color: "#FFD700", gradient: "linear-gradient(90deg,#FFD700,#FFA000)", icon: "Warning" }
+    success: { icon: "Checkmark", color: "#00FFA3", bg: "rgba(0,255,163,0.1)", gradient: "linear-gradient(90deg,#00FFA3,#00C853)" },
+    error:   { icon: "Cross",     color: "#ff2d55", bg: "rgba(255,45,85,0.1)",   gradient: "linear-gradient(90deg,#ff2d55,#ff1744)" },
+    warning: { icon: "Warning",   color: "#FFD700", bg: "rgba(255,215,0,0.1)",  gradient: "linear-gradient(90deg,#FFD700,#FFA000)" }
   };
 
-  const c = config[type] || config.success;
+  const c = config[type];
 
   modal.style.display = 'flex';
+  iconEl.textContent = c.icon;
   titleEl.textContent = title;
   titleEl.style.color = c.color;
   textEl.textContent = text;
-  document.getElementById('messageIcon').textContent = c.icon;
-  header.style.background = c.color + "15";
+  header.style.background = c.bg;
   btn.style.background = c.gradient;
 
   return new Promise(resolve => {
@@ -1915,7 +1919,7 @@ function showMessageModal(type = "success", title = "Done!", text = "Action comp
       modal.style.display = 'none';
       resolve();
     };
-    document.getElementById('messageCloseBtn').onclick = close;
+    btn.onclick = close;
     modal.onclick = (e) => e.target === modal && close();
   });
 }
@@ -2016,22 +2020,6 @@ function playButtonSound() {
     lastButtonPlay = now;
   }
 }
-
-// AUTO-APPLY TO EVERY CURRENT + FUTURE BUTTON (skips tapButton)
-document.addEventListener("click", (e) => {
-  const btn = e.target.closest("button, .tiny-action-btn");
-  if (btn && !btn.disabled && btn.id !== 'tapButton') {  // ← EXCLUDES tapButton
-    playButtonSound();
-  }
-}, true); // "true" = capture phase so it catches even stopPropagation()
-
-// Optional: also trigger on touch for extra mobile juice (same exclusion)
-document.addEventListener("touchstart", (e) => {
-  const btn = e.target.closest("button, .tiny-action-btn");
-  if (btn && !btn.disabled && btn.id !== 'tapButton') {  // ← EXCLUDES tapButton
-    playButtonSound();
-  }
-}, { passive: true });
 </script>
 </body>
 </html>
