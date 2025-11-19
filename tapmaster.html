@@ -614,7 +614,7 @@ bar + footer */
     <div style="flex:1;overflow-y:auto;padding:18px 20px;font-size:14.5px;line-height:1.75;color:#eee;">
       <div style="background:rgba(255,20,147,0.15);padding:14px;border-radius:12px;margin-bottom:16px;">
         <strong style="color:#FF1493;">1. Entry</strong><br>
-        No stars ⭐️ = No play.
+        No STRZ ⭐️ = No play.
       </div>
 
       <div style="background:rgba(0,230,118,0.15);padding:14px;border-radius:12px;margin-bottom:16px;">
@@ -680,18 +680,18 @@ bar + footer */
       </div>
 
       <!-- Rest unchanged -->
-<div style="background:rgba(255,20,147,0.15); padding:16px; border-radius:14px; margin-bottom:18px;">
-  <strong style="color:#FF1493; display:block; margin-bottom:12px; font-size:1.1em;">
+<div style="background:rgba(255,20,147,0.15); padding:20px 16px; border-radius:14px; margin-bottom:18px; text-align:center;">
+  
+  <strong style="color:#FF1493; font-size:1.2em; display:block; margin-bottom:16px;">
     How Bid Royale Works
   </strong>
 
-  <!-- Centered intro line (no bullet) -->
-  <p style="margin:12px 0; text-align:center; font-weight:600;">
+  <div style="font-weight:600; color:#fff; margin:16px 0;">
     Top 5 players split the prize
-  </p>
+  </div>
 
-  <!-- Proper bullet list -->
-  <ul style="margin:8px 0; padding-left:22px; line-height:1.55;">
+  <!-- Centered bullet list (left-aligned bullets, but block centered) -->
+  <ul style="display:inline-block; text-align:left; margin:20px 0; padding-left:22px; line-height:1.7; color:#fff;">
     <li>1st position gets <strong>40%</strong></li>
     <li>2nd position gets <strong>25%</strong></li>
     <li>3rd position gets <strong>20%</strong></li>
@@ -699,6 +699,7 @@ bar + footer */
     <li>5th position gets <strong>10%</strong></li>
     <li><strong>No pardons. No excuses.</strong></li>
   </ul>
+  
 </div>
 
       <div style="background:rgba(255,0,0,0.2);padding:16px;border-radius:14px;border:1px solid #ff4444;">
@@ -2015,54 +2016,121 @@ document.querySelectorAll('button').forEach(btn => {
   if (btn.id !== 'tapButton') btn.addEventListener('click', playClickSound);
 });
 
-/* ====================== LIVE PRIZE + PLAYERS + COUNTDOWN ====================== */
-function startCountdown() {
-  const el = document.getElementById('countdownTimer');
-  if (!el) { setTimeout(startCountdown, 500); return; }
 
-  const update = () => {
-    const lagos = new Date(Date.now() + 60*60*1000);
-    const today = lagos.toISOString().split('T')[0];
-    const target = new Date(today + "T22:59:59.000Z");
-    const diff = target - lagos;
+/* ====================== DAILY BID ROYALE — 00:33 AM → 11:59 PM ====================== */
+let dailyBidActive = false;
 
-    if (diff <= 0) {
-      el.textContent = "LIVE NOW!";
-      el.style.color = "#ff2d55";
-      return;
+function startDailyBidRoyale() {
+  const timerEl    = document.getElementById('countdownTimer');
+  const playersEl  = document.getElementById('livePlayers');
+  const prizeEl    = document.getElementById('livePrize');
+  
+  if (!timerEl || !playersEl || !prizeEl) {
+    setTimeout(startDailyBidRoyale, 500);
+    return;
+  }
+
+  function getTodayEndTime() {
+    // Lagos is UTC+1
+    const now = new Date();
+    const lagosOffset = 60; // minutes
+    const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+    const lagos = new Date(utc + (lagosOffset * 60000));
+    
+    const year  = lagos.getFullYear();
+    const month = lagos.getMonth();
+    const day   = lagos.getDate();
+    
+    return new Date(year, month, day, 23, 59, 0, 0).getTime() - (lagosOffset * 60000);
+  }
+
+  function getNextStartTime() {
+    const now = new Date();
+    const lagosOffset = 60;
+    const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+    const lagos = new Date(utc + (lagosOffset * 60000));
+    
+    let year  = lagos.getFullYear();
+    let month = lagos.getMonth();
+    let day   = lagos.getDate();
+    
+    // If it's past 00:33 today → go to tomorrow
+    if (lagos.getHours() > 0 || (lagos.getHours() === 0 && lagos.getMinutes() >= 33)) {
+      const tomorrow = new Date(lagos);
+      tomorrow.setDate(day + 1);
+      year  = tomorrow.getFullYear();
+      month = tomorrow.getMonth();
+      day   = tomorrow.getDate();
     }
-    const h = String(Math.floor(diff / 3600000)).padStart(2,'0');
-    const m = String(Math.floor((diff % 3600000) / 60000)).padStart(2,'0');
-    const s = String(Math.floor((diff % 60000) / 1000)).padStart(2,'0');
-    el.textContent = `${h}:${m}:${s}`;
-  };
-  update();
-  setInterval(update, 1000);
-}
+    
+    return new Date(year, month, day, 0, 33, 0, 0).getTime() - (lagosOffset * 60000);
+  }
 
-function startLiveStats() {
-  const playersEl = document.getElementById('livePlayers');
-  const prizeEl = document.getElementById('livePrize');
-  if (!playersEl || !prizeEl) { setTimeout(startLiveStats, 500); return; }
+  function updateDisplay() {
+    const now = Date.now();
+    const endTime = getTodayEndTime();
+    const diff = endTime - now;
 
+    // BID IS LIVE (00:33 AM → 11:59 PM)
+    if (diff > 0) {
+      dailyBidActive = true;
+      const h = String(Math.floor(diff / 3600000)).padStart(2,'0');
+      const m = String(Math.floor((diff % 3600000) / 60000)).padStart(2,'0');
+      const s = String(Math.floor((diff % 60000) / 1000)).padStart(2,'0');
+      
+      timerEl.textContent = `${h}:${m}:${s}`;
+      timerEl.style.color = diff < 600000 ? "#ff0066" : "#00ff88"; // red last 10 min
+      timerEl.style.fontWeight = "700";
+
+    } else {
+      // BID HAS ENDED — waiting for tomorrow 00:33
+      dailyBidActive = false;
+      const nextStart = getNextStartTime();
+      const wait = nextStart - now;
+
+      const h = String(Math.floor(wait / 3600000)).padStart(2,'0');
+      const m = String(Math.floor((wait % 3600000) / 60000)).padStart(2,'0');
+      
+      timerEl.textContent = `Next bid in ${h}:${m}`;
+      timerEl.style.color = "#888";
+      
+      // DECLARE WINNERS ONCE when it actually ends
+      if (timerEl.dataset.ended !== "true") {
+        timerEl.dataset.ended = "true";
+        declareTodaysWinners(); // ← call your winner function exactly once
+      }
+    }
+  }
+
+  // Live players & prize (only when bid is active)
   const q = query(
     collection(db, "bids"),
-    where("roundId", "==", CURRENT_ROUND_ID),
+    where("date", "==", new Date().toISOString().split('T')[0]), // today’s date
     where("status", "==", "active")
   );
 
   onSnapshot(q, snap => {
     const count = snap.size;
     playersEl.textContent = count;
-    prizeEl.textContent = "₦" + (count * PRIZE_PER_PLAYER).toLocaleString();
+    prizeEl.textContent = "₦" + (count * 100).toLocaleString(); // or your real prize logic
   });
+
+  // Start the clock
+  updateDisplay();
+  setInterval(updateDisplay, 1000);
 }
 
-// RUN ONLY ONCE — NEVER HANGS
-if (!window.appReady) {
-  window.appReady = true;
-  startCountdown();
-  startLiveStats();
+// DECLARE WINNERS (call your existing function)
+async function declareTodaysWinners() {
+  console.log("Declaring today's winners now...");
+  // ← put your real top-5 + payout logic here
+  // it will run exactly once per day at 00:00
+}
+
+// RUN ONCE AND ONLY ONCE
+if (!window.dailyBidStarted) {
+  window.dailyBidStarted = true;
+  startDailyBidRoyale();
 }
 </script>
 </body>
