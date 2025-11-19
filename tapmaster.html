@@ -1956,8 +1956,8 @@ document.getElementById('finalConfirmBtn').addEventListener('click', async () =>
     document.getElementById('confirmBidModal').style.display = 'none';
   }
 });
-<script>
-// ====================== SOUND SYSTEM — NEVER HANGS, WORKS 100% ON PHONES ======================
+
+// **====================== SOUND SYSTEM — NEVER HANGS, WORKS 100% ON PHONES ======================
 let audioUnlocked = false;
 
 // Unlock audio on FIRST user tap/click (required by iOS/Android)
@@ -1974,7 +1974,7 @@ function unlockAllAudio() {
 document.body.addEventListener('touchstart', unlockAllAudio, { once: true });
 document.body.addEventListener('click', unlockAllAudio, { once: true });
 
-// ——— BACKGROUND BEAT (plays when user taps the big tap button) ———
+
 document.getElementById('tapButton')?.addEventListener('click', () => {
   if (!audioUnlocked) return;
 
@@ -1984,7 +1984,6 @@ document.getElementById('tapButton')?.addEventListener('click', () => {
   beat.play().catch(() => {});
 });
 
-// ——— CLICK SOUND FOR ALL OTHER BUTTONS ———
 const click = document.getElementById('clickAudio');
 click.src = "https://assets.mixkit.co/sfx/preview/mixkit-arcade-game-jump-coin-216.mp3";
 click.volume = 0.6;
