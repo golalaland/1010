@@ -2035,11 +2035,11 @@ function getTodayRound() {
 // 2. Countdown timer — war starts 11:59 PM Lagos time
 function startCountdown() {
   const timerEl = document.getElementById('countdownTimer');
-  if (!timerEl) return; // safety
+  if (!timerEl) return;
 
   const update = () => {
     const now = new Date();
-    const lagos = new Date(now.getTime() + 60*60*1000); // UTC+1
+    const lagos = new Date(now.getTime() + 60*60*1000);
 
     const today = lagos.toISOString().split('T')[0];
     const target = new Date(today + "T22:59:59.000Z"); // 11:59:59 PM WAT
@@ -2059,8 +2059,8 @@ function startCountdown() {
     timerEl.textContent = `${h}:${m}:${s}`;
   };
 
-  update();                    // run once immediately
-  setInterval(update, 1000);   // then every second
+  update();
+  setInterval(update, 1000);
 }
 
 // 3. Live player count & prize pool
@@ -2075,31 +2075,23 @@ function startLiveStats() {
     where("status", "==", "active")
   );
 
-  // Only attach ONE listener — this prevents hanging
-  try {
-    onSnapshot(q, (snapshot) => {
-      const count = snapshot.size;
-      const prize = count * PRIZE_PER_PLAYER;
+  onSnapshot(q, (snapshot) => {
+    const count = snapshot.size;
+    const prize = count * PRIZE_PER_PLAYER;
 
-      playersEl.textContent = count;
-      prizeEl.textContent = "₦" + prize.toLocaleString();
-    });
-  } catch (e) {
-    console.log("Live stats off (offline?)");
-  }
+    playersEl.textContent = count;
+    prizeEl.textContent = "₦" + prize.toLocaleString();
+  });
 }
 
-// RUN ONLY ONCE — THIS WAS THE HANG CAUSE
+// RUN ONLY ONCE — prevents hanging
 if (!window.bidStatsInitialized) {
   window.bidStatsInitialized = true;
   startCountdown();
   startLiveStats();
 }
 
-// Optional: refresh when user opens modal
-document.getElementById('bidBtn')?.addEventListener('click', () => {
-  document.getElementById('bidModal').style.display = 'flex';
-});
+// ←←← NO EXTRA }); HERE! THAT WAS THE PROBLEM
 </script>
 </body>
 </html>
