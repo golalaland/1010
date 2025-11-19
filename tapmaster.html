@@ -231,10 +231,10 @@ body {display:flex;justify-content:center;align-items:flex-start;padding:18px 0 
   to { transform: translate(var(--dx), var(--dy)) rotate(360deg) scale(2); opacity:0; }
 }
 /* modal (normal fade-in centered) */
-.modal-backdrop {
-  position:fixed; inset:0; background: rgba(0,0,0,0.6); display:none; align-items:center; justify-content:center; z-index:9999;
-}
-.modal {
+  .modal-backdrop {
+    position:fixed; inset:0; background: rgba(0,0,0,0.6); display:none; align-items:center; justify-content:center; z-index:9999;
+  }
+  .modal {
   width:92%; max-width:420px; background:#0f0f0f; border-radius:12px; padding:16px; border:1px solid rgba(255,255,255,0.06);
   box-shadow: 0 10px 30px rgba(0,0,0,0.6);
 }
@@ -651,11 +651,10 @@ bar + footer */
 </div>
 
 
-<!-- DETTYVERSE BID / PVP MODAL -->
+<!-- DETTYVERSE BID MODAL — FULLY LIVE (Prize + Players + Timer) -->
 <div id="bidModal" class="modal-backdrop" style="display:none;">
   <div class="modal" style="width:88%;max-width:360px;max-height:88vh;overflow:hidden;display:flex;flex-direction:column;background:#0f0f0f;border:3px solid #00FFA3;border-radius:18px;box-shadow:0 0 60px rgba(0,255,163,0.6);">
     
-    <!-- Header -->
     <div style="padding:18px 16px 12px;text-align:center;border-bottom:1px solid rgba(0,255,163,0.4);background:rgba(0,255,163,0.08);">
       <h3 style="margin:0;font-family:'Press Start 2P',cursive;font-size:16px;color:#00FFA3;line-height:1.2;">
         PLACE YOUR BID
@@ -665,20 +664,22 @@ bar + footer */
       </p>
     </div>
 
-    <!-- Scrollable Content -->
     <div style="flex:1;overflow-y:auto;padding:18px 20px;font-size:14.8px;line-height:1.8;color:#eee;">
       
+      <!-- LIVE PRIZE -->
       <div style="background:rgba(0,255,163,0.15);padding:16px;border-radius:14px;margin-bottom:18px;text-align:center;">
-        <div style="font-size:28px;font-weight:800;color:#00FFA3;">₦250,000</div>
+        <div id="livePrize" style="font-size:28px;font-weight:800;color:#00FFA3;">₦0</div>
         <div style="font-size:13px;color:#aaa;margin-top:4px;">Current Prize Pool</div>
       </div>
 
+      <!-- LIVE PLAYERS + TIMER -->
       <div style="background:rgba(255,215,0,0.15);padding:16px;border-radius:14px;margin-bottom:18px;">
         <strong style="color:#FFD700;">Entry Fee:</strong> 50 Stars<br>
-        <strong style="color:#FFD700;">Players Live:</strong> 47 warriors<br>
-        <strong style="color:#FFD700;">Next Round Starts:</strong> 11:59 PM WAT
+        <strong style="color:#FFD700;">Players Live:</strong> <span id="livePlayers">0</span> warriors<br>
+        <strong style="color:#FFD700;">War Starts In:</strong> <span id="countdownTimer" style="color:#00FFA3;font-weight:900;">--:--:--</span>
       </div>
 
+      <!-- Rest unchanged -->
       <div style="background:rgba(255,20,147,0.15);padding:16px;border-radius:14px;margin-bottom:18px;">
         <strong style="color:#FF1493;">How PvP Works</strong><br>
         • Fastest 3 tappers split the pot<br>
@@ -698,7 +699,6 @@ bar + footer */
       </div>
     </div>
 
-    <!-- Action Buttons -->
     <div style="padding:16px 20px 20px;text-align:center;background:rgba(0,0,0,0.4);">
       <button id="confirmBidBtn" style="padding:14px 40px;border:none;border-radius:14px;background:linear-gradient(90deg,#00FFA3,#00C853);color:#000;font-weight:800;font-size:17px;cursor:pointer;min-width:200px;margin-bottom:10px;">
         ENTER
@@ -1838,6 +1838,68 @@ document.addEventListener("DOMContentLoaded", () => {
 
 });
 
+// AUTO DAILY ROUND + LIVE PRIZE + LIVE PLAYERS + LIVE COUNTDOWN
+const PRIZE_PER_PLAYER = 5000; // ₦5000 per entry
+
+function getTodayRound() {
+  const d = new Date();
+  d.setHours(d.getHours() + 1); // Lagos = UTC+1
+  return "round_" + d.toISOString().split('T')[0];
+}
+
+// Next war starts at 11:59 PM WAT every day
+function startCountdown() {
+  const update = () => {
+    const now = new Date();
+    const lagos = new Date(now.getTime() + 60*60*1000); // UTC+1
+
+    const today = lagos.toISOString().split('T')[0];
+    const target = new Date(`${today}T22:59:00.000Z`); // 11:59 PM WAT
+
+    const diff = target - lagos;
+    if (diff <= 0) {
+      document.getElementById('countdownTimer').textContent = "LIVE NOW!";
+      return;
+    }
+
+    const h = Math.floor(diff / (1000*60*60)).toString().padStart(2,'0');
+    const m = Math.floor((diff % (1000*60*60)) / (1000*60)).toString().padStart(2,'0');
+    const s = Math.floor((diff % (1000*60)) / 1000).toString().padStart(2,'0');
+
+    document.getElementById('countdownTimer').textContent = `${h}:${m}:${s}`;
+  };
+
+  update();
+  setInterval(update, 1000);
+}
+
+// Live prize + player count
+function startLiveStats() {
+  const q = query(
+    collection(db, "bids"),
+    where("roundId", "==", getTodayRound()),
+    where("status", "==", "active")
+  );
+
+  onSnapshot(q, (snap) => {
+    const count = snap.size;
+    const prize = count * PRIZE_PER_PLAYER;
+
+    document.getElementById('livePlayers').textContent = count;
+    document.getElementById('livePrize').textContent = "₦" + prize.toLocaleString();
+  });
+}
+
+// Run everything
+startCountdown();
+startLiveStats();
+
+// Optional: refresh stats when modal opens
+document.getElementById('bidBtn')?.addEventListener('click', () => {
+  startLiveStats();
+  document.getElementById('bidModal').style.display = 'flex';
+});
+
 //* RULES BUTTON ONLY — NO CONFLICT WITH LEADERBOARD OR BID
 document.getElementById('rulesBtn').addEventListener('click', (e) => {
   e.preventDefault();
@@ -1858,6 +1920,22 @@ document.getElementById('rulesModal').addEventListener('click', (e) => {
   }
 });
 
+// Simple custom alert — replaces browser alert()
+function showNiceAlert(message) {
+  document.getElementById('niceAlertMessage').textContent = message;
+  document.getElementById('niceAlert').style.display = 'flex';
+
+  return new Promise(resolve => {
+    const close = () => {
+      document.getElementById('niceAlert').style.display = 'none';
+      resolve();
+    };
+    document.getElementById('niceAlertBtn').onclick = close;
+    document.getElementById('niceAlert').onclick = (e) => {
+      if (e.target === document.getElementById('niceAlert')) close();
+    };
+  });
+}
 
 // Optional: Auto daily round (remove if you want to keep manual)
 function getTodayRound() {
