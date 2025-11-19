@@ -807,18 +807,18 @@ body {
 </audio>
 
 
-<!-- DETTYVERSE FOOTER – ONLY ON START PAGE -->
-<footer id="dettyFooter" style="display:none; padding:60px 20px 40px; text-align:center; color:#555; font-size:13px; line-height:1.8; background:#0e0e0e; margin-top:auto;">
-  <div style="font-size:18px; font-weight:800; background:linear-gradient(90deg,#FF1493,#00e676); -webkit-background-clip:text; -webkit-text-fill-color:transparent;">
+<!-- DETTYVERSE FOOTER – FIXED & BULLETPROOF -->
+<footer id="dettyFooter" style="padding:60px 20px 40px; text-align:center; color:#555; font-size:13px; line-height:1.8; background:#0e0e0e; display:none;">
+  <div style="font-size:18px;font-weight:800;background:linear-gradient(90deg,#FF1493,#00e676);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">
     ©5786 ገብር ነፍስህ (Own Your Vibe)
   </div>
   <div style="margin:12px 0;">自分の雰囲気を自分のものにしよう • 자신의 분위기를 내 것으로 만들자</div>
   <div>Own your rhythm. Master the tap. Rule the verse.</div>
-  <div style="margin:16px 0 24px; color:#777;">3-1-1 Nihonbashi • Lagos • Seoul • The Metaverse</div>
+  <div style="margin:16px 0 24px;color:#777;">3-1-1 Nihonbashi • Lagos • Seoul • The Metaverse</div>
   <div style="font-size:11px;">
-    <a href="#" style="color:#888; text-decoration:none; margin:0 10px;">Privacy</a>•
-    <a href="#" style="color:#888; text-decoration:none; margin:0 10px;">Terms</a>•
-    <a href="https://x.com/dettyverse" style="color:#FF1493; text-decoration:none;">@dettyverse</a>
+    <a href="#" style="color:#888;text-decoration:none;margin:0 10px;">Privacy</a>•
+    <a href="#" style="color:#888;text-decoration:none;margin:0 10px;">Terms</a>•
+    <a href="https://x.com/dettyverse" style="color:#FF1493;text-decoration:none;">@dettyverse</a>
   </div>
 </footer>
 
@@ -1968,21 +1968,35 @@ document.getElementById('tapButton').addEventListener('click', () => {
     audio.play();
   }
 });
-// Show footer ONLY when on start page (when body has no .game-mode or when #startPage is visible)
-function updateFooterVisibility() {
-  const isStartPage = document.body.classList.contains('start-mode') || 
-                      document.getElementById('startPage').offsetParent !== null;
+// FORCE SHOW FOOTER ON START PAGE – works even if your JS hasn't added .start-mode yet
+document.addEventListener("DOMContentLoaded", () => {
+  const footer = document.getElementById("dettyFooter");
   
-  document.getElementById('dettyFooter').style.display = isStartPage ? 'block' : 'none';
-}
+  // Check every 100ms for the first second (covers slow loads)
+  const check = setInterval(() => {
+    const onStartPage = document.getElementById("startPage") && 
+                       window.getComputedStyle(document.getElementById("startPage")).display !== "none";
+    
+    if (onStartPage) {
+      footer.style.display = "block";
+      clearInterval(check);
+    }
+  }, 100);
 
-// Run on load + whenever page switches
-window.addEventListener('load', updateFooterVisibility);
-document.addEventListener('DOMContentLoaded', updateFooterVisibility);
+  // Also instantly check once
+  if (document.getElementById("startPage") && 
+      window.getComputedStyle(document.getElementById("startPage")).display !== "none") {
+    footer.style.display = "block";
+  }
 
-// Also call it when you switch modes (you probably already have code that adds/removes .start-mode / .game-mode)
-const observer = new MutationObserver(updateFooterVisibility);
-observer.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+  // Hide when game page becomes visible
+  const observer = new MutationObserver(() => {
+    const gameVisible = document.getElementById("gamePage") && 
+                       window.getComputedStyle(document.getElementById("gamePage")).display !== "none";
+    footer.style.display = gameVisible ? "none" : "block";
+  });
+  observer.observe(document.body, { childList: true, subtree: true, attributes: true });
+});
 </script>
 </body>
 </html>
