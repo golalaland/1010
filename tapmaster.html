@@ -1666,22 +1666,31 @@ periodTabs.forEach(tab => {
 });
 
 
-// Leaderboard daily reset timer (resets at midnight Lagos time)
-function updateLeaderboardTimer() {
-  const el = document.getElementById("dailyTimerValue");
-  if (!el) return;
 
-  const lagosNow = new Date(Date.now() + 60*60*1000); // UTC+1
-  const midnight = new Date(lagosNow);
-  midnight.setHours(24, 0, 0, 0); // next midnight
+/* -------------------------------------------
+   DAILY COUNTDOWN
+-------------------------------------------- */
+function startDailyCountdown() {
+  const countdownEl = document.getElementById("dailyTimerValue");
 
-  const diff = Math.floor((midnight - lagosNow) / 1000);
-  const h = String(Math.floor(diff / 3600)).padStart(2,'0');
-  const m = String(Math.floor((diff % 3600) / 60)).padStart(2,'0');
-  const s = String(diff % 60).padStart(2,'0');
+  function updateCountdown() {
+    const now = new Date();
+    const nextReset = new Date();
+    nextReset.setHours(24, 0, 0, 0);
 
-  el.textContent = `${h}:${m}:${s}`;
+    const diff = Math.max(0, Math.floor((nextReset - now) / 1000));
+
+    const h = String(Math.floor(diff / 3600)).padStart(2, "0");
+    const m = String(Math.floor((diff % 3600) / 60)).padStart(2, "0");
+    const s = String(diff % 60).padStart(2, "0");
+
+    countdownEl.textContent = `${h}:${m}:${s}`;
+  }
+
+  updateCountdown();
+  setInterval(updateCountdown, 1000);
 }
+
 
 
 /* -------------------------------------------
@@ -1844,6 +1853,7 @@ document.addEventListener("DOMContentLoaded", () => {
   replaceStarsWithSVG();
 
 });
+
 
 /* ============================================================
    TAPMASTER — FULLY WORKING, NO HANG, CLEAN VERSION
@@ -2009,7 +2019,7 @@ document.querySelectorAll('button').forEach(btn => {
   if (btn.id !== 'tapButton') btn.addEventListener('click', playClickSound);
 });
 
-/* ====================== DAILY BID ROYALE — FINAL, LIVE-TICKING, NO JUMP ====================== */
+/* ====================== DAILY BID ROYALE — PERFECT SYNC, NO JUMP ON RELOAD ====================== */
 let bidActive = false;
 
 function startDailyBidEngine() {
@@ -2022,57 +2032,64 @@ function startDailyBidEngine() {
     return;
   }
 
-  // TODAY'S ROUND ID (Lagos date)
+  // TODAY'S ROUND (Lagos date)
   window.CURRENT_ROUND_ID = (() => {
     const d = new Date();
-    const lagos = new Date(d.getTime() + 60*60*1000); // UTC+1
+    const lagos = new Date(d.getTime() + 60*60*1000);
     return "round_" + lagos.toISOString().split('T')[0];
   })();
 
-  // ——— GET REAL SERVER TIME ONCE (prevents client clock cheating) ———
-  let serverOffset = 0;
-  getDoc(doc(db, "server", "time")).then(snap => {
-    if (snap.exists()) serverOffset = snap.data().timestamp.toMillis() - Date.now();
-  }).catch(() => {});
+  let serverTimeOffset = 0;
 
-  function getLagosTime() {
-    return Date.now() + serverOffset + 60*60*1000; // Lagos = UTC+1
+  // Get REAL server time once (eliminates client clock drift)
+  const getServerTime = async () => {
+    try {
+      const snap = await getDoc(doc(db, "server", "time"));
+      if (snap.exists()) {
+        const serverNow = snap.data().timestamp.toMillis();
+        serverTimeOffset = serverNow - Date.now();
+      }
+    } catch (e) { /* fallback to local time if fails */ }
+  };
+  getServerTime();
+
+  function getLagosNow() {
+    return new Date(Date.now() + serverTimeOffset + 60*60*1000); // UTC+1
   }
 
   function updateCountdown() {
-    const now = getLagosTime();
-    const today = new Date(now).toISOString().split('T')[0];
+    const lagosNow = getLagosNow();
+    const today = lagosNow.toISOString().split('T')[0];
 
     const bidStart = new Date(`${today}T00:33:00+01:00`).getTime();
     const bidEnd   = new Date(`${today}T23:59:00+01:00`).getTime();
+    const now      = lagosNow.getTime();
 
-    // ——— BID IS LIVE (00:33 → 23:59) ———
     if (now >= bidStart && now < bidEnd + 60000) {
       bidActive = true;
-      const secondsLeft = Math.max(0, Math.floor((bidEnd - now) / 1000));
+      const diff = Math.max(0, Math.floor((bidEnd - now) / 1000));
 
-      const h = String(Math.floor(secondsLeft / 3600)).padStart(2, '0');
-      const m = String(Math.floor((secondsLeft % 3600) / 60)).padStart(2, '0');
-      const s = String(secondsLeft % 60).padStart(2, '0');
+      const h = String(Math.floor(diff / 3600)).padStart(2, '0');
+      const m = String(Math.floor((diff % 3600) / 60)).padStart(2, '0');
+      const s = String(diff % 60).padStart(2, '0');
 
       timerEl.textContent = `${h}:${m}:${s}`;
-      timerEl.style.color = secondsLeft < 600 ? "#ff0066" : "#00ff88";
+      timerEl.style.color = diff < 600 ? "#ff0066" : "#00ff88";
+      timerEl.style.fontWeight = "900";
 
-      if (secondsLeft === 0 && !timerEl.dataset.declared) {
+      // Declare winners exactly once
+      if (diff === 0 && !timerEl.dataset.declared) {
         timerEl.dataset.declared = "true";
         declareWinnersAndReset();
       }
 
-    // ——— BEFORE 00:33 ———
     } else if (now < bidStart) {
       bidActive = false;
-      const secondsToStart = Math.floor((bidStart - now) / 1000);
-      const h = String(Math.floor(secondsToStart / 3600)).padStart(2, '0');
-      const m = String(Math.floor((secondsToStart % 3600) / 60)).padStart(2, '0');
+      const diff = Math.floor((bidStart - now) / 1000);
+      const h = String(Math.floor(diff / 3600)).padStart(2, '0');
+      const m = String(Math.floor((diff % 3600) / 60)).padStart(2, '0');
       timerEl.textContent = `Starts in ${h}:${m}`;
       timerEl.style.color = "#888";
-
-    // ——— AFTER 23:59 ———
     } else {
       bidActive = false;
       timerEl.textContent = "Next bid 00:33";
@@ -2080,7 +2097,7 @@ function startDailyBidEngine() {
     }
   }
 
-  // ——— LIVE STATS ———
+  // Live stats
   let unsub = null;
   function updateLiveStats() {
     if (unsub) unsub();
@@ -2101,34 +2118,21 @@ function startDailyBidEngine() {
     }
   }
 
-  // ——— INITIAL CALL ———
   updateCountdown();
   updateLiveStats();
-
-  // ——— LIVE SECOND-BY-SECOND TICK (PERFECT, NO JUMP) ———
-  let lastSecond = -1;
-  function liveTick() {
-  const currentSecond = Math.floor(getLagosTime() / 1000);
-  if (currentSecond !== lastSecond) {
-    lastSecond = currentSecond;
-    updateCountdown();         // Bid Royale timer
-    updateLiveStats();         // Players + prize
-    updateLeaderboardTimer();  // ← NEW: leaderboard midnight timer
-  }
-  requestAnimationFrame(liveTick);
+  setInterval(() => {
+    updateCountdown();
+    updateLiveStats();
+  }, 1000);
 }
 
-// ——— DECLARE WINNERS (plug your payout code here) ———
+// Keep your declare function
 async function declareWinnersAndReset() {
   console.log("BID ENDED — PAYING TOP 5 NOW");
-  // Your top-5 + payout code goes here
+  // Your payout code here
 }
 
-// ——— CREATE THIS DOCUMENT ONCE IN FIRESTORE ———
-// Path: server/time
-// Field: timestamp = serverTimestamp()
-
-// ——— RUN ONCE ONLY ———
+// Create this document once in Firestore (path: server/time)
 if (!window.bidEngineStarted) {
   window.bidEngineStarted = true;
   startDailyBidEngine();
