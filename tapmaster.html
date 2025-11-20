@@ -331,48 +331,21 @@ body.game-mode {
 .slider-wrapper {
   overflow: hidden;
   width: 100%;
-  max-width: 100%;
-  height: 170px; /* same as your original */
   position: relative;
-  border-radius: 12px;
-  box-shadow: 0 0 20px rgba(255,215,0,0.5);
-  border: 2px solid rgba(255,215,0,0.4);
 }
 
 /* Track that moves */
 .slider-track {
   display: flex;
-  transition: transform 0.5s ease-in-out;
-  width: 700%; /* 7 images → 100% * number of slides */
-  height: 100%;
+  transition: transform 0.6s ease; /* smooth sliding */
+  width: 100%;
 }
 
 /* Each slide */
 .leaderboard-slide {
   width: 100%;
-  height: 100%;
-  object-fit: cover;
   flex-shrink: 0;
 }
-
-/* Buttons */
-.slide-btn {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  background: rgba(0,0,0,0.5);
-  color: #fff;
-  border: none;
-  font-size: 20px;
-  padding: 5px 10px;
-  cursor: pointer;
-  z-index: 10;
-  border-radius: 4px;
-}
-
-.prev-btn { left: 10px; }
-.next-btn { right: 10px; }
-
 /* iOS Haptic Fallback - Shake Effect */
 @keyframes shake {
   0% { transform: translate(0, 0); }
@@ -687,13 +660,13 @@ bar + footer */
       <!-- IMAGE SLIDER – FIXED HEIGHT -->
       <div id="leaderboardImageSlider" style="position:relative;width:100%;height:280px;flex-shrink:0;border-radius:12px;margin-bottom:12px;box-shadow:0 0 20px rgba(255,215,0,0.5);border:2px solid rgba(255,215,0,0.4);overflow:hidden;">
         <div class="slider-track" style="display:flex;width:700%;height:100%;transition:transform 0.6s ease;">
-          <img src="https://cdn.shopify.com/s/files/1/0962/6648/6067/files/LIVE_ON_FRIDAYS.png?v=1763616110" class="leaderboard-slide" style="width:100%;height:100%;object-fit:contain;flex-shrink:0;">
-          <img src="https://cdn.shopify.com/s/files/1/0962/6648/6067/files/LIVE_ON_FRIDAYS.png?v=1763616110" class="leaderboard-slide" style="width:100%;height:100%;object-fit:contain;flex-shrink:0;">
-          <img src="https://cdn.shopify.com/s/files/1/0962/6648/6067/files/LIVE_ON_FRIDAYS.png?v=1763616110" class="leaderboard-slide" style="width:100%;height:100%;object-fit:contain;flex-shrink:0;">
-          <img src="https://cdn.shopify.com/s/files/1/0962/6648/6067/files/LIVE_ON_FRIDAYS.png?v=1763616110" class="leaderboard-slide" style="width:100%;height:100%;object-fit:contain;flex-shrink:0;">
-          <img src="https://cdn.shopify.com/s/files/1/0962/6648/6067/files/LIVE_ON_FRIDAYS.png?v=1763616110" class="leaderboard-slide" style="width:100%;height:100%;object-fit:contain;flex-shrink:0;">
-          <img src="https://cdn.shopify.com/s/files/1/0962/6648/6067/files/LIVE_ON_FRIDAYS.png?v=1763616110" class="leaderboard-slide" style="width:100%;height:100%;object-fit:contain;flex-shrink:0;">
-          <img src="https://cdn.shopify.com/s/files/1/0962/6648/6067/files/LIVE_ON_FRIDAYS.png?v=1763616110" class="leaderboard-slide" style="width:100%;height:100%;object-fit:contain;flex-shrink:0;">
+          <img src="https://cdn.shopify.com/s/files/1/0962/6648/6067/files/5000.png?v=1763614263" class="leaderboard-slide" style="width:100%;height:100%;object-fit:contain;flex-shrink:0;">
+          <img src="https://cdn.shopify.com/s/files/1/0962/6648/6067/files/5000.png?v=1763614263" class="leaderboard-slide" style="width:100%;height:100%;object-fit:contain;flex-shrink:0;">
+          <img src="https://cdn.shopify.com/s/files/1/0962/6648/6067/files/5000.png?v=1763614263" class="leaderboard-slide" style="width:100%;height:100%;object-fit:contain;flex-shrink:0;">
+          <img src="https://cdn.shopify.com/s/files/1/0962/6648/6067/files/5000.png?v=1763614263" class="leaderboard-slide" style="width:100%;height:100%;object-fit:contain;flex-shrink:0;">
+          <img src="https://cdn.shopify.com/s/files/1/0962/6648/6067/files/5000.png?v=1763614263" class="leaderboard-slide" style="width:100%;height:100%;object-fit:contain;flex-shrink:0;">
+          <img src="https://cdn.shopify.com/s/files/1/0962/6648/6067/files/5000.png?v=1763614263" class="leaderboard-slide" style="width:100%;height:100%;object-fit:contain;flex-shrink:0;">
+          <img src="https://cdn.shopify.com/s/files/1/0962/6648/6067/files/5000.png?v=1763614263" class="leaderboard-slide" style="width:100%;height:100%;object-fit:contain;flex-shrink:0;">
         </div>
       </div>
 
@@ -1671,55 +1644,61 @@ function getWeek(date) {
 /* ------------------------------
    LEADERBOARD IMAGE SLIDER (FADE)
 ------------------------------- */
-<div id="leaderboardSlider" class="slider-wrapper">
-  <div class="slider-track">
-    <img src="https://cdn.shopify.com/s/files/1/0962/6648/6067/files/STRZ.jpg?v=1763196570" class="leaderboard-slide">
-    <img src="https://cdn.shopify.com/s/files/1/0962/6648/6067/files/STRZ.jpg?v=1763196570" class="leaderboard-slide">
-    <img src="https://cdn.shopify.com/s/files/1/0962/6648/6067/files/STRZ.jpg?v=1763196570" class="leaderboard-slide">
-    <img src="https://cdn.shopify.com/s/files/1/0962/6648/6067/files/STRZ.jpg?v=1763196570" class="leaderboard-slide">
-    <img src="https://cdn.shopify.com/s/files/1/0962/6648/6067/files/STRZ.jpg?v=1763196570" class="leaderboard-slide">
-    <img src="https://cdn.shopify.com/s/files/1/0962/6648/6067/files/STRZ.jpg?v=1763196570" class="leaderboard-slide">
-    <img src="https://cdn.shopify.com/s/files/1/0962/6648/6067/files/STRZ.jpg?v=1763196570" class="leaderboard-slide">
-  </div>
+const sliderWrapper = document.getElementById("leaderboardImageSlider");
+const sliderTrack = sliderWrapper.querySelector(".slider-track");
+const slides = sliderWrapper.querySelectorAll(".leaderboard-slide");
 
-  <!-- Manual arrows -->
-  <button class="slide-btn prev-btn">&#10094;</button>
-  <button class="slide-btn next-btn">&#10095;</button>
-</div>
+let currentSlide = 0;
+let slideInterval = null;
+const slideCount = slides.length;
 
-
-const slider = document.getElementById('leaderboardSlider');
-const track = slider.querySelector('.slider-track');
-const slides = slider.querySelectorAll('.leaderboard-slide');
-const total = slides.length;
-
-let current = 0;
-
-// Show slide by index
+// Move slider to a given index
 function showSlide(index) {
-  if(index < 0) index = total - 1;
-  if(index >= total) index = 0;
-  current = index;
-  track.style.transform = `translateX(-${index * 100}%)`; // <-- fixed
+  currentSlide = index;
+  sliderTrack.style.transform = `translateX(-${index * 100}%)`;
 }
 
-// Buttons
-slider.querySelector('.prev-btn').addEventListener('click', () => showSlide(current - 1));
-slider.querySelector('.next-btn').addEventListener('click', () => showSlide(current + 1));
+// Auto-slide every 3 seconds
+function startSlider() {
+  slideInterval = setInterval(() => {
+    let next = (currentSlide + 1) % slideCount;
+    showSlide(next);
+  }, 3000);
+}
 
-// Swipe support
+function stopSlider() {
+  clearInterval(slideInterval);
+}
+
+// Mobile swipe support
 let startX = 0;
-slider.addEventListener('touchstart', e => startX = e.touches[0].clientX);
-slider.addEventListener('touchend', e => {
-  const endX = e.changedTouches[0].clientX;
-  if (endX - startX > 50) showSlide(current - 1); // swipe right
-  if (startX - endX > 50) showSlide(current + 1); // swipe left
+
+sliderWrapper.addEventListener("touchstart", e => {
+  startX = e.touches[0].clientX;
+  stopSlider();
+});
+
+sliderWrapper.addEventListener("touchend", e => {
+  let endX = e.changedTouches[0].clientX;
+  if (endX - startX > 50) {
+    // swipe right
+    let prev = (currentSlide - 1 + slideCount) % slideCount;
+    showSlide(prev);
+  }
+  if (startX - endX > 50) {
+    // swipe left
+    let next = (currentSlide + 1) % slideCount;
+    showSlide(next);
+  }
+  startSlider();
 });
 
 // Init
 showSlide(0);
+startSlider();
 
-
+// Optional: stop when closing leaderboard modal
+closeLeaderboard?.addEventListener("click", () => stopSlider());
 
 /* -------------------------------------------
    FETCH LEADERBOARD
