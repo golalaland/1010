@@ -981,7 +981,6 @@ bar + footer */
 <audio id="confettiSound" src="https://raw.githubusercontent.com/golalaland/1010/main/material-mold-394512.mp3" preload="auto"></audio>
 <audio id="comboSound"    src="https://raw.githubusercontent.com/golalaland/1010/main/clear-combo-7-394494.mp3"    preload="auto"></audio>
 <audio id="uiClickSound" src="https://raw.githubusercontent.com/golalaland/1010/main/click-sound-432501.mp3" preload="auto"></audio>
-// Add the victory sound once in HTML (anywhere with your other <audio> tags)
 <audio id="victorySound" src="https://raw.githubusercontent.com/golalaland/1010/main/material-chest-open-394472.mp3" preload="auto"></audio>
 
 <script type="module">
@@ -1413,15 +1412,15 @@ trainBar && (trainBar.style.width = (timer / SESSION_DURATION * 100) + "%");
 
 
 // ======================================================
-//   INSTANT END — UI FREEZE, BLOCK TAPS (FIXED!)
+//   INSTANT END — UI FREEZE, BLOCK TAPS (NOW 100% FIXED!)
 // ======================================================
-function endSessionImmediate() {
+async function endSessionImmediate() {
   running = false;
   tapLocked = true;
   tapButton.disabled = true;
   clearInterval(intervalId);
 
-  showEndGameModal();
+  await showEndGameModal();   // ← THIS IS THE ONLY CHANGE YOU NEED
 }
 
 // ======================================================
