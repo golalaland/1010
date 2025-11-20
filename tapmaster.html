@@ -1819,36 +1819,47 @@ leaderboardList.innerHTML = topScores
   .map((u, i) => {
     const isCurrent = currentUser && u.uid === currentUser.uid;
 
-       // ——— SUPER CUTE AVATAR POOL (20 total) ———
-    const maleAvatars = [
-      "https://cdn.shopify.com/s/files/1/0962/6648/6067/files/9720027.jpg?v=1763365645",
-      "https://cdn.shopify.com/s/files/1/0962/6648/6067/files/9720029.jpg?v=1763635357",
-    ];
+    // ---- SUPER CUTE AVATAR POOL ----
+const maleAvatars = [
+  "https://cdn.shopify.com/s/files/1/0962/6648/6067/files/9720027.jpg?v=1763365645",
+  "https://cdn.shopify.com/s/files/1/0962/6648/6067/files/9720029.jpg?v=1763635357",
+];
 
-    const femaleAvatars = [
-      "https://cdn.shopify.com/s/files/1/0962/6648/6067/files/10491827.jpg?v=1763635326",
-      "https://cdn.shopify.com/s/files/1/0962/6648/6067/files/10491830.jpg?v=1763635333",
-    ];
+const femaleAvatars = [
+  "https://cdn.shopify.com/s/files/1/0962/6648/6067/files/10491827.jpg?v=1763635326",
+  "https://cdn.shopify.com/s/files/1/0962/6648/6067/files/10491830.jpg?v=1763635333",
+];
 
-    // Smart random picker based on gender
-    let avatar = "";
-    if (u.gender === "female") {
-      avatar = femaleAvatars[Math.floor(Math.random() * femaleAvatars.length)];
-    } else if (u.gender === "male") {
-      avatar = maleAvatars[Math.floor(Math.random() * maleAvatars.length)];
-    } else {
-      // 50/50 chance even if no gender set — pure chaos & fun
-      avatar = Math.random() < 0.5
-        ? maleAvatars[Math.floor(Math.random() * maleAvatars.length)]
-        : femaleAvatars[Math.floor(Math.random() * femaleAvatars.length)];
-    }
+// ---- PICK OR RESTORE AVATAR ----
+let avatar = u.avatar; // <– already saved in Firestore OR localStorage
 
-    // ——— Name formatting (unchanged) ———
-    const name = u.chatId || "Anon";
-    const formattedName = name
-      .split(" ")
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-      .join(" ");
+if (!avatar) {
+  // No avatar saved yet → assign based on gender
+  if (u.gender === "female") {
+    avatar = femaleAvatars[Math.floor(Math.random() * femaleAvatars.length)];
+  } else if (u.gender === "male") {
+    avatar = maleAvatars[Math.floor(Math.random() * maleAvatars.length)];
+  } else {
+    // No gender → one-time random
+    avatar = Math.random() < 0.5
+      ? maleAvatars[Math.floor(Math.random() * maleAvatars.length)]
+      : femaleAvatars[Math.floor(Math.random() * femaleAvatars.length)];
+  }
+
+  // SAVE so it never changes again
+  await updateUserAvatar(currentUser.uid, avatar);
+}
+
+// ---- Name formatting ----
+const name = u.chatId || "Anon";
+const formattedName = name
+  .split(" ")
+  .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+  .join(" ");
+
+  async function updateUserAvatar(uid, avatarUrl) {
+  await setDoc(doc(db, "users", uid), { avatar: avatarUrl }, { merge: true });
+}
 
     // ---- Styles for ranks ----
     let style = "";
