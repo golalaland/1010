@@ -2496,6 +2496,27 @@ if (!window.bidEngineStarted) {
   window.bidEngineStarted = true;
   startDailyBidEngine();
 }
+
+function play(soundId) {
+  const audio = document.getElementById(soundId);
+  if (audio) {
+    audio.currentTime = 0;
+    audio.play().catch(() => {}); // iOS policy fix
+  }
+}
+// Everywhere in your app:
+play("tapSound");         // button taps
+play("giftSound");        // normal gift sent
+if (amt >= 500) play("bigGiftSound");
+if (amt >= 1000) { play("starRainSound"); play("confettiSound"); }
+play("levelUpSound");     // rank up
+play("claimSound");       // airdrop claimed
+document.addEventListener('pointerdown', function unlockAudio() {
+  document.querySelectorAll('audio').forEach(a => {
+    a.play().then(() => a.pause()).catch(() => {});
+  });
+  document.removeEventListener('pointerdown', unlockAudio);
+}, { once: true });
 </script>
 </body>
 </html>
