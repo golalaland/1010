@@ -1819,7 +1819,7 @@ leaderboardList.innerHTML = topScores
   .map((u, i) => {
     const isCurrent = currentUser && u.uid === currentUser.uid;
 
-    // ---- SUPER CUTE AVATAR POOL ----
+  // ---- SUPER CUTE AVATAR POOL ----
 const maleAvatars = [
   "https://cdn.shopify.com/s/files/1/0962/6648/6067/files/9720027.jpg?v=1763365645",
   "https://cdn.shopify.com/s/files/1/0962/6648/6067/files/9720029.jpg?v=1763635357",
@@ -1830,24 +1830,33 @@ const femaleAvatars = [
   "https://cdn.shopify.com/s/files/1/0962/6648/6067/files/10491830.jpg?v=1763635333",
 ];
 
-// ---- PICK OR RESTORE AVATAR ----
-let avatar = u.avatar; // <– already saved in Firestore OR localStorage
+// ---- GET OR ASSIGN AVATAR (never changes again) ----
+let avatar = u.avatar;  // Check if user already has fixed avatar
 
 if (!avatar) {
-  // No avatar saved yet → assign based on gender
+  // Assign once based on gender
   if (u.gender === "female") {
     avatar = femaleAvatars[Math.floor(Math.random() * femaleAvatars.length)];
   } else if (u.gender === "male") {
     avatar = maleAvatars[Math.floor(Math.random() * maleAvatars.length)];
   } else {
-    // No gender → one-time random
+    // No gender → one-time random selection
     avatar = Math.random() < 0.5
       ? maleAvatars[Math.floor(Math.random() * maleAvatars.length)]
       : femaleAvatars[Math.floor(Math.random() * femaleAvatars.length)];
   }
 
-  // SAVE so it never changes again
-  await updateUserAvatar(currentUser.uid, avatar);
+  // SAVE avatar permanently (non-blocking)
+  updateUserAvatar(currentUser.uid, avatar);
+}
+
+
+ function updateUserAvatar(uid, avatarUrl) {
+  setDoc(
+    doc(db, "users", uid),
+    { avatar: avatarUrl },
+    { merge: true }
+  ).catch(err => console.error("Avatar save error:", err));
 }
 
 // ---- Name formatting ----
