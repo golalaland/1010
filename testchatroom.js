@@ -3438,17 +3438,15 @@ function showHighlightsModal(videos) {
     zIndex: "999999",
     overflowY: "auto",
     padding: "20px",
-    boxSizing: "border-box",
-    fontFamily: "system-ui, sans-serif"
+    boxSizing: "border-box"
   });
 
-  // === STICKY INTRO (Your Size, My Glow) ===
+  // === STICKY INTRO – Text & Colors from Snippet 2, Glass Backdrop from Snippet 1 ===
   const intro = document.createElement("div");
   intro.innerHTML = `
     <div style="text-align:center;color:#ccc;max-width:640px;margin:0 auto;line-height:1.6;font-size:14px;
-      background:linear-gradient(135deg,rgba(255,0,110,0.12),rgba(255,100,0,0.08));
-            padding:14px 48px 14px 20px;  /* right padding for X */
-      border:1px solid rgba(255,0,110,0.3);box-shadow:0 0 16px rgba(255,0,110,0.15);">
+      background:rgba(255,255,255,0.06);padding:14px 48px 14px 20px;border-radius:10px;
+      backdrop-filter:blur(5px);box-shadow:0 0 12px rgba(255,255,255,0.08);">
       <p style="margin:0;">
         <span style="background:linear-gradient(90deg,#ff006e,#ff8c00);-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-weight:700;">
           Highlights
@@ -3469,7 +3467,7 @@ function showHighlightsModal(videos) {
     intro.style.opacity = modal.scrollTop > 50 ? "0.7" : "1";
   });
 
-  // === SEARCH + TOGGLE (Your Exact Layout & Sizes) ===
+  // === SEARCH + TOGGLE CONTAINER ===
   const searchWrap = document.createElement("div");
   Object.assign(searchWrap.style, {
     position: "sticky",
@@ -3482,27 +3480,29 @@ function showHighlightsModal(videos) {
     gap: "6px"
   });
 
-  // Search Input (280px)
+  // === SEARCH BAR – Exact design from Snippet 1 (clean glass) ===
   const searchInputWrap = document.createElement("div");
   searchInputWrap.style.cssText = `
-    display:flex;align-items:center;
-    background:linear-gradient(135deg,rgba(255,255,255,0.08),rgba(255,255,255,0.04));
-    border:1px solid rgba(255,0,110,0.3);
-    border-radius:30px;padding:8px 14px;width:280px;
-    backdrop-filter:blur(8px);box-shadow:0 0 12px rgba(255,0,110,0.15);
+    display:flex;
+    align-items:center;
+    background:rgba(255,255,255,0.08);
+    border-radius:30px;
+    padding:8px 14px;
+    width:280px;
+    backdrop-filter:blur(6px);
+    box-shadow:0 0 10px rgba(0,0,0,0.25);
   `;
   searchInputWrap.innerHTML = `
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
       <path d="M15 15L21 21M10 17C6.13401 17 3 13.866 3 10C3 6.13401 6.13401 3 10 3C13.866 3 17 6.13401 17 10C17 13.866 13.866 17 10 17Z" 
-            stroke="url(#gradSearch)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-      <defs><linearGradient id="gradSearch" x1="3" y1="3" x2="21" y2="21"><stop stop-color="#ff006e"/><stop offset="1" stop-color="#ff8c00"/></linearGradient></defs>
+            stroke="#999999" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
     </svg>
     <input id="highlightSearchInput" type="text" placeholder="Search by creator..." 
            style="flex:1;background:transparent;border:none;outline:none;color:#fff;font-size:13px;letter-spacing:0.3px;"/>
   `;
   searchWrap.appendChild(searchInputWrap);
 
-  // Toggle Button
+  // === TOGGLE BUTTON – From Snippet 2 ===
   const toggleBtn = document.createElement("button");
   toggleBtn.id = "toggleLocked";
   toggleBtn.textContent = "Show Unlocked";
@@ -3527,6 +3527,7 @@ function showHighlightsModal(videos) {
     toggleBtn.style.transform = "translateY(0)";
   };
   searchWrap.appendChild(toggleBtn);
+
   modal.appendChild(searchWrap);
 
   // === DOPE X BUTTON — NO PAD, OG EFFECT, INSIDE PANEL ===
