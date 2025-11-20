@@ -976,10 +976,10 @@ bar + footer */
     </div>
   </div>
 </div>
-<!-- Audio - now using your own pop sound from GitHub -->
-<audio id="tapSound" 
-       src="https://raw.githubusercontent.com/golalaland/1010/main/pop-reverb-423718.mp3" 
-       preload="auto"></audio>
+<!-- SOUNDS - All your GitHub sounds in one place -->
+<audio id="tapSound"     src="https://raw.githubusercontent.com/golalaland/1010/main/pop-reverb-423718.mp3"     preload="auto"></audio>
+<audio id="confettiSound" src="https://raw.githubusercontent.com/golalaland/1010/main/material-mold-394512.mp3" preload="auto"></audio>
+<audio id="comboSound"    src="https://raw.githubusercontent.com/golalaland/1010/main/clear-combo-7-394494.mp3"    preload="auto"></audio>
       
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
@@ -1268,15 +1268,18 @@ function updateBonusBar(){
   bonusBar.style.width = Math.min(100,(progress/tapsForNext)*100)+'%';
 }
 
-/* ─────── DOPE RANDOM CONFETTI + VIBRATION ─────── */
+/* ─────── DOPE RANDOM CONFETTI + VIBRATION + EPIC SOUND ─────── */
 function triggerConfetti() {
+  // Play your custom confetti explosion sound
+  play(confettiSound, 0.85);
+
   const types = ['rainbow', 'spark', 'coin', 'star'];
   const chosen = types[Math.floor(Math.random() * types.length)];
 
   const count = 22;
-  const rect   = tapButton.getBoundingClientRect();
-  const cx     = rect.left + rect.width  / 2;
-  const cy     = rect.top  + rect.height / 2;
+  const rect  = tapButton.getBoundingClientRect();
+  const cx    = rect.left + rect.width  / 2;
+  const cy    = rect.top  + rect.height / 2;
 
   for (let i = 0; i < count; i++) {
     const dot = document.createElement('div');
@@ -1296,34 +1299,24 @@ function triggerConfetti() {
 
     document.body.appendChild(dot);
 
-    const animName = {
-      rainbow: 'rainbowFall',
-      spark:   'sparkBurst',
-      coin:    'coinFlip',
-      star:    'starBoom'
-    }[chosen];
-
     dot.animate(
-      [{opacity:1, transform:'translate(0,0) rotate(0deg) scale(1)'},
-       {opacity:0, transform:`translate(${dx}px,${dy}px) rotate(${chosen==='coin'? '720deg' : '360deg'}) scale(${chosen==='star'?2:0})`}],
-      {duration: 600 + Math.random()*300, easing:'cubic-bezier(.2,.6,.4,1)'}
+      [
+        { opacity: 1, transform: 'translate(0,0) rotate(0deg) scale(1)' },
+        { opacity: 0, transform: `translate(${dx}px,${dy}px) rotate(${chosen === 'coin' ? '720deg' : '360deg'}) scale(${chosen === 'star' ? 2 : 0})` }
+      ],
+      {
+        duration: 600 + Math.random() * 300,
+        easing: 'cubic-bezier(.2,.6,.4,1)'
+      }
     ).onfinish = () => dot.remove();
   }
 
-  /* ─────── DOPE VIBRATION ─────── */
+  // ─────── DOPE VIBRATION ───────
   if ('vibrate' in navigator) {
     navigator.vibrate([80, 50, 100, 50, 80]);
-  } else if (navigator.userAgent.match(/iPhone|iPad|iPod/)) {
+  } else if (/iPhone|iPad|iPod/.test(navigator.userAgent)) {
     tapButton.classList.add('shake');
     setTimeout(() => tapButton.classList.remove('shake'), 400);
-  }
-
-  /* ─────── SEXY DOINK SOUND ─────── */
-  const doink = document.getElementById('doinkSound');
-  if (doink) {
-    doink.currentTime = 0;
-    doink.volume = 0.7;
-    doink.play().catch(() => {});
   }
 }
 
@@ -2487,26 +2480,25 @@ if (!window.bidEngineStarted) {
   startDailyBidEngine();
 }
 
-function play(soundId) {
-  const audio = document.getElementById(soundId);
-  if (audio) {
-    audio.currentTime = 0;
-    audio.play().catch(() => {}); // iOS policy fix
-  }
-}
-// Everywhere in your app:
-play("tapSound");         // button taps
-play("giftSound");        // normal gift sent
-if (amt >= 500) play("bigGiftSound");
-if (amt >= 1000) { play("starRainSound"); play("confettiSound"); }
-play("levelUpSound");     // rank up
-play("claimSound");       // airdrop claimed
-document.addEventListener('pointerdown', function unlockAudio() {
-  document.querySelectorAll('audio').forEach(a => {
-    a.play().then(() => a.pause()).catch(() => {});
+// ---------- AUDIO UNLOCK (required for mobile) ----------
+let audioUnlocked = false;
+function unlockAudio() {
+  if (audioUnlocked) return;
+  [tapSound, confettiSound, comboSound].forEach(s => {
+    s.play().catch(() => {});
+    s.pause();
+    s.currentTime = 0;
   });
-  document.removeEventListener('pointerdown', unlockAudio);
-}, { once: true });
+  audioUnlocked = true;
+}
+
+// Play any sound safely
+function play(soundElement, volume = 1.0) {
+  unlockAudio();
+  soundElement.currentTime = 0;
+  soundElement.volume = volume;
+  soundElement.play().catch(() => {});
+}
 </script>
 </body>
 </html>
