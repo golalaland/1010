@@ -1678,6 +1678,33 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   background: linear-gradient(90deg, #ff007a, #ffa500);
   box-shadow: 0 0 4px rgba(255, 0, 122, 0.3);
 }
+const glowStyle = document.createElement("style");
+glowStyle.textContent = `
+  .session-btn, #topBallersBtn {
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease;
+  }
+  .new-glow {
+    animation: meritGlow 2s ease-in-out infinite;
+  }
+  .new-glow::before {
+    content: '';
+    position: absolute;
+    top: -50%; left: -50%;
+    width: 200%; height: 200%;
+    background: radial-gradient(circle, var(--glow-color, #ff00ff) 10%, transparent 60%);
+    opacity: 0;
+    animation: pulseWave 2s ease-out infinite;
+  }
+  @keyframes meritGlow {
+    0%, 100% { box-shadow: 0 0 15px var(--glow-color, #ff00ff); }
+    50% { box-shadow: 0 0 30px var(--glow-color, #ff00ff), 0 0 50px var(--glow-color, #ff00ff); }
+  }
+  @keyframes pulseWave {
+    0% { transform: translate(50%, 50%) scale(0); opacity: 0.6; }
+    100% { transform: translate(50%, 50%) scale(2); opacity: 0; }
+  }
 </style>
 </head>
 <body>
