@@ -1422,6 +1422,10 @@ async function endSessionImmediate() {
 
   await showEndGameModal();   // ← THIS IS THE ONLY CHANGE YOU NEED
 }
+//  30-second timer
+setTimeout(async () => {
+  await endSessionImmediate();
+}, 30000);
 
 // ======================================================
 //   FIRESTORE — ASYNC RECORDING
