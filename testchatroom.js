@@ -3902,6 +3902,119 @@ function playFullVideo(video) {
   modal.onclick = () => modal.remove();
   document.body.appendChild(modal);
 }
+
+document.getElementById("topBallersBtn").onclick = () => {
+  showStrzAirdropModal();
+};
+
+function showStrzAirdropModal() {
+  // Remove old
+  document.getElementById("strzModal")?.remove();
+
+  const modal = document.createElement("div");
+  modal.id = "strzModal";
+  modal.style.cssText = `
+    position:fixed;top:0;left:0;width:100vw;height:100vh;
+    background:rgba(0,0,0,0.92);backdrop-filter:blur(12px);
+    display:flex;align-items:center;justify-content:center;z-index:999999;
+    font-family: 'Poppins', sans-serif;
+  `;
+
+  modal.innerHTML = `
+    <div style="background:linear-gradient(135deg,#0f0f1e,#1a0033); padding:24px 20px; border-radius:18px; 
+                 max-width:340px; width:90%; text-align:center; color:white;
+                 border:2px solid transparent; background-clip:padding-box;
+                 position:relative; overflow:hidden;">
+      
+      <!-- Animated Border -->
+      <div style="position:absolute; inset:-2px; border-radius:20px;
+                  background:conic-gradient(from 0deg at 50% 50%, #ffd700, #ff00ff, #00ffff, #ffd700);
+                  animation:rotate 4s linear infinite; z-index:-1;"></div>
+
+      <h2 style="margin:0 0 12px; font-size:22px; background:linear-gradient(90deg,#ffd700,#ff00ff);
+                 -webkit-background-clip:text; -webkit-text-fill-color:transparent;">
+        $STRZ TOKEN AIRDROP
+      </h2>
+
+      <!-- Countdown -->
+      <div id="countdown" style="font-size:48px; font-weight:800; margin:20px 0;
+                 background:linear-gradient(90deg,#00ffff,#ff00ff);
+                 -webkit-background-clip:text; -webkit-text-fill-color:transparent;">
+        10:00
+      </div>
+
+      <!-- Claim Button -->
+      <button id="claimStrzBtn" style="padding:14px 28px; border:none; border-radius:50px;
+                 background:linear-gradient(90deg,#ffd700,#ff00ff); color:black;
+                 font-weight:900; font-size:18px; cursor:pointer; width:80%;
+                 box-shadow:0 10px 30px rgba(255,215,0,0.4); transform:scale(1);
+                 transition:all 0.3s;">
+        CLAIM 500 ⭐️ FREE
+      </button>
+
+      <div style="margin-top:16px; font-size:14px; opacity:0.8;">
+        Next drop in <span id="nextDrop">30:00</span> • Random match bonus active
+      </div>
+
+      <button style="position:absolute; top:10px; right:14px; background:none; border:none;
+                     color:white; font-size:24px; cursor:pointer;">×</button>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+
+  // Countdown logic
+  let timeLeft = 600; // 10 minutes
+  const countdownEl = modal.querySelector("#countdown");
+  const nextDropEl = modal.querySelector("#nextDrop");
+  const claimBtn = modal.querySelector("#claimStrzBtn");
+
+  const timer = setInterval(() => {
+    timeLeft--;
+    const mins = String(Math.floor(timeLeft / 60)).padStart(2, '0');
+    const secs = String(timeLeft % 60).padStart(2, '0');
+    countdownEl.textContent = `${mins}:${secs}`;
+
+    if (timeLeft <= 0) {
+      clearInterval(timer);
+      countdownEl.textContent = "LIVE!";
+      claimBtn.textContent = "CLAIM NOW 🔥";
+      claimBtn.style.background = "linear-gradient(90deg,#ff0000,#ffff00)";
+      pulseButtonGlow("topBallersBtn", "#ffff00");
+    }
+  }, 1000);
+
+  // 30-minute random match solver (every 30 mins, 3 users get 1000 stars)
+  setInterval(() => {
+    if (Math.random() < 0.3) { // 30% chance to trigger
+      // You can replace this with real logic
+      showToast("Random Match Winner! +1000 ⭐️ gifted!");
+      currentUser.stars += 1000;
+      updateStarDisplay();
+    }
+  }, 30 * 60 * 1000);
+
+  // Claim action
+  claimBtn.onclick = () => {
+    if (timeLeft > 0) {
+      showToast("⏳ Wait for countdown!");
+      return;
+    }
+    currentUser.stars += 500;
+    updateStarDisplay();
+    showToast("🎉 500 ⭐️ CLAIMED! Keep ballin'");
+    modal.remove();
+    pulseButtonGlow("topBallersBtn", "#00ff00");
+  };
+
+  modal.querySelector("button").onclick = () => modal.remove();
+  modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+}
+pulseButtonGlow("topBallersBtn", "#ffd700");    // gold when new airdrop
+pulseButtonGlow("openHostsBtn", "#ff00ff");     // pink when new host
+pulseButtonGlow("highlightsBtn", "#ff3300");    // fire when new highlight
+
+
 /* ===============================
    FULLY WORKING: Auto-Scroll + "New" Button + Center Arrow
    100% for @doctortantra
