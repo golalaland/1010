@@ -2325,42 +2325,6 @@ document.getElementById('finalConfirmBtn')?.addEventListener('click', async () =
   }
 });
 
-
-
-/* ====================== SOUND SYSTEM ====================== */
-let audioUnlocked = false;
-function unlockAllAudio() {
-  if (audioUnlocked) return;
-  audioUnlocked = true;
-  new Audio("data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=").play().catch(()=>{});
-}
-document.body.addEventListener('touchstart', unlockAllAudio, {once: true});
-document.body.addEventListener('click', unlockAllAudio, {once: true});
-
-document.getElementById('tapButton')?.addEventListener('click', () => {
-  if (!audioUnlocked) return;
-  const beat = document.getElementById('beatAudio');
-  beat.src = "your-dettyverse-beat.mp3";  // ← change to your beat
-  beat.volume = 0.45;
-  beat.play().catch(()=>{});
-});
-
-const click = document.getElementById('clickAudio');
-click.src = "https://assets.mixkit.co/sfx/preview/mixkit-arcade-game-jump-coin-216.mp3";
-click.volume = 0.6;
-let lastClick = 0;
-function playClickSound() {
-  if (!audioUnlocked) return;
-  const now = Date.now();
-  if (now - lastClick < 80) return;
-  lastClick = now;
-  click.currentTime = 0;
-  click.play().catch(()=>{});
-}
-document.querySelectorAll('button').forEach(btn => {
-  if (btn.id !== 'tapButton') btn.addEventListener('click', playClickSound);
-});
-
 /* ====================== DAILY BID ROYALE — PERFECT SYNC, NO JUMP ON RELOAD ====================== */
 let bidActive = false;
 
