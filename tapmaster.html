@@ -1093,64 +1093,6 @@ endGameModal.innerHTML = `
 document.body.appendChild(endGameModal);
 
 
-// FETCH USERNAME FROM FIRESTORE (once, reusable)
-async function getUsername() {
-  if (!chatId) return "Tapper";
-  try {
-    const doc = await db.collection('users').doc(chatId).get();  // change 'users' if your collection has another name
-    if (doc.exists) {
-      const data = doc.data();
-      return data.username || data.handle || "Tapper";
-    }
-  } catch (e) {
-    console.log("Username fetch failed:", e);
-  }
-  return "Playa";
-}
-
-// NEW, FINAL, CLEAN SHOW FUNCTION — THIS IS ALL YOU NEED NOW
-async function showEndGameModal() {
-  // Stats
-  document.getElementById('finalTaps').textContent = taps.toLocaleString();
-  document.getElementById('finalEarnings').textContent = `₦${earnings.toLocaleString()}`;
-
-  // Real username from Firestore
-  const username = await getUsername();
-  document.getElementById('playerName').textContent = username;
-
-  // Victory chest-open sound (your new one)
-  unlockAudio();
-  victorySound.currentTime = 0;
-  victorySound.volume = 0.9;
-  victorySound.play().catch(() => {});
-
-  // Show modal
-  endGameModal.style.display = "flex";
-
-  // Buttons — clean, no duplicates, with UI click sound
-  const playAgainBtn = document.getElementById('playAgainBtn');
-  const shareBtn     = document.getElementById('shareBtn');
-
-  playAgainBtn.replaceWith(playAgainBtn.cloneNode(true));
-  shareBtn.replaceWith(shareBtn.cloneNode(true));
-
-  document.getElementById('playAgainBtn').addEventListener('click', () => {
-    playUIClick();
-    location.reload(true);
-  });
-
-  document.getElementById('shareBtn').addEventListener('click', () => {
-    playUIClick();
-    const text = `${username} just got ${taps.toLocaleString()} taps and earned ₦${earnings.toLocaleString()}! Can you beat me?`;
-    if (navigator.share) {
-      navigator.share({ title: "My Tap Score", text, url: location.href });
-    } else {
-      navigator.clipboard.writeText(text + " " + location.href);
-      alert("Score copied to clipboard!");
-    }
-  });
-}
-
 
 
 // ---------- CONFIG ----------
