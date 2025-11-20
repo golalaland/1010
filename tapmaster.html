@@ -331,21 +331,48 @@ body.game-mode {
 .slider-wrapper {
   overflow: hidden;
   width: 100%;
+  max-width: 100%;
+  height: 170px; /* same as your original */
   position: relative;
+  border-radius: 12px;
+  box-shadow: 0 0 20px rgba(255,215,0,0.5);
+  border: 2px solid rgba(255,215,0,0.4);
 }
 
 /* Track that moves */
 .slider-track {
   display: flex;
-  transition: transform 0.6s ease; /* smooth sliding */
-  width: 100%;
+  transition: transform 0.5s ease-in-out;
+  width: 700%; /* 7 images → 100% * number of slides */
+  height: 100%;
 }
 
 /* Each slide */
 .leaderboard-slide {
   width: 100%;
+  height: 100%;
+  object-fit: cover;
   flex-shrink: 0;
 }
+
+/* Buttons */
+.slide-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(0,0,0,0.5);
+  color: #fff;
+  border: none;
+  font-size: 20px;
+  padding: 5px 10px;
+  cursor: pointer;
+  z-index: 10;
+  border-radius: 4px;
+}
+
+.prev-btn { left: 10px; }
+.next-btn { right: 10px; }
+
 /* iOS Haptic Fallback - Shake Effect */
 @keyframes shake {
   0% { transform: translate(0, 0); }
@@ -1644,52 +1671,49 @@ function getWeek(date) {
 /* ------------------------------
    LEADERBOARD IMAGE SLIDER (FADE)
 ------------------------------- */
-<div id="leaderboardImageSlider" style="position:relative;width:100%;height:170px;overflow:hidden;border-radius:12px;margin-bottom:12px;box-shadow:0 0 20px rgba(255,215,0,0.5);border:2px solid rgba(255,215,0,0.4);">
-  <div class="slider-track" style="display:flex;height:100%;transition:transform 0.4s ease;">
-    <img src="https://cdn.shopify.com/s/files/1/0962/6648/6067/files/STRZ.jpg?v=1763196570" class="leaderboard-slide" style="width:100%;height:100%;object-fit:cover;flex-shrink:0;">
-    <img src="https://cdn.shopify.com/s/files/1/0962/6648/6067/files/STRZ.jpg?v=1763196570" class="leaderboard-slide" style="width:100%;height:100%;object-fit:cover;flex-shrink:0;">
-    <img src="https://cdn.shopify.com/s/files/1/0962/6648/6067/files/STRZ.jpg?v=1763196570" class="leaderboard-slide" style="width:100%;height:100%;object-fit:cover;flex-shrink:0;">
+<div id="leaderboardSlider" class="slider-wrapper">
+  <div class="slider-track">
+    <img src="https://cdn.shopify.com/s/files/1/0962/6648/6067/files/STRZ.jpg?v=1763196570" class="leaderboard-slide">
+    <img src="https://cdn.shopify.com/s/files/1/0962/6648/6067/files/STRZ.jpg?v=1763196570" class="leaderboard-slide">
+    <img src="https://cdn.shopify.com/s/files/1/0962/6648/6067/files/STRZ.jpg?v=1763196570" class="leaderboard-slide">
+    <img src="https://cdn.shopify.com/s/files/1/0962/6648/6067/files/STRZ.jpg?v=1763196570" class="leaderboard-slide">
+    <img src="https://cdn.shopify.com/s/files/1/0962/6648/6067/files/STRZ.jpg?v=1763196570" class="leaderboard-slide">
+    <img src="https://cdn.shopify.com/s/files/1/0962/6648/6067/files/STRZ.jpg?v=1763196570" class="leaderboard-slide">
+    <img src="https://cdn.shopify.com/s/files/1/0962/6648/6067/files/STRZ.jpg?v=1763196570" class="leaderboard-slide">
   </div>
 
-  <!-- Manual controls -->
-  <button id="prevSlide" style="position:absolute;top:50%;left:10px;transform:translateY(-50%);background:#FF8C00;color:#fff;border:none;padding:5px 10px;border-radius:6px;cursor:pointer;">◀</button>
-  <button id="nextSlide" style="position:absolute;top:50%;right:10px;transform:translateY(-50%);background:#FF8C00;color:#fff;border:none;padding:5px 10px;border-radius:6px;cursor:pointer;">▶</button>
+  <!-- Optional manual buttons -->
+  <button class="slide-btn prev-btn">&#10094;</button>
+  <button class="slide-btn next-btn">&#10095;</button>
 </div>
 
-<script>
-const sliderWrapper = document.getElementById("leaderboardImageSlider");
-const sliderTrack = sliderWrapper.querySelector(".slider-track");
-const slides = sliderWrapper.querySelectorAll(".leaderboard-slide");
-const prevBtn = document.getElementById("prevSlide");
-const nextBtn = document.getElementById("nextSlide");
+const slider = document.getElementById('leaderboardSlider');
+const track = slider.querySelector('.slider-track');
+const slides = slider.querySelectorAll('.leaderboard-slide');
+const total = slides.length;
 
-let currentSlide = 0;
+let current = 0;
 
+// Show slide by index
 function showSlide(index) {
-  currentSlide = index;
-  sliderTrack.style.transform = `translateX(-${index * 100}%)`;
+  if(index < 0) index = total - 1;
+  if(index >= total) index = 0;
+  current = index;
+  track.style.transform = `translateX(-${index * (100 / total)}%)`;
 }
 
-// Manual buttons
-prevBtn.addEventListener("click", () => {
-  let prev = (currentSlide - 1 + slides.length) % slides.length;
-  showSlide(prev);
-});
+// Buttons
+slider.querySelector('.prev-btn').addEventListener('click', () => showSlide(current - 1));
+slider.querySelector('.next-btn').addEventListener('click', () => showSlide(current + 1));
 
-nextBtn.addEventListener("click", () => {
-  let next = (currentSlide + 1) % slides.length;
-  showSlide(next);
-});
-
-// Mobile swipe
+// Swipe support
 let startX = 0;
-sliderWrapper.addEventListener("touchstart", e => startX = e.touches[0].clientX);
-sliderWrapper.addEventListener("touchend", e => {
-  let endX = e.changedTouches[0].clientX;
-  if (endX - startX > 50) showSlide((currentSlide - 1 + slides.length) % slides.length);
-  if (startX - endX > 50) showSlide((currentSlide + 1) % slides.length);
+slider.addEventListener('touchstart', e => startX = e.touches[0].clientX);
+slider.addEventListener('touchend', e => {
+  const endX = e.changedTouches[0].clientX;
+  if (endX - startX > 50) showSlide(current - 1); // swipe right
+  if (startX - endX > 50) showSlide(current + 1); // swipe left
 });
-
 // Init
 showSlide(0);
 
