@@ -692,29 +692,27 @@ bar + footer */
         Checkout today's top tappers who dominate the leaderboard.
       </p>
 
-            <!-- MY TAPS TODAY – FINAL PERFECT VERSION -->
+              <!-- MY TAPS TODAY – 2nd 1st 3rd PERFECTLY JOINED -->
       <div id="myTapsToday" style="background:linear-gradient(135deg,rgba(255,215,0,0.18),rgba(255,140,0,0.08));border:1.5px solid #FFD700;border-radius:14px;padding:11px 13px;margin:16px 0 6px;display:flex;align-items:center;gap:10px;box-shadow:0 3px 12px rgba(255,215,0,0.25);">
-        <div style="flex-shrink:0;font-size:28px;opacity:0.9;">✨</div>
+        <div style="flex-shrink:0;font-size:28px;opacity:0.9;">Sparkles</div>
         
         <div style="flex:1;text-align:center;">
-          <!-- Title – perfectly centered alone -->
           <div style="font-size:11px;color:#FF8C00;font-weight:800;letter-spacing:0.6px;">
             YOUR TAPS TODAY
           </div>
           
-          <!-- The number line – natural flow, not forced centered -->
-          <div style="margin-top:4px;font-size:19px;font-weight:900;color:#FFD700;display:inline-flex;align-items:baseline;gap:8px;flex-wrap:nowrap;">
+          <div style="margin-top:4px;font-size:19px;font-weight:900;color:#FFD700;display:inline-flex;align-items:baseline;gap:8px;flex-wrap:nowrap;justify-content:center;">
             <span id="myDailyTapsValue">0</span>
             <span style="font-size:13px;font-weight:700;opacity:0.9;align-self:center;">taps</span>
             
-            <span id="myRankBig" style="font-size:19px;font-weight:900;"></span>
-            <span id="myRankSmall" style="font-size:13px;font-weight:700;align-self:center;"></span>
+            <!-- BIG RANK + SUFFIX TOGETHER IN ONE SPAN SO NO GAP -->
+            <span id="myRankFull" style="font-size:19px;font-weight:900;line-height:1;"></span>
             
             <span style="font-size:13px;font-weight:700;opacity:0.9;align-self:center;">position</span>
           </div>
         </div>
         
-        <div style="flex-shrink:0;font-size:24px;opacity:0.7;">✨</div>
+        <div style="flex-shrink:0;font-size:24px;opacity:0.7;">Sparkles</div>
       </div>
       
       <!-- Leaderboard list -->
@@ -1778,15 +1776,13 @@ async function fetchLeaderboard(period = "daily", top = 10) {
     const topScores = scores.slice(0, top);
     
 
-    // === YOUR TAPS TODAY – FINAL CLEAN VERSION (BIG number + BIG rank) ===
+     // === YOUR TAPS TODAY – FINAL FIXED (2nd 1st 3rd joined perfectly) ===
     let myDailyTaps = 0;
     let myRank = null;
 
     if (currentUser) {
       const myDoc = snap.docs.find(d => d.id === currentUser.uid);
       const myData = myDoc?.data();
-
-      // Auto-detect current period
       if (period === "daily")   myDailyTaps = myData?.tapsDaily?.[key]   || 0;
       if (period === "weekly")  myDailyTaps = myData?.tapsWeekly?.[key]  || 0;
       if (period === "monthly") myDailyTaps = myData?.tapsMonthly?.[key] || 0;
@@ -1795,28 +1791,22 @@ async function fetchLeaderboard(period = "daily", top = 10) {
       if (myEntry) myRank = scores.indexOf(myEntry) + 1;
     }
 
-    // Update taps number
     const tapsEl = document.getElementById("myDailyTapsValue");
+    const rankFull = document.getElementById("myRankFull");
+
     if (tapsEl) tapsEl.textContent = myDailyTaps.toLocaleString();
 
-    // Update rank: BIG number (2nd) + small suffix (nd) + small "position"
-    const rankBig   = document.getElementById("myRankBig");
-    const rankSmall = document.getElementById("myRankSmall");
-
-    if (myRank && myRank <= 10 && rankBig && rankSmall) {
+    if (myRank && myRank <= 10 && rankFull) {
       const suffix = myRank === 1 ? "st" : myRank === 2 ? "nd" : myRank === 3 ? "rd" : "th";
-      rankBig.textContent   = myRank;        // 2  (big)
-      rankSmall.textContent = suffix;        // nd (small)
-    } else {
-      if (rankBig)   rankBig.textContent   = "";
-      if (rankSmall) rankSmall.textContent = "";
+      rankFull.textContent = myRank + suffix;  // 2nd, 1st, 3rd, 4th — perfect!
+    } else if (rankFull) {
+      rankFull.textContent = "";
     }
 
     if (topScores.length === 0) {
       leaderboardList.innerHTML = "<li style='text-align:center;padding:20px 0;font-size:13px;color:#888;'>No taps yet — be the first!</li>";
       return;
     }
-
 leaderboardList.innerHTML = topScores
   .map((u, i) => {
     const isCurrent = currentUser && u.uid === currentUser.uid;
