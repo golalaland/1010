@@ -1331,24 +1331,28 @@ function startSession() {
     if (!running) return;   
 
     timer--;
-    if (timer < 0) timer = 0;
+if (timer < 0) timer = 0;
 
-    updateUI();
-    trainBar && (trainBar.style.width = (timer / SESSION_DURATION * 100) + "%");
+updateUI();
+trainBar && (trainBar.style.width = (timer / SESSION_DURATION * 100) + "%");
 
-    if (timer === 0) {
+if (timer === 0) {
 
-      // 🚫 STOP EVERYTHING IMMEDIATELY
-      endSessionImmediate();
+    // stop logic immediately so nothing else runs
+    running = false;
+    tapLocked = true;
+    tapButton.disabled = true;
 
-      // 📝 SAVE THE SESSION ASYNC
-      endSessionRecord();
+    // stop the interval BEFORE doing anything else
+    const id = intervalId;
+    intervalId = null;
+    clearInterval(id);
 
-    }
-
-  }, 1000);
-
-  updateUI();
+    // iPhone/iOS Safari requires a tiny delay
+    setTimeout(() => {
+        endSessionImmediate();  // show modal
+        endSessionRecord();     // save session
+    }, 50);
 }
 
 
