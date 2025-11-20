@@ -3376,38 +3376,6 @@ hostSettingsBtn.addEventListener("click", () => {
 });
 
 
-const scrollArrow = document.getElementById('scrollArrow');
-  const chatContainer = document.querySelector('#chatContainer'); // your chat wrapper
-  let fadeTimeout;
-
-  function showArrow() {
-    scrollArrow.classList.add('show');
-    if (fadeTimeout) clearTimeout(fadeTimeout);
-    fadeTimeout = setTimeout(() => {
-      scrollArrow.classList.remove('show');
-    }, 2000); // disappears after 2 seconds
-  }
-
-  function checkScroll() {
-    const distanceFromBottom = chatContainer.scrollHeight - chatContainer.scrollTop - chatContainer.clientHeight;
-    if (distanceFromBottom > 200) { // threshold for showing arrow
-      showArrow();
-    }
-  }
-
-  chatContainer.addEventListener('scroll', checkScroll);
-
-  scrollArrow.addEventListener('click', () => {
-    chatContainer.scrollTo({
-      top: chatContainer.scrollHeight,
-      behavior: 'smooth'
-    });
-  });
-  
-checkScroll(); // initial check
-}); // ✅ closes DOMContentLoaded event listener
-
-
 /* ---------- Highlights Button ---------- */
 highlightsBtn.onclick = async () => {
   try {
