@@ -1335,24 +1335,24 @@ if (timer < 0) timer = 0;
 
 updateUI();
 trainBar && (trainBar.style.width = (timer / SESSION_DURATION * 100) + "%");
+    if (timer < 0) timer = 0;
 
-if (timer === 0) {
+    updateUI();
+    trainBar && (trainBar.style.width = (timer / SESSION_DURATION * 100) + "%");
 
-    // stop logic immediately so nothing else runs
-    running = false;
-    tapLocked = true;
-    tapButton.disabled = true;
+    if (timer === 0) {
 
-    // stop the interval BEFORE doing anything else
-    const id = intervalId;
-    intervalId = null;
-    clearInterval(id);
+      // 🚫 STOP EVERYTHING IMMEDIATELY
+      endSessionImmediate();
 
-    // iPhone/iOS Safari requires a tiny delay
-    setTimeout(() => {
-        endSessionImmediate();  // show modal
-        endSessionRecord();     // save session
-    }, 50);
+      // 📝 SAVE THE SESSION ASYNC
+      endSessionRecord();
+
+    }
+
+  }, 1000);
+
+  updateUI();
 }
 
 
