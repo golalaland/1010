@@ -1644,61 +1644,55 @@ function getWeek(date) {
 /* ------------------------------
    LEADERBOARD IMAGE SLIDER (FADE)
 ------------------------------- */
+<div id="leaderboardImageSlider" style="position:relative;width:100%;height:170px;overflow:hidden;border-radius:12px;margin-bottom:12px;box-shadow:0 0 20px rgba(255,215,0,0.5);border:2px solid rgba(255,215,0,0.4);">
+  <div class="slider-track" style="display:flex;height:100%;transition:transform 0.4s ease;">
+    <img src="https://cdn.shopify.com/s/files/1/0962/6648/6067/files/STRZ.jpg?v=1763196570" class="leaderboard-slide" style="width:100%;height:100%;object-fit:cover;flex-shrink:0;">
+    <img src="https://cdn.shopify.com/s/files/1/0962/6648/6067/files/STRZ.jpg?v=1763196570" class="leaderboard-slide" style="width:100%;height:100%;object-fit:cover;flex-shrink:0;">
+    <img src="https://cdn.shopify.com/s/files/1/0962/6648/6067/files/STRZ.jpg?v=1763196570" class="leaderboard-slide" style="width:100%;height:100%;object-fit:cover;flex-shrink:0;">
+  </div>
+
+  <!-- Manual controls -->
+  <button id="prevSlide" style="position:absolute;top:50%;left:10px;transform:translateY(-50%);background:#FF8C00;color:#fff;border:none;padding:5px 10px;border-radius:6px;cursor:pointer;">◀</button>
+  <button id="nextSlide" style="position:absolute;top:50%;right:10px;transform:translateY(-50%);background:#FF8C00;color:#fff;border:none;padding:5px 10px;border-radius:6px;cursor:pointer;">▶</button>
+</div>
+
+<script>
 const sliderWrapper = document.getElementById("leaderboardImageSlider");
 const sliderTrack = sliderWrapper.querySelector(".slider-track");
 const slides = sliderWrapper.querySelectorAll(".leaderboard-slide");
+const prevBtn = document.getElementById("prevSlide");
+const nextBtn = document.getElementById("nextSlide");
 
 let currentSlide = 0;
-let slideInterval = null;
-const slideCount = slides.length;
 
-// Move slider to a given index
 function showSlide(index) {
   currentSlide = index;
   sliderTrack.style.transform = `translateX(-${index * 100}%)`;
 }
 
-// Auto-slide every 3 seconds
-function startSlider() {
-  slideInterval = setInterval(() => {
-    let next = (currentSlide + 1) % slideCount;
-    showSlide(next);
-  }, 10000);
-}
-
-function stopSlider() {
-  clearInterval(slideInterval);
-}
-
-// Mobile swipe support
-let startX = 0;
-
-sliderWrapper.addEventListener("touchstart", e => {
-  startX = e.touches[0].clientX;
-  stopSlider();
+// Manual buttons
+prevBtn.addEventListener("click", () => {
+  let prev = (currentSlide - 1 + slides.length) % slides.length;
+  showSlide(prev);
 });
 
+nextBtn.addEventListener("click", () => {
+  let next = (currentSlide + 1) % slides.length;
+  showSlide(next);
+});
+
+// Mobile swipe
+let startX = 0;
+sliderWrapper.addEventListener("touchstart", e => startX = e.touches[0].clientX);
 sliderWrapper.addEventListener("touchend", e => {
   let endX = e.changedTouches[0].clientX;
-  if (endX - startX > 50) {
-    // swipe right
-    let prev = (currentSlide - 1 + slideCount) % slideCount;
-    showSlide(prev);
-  }
-  if (startX - endX > 50) {
-    // swipe left
-    let next = (currentSlide + 1) % slideCount;
-    showSlide(next);
-  }
-  startSlider();
+  if (endX - startX > 50) showSlide((currentSlide - 1 + slides.length) % slides.length);
+  if (startX - endX > 50) showSlide((currentSlide + 1) % slides.length);
 });
 
 // Init
 showSlide(0);
-startSlider();
 
-// Optional: stop when closing leaderboard modal
-closeLeaderboard?.addEventListener("click", () => stopSlider());
 
 /* -------------------------------------------
    FETCH LEADERBOARD
