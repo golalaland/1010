@@ -980,7 +980,7 @@ bar + footer */
 <audio id="tapSound"     src="https://raw.githubusercontent.com/golalaland/1010/main/pop-reverb-423718.mp3"     preload="auto"></audio>
 <audio id="confettiSound" src="https://raw.githubusercontent.com/golalaland/1010/main/material-mold-394512.mp3" preload="auto"></audio>
 <audio id="comboSound"    src="https://raw.githubusercontent.com/golalaland/1010/main/clear-combo-7-394494.mp3"    preload="auto"></audio>
-      
+<audio id="uiClickSound" src="https://raw.githubusercontent.com/golalaland/1010/main/clear-combo-13-394503.mp3" preload="auto"></audio>
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
   
@@ -2463,6 +2463,35 @@ function play(soundElement, volume = 1.0) {
   soundElement.volume = volume;
   soundElement.play().catch(() => {});
 }
+// ---------- UI CLICK SOUND (for buttons, not the main tap) ----------
+const uiClickSound = document.getElementById('uiClickSound');
+
+function playUIClick() {
+  unlockAudio();                // uses the same unlock function we already have
+  uiClickSound.currentTime = 0;
+  uiClickSound.volume = 0.6;
+  uiClickSound.play().catch(() => {});
+}
+startBtn.onclick = () => {
+  playUIClick();
+  // your existing start logic
+};
+
+confirmPlay.onclick = () => {
+  playUIClick();
+  // confirm logic
+};
+
+cancelPlay.onclick = () => {
+  playUIClick();
+  // cancel logic
+};
+
+// If you have any other buttons (shop, settings, etc.)
+someOtherButton.onclick = () => {
+  playUIClick();
+  // ...
+};
 </script>
 </body>
 </html>
