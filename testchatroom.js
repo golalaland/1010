@@ -3903,116 +3903,118 @@ function playFullVideo(video) {
   document.body.appendChild(modal);
 }
 
+function notifyNewContent(buttonId) {
+  const btn = document.getElementById(buttonId) || document.querySelector(buttonId);
+  if (!btn) return;
+
+  btn.classList.remove("glow-pulse");
+  void btn.offsetWidth; // force reflow
+  btn.classList.add("glow-pulse");
+
+  // Auto-remove after 6 seconds so it can trigger again
+  setTimeout(() => btn.classList.remove("glow-pulse"), 6000);
+}
+
+// Usage examples:
+notifyNewContent("#topBallersBtn");    // new airdrop or winner
+notifyNewContent("#openHostsBtn");     // new host online
+notifyNewContent("#highlightsBtn");    // new highlight clip
+
 document.getElementById("topBallersBtn").onclick = () => {
   showStrzAirdropModal();
+  notifyNewContent("#topBallersBtn"); // glow again when reopened
 };
 
 function showStrzAirdropModal() {
   // Remove old
-  document.getElementById("strzModal")?.remove();
+  document.getElementById("strzAirdropModal")?.remove();
 
   const modal = document.createElement("div");
-  modal.id = "strzModal";
+  modal.id = "strzAirdropModal";
   modal.style.cssText = `
-    position:fixed;top:0;left:0;width:100vw;height:100vh;
-    background:rgba(0,0,0,0.92);backdrop-filter:blur(12px);
-    display:flex;align-items:center;justify-content:center;z-index:999999;
-    font-family: 'Poppins', sans-serif;
+    position:fixed;inset:0;background:rgba(0,0,0,0.94);
+    backdrop-filter:blur(12px);display:flex;align-items:center;
+    justify-content:center;z-index:999999;font-family:Poppins,sans-serif;
   `;
 
   modal.innerHTML = `
-    <div style="background:linear-gradient(135deg,#0f0f1e,#1a0033); padding:24px 20px; border-radius:18px; 
-                 max-width:340px; width:90%; text-align:center; color:white;
-                 border:2px solid transparent; background-clip:padding-box;
-                 position:relative; overflow:hidden;">
+    <div style="background:linear-gradient(135deg,#111,#1a0033);padding:24px 20px;
+                 border-radius:20px;max-width:340px;width:90%;text-align:center;
+                 border:2px solid #333;position:relative;overflow:hidden;">
       
-      <!-- Animated Border -->
-      <div style="position:absolute; inset:-2px; border-radius:20px;
-                  background:conic-gradient(from 0deg at 50% 50%, #ffd700, #ff00ff, #00ffff, #ffd700);
-                  animation:rotate 4s linear infinite; z-index:-1;"></div>
+      <!-- Animated conic border -->
+      <div style="position:absolute;inset:-4px;border-radius:22px;
+                  background:conic-gradient(from 0deg,#ffd700,#ff00ff,#00ffff,#ffd700);
+                  animation:spin 5s linear infinite;z-index:-1;opacity:0.8;"></div>
 
-      <h2 style="margin:0 0 12px; font-size:22px; background:linear-gradient(90deg,#ffd700,#ff00ff);
-                 -webkit-background-clip:text; -webkit-text-fill-color:transparent;">
+      <button onclick="this.parentElement.parentElement.parentElement.remove()"
+              style="position:absolute;top:8px;right:12px;background:none;border:none;
+                     color:#fff;font-size:28px;cursor:pointer;">×</button>
+
+      <h2 style="margin:0 0 16px;font-size:20px;background:linear-gradient(90deg,#ffd700,#ff00ff);
+                 -webkit-background-clip:text;-webkit-text-fill-color:transparent;">
         $STRZ TOKEN AIRDROP
       </h2>
 
-      <!-- Countdown -->
-      <div id="countdown" style="font-size:48px; font-weight:800; margin:20px 0;
-                 background:linear-gradient(90deg,#00ffff,#ff00ff);
-                 -webkit-background-clip:text; -webkit-text-fill-color:transparent;">
-        10:00
+      <div id="airdropCountdown" style="font-size:52px;font-weight:900;margin:20px 0;
+           background:linear-gradient(90deg,#00ffff,#ff00ff);
+           -webkit-background-clip:text;-webkit-text-fill-color:transparent;">
+        09:59
       </div>
 
-      <!-- Claim Button -->
-      <button id="claimStrzBtn" style="padding:14px 28px; border:none; border-radius:50px;
-                 background:linear-gradient(90deg,#ffd700,#ff00ff); color:black;
-                 font-weight:900; font-size:18px; cursor:pointer; width:80%;
-                 box-shadow:0 10px 30px rgba(255,215,0,0.4); transform:scale(1);
-                 transition:all 0.3s;">
+      <button id="claimFreeStars" style="width:88%;padding:16px;border:none;border-radius:50px;
+               background:linear-gradient(90deg,#ffd700,#ff0066);color:#000;font-weight:900;
+               font-size:18px;cursor:pointer;margin:10px 0;
+               box-shadow:0 8px 25px rgba(255,215,0,0.4);">
         CLAIM 500 ⭐️ FREE
       </button>
 
-      <div style="margin-top:16px; font-size:14px; opacity:0.8;">
-        Next drop in <span id="nextDrop">30:00</span> • Random match bonus active
+      <div style="font-size:13px;opacity:0.8;margin-top:12px;">
+        Every 30 mins → Random match winner gets <b>1000 ⭐️</b>
       </div>
-
-      <button style="position:absolute; top:10px; right:14px; background:none; border:none;
-                     color:white; font-size:24px; cursor:pointer;">×</button>
     </div>
   `;
 
   document.body.appendChild(modal);
 
-  // Countdown logic
-  let timeLeft = 600; // 10 minutes
-  const countdownEl = modal.querySelector("#countdown");
-  const nextDropEl = modal.querySelector("#nextDrop");
-  const claimBtn = modal.querySelector("#claimStrzBtn");
+  // 10-minute countdown
+  let seconds = 599;
+  const cd = modal.querySelector("#airdropCountdown");
+  const claimBtn = modal.querySelector("#claimFreeStars");
 
   const timer = setInterval(() => {
-    timeLeft--;
-    const mins = String(Math.floor(timeLeft / 60)).padStart(2, '0');
-    const secs = String(timeLeft % 60).padStart(2, '0');
-    countdownEl.textContent = `${mins}:${secs}`;
+    seconds--;
+    const m = String(Math.floor(seconds/60)).padStart(2,'0');
+    const s = String(seconds%60).padStart(2,'0');
+    cd.textContent = `${m}:${s}`;
 
-    if (timeLeft <= 0) {
+    if (seconds <= 0) {
       clearInterval(timer);
-      countdownEl.textContent = "LIVE!";
-      claimBtn.textContent = "CLAIM NOW 🔥";
+      cd.textContent = "LIVE!";
+      claimBtn.textContent = "CLAIM NOW";
       claimBtn.style.background = "linear-gradient(90deg,#ff0000,#ffff00)";
-      pulseButtonGlow("topBallersBtn", "#ffff00");
+      notifyNewContent("#topBallersBtn");
     }
   }, 1000);
 
-  // 30-minute random match solver (every 30 mins, 3 users get 1000 stars)
-  setInterval(() => {
-    if (Math.random() < 0.3) { // 30% chance to trigger
-      // You can replace this with real logic
-      showToast("Random Match Winner! +1000 ⭐️ gifted!");
-      currentUser.stars += 1000;
-      updateStarDisplay();
-    }
-  }, 30 * 60 * 1000);
-
-  // Claim action
+  // Claim logic
   claimBtn.onclick = () => {
-    if (timeLeft > 0) {
-      showToast("⏳ Wait for countdown!");
-      return;
-    }
+    if (seconds > 0) return showToast("Wait for countdown!");
+    
     currentUser.stars += 500;
     updateStarDisplay();
-    showToast("🎉 500 ⭐️ CLAIMED! Keep ballin'");
+    showToast("500 ⭐️ CLAIMED! Keep ballin'");
     modal.remove();
-    pulseButtonGlow("topBallersBtn", "#00ff00");
   };
 
-  modal.querySelector("button").onclick = () => modal.remove();
-  modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+  // Close on backdrop
+  modal.onclick = (e) => e.target === modal && modal.remove();
+
+  // Add rotating border animation
+  const style = document.createElement("style");
+  style.textContent = `@keyframes spin { from { transform:rotate(0deg) } to { transform:rotate(360deg) } }`;
+  document.head.appendChild(style);
 }
-pulseButtonGlow("topBallersBtn", "#ffd700");    // gold when new airdrop
-pulseButtonGlow("openHostsBtn", "#ff00ff");     // pink when new host
-pulseButtonGlow("highlightsBtn", "#ff3300");    // fire when new highlight
 
 
 /* ===============================
