@@ -1819,7 +1819,7 @@ leaderboardList.innerHTML = topScores
   .map((u, i) => {
     const isCurrent = currentUser && u.uid === currentUser.uid;
 
-  // ---- SUPER CUTE AVATAR POOL ----
+ // ---- Avatar pools ----
 const maleAvatars = [
   "https://cdn.shopify.com/s/files/1/0962/6648/6067/files/9720027.jpg?v=1763365645",
   "https://cdn.shopify.com/s/files/1/0962/6648/6067/files/9720029.jpg?v=1763635357",
@@ -1830,33 +1830,88 @@ const femaleAvatars = [
   "https://cdn.shopify.com/s/files/1/0962/6648/6067/files/10491830.jpg?v=1763635333",
 ];
 
-// ---- GET OR ASSIGN AVATAR (never changes again) ----
-let avatar = u.avatar;  // Check if user already has fixed avatar
-
-if (!avatar) {
-  // Assign once based on gender
-  if (u.gender === "female") {
-    avatar = femaleAvatars[Math.floor(Math.random() * femaleAvatars.length)];
-  } else if (u.gender === "male") {
-    avatar = maleAvatars[Math.floor(Math.random() * maleAvatars.length)];
-  } else {
-    // No gender → one-time random selection
-    avatar = Math.random() < 0.5
-      ? maleAvatars[Math.floor(Math.random() * maleAvatars.length)]
-      : femaleAvatars[Math.floor(Math.random() * femaleAvatars.length)];
-  }
-
-  // SAVE avatar permanently (non-blocking)
-  updateUserAvatar(currentUser.uid, avatar);
+// ---- Helper: normalize gender safely ----
+function normalizeGender(g) {
+  if (!g && g !== "") return "";               // undefined/null → empty
+  const s = String(g).trim().toLowerCase();
+  if (!s) return "";
+  if (s === "m" || s.startsWith("m") || s === "male") return "male";
+  if (s === "f" || s.startsWith("f") || s === "female") return "female";
+  return ""; // unknown
 }
 
+// ---- Robust save: localStorage + try Firestore v9 or v8, no uncaught errors ----
+function updateUserAvatar(uid, avatarUrl) {
+  try {
+    // Save client-side immediately so UI shows fixed avatar (no waiting on network)
+    try {
+      localStorage.setItem(`avatar_${uid}`, avatarUrl);
+    } catch (e) {
+      // ignore localStorage failures in restricted environments
+      console.warn("localStorage failed:", e);
+    }
 
- function updateUserAvatar(uid, avatarUrl) {
-  setDoc(
-    doc(db, "users", uid),
-    { avatar: avatarUrl },
-    { merge: true }
-  ).catch(err => console.error("Avatar save error:", err));
+    // Try modular v9 first (setDoc/doc)
+    if (typeof setDoc === "function" && typeof doc === "function") {
+      setDoc(doc(db, "users", uid), { avatar: avatarUrl }, { merge: true })
+        .catch(err => console.error("setDoc save error:", err));
+      return;
+    }
+
+    // Try compat / namespaced firebase (v8) next
+    if (window.firebase && firebase.firestore) {
+      firebase.firestore()
+        .collection("users")
+        .doc(uid)
+        .set({ avatar: avatarUrl }, { merge: true })
+        .catch(err => console.error("firebase.firestore save error:", err));
+      return;
+    }
+
+    // If no firestore API available, just log — you still have localStorage fallback
+    console.warn("No Firestore API detected; avatar saved only to localStorage for uid:", uid);
+  } catch (outerErr) {
+    console.error("updateUserAvatar unexpected error:", outerErr);
+  }
+}
+
+// ---- Main: pick-or-restore avatar (safe, non-async) ----
+function getOrAssignAvatarForUser(u, currentUser) {
+  const uid = (currentUser && currentUser.uid) || (u && u.uid) || "anon";
+
+  // 1) Restore from server-provided user object field, if present
+  let avatar = (u && u.avatar) || "";
+
+  // 2) If not set, try localStorage (fast)
+  if (!avatar) {
+    try {
+      avatar = localStorage.getItem(`avatar_${uid}`) || "";
+    } catch (e) {
+      avatar = "";
+    }
+  }
+
+  // 3) If still not set, assign based on normalized gender and save
+  if (!avatar) {
+    const gender = normalizeGender(u && u.gender);
+
+    if (gender === "female") {
+      avatar = femaleAvatars[Math.floor(Math.random() * femaleAvatars.length)];
+    } else if (gender === "male") {
+      avatar = maleAvatars[Math.floor(Math.random() * maleAvatars.length)];
+    } else {
+      // unknown -> one-time random but save it anyway
+      avatar = Math.random() < 0.5
+        ? maleAvatars[Math.floor(Math.random() * maleAvatars.length)]
+        : femaleAvatars[Math.floor(Math.random() * femaleAvatars.length)];
+    }
+
+    // Save (local immediately, try server in background)
+    updateUserAvatar(uid, avatar);
+  }
+
+  console.log("[avatar] uid:", uid, "genderRaw:", u && u.gender, "normalized:", normalizeGender(u && u.gender), "avatar:", avatar);
+  return avatar;
 }
 
 // ---- Name formatting ----
