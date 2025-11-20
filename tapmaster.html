@@ -1084,13 +1084,62 @@ endGameModal.innerHTML = `
     </p>
 
     <div style="display:flex;gap:14px;margin-top:28px;">
-      <button id="shareBtn" class="ui-btn">SHARE SCORE</button>
-      <button id="playAgainBtn" class="ui-btn">PLAY AGAIN</button>
+      <button id="shareBtn" style="flex:1;padding:15px;border:none;border-radius:14px;
+        background:#00ffaa;color:#000;font-weight:bold;font-size:16px;cursor:pointer;">
+        SHARE SCORE
+      </button>
+
+<button id="playAgainBtn" 
+        style="flex:1;padding:15px;border:none;border-radius:14px;
+               background:#ff00aa;color:#fff;font-weight:bold;font-size:16px;
+               cursor:pointer;position:relative;z-index:999999;
+               box-shadow:0 5px 15px rgba(255,0,170,0.4);"
+        onclick="location.reload(true)">
+  PLAY AGAIN
+</button>
     </div>
   </div>
 `;
 
+// 1. Add modal to page
 document.body.appendChild(endGameModal);
+
+// 2. SHOW FUNCTION
+function showEndGameModal() {
+  document.getElementById('finalTaps').textContent = taps.toLocaleString();
+  document.getElementById('finalEarnings').textContent = `₦${earnings.toLocaleString()}`;
+  document.getElementById('playerName').textContent = currentUser?.handle || "Tapper";
+
+  // victory sound
+  new Audio('https://assets.mixkit.co/sfx/preview/mixkit-achievement-bell-600.mp3').play().catch(()=>{});
+
+  endGameModal.style.display = "flex";
+}
+
+// 3. THIS IS THE FIX — attach Play Again AFTER everything, with a tiny safety delay
+setTimeout(() => {
+  const playAgainBtn = document.getElementById('playAgainBtn');
+  if (playAgainBtn) {
+    // Remove any old listeners first (prevents duplicates)
+    playAgainBtn.replaceWith(playAgainBtn.cloneNode(true));
+    document.getElementById('playAgainBtn').addEventListener('click', () => {
+      location.reload(true);   // forces full reload, no cache nonsense
+    });
+  }
+
+  // Share button (also re-attached safely)
+  document.getElementById('shareBtn')?.addEventListener('click', () => {
+    const name = document.getElementById('playerName').textContent;
+    const text = `${name} just got ${taps.toLocaleString()} taps and earned ₦${earnings.toLocaleString()}! Beat me if you can!`;
+    if (navigator.share) {
+      navigator.share({title: "My Tap Score", text, url: location.href});
+    } else {
+      navigator.clipboard.writeText(text + " " + location.href);
+      alert("Score copied!");
+    }
+  });
+
+}, 100);   // 100
 
 
 
@@ -1350,80 +1399,16 @@ trainBar && (trainBar.style.width = (timer / SESSION_DURATION * 100) + "%");
   updateUI();
 }
 
-
-
-// ========= ULTRA-RELIABLE BLACK CUTE MODAL (TAPS + ₦) =========
-const endGameModal = document.createElement('div');
-endGameModal.id = "endGameModal";
-endGameModal.style.cssText = &nbsp;&nbsp;position:fixed;top:0;left:0;width:100%;height:100%; &nbsp;&nbsp;background:rgba(0,0,0,0.94);backdrop-filter:blur(12px); &nbsp;&nbsp;display:none;justify-content:center;align-items:center; &nbsp;&nbsp;z-index:9999;font-family:'Poppins',sans-serif;padding:20px;;
-endGameModal.innerHTML = `
-  <div style="background:#0a0a0a;color:#fff;max-width:360px;width:100%;
-&nbsp;&nbsp;&nbsp;&nbsp;border-radius:22px;text-align:center;padding:30px 20px;
-&nbsp;&nbsp;&nbsp;&nbsp;border:2px solid #0f9;box-shadow:0 0 30px rgba(0,255,150,0.3);">
-    
-    <h2 style="margin:0 0 20px;font-size:24px;color:#0f9;">ROUND COMPLETE!</h2>
-    <p style="font-size:19px;line-height:1.6;margin:20px 0;
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;background:rgba(0,255,150,0.1);padding:18px;border-radius:14px;
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;border-left:4px solid #0f9;">
-      You got <strong id="finalTaps" style="color:#0ff;font-size:22px;">0</strong> taps
-
-      and earned <strong id="finalEarnings" style="color:#0f9;font-size:24px;">₦0</strong>
-
-      on this tap session.
-    </p>
-    <p style="margin:15px 0 0;font-size:16px;opacity:0.9;">
-      <span id="playerName">player</span> — keep dominating!
-    </p>
-    <div style="display:flex;gap:14px;margin-top:28px;">
-      <button id="shareBtn" style="flex:1;padding:15px;border:none;border-radius:14px;
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;background:#00ffaa;color:#000;font-weight:bold;font-size:16px;cursor:pointer;">
-        SHARE SCORE
-      </button>
-<button id="playAgainBtn"
-        style="flex:1;padding:15px;border:none;border-radius:14px;
-               background:#ff00aa;color:#fff;font-weight:bold;font-size:16px;
-               cursor:pointer;position:relative;z-index:999999;
-               box-shadow:0 5px 15px rgba(255,0,170,0.4);"
-        onclick="location.reload(true)">
-  PLAY AGAIN
-</button>
-    </div>
-  </div>
-`;
-// 1. Add modal to page
-document.body.appendChild(endGameModal);
-
-  // 2. SHOW FUNCTION
-function showEndGameModal() {
-  document.getElementById('finalTaps').textContent = taps.toLocaleString();
-  document.getElementById('finalEarnings').textContent = ₦${earnings.toLocaleString()};
-  document.getElementById('playerName').textContent = currentUser?.handle || "Tapper";
-  // victory sound
-  new Audio('https://raw.githubusercontent.com/golalaland/1010/main/material-chest-open-394472.mp3').play().catch(()=>{});
-  endGameModal.style.display = "flex";
+  // ======================================================
+//   INSTANT END — UI FREEZE, BLOCK TAPS (FIXED!)
+// ======================================================
+function endSessionImmediate() {
+  running = false;
+  tapLocked = true;
+  tapButton.disabled = true;
+  clearInterval(intervalId);
+  showEndGameModal();
 }
-// 3. THIS IS THE FIX — attach Play Again AFTER everything, with a tiny safety delay
-setTimeout(() => {
-  const playAgainBtn = document.getElementById('playAgainBtn');
-  if (playAgainBtn) {
-    // Remove any old listeners first (prevents duplicates)
-    playAgainBtn.replaceWith(playAgainBtn.cloneNode(true));
-    document.getElementById('playAgainBtn').addEventListener('click', () => {
-      location.reload(true);   // forces full reload, no cache nonsense
-    });
-  }
-  // Share button (also re-attached safely)
-  document.getElementById('shareBtn')?.addEventListener('click', () => {
-    const name = document.getElementById('playerName').textContent;
-    const text = ${name} just got ${taps.toLocaleString()} taps and earned ₦${earnings.toLocaleString()}! Beat me if you can!;
-    if (navigator.share) {
-      navigator.share({title: "My Tap Score", text, url: location.href});
-    } else {
-      navigator.clipboard.writeText(text + " " + location.href);
-      alert("Score copied!");
-    }
-  });
-}, 100);   // 100
 
 // ======================================================
 //   FIRESTORE — ASYNC RECORDING
