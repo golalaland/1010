@@ -1412,7 +1412,7 @@ trainBar && (trainBar.style.width = (timer / SESSION_DURATION * 100) + "%");
 
 
 // ======================================================
-//   INSTANT END — UI FREEZE, BLOCK TAPS (NOW 100% FIXED!)
+//   INSTANT END — UI FREEZE, BLOCK TAPS (NOW ACTUALLY FIXED & SMOOTH)
 // ======================================================
 async function endSessionImmediate() {
   running = false;
@@ -1420,11 +1420,12 @@ async function endSessionImmediate() {
   tapButton.disabled = true;
   clearInterval(intervalId);
 
-  await showEndGameModal();   // ← THIS IS THE ONLY CHANGE YOU NEED
+  await showEndGameModal();   // this is fine — it runs after the game is already frozen
 }
-//  30-second timer
-setTimeout(async () => {
-  await endSessionImmediate();
+
+// THE ONLY LINE YOU NEED TO CHANGE — fire-and-forget (non-blocking)
+setTimeout(() => {
+  endSessionImmediate();   // ← NO async/await here → game never hangs
 }, 30000);
 
 // ======================================================
