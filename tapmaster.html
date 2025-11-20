@@ -694,8 +694,8 @@ bar + footer */
 
              <!-- MY TAPS TODAY – CENTERED + POSITION ON SAME LINE -->
       <div id="myTapsToday" style="background:linear-gradient(135deg,rgba(255,215,0,0.18),rgba(255,140,0,0.08));border:1.5px solid #FFD700;border-radius:14px;padding:11px 13px;margin:16px 0 6px;display:flex;flex-direction:column;align-items:center;box-shadow:0 3px 12px rgba(255,215,0,0.25);">
-        <div style="flex-shrink:0;font-size:28px;opacity:0.9;position:absolute;left:12px;top:10px;">Sparkles</div>
-        <div style="flex-shrink:0;font-size:24px;opacity:0.7;position:absolute;right:12px;top:10px;">Sparkles</div>
+        <div style="flex-shrink:0;font-size:28px;opacity:0.9;position:absolute;left:12px;top:10px;">✨</div>
+        <div style="flex-shrink:0;font-size:24px;opacity:0.7;position:absolute;right:12px;top:10px;">✨</div>
         
         <div style="text-align:center;margin-top:4px;">
           <div style="font-size:11px;color:#FF8C00;font-weight:800;letter-spacing:0.6px;text-shadow:0 1px 2px rgba(0,0,0,0.3);">YOUR TAPS TODAY</div>
@@ -1767,8 +1767,9 @@ async function fetchLeaderboard(period = "daily", top = 10) {
 
       scores.sort((a, b) => b.taps - a.taps);
     const topScores = scores.slice(0, top);
+    
 
-    // === YOUR TAPS TODAY – MOBILE CUTENESS OVERLOAD ===
+    // === YOUR TAPS TODAY – FINAL CLEAN VERSION (BIG number + BIG rank) ===
     let myDailyTaps = 0;
     let myRank = null;
 
@@ -1777,44 +1778,33 @@ async function fetchLeaderboard(period = "daily", top = 10) {
       const myData = myDoc?.data();
 
       // Auto-detect current period
-      if (period === "daily")   myDailyTaps = myData?.tapsDaily?.[key] || 0;
-      if (period === "weekly")  myDailyTaps = myData?.tapsWeekly?.[key] || 0;
+      if (period === "daily")   myDailyTaps = myData?.tapsDaily?.[key]   || 0;
+      if (period === "weekly")  myDailyTaps = myData?.tapsWeekly?.[key]  || 0;
       if (period === "monthly") myDailyTaps = myData?.tapsMonthly?.[key] || 0;
 
       const myEntry = scores.find(s => s.uid === currentUser.uid);
       if (myEntry) myRank = scores.indexOf(myEntry) + 1;
     }
 
-    // Update the card safely
+    // Update taps number
     const tapsEl = document.getElementById("myDailyTapsValue");
-    const heart  = document.getElementById("myRankHeart");
-
     if (tapsEl) tapsEl.textContent = myDailyTaps.toLocaleString();
 
-      if (heart) {
-      const positionEl = document.getElementById("myRankPosition");
+    // Update rank: BIG number (2nd) + small suffix (nd) + small "position"
+    const rankBig   = document.getElementById("myRankBig");
+    const rankSmall = document.getElementById("myRankSmall");
 
-      if (myRank && myRank <= 10) {
-        // Show position text (same size as "taps")
-        const suffix = myRank === 1 ? "st" : myRank === 2 ? "nd" : myRank === 3 ? "rd" : "th";
-        positionEl.textContent = `${myRank}${suffix} position`;
-
-        // Keep the little celebration
-        heart.style.opacity = "1";
-        heart.style.transform = "scale(1.3)";
-        setTimeout(() => heart.style.transform = "scale(1)", 180);
-
-        const medals = ["", "1st", "2nd", "3rd"];
-        heart.textContent = myRank <= 3 ? medals[myRank] : "Top 10";
-      } else {
-        positionEl.textContent = "";
-        heart.style.opacity = "0";
-        heart.style.transform = "scale(0)";
-        heart.textContent = "";
-      }
+    if (myRank && myRank <= 10 && rankBig && rankSmall) {
+      const suffix = myRank === 1 ? "st" : myRank === 2 ? "nd" : myRank === 3 ? "rd" : "th";
+      rankBig.textContent   = myRank;        // 2  (big)
+      rankSmall.textContent = suffix;        // nd (small)
+    } else {
+      if (rankBig)   rankBig.textContent   = "";
+      if (rankSmall) rankSmall.textContent = "";
     }
+
     if (topScores.length === 0) {
-      leaderboardList.innerHTML = "<li style='text-align:center;padding:20px 0;font-size:13px;color:#888;'>No taps yet — be the first! ♡</li>";
+      leaderboardList.innerHTML = "<li style='text-align:center;padding:20px 0;font-size:13px;color:#888;'>No taps yet — be the first!</li>";
       return;
     }
 
