@@ -1682,10 +1682,11 @@ function getWeek(date) {
     <img src="https://cdn.shopify.com/s/files/1/0962/6648/6067/files/STRZ.jpg?v=1763196570" class="leaderboard-slide">
   </div>
 
-  <!-- Optional manual buttons -->
+  <!-- Manual arrows -->
   <button class="slide-btn prev-btn">&#10094;</button>
   <button class="slide-btn next-btn">&#10095;</button>
 </div>
+
 
 const slider = document.getElementById('leaderboardSlider');
 const track = slider.querySelector('.slider-track');
@@ -1699,7 +1700,7 @@ function showSlide(index) {
   if(index < 0) index = total - 1;
   if(index >= total) index = 0;
   current = index;
-  track.style.transform = `translateX(-${index * (100 / total)}%)`;
+  track.style.transform = `translateX(-${index * 100}%)`; // <-- fixed
 }
 
 // Buttons
@@ -1714,8 +1715,10 @@ slider.addEventListener('touchend', e => {
   if (endX - startX > 50) showSlide(current - 1); // swipe right
   if (startX - endX > 50) showSlide(current + 1); // swipe left
 });
+
 // Init
 showSlide(0);
+
 
 
 /* -------------------------------------------
