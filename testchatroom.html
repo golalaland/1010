@@ -1612,99 +1612,44 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   background: rgba(255,255,255,0.2);
   border-radius: 4px;
 }
-#sessionBar {
-  display: flex;
-  justify-content: space-around; /* keeps buttons spaced nicely */
-  gap: 8px;                      /* adds consistent spacing */
-  background: rgba(255,255,255,0.08);
-  backdrop-filter: blur(6px);
-  border-radius: 12px;
-  padding: 6px 0;
-  cursor: pointer;
+/* Add this to your existing CSS — ZERO size change */
+.session-btn, #topBallersBtn {
+  position: relative;
+  overflow: hidden;
+  z-index: 1;
 }
 
-#sessionModal {
-  position: fixed;
-  bottom: -100%;
-  left: 0; right: 0;
-  height: 65%;
-  background: rgba(15,15,15,0.95);
-  color: #fff;
-  border-radius: 20px 20px 0 0;
-  transition: bottom 0.4s ease;
-  z-index: 1000;
-  overflow-y: auto;
-}
-#sessionModal.active { bottom: 0; }
-
-.sessionTabs button {
-  background: none; border: none;
-  color: #aaa; padding: 10px 16px;
-  font-weight: 700; cursor: pointer;
-}
-.sessionTabs button.active { color: #fff; border-bottom: 2px solid #ff33cc; }
-
-.ballerTabs button.active { color: #fff; border-bottom: 2px solid #ffcc00; }
-
-.baller-card {
-  display: flex; align-items: center;
-  padding: 8px 12px; border-bottom: 1px solid rgba(255,255,255,0.1);
-}
-.baller-card img { width: 32px; height: 32px; border-radius: 50%; margin-right: 10px; }
-
-/* Unified compact session buttons */
-.session-btn {
-  background: #222;             
-  color: #fff;
-  border: none;
-  border-radius: 10px;
-  padding: 4px 10px;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  display: inline-block;
-  box-shadow: 0 0 4px rgba(0, 0, 0, 0.3);
-  transition: transform 0.2s, background 0.2s;
-  margin: 0 2px; /* tiny buffer between buttons */
+/* Merit-based glow — triggers only when you call it */
+.session-btn.glow-pulse::before {
+  content: '';
+  position: absolute;
+  top: 50%; left: 50%;
+  width: 0; height: 0;
+  background: radial-gradient(circle, var(--pulse-color, #ff00ff) 0%, transparent 70%);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  animation: pulseWave 1.8s ease-out;
+  pointer-events: none;
+  z-index: -1;
 }
 
-.session-btn:hover {
-  transform: scale(1.05);
-  background: #333;
+.session-btn.glow-pulse {
+  animation: borderGlow 2s ease-in-out infinite;
 }
 
-/* Star Hosts gets the gradient */
-.star-hosts-btn {
-  background: linear-gradient(90deg, #ff007a, #ffa500);
-  box-shadow: 0 0 4px rgba(255, 0, 122, 0.3);
+/* Different colors per button */
+#topBallersBtn.glow-pulse { --pulse-color: #ffd700; }   /* gold */
+#openHostsBtn.glow-pulse   { --pulse-color: #ff00ff; }   /* pink */
+#highlightsBtn.glow-pulse  { --pulse-color: #ff3300; }   /* fire red */
+
+@keyframes pulseWave {
+  0%   { width: 0; height: 0; opacity: 0.8; }
+  100% { width: 300px; height: 300px; opacity: 0; }
 }
-const glowStyle = document.createElement("style");
-glowStyle.textContent = `
-  .session-btn, #topBallersBtn {
-    position: relative;
-    overflow: hidden;
-    transition: all 0.3s ease;
-  }
-  .new-glow {
-    animation: meritGlow 2s ease-in-out infinite;
-  }
-  .new-glow::before {
-    content: '';
-    position: absolute;
-    top: -50%; left: -50%;
-    width: 200%; height: 200%;
-    background: radial-gradient(circle, var(--glow-color, #ff00ff) 10%, transparent 60%);
-    opacity: 0;
-    animation: pulseWave 2s ease-out infinite;
-  }
-  @keyframes meritGlow {
-    0%, 100% { box-shadow: 0 0 15px var(--glow-color, #ff00ff); }
-    50% { box-shadow: 0 0 30px var(--glow-color, #ff00ff), 0 0 50px var(--glow-color, #ff00ff); }
-  }
-  @keyframes pulseWave {
-    0% { transform: translate(50%, 50%) scale(0); opacity: 0.6; }
-    100% { transform: translate(50%, 50%) scale(2); opacity: 0; }
-  }
+@keyframes borderGlow {
+  0%,100% { box-shadow: 0 0 8px var(--pulse-color); }
+  50%     { box-shadow: 0 0 20px var(--pulse-color), 0 0 30px var(--pulse-color); }
+}
 </style>
 </head>
 <body>
