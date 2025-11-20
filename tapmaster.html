@@ -692,6 +692,22 @@ bar + footer */
         Checkout today's top tappers who dominate the leaderboard.
       </p>
 
+      <!-- MY TAPS TODAY – CUTE SESSION CARD -->
+      <div id="myTapsToday" style="background:linear-gradient(135deg,rgba(255,215,0,0.15),rgba(255,140,0,0.1));border:2px solid #FFD700;border-radius:16px;padding:14px 16px;margin:18px 0 8px;display:flex;align-items:center;gap:12px;box-shadow:0 4px 20px rgba(255,215,0,0.3);">
+        <div style="flex-shrink:0;">
+          <span style="font-size:38px;">✦</span>
+        </div>
+        <div style="flex:1;">
+          <div style="font-size:13px;color:#FF8C00;font-weight:700;letter-spacing:0.5px;">YOUR TAPS TODAY</div>
+          <div style="font-size:22px;font-weight:800;color:#FFD700;margin-top:4px;display:flex;align-items:center;gap:8px;">
+            <span id="myDailyTapsValue">0</span>
+            <span style="font-size:16px;">taps</span>
+            <span id="myRankHeart" style="opacity:0;font-size:20px;transform:scale(0);transition:all 0.4s ease;">✨</span>
+          </div>
+        </div>
+        <div style="font-size:28px;opacity:0.7;">✦</div>
+      </div>
+
       <!-- Leaderboard list -->
       <ol id="leaderboardList" style="list-style:none;padding:0;margin:14px 0 10px;">
         <!-- JS fills this -->
@@ -1749,6 +1765,30 @@ async function fetchLeaderboard(period = "daily", top = 10) {
 
     scores.sort((a, b) => b.taps - a.taps);
     const topScores = scores.slice(0, top);
+
+  // === YOUR DAILY TAPS (CUTE UPDATE) ===
+    let myDailyTaps = 0;
+    let myRank = null;
+    if (currentUser) {
+      const myData = snap.docs.find(d => d.id === currentUser.uid)?.data();
+      myDailyTaps = myData?.tapsDaily?.[key] || 0;
+
+      // Find your rank
+      const myEntry = scores.find(s => s.uid === currentUser.uid);
+      if (myEntry) myRank = scores.indexOf(myEntry) + 1;
+    }
+
+    // Update the cute card
+    document.getElementById("myDailyTapsValue").textContent = myDailyTaps.toLocaleString();
+    const heart = document.getElementById("myRankHeart");
+    if (myRank && myRank <= 10) {
+      heart.style.opacity = "1";
+      heart.style.transform = "scale(1)";
+      heart.textContent = myRank === 1 ? "1st place" : myRank === 2 ? "2nd place" : myRank === 3 ? "3rd place" : "Top 10";
+    } else {
+      heart.style.opacity = "0";
+      heart.style.transform = "scale(0)";
+    }
 
     if (topScores.length === 0) {
       leaderboardList.innerHTML = "<li>No tap score today, yet!</li>";
