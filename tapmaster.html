@@ -2463,35 +2463,29 @@ function play(soundElement, volume = 1.0) {
   soundElement.volume = volume;
   soundElement.play().catch(() => {});
 }
-// ---------- UI CLICK SOUND (for buttons, not the main tap) ----------
+// ---------- ULTRA-RELIABLE UI CLICK SOUND (catches EVERY button) ----------
 const uiClickSound = document.getElementById('uiClickSound');
 
-function playUIClick() {
-  unlockAudio();                // uses the same unlock function we already have
-  uiClickSound.currentTime = 0;
-  uiClickSound.volume = 0.6;
-  uiClickSound.play().catch(() => {});
-}
-startBtn.onclick = () => {
-  playUIClick();
-  // your existing start logic
-};
+document.body.addEventListener('click', function(e) {
+  const clicked = e.target;
 
-confirmPlay.onclick = () => {
-  playUIClick();
-  // confirm logic
-};
+  // List every button/element that should trigger the UI sound
+  const isUIButton = clicked.matches(`
+    #startBtn, #confirmPlay, #cancelPlay,
+    #shopBtn, #settingsBtn, #closeBtn, #backBtn,
+    .menu-btn, .ui-btn, button, [onclick], .clickable
+  `);
 
-cancelPlay.onclick = () => {
-  playUIClick();
-  // cancel logic
-};
+  // Exclude the main giant tap button so it keeps its own pop sound
+  const isMainTapButton = clicked === tapButton || clicked.closest('#tapButton');
 
-// If you have any other buttons (shop, settings, etc.)
-someOtherButton.onclick = () => {
-  playUIClick();
-  // ...
-};
+  if (isUIButton && !isMainTapButton) {
+    unlockAudio();                  // same unlock function you already have
+    uiClickSound.currentTime = 0;
+    uiClickSound.volume = 0.6;
+    uiClickSound.play().catch(() => {});
+  }
+}, true); // ← "true" = capture phase (catches clicks even on dynamically added buttons)
 </script>
 </body>
 </html>
