@@ -976,21 +976,11 @@ bar + footer */
     </div>
   </div>
 </div>
-<!-- Audio -->
-<audio id="tapSoundz" src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg" preload="auto"></audio>
-
-<audio id="tapSound"       src="https://assets.mixkit.co/sfx/preview/mixkit-arcade-game-jump-coin-216.mp3" preload="auto"></audio>
-<audio id="giftSound"      src="https://assets.mixkit.co/sfx/preview/mixkit-coin-win-notification-1939.mp3" preload="auto"></audio>
-<audio id="bigGiftSound"   src="https://assets.mixkit.co/sfx/preview/mixkit-jackpot-win-coin-1938.mp3" preload="auto"></audio>
-<audio id="levelUpSound"   src="https://assets.mixkit.co/sfx/preview/mixkit-level-up-achievement-1910.mp3" preload="auto"></audio>
-<audio id="starRainSound"  src="https://assets.mixkit.co/sfx/preview/mixkit-magic-sparkle-whoosh-2373.mp3" preload="auto"></audio>
-<audio id="confettiSound"  src="https://assets.mixkit.co/sfx/preview/mixkit-party-popper-burst-2904.mp3" preload="auto"></audio>
-<audio id="claimSound"     src="https://assets.mixkit.co/sfx/preview/mixkit-winning-chimes-2015.mp3" preload="auto"></audio>
-
-<!-- Put this anywhere in your <body> (one time only) -->
-<audio id="beatAudio" loop preload="none"></audio>
-<audio id="clickAudio" preload="auto"></audio>
-
+<!-- Audio - now using your own pop sound from GitHub -->
+<audio id="tapSounds" 
+       src="https://raw.githubusercontent.com/golalaland/1010/main/pop-reverb-423718.mp3" 
+       preload="auto"></audio>
+      
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
   
