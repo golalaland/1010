@@ -692,20 +692,22 @@ bar + footer */
         Checkout today's top tappers who dominate the leaderboard.
       </p>
 
-           <!-- MY TAPS TODAY – MOBILE-OPTIMIZED & CUTE -->
-      <div id="myTapsToday" style="background:linear-gradient(135deg,rgba(255,215,0,0.18),rgba(255,140,0,0.08));border:1.5px solid #FFD700;border-radius:14px;padding:11px 13px;margin:16px 0 6px;display:flex;align-items:center;gap:10px;box-shadow:0 3px 12px rgba(255,215,0,0.25);">
-        <div style="flex-shrink:0;font-size:28px;opacity:0.9;">✨</div>
-        <div style="flex:1;">
+             <!-- MY TAPS TODAY – CENTERED + POSITION ON SAME LINE -->
+      <div id="myTapsToday" style="background:linear-gradient(135deg,rgba(255,215,0,0.18),rgba(255,140,0,0.08));border:1.5px solid #FFD700;border-radius:14px;padding:11px 13px;margin:16px 0 6px;display:flex;flex-direction:column;align-items:center;box-shadow:0 3px 12px rgba(255,215,0,0.25);">
+        <div style="flex-shrink:0;font-size:28px;opacity:0.9;position:absolute;left:12px;top:10px;">Sparkles</div>
+        <div style="flex-shrink:0;font-size:24px;opacity:0.7;position:absolute;right:12px;top:10px;">Sparkles</div>
+        
+        <div style="text-align:center;margin-top:4px;">
           <div style="font-size:11px;color:#FF8C00;font-weight:800;letter-spacing:0.6px;text-shadow:0 1px 2px rgba(0,0,0,0.3);">YOUR TAPS TODAY</div>
-          <div style="font-size:19px;font-weight:900;color:#FFD700;margin-top:2px;display:flex;align-items:center;gap:7px;line-height:1;">
+          <div style="font-size:19px;font-weight:900;color:#FFD700;margin-top:3px;display:flex;align-items:center;gap:8px;justify-content:center;line-height:1;">
             <span id="myDailyTapsValue">0</span>
             <span style="font-size:13px;font-weight:700;opacity:0.9;">taps</span>
+            <span id="myRankPosition" style="font-size:13px;font-weight:700;opacity:0.9;color:#FFD700;"></span>
             <span id="myRankHeart" style="opacity:0;font-size:16px;transform:scale(0);transition:all 0.35s cubic-bezier(0.68,-0.55,0.27,1.55);">Trophy</span>
           </div>
         </div>
-        <div style="font-size:24px;opacity:0.7;">✨</div>
       </div>
-
+      
       <!-- Leaderboard list -->
       <ol id="leaderboardList" style="list-style:none;padding:0;margin:12px 0 8px;">
       <!-- Leaderboard list -->
@@ -1789,8 +1791,15 @@ async function fetchLeaderboard(period = "daily", top = 10) {
 
     if (tapsEl) tapsEl.textContent = myDailyTaps.toLocaleString();
 
-    if (heart) {
+      if (heart) {
+      const positionEl = document.getElementById("myRankPosition");
+
       if (myRank && myRank <= 10) {
+        // Show position text (same size as "taps")
+        const suffix = myRank === 1 ? "st" : myRank === 2 ? "nd" : myRank === 3 ? "rd" : "th";
+        positionEl.textContent = `${myRank}${suffix} position`;
+
+        // Keep the little celebration
         heart.style.opacity = "1";
         heart.style.transform = "scale(1.3)";
         setTimeout(() => heart.style.transform = "scale(1)", 180);
@@ -1798,12 +1807,12 @@ async function fetchLeaderboard(period = "daily", top = 10) {
         const medals = ["", "1st", "2nd", "3rd"];
         heart.textContent = myRank <= 3 ? medals[myRank] : "Top 10";
       } else {
+        positionEl.textContent = "";
         heart.style.opacity = "0";
         heart.style.transform = "scale(0)";
         heart.textContent = "";
       }
     }
-
     if (topScores.length === 0) {
       leaderboardList.innerHTML = "<li style='text-align:center;padding:20px 0;font-size:13px;color:#888;'>No taps yet — be the first! ♡</li>";
       return;
