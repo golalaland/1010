@@ -490,6 +490,23 @@ bar + footer */
 .sm-balance { font-size: 18px; text-align: center; margin: 0 0 20px; }
 .sm-section-title { margin: 30px 20px 10px; color: #ffd700; font-size: 19px; font-weight: bold; }
 .sm-empty { text-align: center; padding: 80px 20px; opacity: 0.7; font-size: 18px; }
+   /* Spinner inside button */
+  .btn-spinner {
+    border: 2px solid rgba(0,0,0,0.1);
+    border-top: 2px solid #fff;
+    border-radius: 50%;
+    width: 16px;
+    height: 16px;
+    animation: spin 0.7s linear infinite;
+    display: inline-block;
+    vertical-align: middle;
+    margin-right: 6px;
+  }
+
+  @keyframes spin {
+    0% { transform: rotate(0deg);}
+    100% { transform: rotate(360deg);}
+  }
 </style>
 </head>
 <body>
@@ -2209,11 +2226,12 @@ document.getElementById('confirmBidModal')?.addEventListener('click', e => {
   }
 });
 
-/* ====================== FINAL BID ====================== */
 document.getElementById('finalConfirmBtn')?.addEventListener('click', async () => {
   const btn = document.getElementById('finalConfirmBtn');
   btn.disabled = true;
-  btn.textContent = "...";
+
+  // Replace text with spinner + text
+  btn.innerHTML = '<span class="btn-spinner"></span>Processing';
 
   try {
     if (!currentUser?.uid) {
@@ -2222,7 +2240,6 @@ document.getElementById('finalConfirmBtn')?.addEventListener('click', async () =
       return;
     }
 
-    // Prevent double join
     const check = await getDocs(query(
       collection(db, "bids"),
       where("uid", "==", currentUser.uid),
@@ -2234,7 +2251,6 @@ document.getElementById('finalConfirmBtn')?.addEventListener('click', async () =
       return;
     }
 
-    // Deduct stars
     const deduct = await tryDeductStarsForJoin(BID_COST);
     if (!deduct.ok) {
       await showNiceAlert("Not enough stars: " + (deduct.message || ""));
@@ -2243,7 +2259,6 @@ document.getElementById('finalConfirmBtn')?.addEventListener('click', async () =
       return;
     }
 
-    // Create bid
     await addDoc(collection(db, "bids"), {
       uid: currentUser.uid,
       username: currentUser.username || currentUser.displayName || "Anonymous",
@@ -2265,6 +2280,7 @@ document.getElementById('finalConfirmBtn')?.addEventListener('click', async () =
     document.getElementById('confirmBidModal').style.display = 'none';
   }
 });
+
 
 /* ====================== SOUND SYSTEM ====================== */
 let audioUnlocked = false;
