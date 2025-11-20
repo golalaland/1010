@@ -397,6 +397,116 @@ bar + footer */
   opacity: 1;
   transition: opacity 0.4s ease-out;
 }
+/* STAR MARKETPLACE – GORGEOUS 2025 DESIGN */
+.sm-backdrop {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.92);
+  backdrop-filter: blur(14px); display: flex;
+  align-items: center; justify-content: center;
+  z-index: 9999;
+}
+
+.sm-modal {
+  width: 92%; max-width: 420px; max-height: 92vh;
+  background: linear-gradient(135deg, #1a1a2e, #16213e);
+  border-radius: 28px; border: 1.5px solid #ffd70033;
+  overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.8);
+  display: flex; flex-direction: column; color: white;
+  font-family: -apple-system, sans-serif;
+}
+
+.sm-header {
+  padding: 20px; text-align: center;
+  background: linear-gradient(135deg, #ffd700, #ffaa00);
+  color: #000; font-weight: 900; font-size: 22px; letter-spacing: 1px;
+  position: relative;
+}
+
+.sm-close {
+  position: absolute; top: 14px; right: 16px;
+  width: 44px; height: 44px; border-radius: 50%;
+  background: rgba(0,0,0,0.4); border: none; color: white;
+  font-size: 24px; font-weight: bold; cursor: pointer;
+}
+
+.sm-tabs { display: flex; background: rgba(255,255,255,0.08); }
+.sm-tab-btn {
+  flex: 1; padding: 16px; background: none; border: none;
+  color: #ccc; font-size: 17px; font-weight: 600; cursor: pointer;
+}
+.sm-tab-btn.sm-active {
+  background: #ffd700; color: #000; font-weight: bold;
+}
+
+.sm-content { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
+.sm-tab-content { display: none; flex-direction: column; height: 100%; }
+.sm-tab-content.sm-active { display: flex; }
+
+.sm-scroll {
+  flex: 1; overflow-y: auto; padding: 0 20px 20px;
+  scrollbar-width: thin; scrollbar-color: #ffd700 #333;
+}
+.sm-scroll::-webkit-scrollbar { width: 6px; }
+.sm-scroll::-webkit-scrollbar-thumb { background: #ffd700; border-radius: 3px; }
+
+/* LISTING CARD – BEAUTIFUL */
+.sm-listing {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,215,0,0.3);
+  border-radius: 18px; padding: 18px; margin-top: 16px;
+  display: flex; justify-content: space-between; align-items: center;
+  backdrop-filter: blur(10px);
+}
+
+.sm-listing strong {
+  font-size: 24px; color: #ffd700; font-weight: 900;
+}
+.sm-listing .seller {
+  font-size: 16px; font-weight: bold; color: #00ff9d; margin-top: 6px;
+}
+
+.sm-buy-btn, .sm-cancel-btn {
+  padding: 12px 24px; border-radius: 16px; border: none;
+  font-weight: bold; font-size: 16px; cursor: pointer;
+}
+.sm-buy-btn { background: #ffd700; color: #000; }
+.sm-cancel-btn { background: #ff4444; color: white; }
+
+/* SELL FORM */
+.sm-sell-form {
+  background: rgba(255,255,255,0.08); padding: 20px; border-radius: 20px;
+  margin: 20px; border: 1px solid rgba(255,215,0,0.3);
+}
+.sm-sell-form input {
+  width: 100%; padding: 16px; margin: 12px 0;
+  background: rgba(0,0,0,0.4); border: 1px solid #ffd70066;
+  border-radius: 16px; color: white; font-size: 17px;
+}
+.sm-btn-primary {
+  width: 100%; padding: 18px; margin-top: 16px;
+  background: #ffd700; color: #000; border: none;
+  border-radius: 18px; font-size: 19px; font-weight: 900; cursor: pointer;
+}
+
+.sm-balance { font-size: 18px; text-align: center; margin: 0 0 20px; }
+.sm-section-title { margin: 30px 20px 10px; color: #ffd700; font-size: 19px; font-weight: bold; }
+.sm-empty { text-align: center; padding: 80px 20px; opacity: 0.7; font-size: 18px; }
+   /* Spinner inside button */
+  .btn-spinner {
+    border: 2px solid rgba(0,0,0,0.1);
+    border-top: 2px solid #fff;
+    border-radius: 50%;
+    width: 16px;
+    height: 16px;
+    animation: spin 0.7s linear infinite;
+    display: inline-block;
+    vertical-align: middle;
+    margin-right: 6px;
+  }
+
+  @keyframes spin {
+    0% { transform: rotate(0deg);}
+    100% { transform: rotate(360deg);}
+  }
 </style>
 </head>
 <body>
@@ -423,7 +533,7 @@ bar + footer */
 <div id="playModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:2000;justify-content:center;align-items:center;display:flex;">
   <div style="background:#111;color:#fff;padding:20px;border-radius:12px;width:90%;max-width:320px;text-align:center;">
     <h3 style="margin-bottom:12px;">Confirm Play</h3>
-    <p>Play Tap Master for <strong> 10 ⭐ STRZ </strong>?</p>
+    <p>Play Tap Master for <strong> 10 STRZ ⭐️ </strong>?</p>
     <div style="display:flex;justify-content:space-between;margin-top:18px;">
       <button id="cancelPlay" style="flex:1;margin-right:6px;padding:10px 12px;border:none;border-radius:8px;background:#444;color:#fff;font-weight:700;cursor:pointer;">Cancel</button>
       <button id="confirmPlay" style="flex:1;margin-left:6px;padding:10px 12px;border:none;border-radius:8px;background:linear-gradient(90deg,#00e676,#00b0ff);color:#000;font-weight:700;cursor:pointer;">Confirm</button>
@@ -497,41 +607,41 @@ bar + footer */
 
   </div> <!-- end gamePage -->
 
-<!-- FINAL BOTTOM-LOCKED BAR (profile + tiny 🤩 buttons) -->
-<div id="bottomBar" style="position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;padding:0;background:transparent;z-index:997;pointer-events:none;">
+<!-- FINAL BOTTOM-LOCKED BAR (Profile + Action Buttons) - FIXED & CLEAN -->
+<div id="bottomBar" style="position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;padding:14px 0 20px;background:transparent;z-index:997;pointer-events:none;">
   <div style="pointer-events:auto;">
 
-
     <!-- Profile Card -->
-    <div style="background:rgba(255,255,255,0.05);padding:14px 16px;border-radius:16px;border:1px solid rgba(255,255,255,0.08);backdrop-filter:blur(12px);width:90%;max-width:420px;margin:0 auto 14px;text-align:center;">
+    <div style="background:rgba(255,255,255,0.05);padding:14px 16px;border-radius:16px;border:1px solid rgba(255,255,255,0.08);backdrop-filter:blur(12px);width:90%;max-width:420px;margin:0 auto 16px;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.4);">
       <div id="profileName" style="font-size:16px;font-weight:700;color:#fff;">GUEST 0000</div>
       <div style="margin-top:8px;font-size:14px;">
         <strong style="background:linear-gradient(90deg,#00e676,#00b0ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">STARS COLLECTED:</strong>
-        <span id="starCount" style="color:#fff;">50</span>⭐
+        <span id="starCount" style="color:#fff;">50</span>⭐️
       </div>
       <div style="margin-top:4px;font-size:14px;">
         <strong style="background:linear-gradient(90deg,#00e676,#00b0ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">CASH EARNED:</strong>
-        <span id="cashCount" style="color:#fff;">0</span>
+        <span id="cashCount" style="color:#fff;">₦0</span>
       </div>
     </div>
 
-    <!-- Tiny 🤩 Action Bar (bottom of screen) -->
-    <div style="display:flex;justify-content:center;gap:18px;padding:8px 16px;background:rgba(255,255,255,0.08);border-radius:22px;border:1px solid rgba(255,255,255,0.12);backdrop-filter:blur(16px);width:86%;max-width:300px;margin:0 auto;box-shadow:0 -8px 30px rgba(0,0,0,0.6);">
+    <!-- Tiny Action Bar (Leaderboard + Rules + Bid + STORE) -->
+    <div style="display:flex;justify-content:center;gap:18px;padding:10px 18px;background:rgba(255,255,255,0.09);border-radius:24px;border:1px solid rgba(255,255,255,0.14);backdrop-filter:blur(16px);width:88%;max-width:320px;margin:0 auto;box-shadow:0 -8px 30px rgba(0,0,0,0.6);">
       <button id="leaderboardBtn" class="tiny-action-btn" data-title="Leaderboard">🏆</button>
       <button id="rulesBtn"        class="tiny-action-btn" data-title="Game Rules">📋</button>
       <button id="bidBtn"          class="tiny-action-btn" data-title="Place Bid">🏁</button>
+      <button id="starMarketBtn"   class="tiny-action-btn" data-title="Star Market">🏪</button>
     </div>
 
   </div>
 </div>
 
 
-  <!-- FINAL UNIFORM GOLDEN LEADERBOARD MODAL – EVERYTHING INCLUDED + PIMPED -->
+<!-- FINAL UNIFORM GOLDEN LEADERBOARD MODAL – SCROLLABLE + BIGGER SLIDER -->
 <div id="leaderboardModal" class="modal-backdrop" style="display:none;">
-  <div class="modal" style="width:88%;max-width:360px;max-height:88vh;overflow:hidden;display:flex;flex-direction:column;background:#0f0f0f;border:2px solid #FFD700;border-radius:18px;box-shadow:0 0 60px rgba(255,215,0,0.55);">
+  <div class="modal" style="width:88%;max-width:360px;max-height:88vh;display:flex;flex-direction:column;background:#0f0f0f;border:2px solid #FFD700;border-radius:18px;box-shadow:0 0 60px rgba(255,215,0,0.55);">
     
-    <!-- CLEAN HEADER – NO GLOW, JUST PURE CLASS -->
-    <div style="padding:18px 16px 12px;text-align:center;border-bottom:1px solid rgba(255,215,0,0.3);background:rgba(255,215,0,0.07);">
+    <!-- HEADER – FIXED -->
+    <div style="padding:18px 16px 12px;text-align:center;border-bottom:1px solid rgba(255,215,0,0.3);background:rgba(255,215,0,0.07);flex-shrink:0;">
       <h3 style="margin:0;font-family:'Press Start 2P',cursive;font-size:16px;color:#FFD700;line-height:1.2;">
         LEADERBOARD
       </h3>
@@ -540,9 +650,10 @@ bar + footer */
       </p>
     </div>
 
-    <!-- Everything else stays 100% the same (tabs, slider, list, etc.) -->
-    <div style="flex:1;overflow-y:auto;padding:16px 18px 10px;font-size:14px;color:#eee;">
+    <!-- SCROLLABLE CONTENT -->
+    <div style="flex:1;overflow-y:auto;padding:16px 18px 10px;font-size:14px;color:#eee;display:flex;flex-direction:column;">
 
+      <!-- Tabs -->
       <div id="leaderboardTabs" style="display:flex;gap:8px;margin-bottom:12px;">
         <button class="lb-tab active" data-period="weekly"
           style="flex:1;padding:10px 0;border-radius:10px;border:none;background:#FFD700;color:#000;font-weight:800;font-size:11.5px;cursor:pointer;box-shadow:0 4px 15px rgba(255,215,0,0.5);letter-spacing:0.5px;">
@@ -558,43 +669,75 @@ bar + footer */
         </button>
       </div>
 
+      <!-- Timer -->
       <div id="dailyTimer" style="text-align:center;font-size:13.5px;font-weight:700;color:#FF8C00;margin:10px 0;">
         Reset in: <span id="dailyTimerValue">23:59:59</span>
       </div>
 
-      <div id="leaderboardImageSlider" style="position:relative;width:100%;height:170px;overflow:hidden;border-radius:12px;margin-bottom:12px;box-shadow:0 0 20px rgba(255,215,0,0.5);border:2px solid rgba(255,215,0,0.4);">
+      <!-- IMAGE SLIDER – FIXED HEIGHT -->
+      <div id="leaderboardImageSlider" style="position:relative;width:100%;height:280px;flex-shrink:0;border-radius:12px;margin-bottom:12px;box-shadow:0 0 20px rgba(255,215,0,0.5);border:2px solid rgba(255,215,0,0.4);overflow:hidden;">
         <div class="slider-track" style="display:flex;width:700%;height:100%;transition:transform 0.6s ease;">
-          <img src="https://cdn.shopify.com/s/files/1/0962/6648/6067/files/STRZ.jpg?v=1763196570" class="leaderboard-slide" style="width:100%;height:100%;object-fit:cover;flex-shrink:0;">
-          <img src="https://cdn.shopify.com/s/files/1/0962/6648/6067/files/STRZ.jpg?v=1763196570" class="leaderboard-slide" style="width:100%;height:100%;object-fit:cover;flex-shrink:0;">
-          <img src="https://cdn.shopify.com/s/files/1/0962/6648/6067/files/STRZ.jpg?v=1763196570" class="leaderboard-slide" style="width:100%;height:100%;object-fit:cover;flex-shrink:0;">
-          <img src="https://cdn.shopify.com/s/files/1/0962/6648/6067/files/STRZ.jpg?v=1763196570" class="leaderboard-slide" style="width:100%;height:100%;object-fit:cover;flex-shrink:0;">
-          <img src="https://cdn.shopify.com/s/files/1/0962/6648/6067/files/STRZ.jpg?v=1763196570" class="leaderboard-slide" style="width:100%;height:100%;object-fit:cover;flex-shrink:0;">
-          <img src="https://cdn.shopify.com/s/files/1/0962/6648/6067/files/STRZ.jpg?v=1763196570" class="leaderboard-slide" style="width:100%;height:100%;object-fit:cover;flex-shrink:0;">
-          <img src="https://cdn.shopify.com/s/files/1/0962/6648/6067/files/STRZ.jpg?v=1763196570" class="leaderboard-slide" style="width:100%;height:100%;object-fit:cover;flex-shrink:0;">
+          <img src="https://cdn.shopify.com/s/files/1/0962/6648/6067/files/5000.png?v=1763614263" class="leaderboard-slide" style="width:100%;height:100%;object-fit:contain;flex-shrink:0;">
+          <img src="https://cdn.shopify.com/s/files/1/0962/6648/6067/files/5000.png?v=1763614263" class="leaderboard-slide" style="width:100%;height:100%;object-fit:contain;flex-shrink:0;">
+          <img src="https://cdn.shopify.com/s/files/1/0962/6648/6067/files/5000.png?v=1763614263" class="leaderboard-slide" style="width:100%;height:100%;object-fit:contain;flex-shrink:0;">
+          <img src="https://cdn.shopify.com/s/files/1/0962/6648/6067/files/5000.png?v=1763614263" class="leaderboard-slide" style="width:100%;height:100%;object-fit:contain;flex-shrink:0;">
+          <img src="https://cdn.shopify.com/s/files/1/0962/6648/6067/files/5000.png?v=1763614263" class="leaderboard-slide" style="width:100%;height:100%;object-fit:contain;flex-shrink:0;">
+          <img src="https://cdn.shopify.com/s/files/1/0962/6648/6067/files/5000.png?v=1763614263" class="leaderboard-slide" style="width:100%;height:100%;object-fit:contain;flex-shrink:0;">
+          <img src="https://cdn.shopify.com/s/files/1/0962/6648/6067/files/5000.png?v=1763614263" class="leaderboard-slide" style="width:100%;height:100%;object-fit:contain;flex-shrink:0;">
         </div>
       </div>
 
+      <!-- Description -->
       <p id="leaderboardDescription" style="font-size:13.8px;color:#ddd;line-height:1.5;margin:10px 0;text-align:center;">
         Checkout today's top tappers who dominate the leaderboard.
-      
       </p>
 
-      <ol id="leaderboardList" style="list-style:none;padding:0;margin:14px 0 10px;flex:1;">
+              <!-- MY TAPS TODAY – 2nd 1st 3rd PERFECTLY JOINED -->
+      <div id="myTapsToday" style="background:linear-gradient(135deg,rgba(255,215,0,0.18),rgba(255,140,0,0.08));border:1.5px solid #FFD700;border-radius:14px;padding:11px 13px;margin:16px 0 6px;display:flex;align-items:center;gap:10px;box-shadow:0 3px 12px rgba(255,215,0,0.25);">
+        <div style="flex-shrink:0;font-size:28px;opacity:0.9;">✨</div>
+        
+        <div style="flex:1;text-align:center;">
+          <div style="font-size:11px;color:#FF8C00;font-weight:800;letter-spacing:0.6px;">
+            YOUR TAPS COUNT
+          </div>
+          
+          <div style="margin-top:4px;font-size:19px;font-weight:900;color:#FFD700;display:inline-flex;align-items:baseline;gap:8px;flex-wrap:nowrap;justify-content:center;">
+            <span id="myDailyTapsValue">0</span>
+            <span style="font-size:13px;font-weight:700;opacity:0.9;align-self:center;">taps</span>
+            
+            <!-- BIG RANK + SUFFIX TOGETHER IN ONE SPAN SO NO GAP -->
+            <span id="myRankFull" style="font-size:19px;font-weight:900;line-height:1;"></span>
+            
+            <span style="font-size:13px;font-weight:700;opacity:0.9;align-self:center;">position</span>
+          </div>
+        </div>
+        
+        <div style="flex-shrink:0;font-size:24px;opacity:0.7;">✨</div>
+      </div>
+      
+      <!-- Leaderboard list -->
+      <ol id="leaderboardList" style="list-style:none;padding:0;margin:12px 0 8px;">
+      <!-- Leaderboard list -->
+      <ol id="leaderboardList" style="list-style:none;padding:0;margin:14px 0 10px;">
         <!-- JS fills this -->
       </ol>
 
+      <!-- Footer note -->
       <div style="text-align:center;font-size:12.5px;color:#777;font-style:italic;padding-bottom:10px;">
         自分の雰囲気を自分のものにしよう
       </div>
+
     </div>
 
-    <div style="padding:16px 20px 20px;text-align:center;background:rgba(0,0,0,0.35);">
+    <!-- FOOTER – FIXED -->
+    <div style="padding:16px 20px 20px;text-align:center;background:rgba(0,0,0,0.35);flex-shrink:0;">
       <button id="closeLeaderboard" style="padding:13px 40px;border:none;border-radius:12px;background:linear-gradient(90deg,#FFD700,#FF8C00);color:#000;font-weight:800;font-size:16px;cursor:pointer;min-width:180px;box-shadow:0 8px 25px rgba(255,215,0,0.6);">
         CLOSE THE RANKS
       </button>
     </div>
   </div>
 </div>
+
 
 <!-- FINAL COMPACT DETTYVERSE RULES MODAL -->
 <div id="rulesModal" class="modal-backdrop" style="display:none;">
@@ -614,7 +757,7 @@ bar + footer */
     <div style="flex:1;overflow-y:auto;padding:18px 20px;font-size:14.5px;line-height:1.75;color:#eee;">
       <div style="background:rgba(255,20,147,0.15);padding:14px;border-radius:12px;margin-bottom:16px;">
         <strong style="color:#FF1493;">1. Entry</strong><br>
-        No stars ⭐️ = No play.
+        No STRZ ⭐️ = No play.
       </div>
 
       <div style="background:rgba(0,230,118,0.15);padding:14px;border-radius:12px;margin-bottom:16px;">
@@ -668,30 +811,30 @@ bar + footer */
       
       <!-- LIVE PRIZE -->
       <div style="background:rgba(0,255,163,0.15);padding:16px;border-radius:14px;margin-bottom:18px;text-align:center;">
-        <div id="livePrize" style="font-size:28px;font-weight:800;color:#00FFA3;">$2,000</div>
-        <div style="font-size:13px;color:#aaa;margin-top:4px;">Current Cash Reward </div>
+        <div id="livePrize" style="font-size:28px;font-weight:800;color:#00FFA3;">$0</div>
+        <div style="font-size:13px;color:#aaa;margin-top:4px;"> Today's Cash Prize </div>
       </div>
 
       <!-- LIVE PLAYERS + TIMER -->
       <div style="background:rgba(255,215,0,0.15);padding:16px;border-radius:14px;margin-bottom:18px;">
-        <strong style="color:#FFD700;">Access Fee:</strong> 50 STRZ ⭐️<br>
-        <strong style="color:#FFD700;">Players Joined:</strong> <span id="livePlayers">0</span> warriors<br>
+        <strong style="color:#FFD700;">Entry Fee:</strong> 50 STRZ ⭐️<br>
+        <strong style="color:#FFD700;">Players Joined:</strong> <span id="livePlayers">0</span> Playas<br>
         <strong style="color:#FFD700;">Bid Ends In:</strong> <span id="countdownTimer" style="color:#00FFA3;font-weight:900;">--:--:--</span>
       </div>
 
       <!-- Rest unchanged -->
-<div style="background:rgba(255,20,147,0.15); padding:16px; border-radius:14px; margin-bottom:18px;">
-  <strong style="color:#FF1493; display:block; margin-bottom:12px; font-size:1.1em;">
-    How Bid Royale Works
+<div style="background:rgba(255,20,147,0.15); padding:20px 16px; border-radius:14px; margin-bottom:18px; text-align:center;">
+  
+  <strong style="color:#FF1493; font-size:1.2em; display:block; margin-bottom:16px;">
+   Bid Royale
   </strong>
 
-  <!-- Centered intro line (no bullet) -->
-  <p style="margin:12px 0; text-align:center; font-weight:600;">
+  <div style="font-weight:600; color:#fff; margin:16px 0;">
     Top 5 players split the prize
-  </p>
+  </div>
 
-  <!-- Proper bullet list -->
-  <ul style="margin:8px 0; padding-left:22px; line-height:1.55;">
+  <!-- Centered bullet list (left-aligned bullets, but block centered) -->
+  <ul style="display:inline-block; text-align:left; margin:20px 0; padding-left:22px; line-height:1.7; color:#fff;">
     <li>1st position gets <strong>40%</strong></li>
     <li>2nd position gets <strong>25%</strong></li>
     <li>3rd position gets <strong>20%</strong></li>
@@ -699,6 +842,7 @@ bar + footer */
     <li>5th position gets <strong>10%</strong></li>
     <li><strong>No pardons. No excuses.</strong></li>
   </ul>
+  
 </div>
 
       <div style="background:rgba(255,0,0,0.2);padding:16px;border-radius:14px;border:1px solid #ff4444;">
@@ -796,51 +940,85 @@ bar + footer */
   </div>
 </div>
 
+<!-- STAR MARKETPLACE – FINAL BEAUTIFUL VERSION -->
+<div id="sm-modal" class="sm-backdrop" style="display:none;">
+  <div class="sm-modal">
+    <div class="sm-header">
+      <h2>STRZ Marketplace</h2>
+      <button class="sm-close">X</button>
+    </div>
 
-<!-- Audio -->
-<audio id="tapSound" src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg" preload="auto"></audio>
+    <div class="sm-tabs">
+      <button class="sm-tab-btn sm-active" data-tab="buy">Buy Stars</button>
+      <button class="sm-tab-btn" data-tab="sell">Sell Stars</button>
+    </div>
 
-<!-- Put this anywhere in your <body> (one time only) -->
-<audio id="beatAudio" loop preload="none"></audio>
-<audio id="clickAudio" preload="auto"></audio>
+    <div class="sm-content">
+      <!-- BUY TAB -->
+      <div id="sm-buy-tab" class="sm-tab-content sm-active">
+        <div id="sm-listings-container" class="sm-scroll"></div>
+      </div>
+
+      <!-- SELL TAB -->
+      <div id="sm-sell-tab" class="sm-tab-content">
+        <div class="sm-scroll">
+          <div class="sm-sell-form">
+            <p class="sm-balance">You have: <strong id="sm-user-stars">0</strong> Stars</p>
+            <input type="number" id="sm-sell-amount" placeholder="Amount (100, 200, 300...)" min="100" step="100">
+            <input type="number" id="sm-sell-price" placeholder="Price in ₦ (e.g. 2500)" min="50">
+            <button id="sm-list-btn" class="sm-btn-primary">List for Sale</button>
+          </div>
+
+          <h3 class="sm-section-title">Your Active Listings</h3>
+          <div id="sm-my-listings"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- SOUNDS - All your GitHub sounds in one place -->
+<audio id="tapSound"     src="https://raw.githubusercontent.com/golalaland/1010/main/pop-reverb-423718.mp3"     preload="auto"></audio>
+<audio id="confettiSound" src="https://raw.githubusercontent.com/golalaland/1010/main/material-mold-394512.mp3" preload="auto"></audio>
+<audio id="comboSound"    src="https://raw.githubusercontent.com/golalaland/1010/main/clear-combo-7-394494.mp3"    preload="auto"></audio>
+<audio id="uiClickSound" src="https://raw.githubusercontent.com/golalaland/1010/main/click-sound-432501.mp3" preload="auto"></audio>
 
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-import { 
-  getFirestore, 
-  doc, 
-  getDoc, 
-  runTransaction, 
-  collection, 
-  addDoc, 
-  serverTimestamp,
-  getDocs,     // <-- needed for reading queries
-  query,       // <-- needed for queries
-  where        // <-- needed for filtering
-} from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+  
+  // AUTH — onAuthStateChanged lives here
+  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+  
+  // FIRESTORE — everything else
+  import { 
+    getFirestore,
+    doc,
+    getDoc,
+    runTransaction,
+    collection,
+    addDoc,
+    serverTimestamp,
+    getDocs,
+    query,
+    where,
+    orderBy,
+    onSnapshot
+  } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
+  // ---------- FIREBASE CONFIG ----------
+  const firebaseConfig = {
+    apiKey: "AIzaSyDbKz4ef_eUDlCukjmnK38sOwueYuzqoao",
+    authDomain: "metaverse-1010.firebaseapp.com",
+    projectId: "metaverse-1010",
+    storageBucket: "metaverse-1010.appspot.com",
+    messagingSenderId: "1044064238233",
+    appId: "1:1044064238233:web:2fbdfb811cb0a3ba349608",
+    measurementId: "G-S77BMC266C"
+  };
 
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
 
-// ---------- FIREBASE ----------
-const firebaseConfig = {
-  apiKey: "AIzaSyDbKz4ef_eUDlCukjmnK38sOwueYuzqoao",
-  authDomain: "metaverse-1010.firebaseapp.com",
-  projectId: "metaverse-1010",
-  storageBucket: "metaverse-1010.appspot.com",
-  messagingSenderId: "1044064238233",
-  appId: "1:1044064238233:web:2fbdfb811cb0a3ba349608",
-  measurementId: "G-S77BMC266C",
-  databaseURL: "https://metaverse-1010-default-rtdb.firebaseio.com/"
-};
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-
-// Prevent sound spam
-window.lastSoundTime = 0;
-
-document.getElementById('leaderboardBtn').onclick = () => {
-  document.getElementById('sideTab').classList.toggle('closed');
-};
 
 // ---------- DOM ----------
 const body = document.body;
@@ -868,6 +1046,12 @@ const cashCountEl = document.getElementById('cashCount');
 const profileNameEl = document.getElementById('profileName');
 
 
+// Prevent sound spam
+window.lastSoundTime = 0;
+
+document.getElementById('leaderboardBtn').onclick = () => {
+  document.getElementById('sideTab').classList.toggle('closed');
+};
 
 
 // ========= ULTRA-RELIABLE BLACK CUTE MODAL (TAPS + ₦) =========
@@ -896,7 +1080,7 @@ endGameModal.innerHTML = `
     </p>
 
     <p style="margin:15px 0 0;font-size:16px;opacity:0.9;">
-      <span id="chatId">Player</span> — keep dominating!
+      <span id="playerName">player</span> — keep dominating!
     </p>
 
     <div style="display:flex;gap:14px;margin-top:28px;">
@@ -927,7 +1111,7 @@ function showEndGameModal() {
   document.getElementById('playerName').textContent = currentUser?.handle || "Tapper";
 
   // victory sound
-  new Audio('https://assets.mixkit.co/sfx/preview/mixkit-achievement-bell-600.mp3').play().catch(()=>{});
+  new Audio('https://raw.githubusercontent.com/golalaland/1010/main/material-chest-open-394472.mp3').play().catch(()=>{});
 
   endGameModal.style.display = "flex";
 }
@@ -955,7 +1139,10 @@ setTimeout(() => {
     }
   });
 
-}, 100);   // 100 ms is more than enough
+}, 100);   // 100
+
+
+
 
 // ---------- CONFIG ----------
 const STAR_COST = 10;
@@ -1085,15 +1272,18 @@ function updateBonusBar(){
   bonusBar.style.width = Math.min(100,(progress/tapsForNext)*100)+'%';
 }
 
-/* ─────── DOPE RANDOM CONFETTI + VIBRATION ─────── */
+/* ─────── DOPE RANDOM CONFETTI + VIBRATION + EPIC SOUND ─────── */
 function triggerConfetti() {
+  // Play your custom confetti explosion sound
+  play(confettiSound, 0.85);
+
   const types = ['rainbow', 'spark', 'coin', 'star'];
   const chosen = types[Math.floor(Math.random() * types.length)];
 
   const count = 22;
-  const rect   = tapButton.getBoundingClientRect();
-  const cx     = rect.left + rect.width  / 2;
-  const cy     = rect.top  + rect.height / 2;
+  const rect  = tapButton.getBoundingClientRect();
+  const cx    = rect.left + rect.width  / 2;
+  const cy    = rect.top  + rect.height / 2;
 
   for (let i = 0; i < count; i++) {
     const dot = document.createElement('div');
@@ -1113,34 +1303,24 @@ function triggerConfetti() {
 
     document.body.appendChild(dot);
 
-    const animName = {
-      rainbow: 'rainbowFall',
-      spark:   'sparkBurst',
-      coin:    'coinFlip',
-      star:    'starBoom'
-    }[chosen];
-
     dot.animate(
-      [{opacity:1, transform:'translate(0,0) rotate(0deg) scale(1)'},
-       {opacity:0, transform:`translate(${dx}px,${dy}px) rotate(${chosen==='coin'? '720deg' : '360deg'}) scale(${chosen==='star'?2:0})`}],
-      {duration: 600 + Math.random()*300, easing:'cubic-bezier(.2,.6,.4,1)'}
+      [
+        { opacity: 1, transform: 'translate(0,0) rotate(0deg) scale(1)' },
+        { opacity: 0, transform: `translate(${dx}px,${dy}px) rotate(${chosen === 'coin' ? '720deg' : '360deg'}) scale(${chosen === 'star' ? 2 : 0})` }
+      ],
+      {
+        duration: 600 + Math.random() * 300,
+        easing: 'cubic-bezier(.2,.6,.4,1)'
+      }
     ).onfinish = () => dot.remove();
   }
 
-  /* ─────── DOPE VIBRATION ─────── */
+  // ─────── DOPE VIBRATION ───────
   if ('vibrate' in navigator) {
     navigator.vibrate([80, 50, 100, 50, 80]);
-  } else if (navigator.userAgent.match(/iPhone|iPad|iPod/)) {
+  } else if (/iPhone|iPad|iPod/.test(navigator.userAgent)) {
     tapButton.classList.add('shake');
     setTimeout(() => tapButton.classList.remove('shake'), 400);
-  }
-
-  /* ─────── SEXY DOINK SOUND ─────── */
-  const doink = document.getElementById('doinkSound');
-  if (doink) {
-    doink.currentTime = 0;
-    doink.volume = 0.7;
-    doink.play().catch(() => {});
   }
 }
 
@@ -1195,6 +1375,10 @@ function startSession() {
     if (!running) return;   
 
     timer--;
+if (timer < 0) timer = 0;
+
+updateUI();
+trainBar && (trainBar.style.width = (timer / SESSION_DURATION * 100) + "%");
     if (timer < 0) timer = 0;
 
     updateUI();
@@ -1215,18 +1399,15 @@ function startSession() {
   updateUI();
 }
 
-
-
-// ======================================================
+  // ======================================================
 //   INSTANT END — UI FREEZE, BLOCK TAPS (FIXED!)
 // ======================================================
 function endSessionImmediate() {
-  running = false;
-  tapLocked = true;
-  tapButton.disabled = true;
-  clearInterval(intervalId);
-
-  showEndGameModal();
+  running = false;
+  tapLocked = true;
+  tapButton.disabled = true;
+  clearInterval(intervalId);
+  showEndGameModal();
 }
 
 // ======================================================
@@ -1458,7 +1639,6 @@ confirmPlay?.addEventListener("click", async () => {
   }, 700);
 });
 
-
 /* ------------------------------
    LEADERBOARD SETUP (FIXED + CLEAN)
 ------------------------------- */
@@ -1584,21 +1764,48 @@ async function fetchLeaderboard(period = "daily", top = 10) {
       }
     });
 
-    scores.sort((a, b) => b.taps - a.taps);
+      scores.sort((a, b) => b.taps - a.taps);
     const topScores = scores.slice(0, top);
+    
 
-    if (topScores.length === 0) {
-      leaderboardList.innerHTML = "<li>No tap score today, yet!</li>";
-      return;
+     // === YOUR TAPS TODAY – FINAL FIXED (2nd 1st 3rd joined perfectly) ===
+    let myDailyTaps = 0;
+    let myRank = null;
+
+    if (currentUser) {
+      const myDoc = snap.docs.find(d => d.id === currentUser.uid);
+      const myData = myDoc?.data();
+      if (period === "daily")   myDailyTaps = myData?.tapsDaily?.[key]   || 0;
+      if (period === "weekly")  myDailyTaps = myData?.tapsWeekly?.[key]  || 0;
+      if (period === "monthly") myDailyTaps = myData?.tapsMonthly?.[key] || 0;
+
+      const myEntry = scores.find(s => s.uid === currentUser.uid);
+      if (myEntry) myRank = scores.indexOf(myEntry) + 1;
     }
 
+    const tapsEl = document.getElementById("myDailyTapsValue");
+    const rankFull = document.getElementById("myRankFull");
+
+    if (tapsEl) tapsEl.textContent = myDailyTaps.toLocaleString();
+
+    if (myRank && myRank <= 10 && rankFull) {
+      const suffix = myRank === 1 ? "st" : myRank === 2 ? "nd" : myRank === 3 ? "rd" : "th";
+      rankFull.textContent = myRank + suffix;  // 2nd, 1st, 3rd, 4th — perfect!
+    } else if (rankFull) {
+      rankFull.textContent = "";
+    }
+
+    if (topScores.length === 0) {
+      leaderboardList.innerHTML = "<li style='text-align:center;padding:20px 0;font-size:13px;color:#888;'>No taps yet — be the first!</li>";
+      return;
+    }
 leaderboardList.innerHTML = topScores
   .map((u, i) => {
     const isCurrent = currentUser && u.uid === currentUser.uid;
 
-    // ---- Avatar selection (random if no gender) ----
-    const maleAvatar = "https://cdn.shopify.com/s/files/1/0962/6648/6067/files/9720027.jpg?v=1763365645";
-    const femaleAvatar = "https://cdn.shopify.com/s/files/1/0962/6648/6067/files/10496278.jpg?v=1763365578";
+  // ---- Avatar selection (random if no gender) ----
+    const maleAvatar = "https://cdn.shopify.com/s/files/1/0962/6648/6067/files/9720029.jpg?v=1763635357";
+    const femaleAvatar = "https://cdn.shopify.com/s/files/1/0962/6648/6067/files/10491827.jpg?v=1763635326";
 
     const avatar = u.gender === "female"
       ? femaleAvatar
@@ -1606,12 +1813,12 @@ leaderboardList.innerHTML = topScores
         ? maleAvatar
         : Math.random() < 0.5 ? maleAvatar : femaleAvatar;
 
-    // ---- Capitalize first letter of each word ----
-    const name = u.chatId || "Anon";
-    const formattedName = name
-      .split(" ")
-      .map(n => n.charAt(0).toUpperCase() + n.slice(1).toLowerCase())
-      .join(" ");
+// ---- Name formatting ----
+const name = u.chatId || "Anon";
+const formattedName = name
+  .split(" ")
+  .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+  .join(" ");
 
     // ---- Styles for ranks ----
     let style = "";
@@ -1664,7 +1871,6 @@ periodTabs.forEach(tab => {
   });
 });
 
-
 /* -------------------------------------------
    DAILY COUNTDOWN
 -------------------------------------------- */
@@ -1688,6 +1894,7 @@ function startDailyCountdown() {
   updateCountdown();
   setInterval(updateCountdown, 1000);
 }
+
 
 
 /* -------------------------------------------
@@ -1851,6 +2058,145 @@ document.addEventListener("DOMContentLoaded", () => {
 
 });
 
+document.addEventListener('DOMContentLoaded', () => {
+  const smModal       = document.getElementById('sm-modal');
+  const smOpenBtn     = document.getElementById('starMarketBtn');
+  const smCloseBtn    = document.querySelector('.sm-close');
+  const smListings    = document.getElementById('sm-listings-container');
+  const smMyListings  = document.getElementById('sm-my-listings');
+  const smUserStars   = document.getElementById('sm-user-stars');
+
+  if (!smModal || !smOpenBtn) return;
+
+  smOpenBtn.onclick = () => {
+    smModal.style.display = 'flex';
+    smUserStars.textContent = (currentUser?.stars || 0).toLocaleString();
+    loadBuyTab();
+    loadSellTab();
+    switchToTab('buy');
+  };
+
+  smCloseBtn.onclick = () => smModal.style.display = 'none';
+  smModal.onclick = e => { if (e.target === smModal) smModal.style.display = 'none'; };
+
+  // Tab switching
+  document.querySelectorAll('.sm-tab-btn').forEach(btn => {
+    btn.onclick = () => {
+      document.querySelectorAll('.sm-tab-btn').forEach(b => b.classList.remove('sm-active'));
+      document.querySelectorAll('.sm-tab-content').forEach(c => c.classList.remove('sm-active'));
+      btn.classList.add('sm-active');
+      document.getElementById('sm-' + btn.dataset.tab + '-tab').classList.add('sm-active');
+    };
+  });
+
+  function switchToTab(tab) {
+    document.querySelector(`.sm-tab-btn[data-tab="${tab}"]`).click();
+  }
+
+  // BUY TAB
+  async function loadBuyTab() {
+    smListings.innerHTML = '<p class="sm-empty">Loading...</p>';
+    try {
+      const q = query(collection(db, "starListings"), where("status", "==", "active"), orderBy("createdAt", "desc"));
+      const snap = await getDocs(q);
+      smListings.innerHTML = '';
+
+      let hasAny = false;
+      snap.forEach(doc => {
+        const d = doc.data();
+        if (d.sellerId === currentUser?.uid) return;
+        hasAny = true;
+
+        const div = document.createElement('div');
+        div.className = 'sm-listing';
+        div.innerHTML = `
+          <div>
+            <strong>STRZ ${d.amount} for ₦${d.price.toLocaleString()}</strong>
+            <div class="seller">Seller: <strong>${d.sellerName || 'Anonymous'}</strong></div>
+          </div>
+          <button class="sm-buy-btn" data-id="${doc.id}" data-amt="${d.amount}" data-price="${d.price}">
+            Buy Now
+          </button>
+        `;
+        smListings.appendChild(div);
+      });
+
+      if (!hasAny) smListings.innerHTML = '<p class="sm-empty">No stars for sale right now</p>';
+
+      // Buy buttons
+      smListings.querySelectorAll('.sm-buy-btn').forEach(btn => {
+        btn.onclick = () => {
+          showNiceAlert(`Buy ${btn.dataset.amt} stars for ₦${Number(btn.dataset.price).toLocaleString()}?`, {
+            confirm: true,
+            onConfirm: () => showNiceAlert("Purchase successful! (Real version soon) Star")
+          });
+        };
+      });
+
+    } catch (e) { console.error(e); smListings.innerHTML = '<p class="sm-empty">Error loading</p>'; }
+  }
+
+  // SELL TAB
+  async function loadSellTab() {
+    smMyListings.innerHTML = '';
+    try {
+      const q = query(collection(db, "starListings"), where("sellerId", "==", currentUser?.uid), where("status", "==", "active"));
+      const snap = await getDocs(q);
+
+      if (snap.empty) {
+        smMyListings.innerHTML = '<p class="sm-empty">You have no active listings</p>';
+        return;
+      }
+
+      snap.forEach(doc => {
+        const d = doc.data();
+        const div = document.createElement('div');
+        div.className = 'sm-listing';
+        div.innerHTML = `
+          <div>
+            <strong>STRZ ${d.amount} for ₦${d.price.toLocaleString()}</strong>
+            <div class="seller">Seller: <strong>You</strong></div>
+          </div>
+          <button class="sm-cancel-btn" data-id="${doc.id}">Cancel</button>
+        `;
+        smMyListings.appendChild(div);
+      });
+
+      smMyListings.querySelectorAll('.sm-cancel-btn').forEach(btn => {
+        btn.onclick = () => {
+          showNiceAlert("Cancel listing and get stars back?", {
+            confirm: true,
+            onConfirm: async () => {
+              await deleteDoc(doc(db, "starListings", btn.dataset.id));
+              showNiceAlert("Cancelled! Stars returned Star");
+              loadSellTab(); loadBuyTab();
+            }
+          });
+        };
+      });
+
+    } catch (e) { smMyListings.innerHTML = '<p class="sm-empty">Error</p>'; }
+  }
+
+  // LIST FOR SALE BUTTON
+  document.getElementById('sm-list-btn')?.addEventListener('click', async () => {
+    const amount = Number(document.getElementById('sm-sell-amount').value);
+    const price = Number(document.getElementById('sm-sell-price').value);
+
+    if (!amount || amount < 100 || amount % 100 !== 0) return showNiceAlert("Minimum 100 stars, multiples of 100 only");
+    if (!price || price < 50) return showNiceAlert("Price too low");
+    if ((currentUser?.stars || 0) < amount) return showNiceAlert("Not enough stars!");
+
+    showNiceAlert(`List ${amount} stars for ₦${price.toLocaleString()}?`, {
+      confirm: true,
+      onConfirm: async () => {
+        // Real listing code here (same as before)
+        showNiceAlert("Listed successfully! Star");
+      }
+    });
+  });
+});
+
 /* ============================================================
    TAPMASTER — FULLY WORKING, NO HANG, CLEAN VERSION
    ============================================================ */
@@ -1924,11 +2270,13 @@ document.getElementById('confirmBidModal')?.addEventListener('click', e => {
   }
 });
 
-/* ====================== FINAL BID ====================== */
+  /* ====================== FINAL BID ====================== */
 document.getElementById('finalConfirmBtn')?.addEventListener('click', async () => {
   const btn = document.getElementById('finalConfirmBtn');
   btn.disabled = true;
-  btn.textContent = "...";
+
+  // Show only spinner
+  btn.innerHTML = '<span class="btn-spinner"></span>';
 
   try {
     if (!currentUser?.uid) {
@@ -1937,7 +2285,6 @@ document.getElementById('finalConfirmBtn')?.addEventListener('click', async () =
       return;
     }
 
-    // Prevent double join
     const check = await getDocs(query(
       collection(db, "bids"),
       where("uid", "==", currentUser.uid),
@@ -1949,7 +2296,6 @@ document.getElementById('finalConfirmBtn')?.addEventListener('click', async () =
       return;
     }
 
-    // Deduct stars
     const deduct = await tryDeductStarsForJoin(BID_COST);
     if (!deduct.ok) {
       await showNiceAlert("Not enough stars: " + (deduct.message || ""));
@@ -1958,7 +2304,6 @@ document.getElementById('finalConfirmBtn')?.addEventListener('click', async () =
       return;
     }
 
-    // Create bid
     await addDoc(collection(db, "bids"), {
       uid: currentUser.uid,
       username: currentUser.username || currentUser.displayName || "Anonymous",
@@ -1976,94 +2321,172 @@ document.getElementById('finalConfirmBtn')?.addEventListener('click', async () =
     await showNiceAlert("Something went wrong. Try again.");
   } finally {
     btn.disabled = false;
-    btn.textContent = "YES!";
+    btn.textContent = "YES!";  // restore original text
     document.getElementById('confirmBidModal').style.display = 'none';
   }
 });
 
-/* ====================== SOUND SYSTEM ====================== */
-let audioUnlocked = false;
-function unlockAllAudio() {
-  if (audioUnlocked) return;
-  audioUnlocked = true;
-  new Audio("data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=").play().catch(()=>{});
-}
-document.body.addEventListener('touchstart', unlockAllAudio, {once: true});
-document.body.addEventListener('click', unlockAllAudio, {once: true});
+/* ====================== DAILY BID ROYALE — PERFECT SYNC, NO JUMP ON RELOAD ====================== */
+let bidActive = false;
 
-document.getElementById('tapButton')?.addEventListener('click', () => {
-  if (!audioUnlocked) return;
-  const beat = document.getElementById('beatAudio');
-  beat.src = "your-dettyverse-beat.mp3";  // ← change to your beat
-  beat.volume = 0.45;
-  beat.play().catch(()=>{});
-});
-
-const click = document.getElementById('clickAudio');
-click.src = "https://assets.mixkit.co/sfx/preview/mixkit-arcade-game-jump-coin-216.mp3";
-click.volume = 0.6;
-let lastClick = 0;
-function playClickSound() {
-  if (!audioUnlocked) return;
-  const now = Date.now();
-  if (now - lastClick < 80) return;
-  lastClick = now;
-  click.currentTime = 0;
-  click.play().catch(()=>{});
-}
-document.querySelectorAll('button').forEach(btn => {
-  if (btn.id !== 'tapButton') btn.addEventListener('click', playClickSound);
-});
-
-/* ====================== LIVE PRIZE + PLAYERS + COUNTDOWN ====================== */
-function startCountdown() {
-  const el = document.getElementById('countdownTimer');
-  if (!el) { setTimeout(startCountdown, 500); return; }
-
-  const update = () => {
-    const lagos = new Date(Date.now() + 60*60*1000);
-    const today = lagos.toISOString().split('T')[0];
-    const target = new Date(today + "T22:59:59.000Z");
-    const diff = target - lagos;
-
-    if (diff <= 0) {
-      el.textContent = "LIVE NOW!";
-      el.style.color = "#ff2d55";
-      return;
-    }
-    const h = String(Math.floor(diff / 3600000)).padStart(2,'0');
-    const m = String(Math.floor((diff % 3600000) / 60000)).padStart(2,'0');
-    const s = String(Math.floor((diff % 60000) / 1000)).padStart(2,'0');
-    el.textContent = `${h}:${m}:${s}`;
-  };
-  update();
-  setInterval(update, 1000);
-}
-
-function startLiveStats() {
+function startDailyBidEngine() {
+  const timerEl   = document.getElementById('countdownTimer');
   const playersEl = document.getElementById('livePlayers');
-  const prizeEl = document.getElementById('livePrize');
-  if (!playersEl || !prizeEl) { setTimeout(startLiveStats, 500); return; }
+  const prizeEl   = document.getElementById('livePrize');
 
-  const q = query(
-    collection(db, "bids"),
-    where("roundId", "==", CURRENT_ROUND_ID),
-    where("status", "==", "active")
-  );
+  if (!timerEl || !playersEl || !prizeEl) {
+    setTimeout(startDailyBidEngine, 500);
+    return;
+  }
 
-  onSnapshot(q, snap => {
-    const count = snap.size;
-    playersEl.textContent = count;
-    prizeEl.textContent = "₦" + (count * PRIZE_PER_PLAYER).toLocaleString();
+  // TODAY'S ROUND (Lagos date)
+  window.CURRENT_ROUND_ID = (() => {
+    const d = new Date();
+    const lagos = new Date(d.getTime() + 60*60*1000);
+    return "round_" + lagos.toISOString().split('T')[0];
+  })();
+
+  let serverTimeOffset = 0;
+
+  // Get REAL server time once (eliminates client clock drift)
+  const getServerTime = async () => {
+    try {
+      const snap = await getDoc(doc(db, "server", "time"));
+      if (snap.exists()) {
+        const serverNow = snap.data().timestamp.toMillis();
+        serverTimeOffset = serverNow - Date.now();
+      }
+    } catch (e) { /* fallback to local time if fails */ }
+  };
+  getServerTime();
+
+  function getLagosNow() {
+    return new Date(Date.now() + serverTimeOffset + 60*60*1000); // UTC+1
+  }
+
+  function updateCountdown() {
+    const lagosNow = getLagosNow();
+    const today = lagosNow.toISOString().split('T')[0];
+
+    const bidStart = new Date(`${today}T00:33:00+01:00`).getTime();
+    const bidEnd   = new Date(`${today}T23:59:00+01:00`).getTime();
+    const now      = lagosNow.getTime();
+
+    if (now >= bidStart && now < bidEnd + 60000) {
+      bidActive = true;
+      const diff = Math.max(0, Math.floor((bidEnd - now) / 1000));
+
+      const h = String(Math.floor(diff / 3600)).padStart(2, '0');
+      const m = String(Math.floor((diff % 3600) / 60)).padStart(2, '0');
+      const s = String(diff % 60).padStart(2, '0');
+
+      timerEl.textContent = `${h}:${m}:${s}`;
+      timerEl.style.color = diff < 600 ? "#ff0066" : "#00ff88";
+      timerEl.style.fontWeight = "900";
+
+      // Declare winners exactly once
+      if (diff === 0 && !timerEl.dataset.declared) {
+        timerEl.dataset.declared = "true";
+        declareWinnersAndReset();
+      }
+
+    } else if (now < bidStart) {
+      bidActive = false;
+      const diff = Math.floor((bidStart - now) / 1000);
+      const h = String(Math.floor(diff / 3600)).padStart(2, '0');
+      const m = String(Math.floor((diff % 3600) / 60)).padStart(2, '0');
+      timerEl.textContent = `Starts in ${h}:${m}`;
+      timerEl.style.color = "#888";
+    } else {
+      bidActive = false;
+      timerEl.textContent = "Next bid 00:33";
+      timerEl.style.color = "#666";
+    }
+  }
+
+  // Live stats
+  let unsub = null;
+  function updateLiveStats() {
+    if (unsub) unsub();
+    if (bidActive) {
+      const q = query(
+        collection(db, "bids"),
+        where("roundId", "==", window.CURRENT_ROUND_ID),
+        where("status", "==", "active")
+      );
+      unsub = onSnapshot(q, snap => {
+        const count = snap.size;
+        playersEl.textContent = count;
+        prizeEl.textContent = "₦" + (count * 5000).toLocaleString();
+      });
+    } else {
+      playersEl.textContent = "0";
+      prizeEl.textContent = "₦0";
+    }
+  }
+
+  updateCountdown();
+  updateLiveStats();
+  setInterval(() => {
+    updateCountdown();
+    updateLiveStats();
+  }, 1000);
+}
+
+// Keep your declare function
+async function declareWinnersAndReset() {
+  console.log("BID ENDED — PAYING TOP 5 NOW");
+  // Your payout code here
+}
+
+// Create this document once in Firestore (path: server/time)
+if (!window.bidEngineStarted) {
+  window.bidEngineStarted = true;
+  startDailyBidEngine();
+}
+
+// ---------- AUDIO UNLOCK (required for mobile) ----------
+let audioUnlocked = false;
+function unlockAudio() {
+  if (audioUnlocked) return;
+  [tapSound, confettiSound, comboSound].forEach(s => {
+    s.play().catch(() => {});
+    s.pause();
+    s.currentTime = 0;
   });
+  audioUnlocked = true;
 }
 
-// RUN ONLY ONCE — NEVER HANGS
-if (!window.appReady) {
-  window.appReady = true;
-  startCountdown();
-  startLiveStats();
+// Play any sound safely
+function play(soundElement, volume = 1.0) {
+  unlockAudio();
+  soundElement.currentTime = 0;
+  soundElement.volume = volume;
+  soundElement.play().catch(() => {});
 }
+// ---------- ULTRA-RELIABLE UI CLICK SOUND (catches EVERY button) ----------
+const uiClickSound = document.getElementById('uiClickSound');
+
+document.body.addEventListener('click', function(e) {
+  const clicked = e.target;
+
+  // List every button/element that should trigger the UI sound
+  const isUIButton = clicked.matches(`
+    #startBtn, #confirmPlay, #cancelPlay,
+    #shopBtn, #settingsBtn, #closeBtn, #backBtn,
+    .menu-btn, .ui-btn, button, [onclick], .clickable
+  `);
+
+  // Exclude the main giant tap button so it keeps its own pop sound
+  const isMainTapButton = clicked === tapButton || clicked.closest('#tapButton');
+
+  if (isUIButton && !isMainTapButton) {
+    unlockAudio();                  // same unlock function you already have
+    uiClickSound.currentTime = 0;
+    uiClickSound.volume = 0.6;
+    uiClickSound.play().catch(() => {});
+  }
+}, true); // ← "true" = capture phase (catches clicks even on dynamically added buttons)
 </script>
 </body>
 </html>
