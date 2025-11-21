@@ -490,13 +490,10 @@ bar + footer */
     0% { transform: rotate(0deg);}
     100% { transform: rotate(360deg);}
   }
-/* Only these three lines needed */
-@keyframes scroll{
-  0%   { transform:translateX(0); }
-  100% { transform:translateX(-50%); }
-}
-body.start-mode #startScreenMarquee { display:block !important; }
-body.game-mode  #startScreenMarquee { display:none !important; }
+  
+@keyframes scroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+.show-marquee #startScreenMarquee {display:block !important}
+.marquee:hover {animation-play-state:paused}
 </style>
 </head>
 <body>
@@ -504,7 +501,7 @@ body.game-mode  #startScreenMarquee { display:none !important; }
 
 <div id="appWrapper">
   
-<!-- THIS IS YOUR EXACT FAVORITE MARQUEE — now bulletproof -->
+<!-- YOUR EXACT FAVORITE MARQUEE – now with its own dedicated control -->
 <div id="startScreenMarquee" style="position:fixed; top:0; left:0; width:100%; z-index:999; pointer-events:none; display:none;">
   <div style="width:100%; background:linear-gradient(90deg,#000,#1a0033,#000); 
               padding:10px 0; overflow:hidden; border-bottom:3px solid #00FFA3; 
@@ -512,45 +509,41 @@ body.game-mode  #startScreenMarquee { display:none !important; }
     
     <div class="marquee" style="display:flex; animation:scroll 38s linear infinite; white-space:nowrap;">
       
-      <!-- YOUR ORIGINAL BLOCK — duplicated exactly twice (this fixes the reset) -->
+      <!-- YOUR ORIGINAL BLOCK × 2 (seamless loop) -->
       <div style="display:flex; gap:40px; align-items:center; padding:0 40px;">
-        <span style="color:#00FFA3; font-weight:900; font-size:15px; text-shadow:0 0 10px #00FFA3;">TODAY’S POT ₦4,820,000</span>
-        <span style="color:#fff; font-size:14px;">•</span>
-        <span style="color:#FF2D55; font-weight:800; font-size:15px;">1ST WINS ₦1,900,000</span>
-        <span style="color:#fff; font-size:14px;">•</span>
-        <span style="color:#FFD700; font-weight:700;">Reset in 06h 12m 44s</span>
-        <span style="color:#fff; font-size:14px;">•</span>
-        <span style="color:#00FFA3; font-weight:900;">You’re #127 – 1,204 taps behind #10</span>
-        <span style="color:#fff; font-size:14px;">•</span>
-        <span style="color:#FF2D55; font-weight:800;">davido_fan just hit 28.4M taps</span>
-        <span style="color:#fff; font-size:14px;">•</span>
+        <span style="color:#00FFA3;font-weight:900;font-size:15px;text-shadow:0 0 10px #00FFA3;">TODAY’S POT ₦4,820,000</span>
+        <span style="color:#fff;font-size:14px;">•</span>
+        <span style="color:#FF2D55;font-weight:800;font-size:15px;">1ST WINS ₦1,900,000</span>
+        <span style="color:#fff;font-size:14px;">•</span>
+        <span style="color:#FFD700;font-weight:700;">Reset in 06h 12m 44s</span>
+        <span style="color:#fff;font-size:14px;">•</span>
+        <span style="color:#00FFA3;font-weight:900;">You’re #127 – 1,204 taps behind #10</span>
+        <span style="color:#fff;font-size:14px;">•</span>
+        <span style="color:#FF2D55;font-weight:800;">davido_fan just hit 28.4M taps</span>
+        <span style="color:#fff;font-size:14px;">•</span>
         <span style="color:#FFD700;">Top 50 cash out daily – no jokes</span>
-        <span style="color:#fff; font-size:14px;">•</span>
-        <span style="color:#00FFA3; font-weight:900;">₦17,400,000 paid out this month</span>
+        <span style="color:#fff;font-size:14px;">•</span>
+        <span style="color:#00FFA3;font-weight:900;">₦17,400,000 paid out this month</span>
       </div>
-
-      <!-- SECOND IDENTICAL COPY — this is the only thing missing before -->
+      <!-- Second identical copy -->
       <div style="display:flex; gap:40px; align-items:center; padding:0 40px;">
-        <span style="color:#00FFA3; font-weight:900; font-size:15px; text-shadow:0 0 10px #00FFA3;">TODAY’S POT ₦4,820,000</span>
-        <span style="color:#fff; font-size:14px;">•</span>
-        <span style="color:#FF2D55; font-weight:800; font-size:15px;">1ST WINS ₦1,900,000</span>
-        <span style="color:#fff; font-size:14px;">•</span>
-        <span style="color:#FFD700; font-weight:700;">Reset in 06h 12m 44s</span>
-        <span style="color:#fff; font-size:14px;">•</span>
-        <span style="color:#00FFA3; font-weight:900;">You’re #127 – 1,204 taps behind #10</span>
-        <span style="color:#fff; font-size:14px;">•</span>
-        <span style="color:#FF2D55; font-weight:800;">davido_fan just hit 28.4M taps</span>
-        <span style="color:#fff; font-size:14px;">•</span>
+        <span style="color:#00FFA3;font-weight:900;font-size:15px;text-shadow:0 0 10px #00FFA3;">TODAY’S POT ₦4,820,000</span>
+        <span style="color:#fff;font-size:14px;">•</span>
+        <span style="color:#FF2D55;font-weight:800;font-size:15px;">1ST WINS ₦1,900,000</span>
+        <span style="color:#fff;font-size:14px;">•</span>
+        <span style="color:#FFD700;font-weight:700;">Reset in 06h 12m 44s</span>
+        <span style="color:#fff;font-size:14px;">•</span>
+        <span style="color:#00FFA3;font-weight:900;">You’re #127 – 1,204 taps behind #10</span>
+        <span style="color:#fff;font-size:14px;">•</span>
+        <span style="color:#FF2D55;font-weight:800;">davido_fan just hit 28.4M taps</span>
+        <span style="color:#fff;font-size:14px;">•</span>
         <span style="color:#FFD700;">Top 50 cash out daily – no jokes</span>
-        <span style="color:#fff; font-size:14px;">•</span>
-        <span style="color:#00FFA3; font-weight:900;">₦17,400,000 paid out this month</span>
+        <span style="color:#fff;font-size:14px;">•</span>
+        <span style="color:#00FFA3;font-weight:900;">₦17,400,000 paid out this month</span>
       </div>
-
     </div>
   </div>
 </div>
-
-
 
   
   <!-- Header -->
