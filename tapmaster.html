@@ -489,40 +489,30 @@ bar + footer */
     0% { transform: rotate(0deg);}
     100% { transform: rotate(360deg);}
   }
-  
-/* Marqueeeeeeeee */
+/* Show only on start screen */
+body.start-mode #startScreenMarquee  { display: block; }
+body.game-mode  #startScreenMarquee  { display: none; }
+
+/* Animation */
 @keyframes scroll-left {
   0%   { transform: translateX(0); }
-  100% { transform: translateX(-33.33%); }   /* exactly 1/3 because we duplicated 3× */
+  100% { transform: translateX(-33.33%); }
 }
-#killerMarquee:hover .marquee-text { animation-play-state: paused; } /* optional pause on hover */
-
-/* MARQUEE ONLY VISIBLE ON START SCREEN */
-#startScreenMarquee {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  z-index: 1000;
-  pointer-events: none; /* lets taps pass through if needed */
-}
-
-/* Hide marquee automatically when in game-mode */
-body.start-mode #startScreenMarquee   { display: block; }
-body.game-mode  #startScreenMarquee   { display: none; }
+#killerMarquee:hover .marquee-text { animation-play-state: paused; }
 </style>
 </head>
 <body>
 <div id="appWrapper">
   
-<!-- KILLER MARQUEE – final working version -->
-<div id="startScreenMarquee">
+<!-- MARQUEE – ONLY on start screen, never blocks taps -->
+<div id="startScreenMarquee" style="position:fixed; top:0; left:0; width:100%; z-index:1000; pointer-events:none;">
+  <!-- pointer-events:none on parent, but re-enable on the marquee itself so hover-pause still works if you want -->
   <div id="killerMarquee" style="width:100%; background:linear-gradient(90deg,#000,#1a0033,#000); 
               padding:11px 0; overflow:hidden; border-bottom:3px solid #00FFA3; 
-              box-shadow:0 4px 30px rgba(0,255,163,0.5);">
+              box-shadow:0 4px 30px rgba(0,255,163,0.5); pointer-events:auto;">
     
     <div class="marquee-text" style="display:flex; gap:50px; align-items:center;
-            animation: scroll-left 11s linear infinite; white-space:nowrap;">
+            animation: scroll-left 9s linear infinite; white-space:nowrap;">
     
     <!-- CONTENT DUPLICATED 3× FOR SEAMLESS LOOP -->
     <div style="display:flex; gap:50px; align-items:center;">
