@@ -12,6 +12,7 @@
     collection,
     addDoc,
     serverTimestamp,
+    updateDoc,
     getDocs,
     query,
     where,
