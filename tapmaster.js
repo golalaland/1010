@@ -657,78 +657,37 @@ async function endSessionRecord() {
       });
     });
 
-    // UPDATE LOCAL STATE
+    // === 3. BID LEADERBOARD (fire and forget) ===
+    if (window.CURRENT_ROUND_ID && sessionTaps > 0) {
+      addDoc(collection(db, "liveTaps"), {
+        uid: currentUser.uid,
+        username: currentUser.chatId || "Player",
+        taps: sessionTaps,
+        totalToday: currentUser.totalTaps + sessionTaps,
+        roundId: window.CURRENT_ROUND_ID,
+        inBid: true,
+        timestamp: serverTimestamp(),
+      }).catch(() => {});
+    }
+
+    // === 4. UPDATE LOCAL UI INSTANTLY ===
     currentUser.cash += sessionEarnings;
     currentUser.totalTaps += sessionTaps;
 
-    // UPDATE UI
     if (cashCountEl) cashCountEl.textContent = '₦' + formatNumber(currentUser.cash);
     if (earningsEl) earningsEl.textContent = '₦0';
     if (miniEarnings) miniEarnings.textContent = '₦0';
 
-    console.log("%c ROUND SAVED — CASH & TAPS SECURED", "color:#0f9;font-size:18px;font-weight:bold");
+    console.log("%c ROUND SAVED — YOU ARE UNSTOPPABLE", "color:#0f9;font-size:20px;font-weight:bold");
     return true;
 
   } catch (err) {
-    console.error("%c SAVE FAILED — RETRYING NEXT ROUND", "color:#f66;background:#300;padding:10px", err);
+    console.error("%c SAVE FAILED — RETRYING NEXT ROUND", "color:#f00;background:#300;padding:12px;border-radius:10px", err);
     sessionAlreadySaved = false;
     return false;
 
   } finally {
-    // NOTHING HERE. EVER.
-    // Cash is saved above. Double write = banned forever.
-  }
-}
-    // === 2. LOG SESSION (fire-and-forget — non-blocking) ===
-    addDoc(collection(db, "tapSessions"), {
-      uid,
-      chatId: currentUser.chatId || "Player",
-      taps: sessionTaps,
-      earnings: sessionEarnings,
-      bonusLevel: sessionBonusLevel,
-      redHotPunishments: RedHotMode.punishmentCount || 0,
-      timestamp: serverTimestamp(),
-    }).catch((err) => console.warn("Session log failed (non-critical):", err));
-
-    // === 3. LIVE BID LEADERBOARD UPDATE (only if in active round) ===
-    if (window.CURRENT_ROUND_ID) {
-      addDoc(collection(db, "liveTaps"), {
-        uid,
-        username: currentUser.chatId || "Player",
-        taps: sessionTaps,
-        totalToday: (currentUser.totalTaps || 0) + sessionTaps,
-        roundId: window.CURRENT_ROUND_ID,
-        inBid: true,
-        timestamp: serverTimestamp(),
-      }).catch(() => {}); // Silent — leaderboard is best-effort
-    }
-
-   // === 4. UPDATE LOCAL CACHE (UI stays snappy) ===
-       // SUCCESS → UPDATE LOCAL USER & UI
-    currentUser.cash += sessionEarnings;
-    currentUser.totalTaps += sessionTaps;
-
-    // Update UI instantly (no waiting for reload)
-    if (cashCountEl) {
-      cashCountEl.textContent = '₦' + formatNumber(currentUser.cash);
-    }
-    if (earningsEl) earningsEl.textContent = '₦0';
-    if (miniEarnings) miniEarnings.textContent = '₦0';
-
-    console.log("%c ROUND SAVED PERFECTLY! +₦" + sessionEarnings + " | +" + sessionTaps + " taps", "color:#0f9;font-size:18px;font-weight:bold");
-
-    return true;
-
-  } catch (err) {
-    console.error("%c SAVE FAILED — WILL RETRY NEXT ROUND", "color:#f66;background:#300;padding:10px;border-radius:8px", err);
-    sessionAlreadySaved = false; // ← Allow retry on next Play Again
-    return false;
-
-  } finally {
-    // DO NOT DO ANYTHING HERE
-    // Cash is ALREADY saved in the main transaction above
-    // This finally block should be EMPTY
-    // Double cash write = death. We killed it.
+    // EMPTY. CLEAN. PERFECT.
   }
 }
 // ======================================================
