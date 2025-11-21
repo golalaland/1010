@@ -1464,112 +1464,165 @@ function triggerHaptic() {
 }
 
 // ======================================================
-//   START SESSION  (FINAL FIXED VERSION)
+//   START SESSION – FINAL, COMPLETE & WORKING
 // ======================================================
 function startSession() {
-  // ... your existing reset code ...
 
-  RedHotMode.reset();  // ← important!
+  // ─────── FULL RESET (THIS WAS MISSING!) ───────
+  taps = 0;
+  earnings = 0;
+  timer = SESSION_DURATION;        // ← critical!
+  bonusLevel = 1;
+  progress = 0;
+  tapsForNext = 100;
+  cashCounter = 0;
+  cashThreshold = randomInt(1, 12);
 
+  running = true;                  // ← critical!
+  tapLocked = false;
+  tapButton.disabled = false;
+
+  // Reset red hot mode
+  RedHotMode.reset();
+
+  // UI reset
+  trainBar && (trainBar.style.width = "100%");
+  updateBonusBar();
+  updateUI();
+
+  // Clear any old interval
+  if (intervalId) clearInterval(intervalId);
+
+  // ─────── MAIN GAME LOOP ───────
   intervalId = setInterval(() => {
     if (!running) return;
 
     timer--;
-    if (timer <= 0) timer = 0;
-
-    updateUI();
-    trainBar && (trainBar.style.width = (timer / SESSION_DURATION * 100) + '%');
-
-    // Trigger red hot every ~10 seconds
-    if (timer % 10 === 3) maybeTriggerRedHot();
-
-    if (timer === 0) {
+    if (timer <= 0) {
+      timer = 0;
+      running = false;
+      clearInterval(intervalId);
       endSessionImmediate();
       endSessionRecord();
+      return;
     }
-  }, 1000);
-}
 
-  // ======================================================
-//   INSTANT END — UI FREEZE, BLOCK TAPS (FIXED!)
-// ======================================================
-function endSessionImmediate() {
-  running = false;
-  tapLocked = true;
-  tapButton.disabled = true;
-  clearInterval(intervalId);
-  showEndGameModal();
+    updateUI();
+    trainBar && (trainBar.style.width = (timer / SESSION_DURATION * 100) + "%");
+
+    // Random red-hot trap (~11% chance every 10 sec)
+    if (timer % 10 === 3 && timer > 15) {
+      maybeTriggerRedHot();
+    }
+
+  }, 1000);
+
+  // Final UI refresh
+  updateUI();
 }
 
 // ======================================================
 //   FIRESTORE — ASYNC RECORDING
 // ======================================================
+// ======================================================
+//   FIRESTORE — SAVE SESSION (CLEAN & MODERN 2025)
+// ======================================================
 async function endSessionRecord() {
+  if (!currentUser?.uid || taps <= 0) return;
 
-  if (!currentUser?.uid || taps <= 0) return;
+  const uid = currentUser.uid;
+  const userRef = doc(db, "users", uid);
+  const sessionsRef = collection(db, "tapSessions");
 
-  try {
-    const userRef = doc(db, "users", currentUser.uid);
+  try {
+    const now = new Date();
+    const dailyKey = now.toISOString().split("T")[0]; // YYYY-MM-DD
+    const weeklyKey = `${now.getFullYear()}-W${getWeekNumber(now)}`;
+    const monthlyKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
 
-    await runTransaction(db, async t => {
+    // ─────── ATOMIC UPDATE (one transaction) ───────
+    await runTransaction(db, async (transaction) => {
+      const snap = await transaction.get(userRef);
 
-      const docSnap = await t.get(userRef);
-      const now = new Date();
+      const baseData = {
+        totalTaps: (snap.data()?.totalTaps || 0) + taps,
+        lastEarnings: earnings,
+        lastBonus: bonusLevel,
+        updatedAt: serverTimestamp(),
+      };
 
-      const dailyKey = now.toISOString().split("T")[0];
-      const weeklyKey = `${now.getFullYear()}-W${getWeek(now)}`;
-      const monthlyKey = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}`;
+      if (!snap.exists()) {
+        // First-time user
+        transaction.set(userRef, {
+          uid,
+          chatId: currentUser.chatId || uid,
+          email: currentUser.email || "",
+          stars: currentUser.stars || 0,
+          cash: currentUser.cash || 0,
+          createdAt: serverTimestamp(),
+          ...baseData,
+          tapsDaily: { [dailyKey]: taps },
+          tapsWeekly: { [weeklyKey]: taps },
+          tapsMonthly: { [monthlyKey]: taps },
+        });
+      } else {
+        // Existing user — incremental update
+        const data = snap.data();
 
-      if (!docSnap.exists()) {
+        transaction.update(userRef, {
+          ...baseData,
+          tapsDaily: {
+            ...(data.tapsDaily || {}),
+            [dailyKey]: (data.tapsDaily?.[dailyKey] || 0) + taps,
+          },
+          tapsWeekly: {
+            ...(data.tapsWeekly || {}),
+            [weeklyKey]: (data.tapsWeekly?.[weeklyKey] || 0) + taps,
+          },
+          tapsMonthly: {
+            ...(data.tapsMonthly || {}),
+            [monthlyKey]: (data.tapsMonthly?.[monthlyKey] || 0) + taps,
+          },
+        });
+      }
+    });
 
-        t.set(userRef, {
-          chatId: currentUser.chatId || currentUser.uid,
-          stars: currentUser.stars || 0,
-          cash: currentUser.cash || 0,
-          totalTaps: taps,
-          tapsDaily: { [dailyKey]: taps },
-          tapsWeekly: { [weeklyKey]: taps },
-          tapsMonthly: { [monthlyKey]: taps },
-          lastEarnings: earnings,
-          lastBonus: bonusLevel
-        });
+    // ─────── RECORD SESSION LOG (fire-and-forget) ───────
+    await addDoc(sessionsRef, {
+      uid,
+      chatId: currentUser.chatId || uid,
+      email: currentUser.email || null,
+      taps,
+      earnings,
+      bonusLevel,
+      redHotPunishments: RedHotMode.punishmentCount || 0, // optional: track how many times they fell for it
+      timestamp: serverTimestamp(),
+    });
 
-        return;
-      }
+    // ─────── UPDATE LOCAL USER OBJECT ───────
+    currentUser.totalTaps = (currentUser.totalTaps || 0) + taps;
 
-      const data = docSnap.data();
+    // ─────── REFRESH LEADERBOARD (non-blocking) ───────
+    fetchLeaderboard("daily").catch(() => {}); // don't break flow if leaderboard fails
 
-      t.update(userRef, {
-        totalTaps: (data.totalTaps || 0) + taps,
-        tapsDaily: { ...(data.tapsDaily || {}), [dailyKey]: ((data.tapsDaily?.[dailyKey] || 0) + taps) },
-        tapsWeekly: { ...(data.tapsWeekly || {}), [weeklyKey]: ((data.tapsWeekly?.[weeklyKey] || 0) + taps) },
-        tapsMonthly: { ...(data.tapsMonthly || {}), [monthlyKey]: ((data.tapsMonthly?.[monthlyKey] || 0) + taps) },
-        lastEarnings: earnings,
-        lastBonus: bonusLevel
-      });
+    console.log("Session saved successfully:", { taps, earnings, bonusLevel });
 
-    });
-
-    await addDoc(collection(db, "tapSessions"), {
-      uid: currentUser.uid,
-      email: currentUser.email,
-      chatId: currentUser.chatId || currentUser.uid,
-      taps,
-      earnings,
-      bonusLevel,
-      timestamp: serverTimestamp()
-    });
-
-    currentUser.totalTaps = (currentUser.totalTaps || 0) + taps;
-
-    // Refresh leaderboard
-    fetchLeaderboard("daily");
-
-  } catch (err) {
-    console.error("Error saving session:", err);
-  }
+  } catch (error) {
+    console.error("Failed to save session:", error);
+    // Optional: show toast to user
+    // showToast("Save failed — retrying in background...");
+  }
 }
 
+// ======================================================
+//   HELPER: Get ISO week number (robust)
+// ======================================================
+function getWeekNumber(d) {
+  d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+}
 // ======================================================
 //  DEBOUNCE FUNCTION — MUST BE DEFINED FIRST
 // ======================================================
