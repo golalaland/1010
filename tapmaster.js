@@ -229,29 +229,52 @@ async function loadCurrentUserForGame() {
     const vipRaw = localStorage.getItem("vipUser");
     const hostRaw = localStorage.getItem("hostUser");
     const storedUser = vipRaw ? JSON.parse(vipRaw) : hostRaw ? JSON.parse(hostRaw) : null;
-    if(!storedUser?.email){
-      currentUser=null;
-      profileNameEl && (profileNameEl.textContent="GUEST 0000");
-      starCountEl && (starCountEl.textContent="50");
-      cashCountEl && (cashCountEl.textContent="₦0");
+    
+    if (!storedUser?.email) {
+      currentUser = null;
+      profileNameEl && (profileNameEl.textContent = "GUEST 0000");
+      starCountEl && (starCountEl.textContent = "50");
+      cashCountEl && (cashCountEl.textContent = "₦0");
       return;
     }
-    const uid = storedUser.email.replace(/\./g,",").toLowerCase();
-    const userRef = doc(db,"users",uid);
+
+    const uid = storedUser.email.replace(/\./g, ",").toLowerCase();
+    const userRef = doc(db, "users", uid);
     const snap = await getDoc(userRef);
-    if(!snap.exists()){
-      currentUser = { uid, email: storedUser.email, chatId: storedUser.fullName||storedUser.displayName||storedUser.email.split("@")[0], stars:0, cash:0, totalTaps:0 };
-      profileNameEl && (profileNameEl.textContent=currentUser.chatId);
-      starCountEl && (starCountEl.textContent="0");
-      cashCountEl && (cashCountEl.textContent='₦0');
-      return;
+
+    if (!snap.exists()) {
+      // CREATE USER AUTOMATICALLY
+      await setDoc(userRef, {
+        uid,
+        chatId: storedUser.fullName || storedUser.displayName || storedUser.email.split("@")[0],
+        email: storedUser.email,
+        stars: 100,
+        cash: 0,
+        totalTaps: 0,
+        createdAt: serverTimestamp(),
+        tapsDaily: {},
+        tapsWeekly: {},
+        tapsMonthly: {}
+      });
     }
-    const data = snap.data(); if(data.uid) delete data.uid;
-    currentUser = { uid, ...data, stars:Number(data.stars||0), cash:Number(data.cash||0), totalTaps:Number(data.totalTaps||0) };
-    profileNameEl && (profileNameEl.textContent=currentUser.chatId);
-    starCountEl && (starCountEl.textContent=formatNumber(currentUser.stars));
-    cashCountEl && (cashCountEl.textContent='₦'+formatNumber(currentUser.cash));
-  } catch(err){ console.warn("loadCurrentUserForGame error",err); }
+
+    const data = (await getDoc(userRef)).data();
+    currentUser = {
+      uid,
+      chatId: data.chatId || storedUser.email.split("@")[0],
+      email: storedUser.email,
+      stars: Number(data.stars || 100),
+      cash: Number(data.cash || 0),
+      totalTaps: Number(data.totalTaps || 0)
+    };
+
+    profileNameEl && (profileNameEl.textContent = currentUser.chatId);
+    starCountEl && (starCountEl.textContent = formatNumber(currentUser.stars));
+    cashCountEl && (cashCountEl.textContent = '₦' + formatNumber(currentUser.cash));
+
+  } catch (err) {
+    console.warn("load user error", err);
+  }
 }
 
 // ---------- DEDUCT ANIMATION ----------
@@ -593,69 +616,72 @@ function startSession() {
   }, 1000);
 }
 
+// 5. FIXED: EMERGENCY SAVE ON EXIT
+const emergencySave = () => { if (!sessionAlreadySaved) endSessionRecord(); };
+window.addEventListener('pagehide', emergencySave);
+window.addEventListener('beforeunload', emergencySave);
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') emergencySave();
+});
+
 // ======================================================
 //  END SESSION RECORD — 1 ATOMIC WRITE ONLY
 // ======================================================
 let sessionAlreadySaved = false; // ← Global guard (reset in startSession())
 
 async function endSessionRecord() {
-  // === PREVENT DOUBLE SAVES & INVALID CALLS ===
-  if (sessionAlreadySaved || !currentUser?.uid || sessionTaps <= 0) {
-    return false;
-  }
+  if (sessionAlreadySaved || !currentUser?.uid || (sessionTaps + sessionEarnings) === 0) return;
 
-  sessionAlreadySaved = true; // Mark as saved immediately
-
-  const uid = currentUser.uid;
-  const userRef = doc(db, "users", uid);
+  sessionAlreadySaved = true;
+  const userRef = doc(db, "users", currentUser.uid);
   const now = new Date();
-
-  // === TIME KEYS (Lagos time — consistent with your round logic) ===
-  const lagosOffset = 60 * 60 * 1000; // UTC+1
-  const lagosTime = new Date(now.getTime() + lagosOffset);
+  const lagosTime = new Date(now.getTime() + 60*60*1000);
   const dailyKey = lagosTime.toISOString().split("T")[0];
   const weeklyKey = `${lagosTime.getFullYear()}-W${getWeekNumber(lagosTime)}`;
   const monthlyKey = `${lagosTime.getFullYear()}-${String(lagosTime.getMonth() + 1).padStart(2, "0")}`;
 
   try {
-    // === 1. UPDATE USER STATS (ONE atomic transaction) ===
-    await runTransaction(db, async (transaction) => {
-      const userSnap = await transaction.get(userRef);
+    await runTransaction(db, async (t) => {
+      const snap = await t.get(userRef);
+      const data = snap.data() || {};
 
-      const existing = userSnap.data() || {};
-      const currentDaily = existing.tapsDaily?.[dailyKey] || 0;
-      const currentWeekly = existing.tapsWeekly?.[weeklyKey] || 0;
-      const currentMonthly = existing.tapsMonthly?.[monthlyKey] || 0;
+      const newCash = (data.cash || 0) + sessionEarnings;
+      const newTotalTaps = (data.totalTaps || 0) + sessionTaps;
 
-      const updateData = {
-        totalTaps: (existing.totalTaps || 0) + sessionTaps,
+      t.update(userRef, {
+        cash: newCash,
+        totalTaps: newTotalTaps,
         lastEarnings: sessionEarnings,
-        lastBonus: sessionBonusLevel,
         updatedAt: serverTimestamp(),
-
-        // Merge new taps into nested maps safely
-        tapsDaily: { ...existing.tapsDaily, [dailyKey]: currentDaily + sessionTaps },
-        tapsWeekly: { ...existing.tapsWeekly, [weeklyKey]: currentWeekly + sessionTaps },
-        tapsMonthly: { ...existing.tapsMonthly, [monthlyKey]: currentMonthly + sessionTaps },
-      };
-
-      if (!userSnap.exists()) {
-        // First-time user
-        transaction.set(userRef, {
-          uid,
-          chatId: currentUser.chatId || uid.split(",").pop(),
-          email: currentUser.email || "",
-          stars: currentUser.stars || 0,
-          cash: currentUser.cash || 0,
-          totalTaps: sessionTaps,
-          createdAt: serverTimestamp(),
-          ...updateData,
-        });
-      } else {
-        transaction.update(userRef, updateData);
-      }
+        tapsDaily: { ...data.tapsDaily, [dailyKey]: (data.tapsDaily?.[dailyKey] || 0) + sessionTaps },
+        tapsWeekly: { ...data.tapsWeekly, [weeklyKey]: (data.tapsWeekly?.[weeklyKey] || 0) + sessionTaps },
+        tapsMonthly: { ...data.tapsMonthly, [monthlyKey]: (data.tapsMonthly?.[monthlyKey] || 0) + sessionTaps },
+      });
     });
 
+    // UPDATE LOCAL USER
+    currentUser.cash += sessionEarnings;
+    currentUser.totalTaps += sessionTaps;
+
+    // UPDATE UI IMMEDIATELY
+    cashCountEl && (cashCountEl.textContent = '₦' + formatNumber(currentUser.cash));
+
+    // LOG SESSION (NON-BLOCKING)
+    addDoc(collection(db, "tapSessions"), {
+      uid: currentUser.uid,
+      chatId: currentUser.chatId,
+      taps: sessionTaps,
+      earnings: sessionEarnings,
+      timestamp: serverTimestamp()
+    }).catch(() => {});
+
+    console.log("%cSAVED TO FIRESTORE: +₦" + sessionEarnings + " | +" + sessionTaps + " taps", "color:#0f9;font-size:16px");
+
+  } catch (err) {
+    console.error("Save failed", err);
+    sessionAlreadySaved = false; // allow retry
+  }
+}
     // === 2. LOG SESSION (fire-and-forget — non-blocking) ===
     addDoc(collection(db, "tapSessions"), {
       uid,
@@ -785,16 +811,13 @@ const RedHotMode = {
 function updateUI() {
   timerEl && (timerEl.textContent = String(timer));
   tapCountEl && (tapCountEl.textContent = String(taps));
-  earningsEl && (earningsEl.textContent = '₦' + formatNumber(earnings.toFixed(2)));
-
-  // CORRECT PLACE — ONLY HERE
+  earningsEl && (earningsEl.textContent = '₦' + formatNumber(earnings));
+  
   if (cashCountEl) {
     if (running) {
-      // During round → show SESSION earnings (goes up live)
-      cashCountEl.textContent = '₦' + formatNumber(earnings);
+      cashCountEl.textContent = '₦' + formatNumber((currentUser?.cash || 0) + earnings);
     } else {
-      // Round ended → show TOTAL lifetime cash
-      cashCountEl.textContent = '₦' + formatNumber(currentUser.cash || 0);
+      cashCountEl.textContent = '₦' + formatNumber(currentUser?.cash || 0);
     }
   }
 
@@ -872,31 +895,23 @@ function attemptSaveSession() {
 
 // 1. Play Again button → save BEFORE reload
 setTimeout(() => {
-  const playAgainBtn = document.getElementById('playAgainBtn');
-  if (playAgainBtn) {
-    playAgainBtn.replaceWith(playAgainBtn.cloneNode(true)); // remove old listeners
+  const btn = document.getElementById('playAgainBtn');
+  if (btn) {
+    btn.replaceWith(btn.cloneNode(true));
     document.getElementById('playAgainBtn').addEventListener('click', () => {
-      attemptSaveSession();
-      setTimeout(() => location.reload(), 300); // small delay to let save finish
+      endSessionRecord().finally(() => {
+        setTimeout(() => location.reload(), 400);
+      });
     });
   }
 }, 500);
 
-// 2. Visibility change (user switches app, closes tab, etc.)
+// 5. FIXED: EMERGENCY SAVE ON EXIT
+const emergencySave = () => { if (!sessionAlreadySaved) endSessionRecord(); };
+window.addEventListener('pagehide', emergencySave);
+window.addEventListener('beforeunload', emergencySave);
 document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'hidden') {
-    attemptSaveSession();
-  }
-});
-
-// 3. Pagehide (more reliable than beforeunload on mobile)
-window.addEventListener('pagehide', () => {
-  attemptSaveSession();
-});
-
-// 4. Optional: fallback beforeunload (still good for desktop)
-window.addEventListener('beforeunload', () => {
-  attemptSaveSession();
+  if (document.visibilityState === 'hidden') emergencySave();
 });
 
 /* ------------------------------
