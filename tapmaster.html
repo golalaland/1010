@@ -867,80 +867,81 @@ bar + footer */
 </div>
 
 
-<!-- DETTYVERSE BID MODAL — FULLY LIVE (Prize + Players + Timer) -->
+<!-- DETTYVERSE BID MODAL — FINAL CLEAN VERSION (Prize ₦50,000 + ₦100 per player) -->
 <div id="bidModal" class="modal-backdrop" style="display:none;">
-  <div class="modal" style="width:88%;max-width:360px;max-height:88vh;overflow:hidden;display:flex;flex-direction:column;background:#0f0f0f;border:3px solid #00FFA3;border-radius:18px;box-shadow:0 0 60px rgba(0,255,163,0.6);">
+  <div class="modal" style="width:90%;max-width:380px;max-height:90vh;overflow:hidden;display:flex;flex-direction:column;background:#0f0f0f;border:3px solid #00FFA3;border-radius:18px;box-shadow:0 0 60px rgba(0,255,163,0.6);">
     
+    <!-- HEADER -->
     <div style="padding:18px 16px 12px;text-align:center;border-bottom:1px solid rgba(0,255,163,0.4);background:rgba(0,255,163,0.08);">
       <h3 style="margin:0;font-family:'Press Start 2P',cursive;font-size:16px;color:#00FFA3;line-height:1.2;">
-        JOIN THE BID
+        BID ROYALE: TAP WAR
       </h3>
-      <p style="margin:8px 0 0;font-size:13px;color:#00e676;font-weight:600;">
-        Winners takes the Prize. Losers get to try again next time.
-      </p>
-    </div>
-
-    <div style="flex:1;overflow-y:auto;padding:18px 20px;font-size:14.8px;line-height:1.8;color:#eee;">
-      
-      <!-- LIVE PRIZE -->
-      <div style="background:rgba(0,255,163,0.15);padding:16px;border-radius:14px;margin-bottom:18px;text-align:center;">
-        <div id="livePrize" style="font-size:28px;font-weight:800;color:#00FFA3;">$0</div>
-        <div style="font-size:13px;color:#aaa;margin-top:4px;"> Today's Cash Prize </div>
-      </div>
-
-      <!-- LIVE PLAYERS + TIMER -->
-      <div style="background:rgba(255,215,0,0.15);padding:16px;border-radius:14px;margin-bottom:18px;">
-        <strong style="color:#FFD700;">Entry Fee:</strong> 50 STRZ ⭐️<br>
-        <strong style="color:#FFD700;">Players Joined:</strong> <span id="livePlayers">0</span> Playas<br>
-        <strong style="color:#FFD700;">Bid Ends In:</strong> <span id="countdownTimer" style="color:#00FFA3;font-weight:900;">--:--:--</span>
-      </div>
-
-      <!-- Rest unchanged -->
-<div style="background:rgba(255,20,147,0.15); padding:20px 16px; border-radius:14px; margin-bottom:18px; text-align:center;">
-  
-  <strong style="color:#FF1493; font-size:1.2em; display:block; margin-bottom:16px;">
-   Bid Royale
-  </strong>
-
-  <div style="font-weight:600; color:#fff; margin:16px 0;">
-    Top 5 players split the prize
-  </div>
-
-  <!-- Centered bullet list (left-aligned bullets, but block centered) -->
-  <ul style="display:inline-block; text-align:left; margin:20px 0; padding-left:22px; line-height:1.7; color:#fff;">
-    <li>1st position gets <strong>40%</strong></li>
-    <li>2nd position gets <strong>25%</strong></li>
-    <li>3rd position gets <strong>20%</strong></li>
-    <li>4th position gets <strong>15%</strong></li>
-    <li>5th position gets <strong>10%</strong></li>
-    <li><strong>No pardons. No excuses.</strong></li>
-  </ul>
-  
-</div>
-
-      <div style="background:rgba(255,0,0,0.2);padding:16px;border-radius:14px;border:1px solid #ff4444;">
-        <strong style="color:#ff4444;">Warning</strong><br>
-        Once you enter, no backing out.<br>
-        You're locked until the bid ends.
-      </div>
-
-      <div style="margin-top:20px;text-align:center;font-size:13px;color:#777;font-style:italic;">
-        New Rewards & Bid Items Everyday. 
+      <div style="margin-top:6px;font-size:13px;color:#00ff88;font-weight:bold;">
+        Starts 00:33 • Ends 23:59 Daily
       </div>
     </div>
 
-    <div style="padding:16px 20px 20px;text-align:center;background:rgba(0,0,0,0.4);">
-      <button id="confirmBidBtn" style="padding:14px 40px;border:none;border-radius:14px;background:linear-gradient(90deg,#00FFA3,#00C853);color:#000;font-weight:800;font-size:17px;cursor:pointer;min-width:200px;margin-bottom:10px;">
-        ENTER
+    <div style="flex:1;overflow-y:auto;padding:18px 20px;color:#eee;">
+
+      <!-- LIVE PRIZE POOL -->
+      <div style="background:rgba(0,255,163,0.15);padding:18px;border-radius:14px;margin-bottom:20px;text-align:center;">
+        <div style="font-size:13px;color:#aaa;">Today's Prize Pool</div>
+        <div id="livePrize" style="font-size:32px;font-weight:900;color:#00FFA3;margin:6px 0;">₦50,000</div>
+        <div style="font-size:12px;color:#00ff88;">+₦100 every new warrior (max ₦500,000)</div>
+      </div>
+
+      <!-- LIVE STATS -->
+      <div style="background:rgba(255,215,0,0.15);padding:16px;border-radius:14px;margin-bottom:20px;">
+        <div style="display:flex;justify-content:space-between;color:#FFD700;font-weight:bold;">
+          <span>Entry Fee:</span>
+          <span>50 STRZ ⭐️</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;color:#FFD700;font-weight:bold;margin-top:8px;">
+          <span>Warriors In:</span>
+          <span id="livePlayers">0</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;color:#FFD700;font-weight:bold;margin-top:8px;">
+          <span>War Ends In:</span>
+          <span id="countdownTimer" style="color:#00FFA3;font-weight:900;">--:--:--</span>
+        </div>
+      </div>
+
+      <!-- BID LEADERBOARD — REAL TAPS ONLY -->
+      <div style="background:rgba(138,43,226,0.15);padding:18px;border-radius:14px;border:2px solid #8A2BE2;">
+        <h4 style="margin:0 0 14px;text-align:center;color:#E0B0FF;font-weight:900;font-size:15px;letter-spacing:1px;">
+          LIVE BID LEADERBOARD
+        </h4>
+        <div id="bidLeaderboard" style="max-height:260px;overflow-y:auto;font-size:14px;">
+          <div style="text-align:center;color:#888;padding:30px 0;">
+            Bid opens at 00:33<br>Join and start tapping!
+          </div>
+        </div>
+      </div>
+
+      <!-- PRIZE SPLIT -->
+      <div style="margin-top:20px;background:rgba(255,20,147,0.15);padding:16px;border-radius:14px;text-align:center;font-size:13px;">
+        <strong style="color:#FF1493;font-size:14px;">Top 5 split the pot:</strong><br><br>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;text-align:left;color:#fff;">
+          <div>1st → 40%</div> <div>4th → 15%</div>
+          <div>2nd → 25%</div> <div>5th → 10%</div>
+          <div>3rd → 20%</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- FOOTER BUTTONS -->
+    <div style="padding:18px 20px 22px;text-align:center;background:rgba(0,0,0,0.4);">
+      <button id="confirmBidBtn" style="padding:15px 50px;border:none;border-radius:14px;background:linear-gradient(90deg,#00FFA3,#00C853);color:#000;font-weight:900;font-size:18px;cursor:pointer;min-width:220px;box-shadow:0 4px 20px rgba(0,255,163,0.4);">
+        ENTER THE WAR
       </button>
-      <br>
-      <button id="closeBidBtn" style="color:#888;background:none;border:none;font-size:14px;cursor:pointer;">
-        Nah, i’m scared
+      <br><br>
+      <button id="closeBidBtn" style="color:#666;background:none;border:none;font-size:14px;cursor:pointer;">
+        maybe tomorrow...
       </button>
     </div>
   </div>
 </div>
-
 
 <!-- CONFIRMATION MODAL – COMPACT & DEADLY EDITION -->
 <div id="confirmBidModal" class="modal-backdrop" style="display:none;">
@@ -1764,7 +1765,7 @@ const RedHotMode = {
 
     this.active = true;
     tapButton.classList.add('red-hot');
-    tapButton.querySelector('.inner').textContent = "DON'T";
+    tapButton.querySelector('.inner').textContent = "HOT";
 
     // Warning sound
     try { this.sound.currentTime = 0; this.sound.play().catch(() => {}); } catch(e) {}
@@ -2520,32 +2521,33 @@ document.getElementById('confirmBidModal')?.addEventListener('click', e => {
   }
 });
 
-  /* ====================== FINAL BID ====================== */
+/* ====================== FINAL BID JOIN — CLEAN & INSTANT ====================== */
 document.getElementById('finalConfirmBtn')?.addEventListener('click', async () => {
   const btn = document.getElementById('finalConfirmBtn');
   btn.disabled = true;
-
-  // Show only spinner
   btn.innerHTML = '<span class="btn-spinner"></span>';
 
   try {
     if (!currentUser?.uid) {
-      await showNiceAlert("You must be logged in");
+      await showNiceAlert("Login required");
       document.getElementById('confirmBidModal').style.display = 'none';
       return;
     }
 
-    const check = await getDocs(query(
+    // Prevent double entry
+    const already = await getDocs(query(
       collection(db, "bids"),
       where("uid", "==", currentUser.uid),
       where("roundId", "==", CURRENT_ROUND_ID)
     ));
-    if (!check.empty) {
-      await showNiceAlert("You already joined today's conquest!");
+
+    if (!already.empty) {
+      await showNiceAlert("You're already in today's Bid Royale!");
       document.getElementById('confirmBidModal').style.display = 'none';
       return;
     }
 
+    // Deduct 50 stars
     const deduct = await tryDeductStarsForJoin(BID_COST);
     if (!deduct.ok) {
       await showNiceAlert("Not enough stars: " + (deduct.message || ""));
@@ -2554,142 +2556,172 @@ document.getElementById('finalConfirmBtn')?.addEventListener('click', async () =
       return;
     }
 
+    // Join the bid — this is what allows their taps to count
     await addDoc(collection(db, "bids"), {
       uid: currentUser.uid,
-      username: currentUser.username || currentUser.displayName || "Anonymous",
-      invitedBy: currentUser.invitedBy || null,
+      username: currentUser.username || currentUser.displayName || "Warrior",
       roundId: CURRENT_ROUND_ID,
-      starsBid: BID_COST,
       status: "active",
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp()
+      joinedAt: serverTimestamp()
     });
 
-    await showNiceAlert("You’re IN the war!\n50 Stars deducted. Get ready to tap!");
+    await showNiceAlert("You're IN!\nPrize pool +₦100\nStart tapping NOW!");
+
   } catch (err) {
     console.error(err);
-    await showNiceAlert("Something went wrong. Try again.");
+    await showNiceAlert("Error. Try again.");
   } finally {
     btn.disabled = false;
-    btn.textContent = "YES!";  // restore original text
+    btn.textContent = "YES!";
     document.getElementById('confirmBidModal').style.display = 'none';
   }
 });
 
-/* ====================== DAILY BID ROYALE — PERFECT SYNC, NO JUMP ON RELOAD ====================== */
+/* ====================== DAILY BID ENGINE — PERFECT TIMER + LIVE PRIZE + BID LEADERBOARD ====================== */
 let bidActive = false;
+let unsubStats = null;
+let unsubLeaderboard = null;
 
 function startDailyBidEngine() {
-  const timerEl   = document.getElementById('countdownTimer');
-  const playersEl = document.getElementById('livePlayers');
-  const prizeEl   = document.getElementById('livePrize');
+  const timerEl       = document.getElementById('countdownTimer');
+  const playersEl     = document.getElementById('livePlayers');
+  const prizeEl       = document.getElementById('livePrize');
+  const leaderboardEl = document.getElementById('bidLeaderboard');
 
   if (!timerEl || !playersEl || !prizeEl) {
     setTimeout(startDailyBidEngine, 500);
     return;
   }
 
-  // TODAY'S ROUND (Lagos date)
-  window.CURRENT_ROUND_ID = (() => {
-    const d = new Date();
-    const lagos = new Date(d.getTime() + 60*60*1000);
-    return "round_" + lagos.toISOString().split('T')[0];
-  })();
+  window.CURRENT_ROUND_ID = getTodayRound();
 
-  let serverTimeOffset = 0;
-
-  // Get REAL server time once (eliminates client clock drift)
-  const getServerTime = async () => {
+  // Sync with server time
+  let serverOffset = 0;
+  const syncTime = async () => {
     try {
       const snap = await getDoc(doc(db, "server", "time"));
-      if (snap.exists()) {
-        const serverNow = snap.data().timestamp.toMillis();
-        serverTimeOffset = serverNow - Date.now();
-      }
-    } catch (e) { /* fallback to local time if fails */ }
+      if (snap.exists()) serverOffset = snap.data().timestamp.toMillis() - Date.now();
+    } catch (e) {}
   };
-  getServerTime();
+  syncTime();
 
-  function getLagosNow() {
-    return new Date(Date.now() + serverTimeOffset + 60*60*1000); // UTC+1
+  function getLagosTime() {
+    return new Date(Date.now() + serverOffset + 3600000); // UTC+1
   }
 
-  function updateCountdown() {
-    const lagosNow = getLagosNow();
-    const today = lagosNow.toISOString().split('T')[0];
+  function updateTimerAndStats() {
+    const now = getLagosTime();
+    const today = now.toISOString().split('T')[0];
 
     const bidStart = new Date(`${today}T00:33:00+01:00`).getTime();
     const bidEnd   = new Date(`${today}T23:59:00+01:00`).getTime();
-    const now      = lagosNow.getTime();
+    const current = now.getTime();
 
-    if (now >= bidStart && now < bidEnd + 60000) {
+    // BID IS ACTIVE FROM 00:33 → 23:59
+    if (current >= bidStart && current < bidEnd + 60000) {
       bidActive = true;
-      const diff = Math.max(0, Math.floor((bidEnd - now) / 1000));
 
-      const h = String(Math.floor(diff / 3600)).padStart(2, '0');
-      const m = String(Math.floor((diff % 3600) / 60)).padStart(2, '0');
-      const s = String(diff % 60).padStart(2, '0');
+      const secondsLeft = Math.max(0, Math.floor((bidEnd - current) / 1000));
+      const h = String(Math.floor(secondsLeft / 3600)).padStart(2, '0');
+      const m = String(Math.floor((secondsLeft % 3600) / 60)).padStart(2, '0');
+      const s = String(secondsLeft % 60).padStart(2, '0');
 
       timerEl.textContent = `${h}:${m}:${s}`;
-      timerEl.style.color = diff < 600 ? "#ff0066" : "#00ff88";
+      timerEl.style.color = secondsLeft < 600 ? "#ff0066" : "#00ff88";
       timerEl.style.fontWeight = "900";
 
-      // Declare winners exactly once
-      if (diff === 0 && !timerEl.dataset.declared) {
-        timerEl.dataset.declared = "true";
+      // End exactly once
+      if (secondsLeft === 0 && !timerEl.dataset.ended) {
+        timerEl.dataset.ended = "true";
         declareWinnersAndReset();
       }
 
-    } else if (now < bidStart) {
+    } else if (current < bidStart) {
       bidActive = false;
-      const diff = Math.floor((bidStart - now) / 1000);
-      const h = String(Math.floor(diff / 3600)).padStart(2, '0');
-      const m = String(Math.floor((diff % 3600) / 60)).padStart(2, '0');
-      timerEl.textContent = `Starts in ${h}:${m}`;
+      const untilStart = Math.floor((bidStart - current) / 1000);
+      const h = String(Math.floor(untilStart / 3600)).padStart(2, '0');
+      const m = String(Math.floor((untilStart % 3600) / 60)).padStart(2, '0');
+      timerEl.textContent = `Opens in ${h}:${m}`;
       timerEl.style.color = "#888";
     } else {
       bidActive = false;
-      timerEl.textContent = "Next bid 00:33";
+      timerEl.textContent = "Bid ended";
       timerEl.style.color = "#666";
     }
-  }
 
-  // Live stats
-  let unsub = null;
-  function updateLiveStats() {
-    if (unsub) unsub();
-    if (bidActive) {
-      const q = query(
-        collection(db, "bids"),
-        where("roundId", "==", window.CURRENT_ROUND_ID),
-        where("status", "==", "active")
+    // === LIVE PRIZE POOL & PLAYER COUNT ===
+    if (unsubStats) unsubStats();
+    if (unsubLeaderboard) unsubLeaderboard();
+
+    const bidsQuery = query(
+      collection(db, "bids"),
+      where("roundId", "==", CURRENT_ROUND_ID),
+      where("status", "==", "active")
+    );
+
+    unsubStats = onSnapshot(bidsQuery, (snap) => {
+      const count = snap.size;
+      const prize = Math.min(50000 + (count * 100), 500000);
+
+      playersEl.textContent = count;
+      prizeEl.textContent = "₦" + prize.toLocaleString();
+    });
+
+    // === BID-ONLY TAP LEADERBOARD (only people who joined today) ===
+    if (bidActive && leaderboardEl) {
+      const tapsQuery = query(
+        collection(db, "taps"),
+        where("roundId", "==", CURRENT_ROUND_ID),
+        where("inBid", "==", true)
       );
-      unsub = onSnapshot(q, snap => {
-        const count = snap.size;
-        playersEl.textContent = count;
-        prizeEl.textContent = "₦" + (count * 5000).toLocaleString();
+
+      unsubLeaderboard = onSnapshot(tapsQuery, (snap) => {
+        const scores = {};
+
+        snap.docs.forEach(doc => {
+          const d = doc.data();
+          if (!scores[d.uid]) scores[d.uid] = { name: d.username || "Player", taps: 0 };
+          scores[d.uid].taps += d.count || 1;
+        });
+
+        const ranked = Object.values(scores)
+          .sort((a, b) => b.taps - a.taps)
+          .slice(0, 15);
+
+        if (ranked.length === 0) {
+          leaderboardEl.innerHTML = `<div style="text-align:center;color:#666;padding:30px 0;font-size:14px;">
+            No taps yet.<br>Join now and dominate!
+          </div>`;
+        } else {
+          leaderboardEl.innerHTML = ranked.map((p, i) => `
+            <div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid #333;">
+              <span style="color:${i===0?'#FFD700':i===1?'#C0C0C0':i===2?'#CD7F32':'#00FFA3'};font-weight:bold;">
+                #${i+1} ${p.name.substring(0,13)}
+              </span>
+              <span style="color:#00FFA3;font-weight:900;">${p.taps.toLocaleString()}</span>
+            </div>
+          `).join('');
+        }
       });
-    } else {
-      playersEl.textContent = "0";
-      prizeEl.textContent = "₦0";
+    } else if (leaderboardEl) {
+      leaderboardEl.innerHTML = `<div style="text-align:center;color:#555;padding:30px 0;">
+        Bid opens at 00:33
+      </div>`;
     }
   }
 
-  updateCountdown();
-  updateLiveStats();
-  setInterval(() => {
-    updateCountdown();
-    updateLiveStats();
-  }, 1000);
+  // Run every second
+  updateTimerAndStats();
+  setInterval(updateTimerAndStats, 1000);
 }
 
-// Keep your declare function
+// Keep your payout function
 async function declareWinnersAndReset() {
-  console.log("BID ENDED — PAYING TOP 5 NOW");
-  // Your payout code here
+  console.log("BID ENDED — PAYING TOP 5 FROM BID LEADERBOARD");
+  // Your winner logic here
 }
 
-// Create this document once in Firestore (path: server/time)
+// Start once
 if (!window.bidEngineStarted) {
   window.bidEngineStarted = true;
   startDailyBidEngine();
