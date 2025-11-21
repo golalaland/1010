@@ -1138,7 +1138,7 @@ endGameModal.style.cssText = `
 `;
 
 endGameModal.innerHTML = `
-  <div style="background:#0a0a0a;color:#fff;max-width:360px;width:100%;
+  <div id="modalContent" style="background:#0a0a0a;color:#fff;max-width:360px;width:100%;
     border-radius:22px;text-align:center;padding:30px 20px;
     border:2px solid #0f9;box-shadow:0 0 30px rgba(0,255,150,0.3);">
     
@@ -1162,57 +1162,79 @@ endGameModal.innerHTML = `
         SHARE SCORE
       </button>
 
-<button id="playAgainBtn" 
+      <button id="playAgainBtn" 
         style="flex:1;padding:15px;border:none;border-radius:14px;
                background:#ff00aa;color:#fff;font-weight:bold;font-size:16px;
                cursor:pointer;position:relative;z-index:999999;
-               box-shadow:0 5px 15px rgba(255,0,170,0.4);"
-        onclick="location.reload(true)">
-  PLAY AGAIN
-</button>
+               box-shadow:0 5px 15px rgba(255,0,170,0.4);">
+        PLAY AGAIN
+      </button>
     </div>
   </div>
 `;
 
-// 1. Add modal to page
 document.body.appendChild(endGameModal);
 
-// 2. SHOW FUNCTION
+// ======================================================
+//  SHOW END MODAL — WITH CONDITIONAL FAIL/WIN SOUND + STYLES
+// ======================================================
 function showEndGameModal() {
   document.getElementById('finalTaps').textContent = taps.toLocaleString();
   document.getElementById('finalEarnings').textContent = `₦${earnings.toLocaleString()}`;
   document.getElementById('playerName').textContent = currentUser?.handle || "Tapper";
 
-  // victory sound
-  new Audio('https://raw.githubusercontent.com/golalaland/1010/main/material-chest-open-394472.mp3').play().catch(()=>{});
+  // 🏆 WIN SOUND (100+ taps) vs 😢 FAIL JINGLE (<100 taps)
+  const soundUrl = taps >= 100
+    ? 'https://raw.githubusercontent.com/golalaland/1010/main/material-chest-open-394472.mp3'
+    : 'https://raw.githubusercontent.com/golalaland/1010/main/fail-jingle-stereo-mix-88784.mp3';
+
+  new Audio(soundUrl).play().catch(() => {});
+
+  // ✨ Modal styling based on performance
+  const modalContent = document.getElementById('modalContent');
+  const finalTaps = document.getElementById('finalTaps');
+
+  if (taps < 100) {
+    modalContent.style.borderColor = '#ff4444';
+    modalContent.style.boxShadow = '0 0 30px rgba(255,68,68,0.4)';
+    finalTaps.style.color = '#ff6666';
+  } else {
+    modalContent.style.borderColor = '#0f9';
+    modalContent.style.boxShadow = '0 0 30px rgba(0,255,150,0.4)';
+    finalTaps.style.color = '#0ff';
+  }
 
   endGameModal.style.display = "flex";
 }
 
-// 3. THIS IS THE FIX — attach Play Again AFTER everything, with a tiny safety delay
+// ======================================================
+//  BUTTON ATTACHMENTS (SAFE MODE — No Duplicate Listeners)
+// ======================================================
 setTimeout(() => {
+
+  // PLAY AGAIN
   const playAgainBtn = document.getElementById('playAgainBtn');
   if (playAgainBtn) {
-    // Remove any old listeners first (prevents duplicates)
     playAgainBtn.replaceWith(playAgainBtn.cloneNode(true));
     document.getElementById('playAgainBtn').addEventListener('click', () => {
-      location.reload(true);   // forces full reload, no cache nonsense
+      location.reload(true);
     });
   }
 
-  // Share button (also re-attached safely)
+  // SHARE BUTTON
   document.getElementById('shareBtn')?.addEventListener('click', () => {
     const name = document.getElementById('playerName').textContent;
-    const text = `${name} just got ${taps.toLocaleString()} taps and earned ₦${earnings.toLocaleString()}! Beat me if you can!`;
+    const text = I just got ${taps.toLocaleString()} taps and earned ₦${earnings.toLocaleString()}! on Tap Master!`;
+
     if (navigator.share) {
-      navigator.share({title: "My Tap Score", text, url: location.href});
+      navigator.share({ title: "My Tap Score", text, url: location.href });
     } else {
       navigator.clipboard.writeText(text + " " + location.href);
       alert("Score copied!");
     }
   });
 
-}, 100);   // 100
+}, 100);
 
 
 
