@@ -740,9 +740,9 @@ const RedHotMode = {
   },
 
   punish() {
-    taps = Math.max(0, taps - 3);
+    taps = Math.max(0, taps - 59);
     progress = Math.max(0, progress - 10);
-    showFloatingPlus(tapButton, "-3");
+    showFloatingPlus(tapButton, "-59");
     tapButton?.classList.add('red-punish');
     setTimeout(() => tapButton?.classList.remove('red-punish'), 400);
     document.body.style.background = '#330000';
