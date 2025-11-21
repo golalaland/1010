@@ -1677,20 +1677,22 @@ const handleNormalTap = debounce(async () => {
         const snap = await getDocs(q);
         window.userInTodayBid = !snap.empty;
       } catch (err) {
-        window.userInTodayBid = false; // fail-safe
+        window.userInTodayBid = false;
       }
     }
 
- if (window.userInTodayBid && currentUser?.chatId) {
-  addDoc(collection(db, "taps"), {
-    uid: currentUser.uid || currentUser.email?.replace(/\./g, ','),
-    username: currentUser.chatId,
-    count: 1,
-    roundId: window.CURRENT_ROUND_ID,
-    inBid: true,
-    timestamp: serverTimestamp()
-  }).catch(() => {});
-}
+    // If user is in bid → record tap with real chatId
+    if (window.userInTodayBid && currentUser?.chatId) {
+      addDoc(collection(db, "taps"), {
+        uid: currentUser.uid || currentUser.email?.replace(/\./g, ','),
+        username: currentUser.chatId,
+        count: 1,
+        roundId: window.CURRENT_ROUND_ID,
+        inBid: true,
+        timestamp: serverTimestamp()
+      }).catch(() => {});
+    }
+  }
   // ———————————————————————————————
   //  END OF BID LOGIC
   // ———————————————————————————————
@@ -1725,7 +1727,7 @@ const handleNormalTap = debounce(async () => {
 
   updateUI();
   updateBonusBar();
-}, 50);
+}, 50); // ← THIS LINE WAS MISSING A CLOSING BRACE BEFORE!
 
 // ======================================================
 //  MAIN TAP LISTENER — FINAL & BULLETPROOF
