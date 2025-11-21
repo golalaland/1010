@@ -1,4 +1,4 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
   
   // AUTH — onAuthStateChanged lives here
   import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
@@ -252,32 +252,22 @@ async function loadCurrentUserForGame() {
   } catch(err){ console.warn("loadCurrentUserForGame error",err); }
 }
 
-// ---------- DEDUCT STARS WITH ANIMATION ----------
-async function tryDeductStarsForJoin(cost) {
-  if (!currentUser?.uid) return { ok: false, message: "You are not logged in" };
-
-  const userRef = doc(db, "users", currentUser.uid);
-  const previousStars = currentUser.stars ?? 0;
-
-  try {
-    await runTransaction(db, async (t) => {
+// ---------- DEDUCT STARS ----------
+async function tryDeductStarsForJoin(cost){
+  if(!currentUser?.uid) return {ok:false,message:"You are not logged in"};
+  const userRef = doc(db,"users",currentUser.uid);
+  try{
+    await runTransaction(db,async t=>{
       const u = await t.get(userRef);
-      if (!u.exists()) throw new Error("User not found");
-      const currentStars = Number(u.data().stars || 0);
-      if (currentStars < cost) throw new Error("Not enough stars");
-      t.update(userRef, { stars: currentStars - cost });
-      currentUser.stars = currentStars - cost;
+      if(!u.exists()) throw new Error("User not found");
+      const currentStars = Number(u.data().stars||0);
+      if(currentStars<cost) throw new Error("Not enough stars");
+      t.update(userRef,{stars:currentStars-cost});
+      currentUser.stars = currentStars-cost;
     });
-
-    // ← THIS IS THE ONLY CHANGE
-    if (starCountEl) {
-      animateDeduct(starCountEl, previousStars, currentUser.stars, 700);
-    }
-
-    return { ok: true };
-  } catch (e) {
-    return { ok: false, message: e.message || "Could not deduct stars" };
-  }
+    starCountEl && (starCountEl.textContent=formatNumber(currentUser.stars));
+    return {ok:true};
+  } catch(e){ return {ok:false,message:e.message||"Could not deduct stars"}; }
 }
 
 // ---------- GIVE CASH ----------
@@ -439,39 +429,6 @@ function triggerHaptic() {
     tapButton.classList.add('shake');
     setTimeout(() => tapButton.classList.remove('shake'), 100);
   }
-}
-
-  
-// ======================================================
-//  DEDUCT ANIMATION FUNCTION ODO
-// ======================================================
-function animateDeduct(el, from, to, duration = 600) {
-  if (from === to) {
-    el.textContent = formatNumber(to);
-    return;
-  }
-
-  const startTime = performance.now();
-  const diff = to - from; // negative when deducting
-
-  function step(now) {
-    const elapsed = now - startTime;
-    const progress = Math.min(elapsed / duration, 1);
-    
-    // Ease-out cubic for snappy feel
-    const ease = 1 - Math.pow(1 - progress, 3);
-    
-    const current = Math.round(from + diff * ease);
-    el.textContent = formatNumber(current);
-
-    if (progress < 1) {
-      requestAnimationFrame(step);
-    } else {
-      el.textContent = formatNumber(to);
-    }
-  }
-
-  requestAnimationFrame(step);
 }
 
 // ======================================================
@@ -815,10 +772,10 @@ const RedHotMode = {
 
   // Called when player taps during red-hot
   punish() {
-    taps = Math.max(0, taps - 11);
+    taps = Math.max(0, taps - 3);
     progress = Math.max(0, progress - 10);
 
-    showFloatingPlus(tapButton, "-11");
+    showFloatingPlus(tapButton, "-3");
     tapButton.classList.add('red-punish');
     setTimeout(() => tapButton.classList.remove('red-punish'), 400);
 
@@ -1801,45 +1758,6 @@ document.body.addEventListener('click', function(e) {
   }
 }, true); // ← "true" = capture phase (catches clicks even on dynamically added buttons)
 
-// STREAK MARSHALL
-function renderStreakUI() {
-  if (!currentUser?.weekStreak) return;
-
-  let completed = 0;
-  currentUser.weekStreak.forEach((day, i) => {
-    const el = document.querySelectorAll('.streak-day-mini')[i];
-    const dot = el?.querySelector('.streak-dot');
-    if (day.played && el && dot) {
-      dot.classList.add('active');
-      el.classList.add('active');
-      completed++;
-    } else if (el && dot) {
-      dot.classList.remove('active');
-      el.classList.remove('active');
-    }
-  });
-
-  document.getElementById('streakDayCount').textContent = completed;
-
-  const btn = document.getElementById('claimStreakRewardBtn');
-  const glow = document.getElementById('claimGlow');
-
-  if (completed === 7) {
-    btn.style.opacity = "1";
-    btn.style.pointerEvents = "auto";
-    btn.style.background = "linear-gradient(90deg,#00ff88,#00cc66)";
-    btn.style.color = "#000";
-    btn.textContent = "CLAIM 350 STRZ NOW";
-    glow.style.opacity = "1";
-  } else {
-    btn.style.opacity = "0.4";
-    btn.style.pointerEvents = "none";
-    btn.style.background = "#333";
-    btn.style.color = "#666";
-    btn.textContent = `CLAIM 350 STRZ (${completed}/7)`;
-    glow.style.opacity = "0";
-  }
-}
 // THIS JS ONLY UPDATES THE TEXT — banner looks full from second 1
 async function updateLiveBanner() {
   const el = document.getElementById("liveBannerText");
@@ -1911,6 +1829,7 @@ async function updateLiveBanner() {
     el.innerHTML = `<span style="color:#00FFA3;text-shadow:0 0 16px #00FFA3;">LIVE • ₦4.82M POT • WAR DON START • NO MERCY</span><span style="color:#666;"> • </span>`.repeat(6);
   }
 }
+
 // Update every 21 seconds — feels alive
 setInterval(updateLiveBanner, 21000);
 // Run once on load so it’s never blank
