@@ -1679,37 +1679,48 @@ function play(soundElement, volume = 1.0) {
 }
 
 // === DETTY REWARDS MODAL — FULLY WORKING JS (FIXED) ===
-const dettyModal = document.getElementById('dettyRewardsModal');
-const openBtn = document.getElementById('dettyRewardsBtn');
-const closeBtn = document.getElementById('closeDettyRewards');
+const cards = document.querySelectorAll('#dettyRewardsModal .girl-card');
+const dots = document.querySelectorAll('#dettyRewardsModal .swipe-dot');
+let currentIndex = 0;
 
-openBtn?.addEventListener('click', () => dettyModal.style.display = 'flex');
-closeBtn?.addEventListener('click', () => dettyModal.style.display = 'none');
-dettyModal?.addEventListener('click', e => { if (e.target === dettyModal) dettyModal.style.display = 'none'; });
-
-let currentGirl = 0;
-const cards = document.querySelectorAll('.girl-card');
-const dots = document.querySelectorAll('.swipe-dot');
-
-function showGirl(n) {
-  cards.forEach((c, i) => {
-    c.classList.toggle('active', i === n);
-    dots[i].classList.toggle('active', i === n);
+function goToSlide(index) {
+  cards.forEach((card, i) => {
+    card.classList.toggle('active', i === index);
   });
+  dots.forEach((dot, i) => {
+    dot.classList.toggle('active', i === index);
+  });
+  currentIndex = index;
 }
 
-document.querySelector('.swipe-left')?.addEventListener('click', () => {
-  currentGirl = (currentGirl - 1 + cards.length) % cards.length;
-  showGirl(currentGirl);
+// Arrows
+document.querySelector('.swipe-left').addEventListener('click', () => {
+  goToSlide((currentIndex - 1 + cards.length) % cards.length);
+});
+document.querySelector('.swipe-right').addEventListener('click', () => {
+  goToSlide((currentIndex + 1) % cards.length);
 });
 
-document.querySelector('.swipe-right')?.addEventListener('click', () => {
-  currentGirl = (currentGirl + 1) % cards.length;
-  showGirl(currentGirl);
+// Touch swipe
+let touchStartX = 0;
+document.getElementById('girlSwiper').addEventListener('touchstart', e => {
+  touchStartX = e.touches[0].clientX;
+});
+document.getElementById('girlSwiper').addEventListener('touchend', e => {
+  if (!touchStartX) return;
+  const touchEndX = e.changedTouches[0].clientX;
+  const diff = touchStartX - touchEndX;
+  if (Math.abs(diff) > 50) {
+    if (diff > 0) document.querySelector('.swipe-right').click();
+    else document.querySelector('.swipe-left').click();
+  }
+  touchStartX = 0;
 });
 
-// Start on first girl
-showGirl(0);
+// Close button (optional)
+document.getElementById('closeDettyRewards').addEventListener('click', () => {
+  document.getElementById('dettyRewardsModal').style.display = 'none';
+});
 
 // ---------- ULTRA-RELIABLE UI CLICK SOUND (catches EVERY button) ----------
 const uiClickSound = document.getElementById('uiClickSound');
