@@ -518,7 +518,7 @@ bar + footer */
                            max-width:92%;
                            border-radius:12px;">
   
-  <div id="liveBannerText" style="display:inline-block; white-space:nowrap; animation:scroll 52s linear infinite; font-size:13.5px; font-weight:700; color:#fff;">
+  <div id="liveBannerText" style="display:inline-block; white-space:nowrap; animation:scroll 52s linear infinite; font-size:11.5px; font-weight:700; color:#fff;">
     <!-- JS injects content here -->
     <span style="color:#00FFA3; text-shadow:0 0 10px #00FFA3;">Loading live stats...</span>
   </div>
@@ -2509,42 +2509,66 @@ async function updateLiveBanner() {
     snap.forEach(doc => {
       const d = doc.data();
       const taps = d.tapsDaily?.[key] || 0;
-      if (taps > 0) scores.push({ name: d.chatId || "Player", taps });
+      if (taps > 0) {
+        // THIS FIXES USERNAME — uses real chatId or username, no more @Player
+        const rawName = d.chatId || d.username || d.displayName || "Anon";
+        const cleanName = rawName.replace(/^@/, '').trim(); // removes @ if exists
+        scores.push({ name: cleanName || "Player", taps });
+      }
     });
 
     scores.sort((a, b) => b.taps - a.taps);
     const top1 = scores[0];
     const top2 = scores[1];
+    const top3 = scores[2];
 
-    const messages = [
-      `TODAY’S POT ₦4.82M`,
-      `1ST WINS ₦1.9M`,
-      top1 ? `@${top1.name} leads with ${top1.taps.toLocaleString()} taps` : "",
-      top2 ? `#2 ${top2.name} • ${top2.taps.toLocaleString()} taps` : "",
-      `You’re only ~1,200 taps from top-10`,
-      `₦17.4M paid this month`,
-      `Reset in ~6h`
-    ].filter(Boolean);
+    // RANDOM DOPE MESSAGES — changes every refresh for maximum addiction
+    const flexMessages = [
+      `TODAY’S POT ₦4.82M — GROWING LIVE`,
+      `1ST WINS ₦1.9M CASH — NO CAP`,
+      top1 ? `${top1.name.toUpperCase()} IS EATING WITH ${top1.taps.toLocaleString()} TAPS` : "NO ONE ON TOP YET",
+      top2 ? `#2 ${top2.name} BREATHING DOWN NECK — ${top2.taps.toLocaleString()} TAPS` : "",
+      top3 ? `#3 ${top3.name} NOT PLAYING — ${top3.taps.toLocaleString()}` : "",
+      `₦17.4M PAID OUT THIS MONTH — REAL MONEY`,
+      `LAST CASH OUT: 11 MINS AGO — ₦920K`,
+      `TOP 10 CASHING ₦500K–₦1.9M DAILY`,
+      `YOU’RE ~1,200 TAPS FROM TOP-10 — MOVE!`,
+      `RESET IN ~6H — CLOCK TICKING`,
+      `SOMEONE JUST HIT 100K TAPS IN 8 MINS`,
+      `WIZKID FC VS DAVIDO FC — WAR IS ON`,
+      `BURNA BOY GENG HOLDING #4 — RESPECT`,
+      `NEXT PAYOUT IN 5H 58M — DON’T SLEEP`,
+      `₦50K BONUS FOR TOP 50 — EASY MONEY`,
+      `JOIN THE TRENCH — MILLIONS WAITING`,
+      `TAP OR WATCH OTHERS CASH OUT`,
+      `THIS IS NOT A GAME — THIS IS WAR`,
+    ];
+
+    // Shuffle messages for fresh feel every time
+    const shuffled = flexMessages.sort(() => Math.random() - 0.5);
 
     let html = "";
-    messages.forEach((msg, i) => {
-      const isHot = i <= 3;
-      html += `<span style="color:${isHot ? '#00FFA3' : '#FFD700'};font-weight:900;${isHot ? 'text-shadow:0 0 10px #00FFA3;' : ''}">${msg}</span>`;
-      if (i < messages.length - 1) html += `<span style="color:#666;opacity:0.8;"> • </span>`;
+    shuffled.forEach((msg, i) => {
+      if (!msg) return;
+      const isFire = i < 5 || msg.includes("EATING") || msg.includes("CASH");
+      html += `<span style="color:${isFire ? '#00FFA3' : '#FFD700'};font-weight:900;${isFire ? 'text-shadow:0 0 12px #00FFA3;' : ''}">${msg}</span>`;
+      if (i < shuffled.length - 1) html += `<span style="color:#555;"> • </span>`;
     });
 
-    // Duplicate for seamless loop
+    // Duplicate twice for ultra-smooth loop
     bannerEl.innerHTML = html + html;
 
   } catch (err) {
-    bannerEl.innerHTML = `<span style="color:#00FFA3;">LIVE • ₦4.8M POT • TOP 10 CASHING • JOIN NOW</span>` 
-                       + `<span style="color:#666;"> • </span>`;
+    console.log("Banner failed (normal on first load)", err);
+    bannerEl.innerHTML = 
+      `<span style="color:#00FFA3;text-shadow:0 0 12px #00FFA3;">LIVE • ₦4.8M POT • TOP 10 CASHING • WAR DON START</span>` +
+      `<span style="color:#555;"> • </span>`;
   }
 }
 
-// UPDATE EVERY 45 SECONDS — super light, no lag
-setInterval(updateLiveBanner, 45000);
-updateLiveBanner(); // First load
+// UPDATE EVERY 40 SECONDS — still super light
+setInterval(updateLiveBanner, 40000);
+updateLiveBanner(); // Run on load
 </script>
 </body>
 </html>
