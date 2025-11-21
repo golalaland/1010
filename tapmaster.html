@@ -494,7 +494,7 @@ bar + footer */
   0%   { transform:translateX(100vw); }
   100% { transform:translateX(-100%); }
 }
-#liveBannerText span { margin:0 30px; }
+#bannerPage { contain: layout style; } /* prevents layout thrashing = no lag */
 </style>
 </head>
 </body>
@@ -508,18 +508,19 @@ bar + footer */
     <div id="scrambleText">TAP MASTER</div>
   </div>
   
-  <!-- LIVE FOMO BANNER — FULL WIDTH, REAL DATA, NO CUTOFF, DISAPPEARS ON PLAY -->
-<div id="liveBanner" style="background:linear-gradient(90deg,#000,#1a0033,#000); 
-                           padding:14px 0; 
-                           border-bottom:4px solid #00FFA3; 
-                           box-shadow:0 6px 30px rgba(0,255,163,0.6); 
-                           overflow:hidden; 
-                           margin:0 auto 24px; 
-                           width:100%; 
-                           max-width:100%;">
+<!-- YOUR FINAL BANNER — slim, fast, live, uses your #bannerPage ID -->
+<div id="bannerPage" style="background:linear-gradient(90deg,#000,#1a0033,#000);
+                           padding:11px 0;
+                           border-bottom:3px solid #00FFA3;
+                           box-shadow:0 4px 20px rgba(0,255,163,0.5);
+                           overflow:hidden;
+                           margin:0 auto 20px;
+                           max-width:92%;
+                           border-radius:12px;">
   
-  <div id="liveBannerText" style="display:inline-block; white-space:nowrap; animation:scroll 50s linear infinite; font-size:15px; font-weight:700;">
-    <!-- This gets injected LIVE by JS below -->
+  <div id="liveBannerText" style="display:inline-block; white-space:nowrap; animation:scroll 52s linear infinite; font-size:13.5px; font-weight:700; color:#fff;">
+    <!-- JS injects content here -->
+    <span style="color:#00FFA3; text-shadow:0 0 10px #00FFA3;">Loading live stats...</span>
   </div>
 </div>
   
@@ -2497,64 +2498,52 @@ document.body.addEventListener('click', function(e) {
   }
 }, true); // ← "true" = capture phase (catches clicks even on dynamically added buttons)
 async function updateLiveBanner() {
-  const key = getLeaderboardKey("daily");
-  const usersCol = collection(db, "users");
-  
+  const bannerEl = document.getElementById("liveBannerText");
+  if (!bannerEl) return;
+
   try {
-    const snap = await getDocs(usersCol);
+    const key = getLeaderboardKey("daily");
+    const snap = await getDocs(collection(db, "users"));
     const scores = [];
 
     snap.forEach(doc => {
-      const data = doc.data();
-      const taps = data.tapsDaily?.[key] || 0;
-      if (taps > 0) {
-        scores.push({
-          name: data.chatId || "Anon",
-          taps: taps,
-          uid: doc.id
-        });
-      }
+      const d = doc.data();
+      const taps = d.tapsDaily?.[key] || 0;
+      if (taps > 0) scores.push({ name: d.chatId || "Player", taps });
     });
 
     scores.sort((a, b) => b.taps - a.taps);
-    const top3 = scores.slice(0, 3);
-    const topPlayer = top3[0];
+    const top1 = scores[0];
+    const top2 = scores[1];
 
-    // Format names nicely
-    const formatName = (n) => n.split(" ").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
-
-    // DYNAMIC MESSAGES — changes every refresh
     const messages = [
-      `TODAY’S POT ₦4,820,000`,
-      `1ST WINS ₦1,900,000`,
-      `Reset in 06h 12m`,
-      `${formatName(topPlayer.name)} is DOMINATING with ${topPlayer.taps.toLocaleString()} taps!`,
-      top3[1] ? `${formatName(top3[1].name)} chasing hard at #2 (${top3[1].taps.toLocaleString()})` : "",
-      top3[2] ? `#3 ${formatName(top3[2].name)} holding strong` : "",
-      `₦17.4M paid out this month`,
-      `Top 10 cashing ₦500k–₦1.9M daily`,
-      `You’re only 1,204 taps from top-10 — MOVE!`,
-      `Last payout: burnaboy_geng cashed ₦920k 11 mins ago`,
+      `TODAY’S POT ₦4.82M`,
+      `1ST WINS ₦1.9M`,
+      top1 ? `@${top1.name} leads with ${top1.taps.toLocaleString()} taps` : "",
+      top2 ? `#2 ${top2.name} • ${top2.taps.toLocaleString()} taps` : "",
+      `You’re only ~1,200 taps from top-10`,
+      `₦17.4M paid this month`,
+      `Reset in ~6h`
     ].filter(Boolean);
 
-    // Build the scrolling text
-    let bannerHTML = "";
-    messages.forEach(msg => {
-      bannerHTML += `<span style="color:#00FFA3;font-weight:900;text-shadow:0 0 12px #00FFA3;">${msg}</span><span style="color:#fff;"> • </span>`;
+    let html = "";
+    messages.forEach((msg, i) => {
+      const isHot = i <= 3;
+      html += `<span style="color:${isHot ? '#00FFA3' : '#FFD700'};font-weight:900;${isHot ? 'text-shadow:0 0 10px #00FFA3;' : ''}">${msg}</span>`;
+      if (i < messages.length - 1) html += `<span style="color:#666;opacity:0.8;"> • </span>`;
     });
 
     // Duplicate for seamless loop
-    document.getElementById("liveBannerText").innerHTML = bannerHTML + bannerHTML;
+    bannerEl.innerHTML = html + html;
 
   } catch (err) {
-    console.log("Banner update failed", err);
-    document.getElementById("liveBannerText").innerHTML = 
-      `<span style="color:#00FFA3;">LIVE LEADERBOARD • ₦4.8M POT • TOP 10 CASHING DAILY • JOIN THE WAR</span>` 
-      + `<span style="color:#fff;"> • </span>`;
+    bannerEl.innerHTML = `<span style="color:#00FFA3;">LIVE • ₦4.8M POT • TOP 10 CASHING • JOIN NOW</span>` 
+                       + `<span style="color:#666;"> • </span>`;
   }
 }
-// UPDATE EVERY 30 SECONDS (or after every tap)
-setInterval(updateLiveBanner, 30000);
+
+// UPDATE EVERY 45 SECONDS — super light, no lag
+setInterval(updateLiveBanner, 45000);
 updateLiveBanner(); // First load
 </script>
 </body>
