@@ -1682,16 +1682,17 @@ const handleNormalTap = debounce(async () => {
     }
 
     // If user is in today's bid → save individual tap for live leaderboard
-    if (window.userInTodayBid) {
-  addDoc(collection(db, "taps"), {
-    uid: currentUser.uid,
-    username: currentUser.chatId || "Warrior",
-    count: 1,
-    roundId: window.CURRENT_ROUND_ID,
-    inBid: true,
-    timestamp: serverTimestamp()
-  }).catch(() => {});
-}
+       if (window.userInTodayBid) {
+      addDoc(collection(db, "taps"), {
+        uid: currentUser.uid,
+        username: currentUser.username || currentUser.displayName || "Warrior",
+        count: 1,
+        roundId: window.CURRENT_ROUND_ID,
+        inBid: true,                    // THIS MAKES IT SHOW IN BID LEADERBOARD
+        timestamp: serverTimestamp()
+      }).catch(() => {}); // fire-and-forget — never slows down tapping
+    }
+  }
   // ———————————————————————————————
   //  END OF BID LOGIC
   // ———————————————————————————————
