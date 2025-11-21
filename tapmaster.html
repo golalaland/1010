@@ -490,7 +490,11 @@ bar + footer */
     0% { transform: rotate(0deg);}
     100% { transform: rotate(360deg);}
   }
-  @keyframes scroll{0%{transform:translateX(100%)}100%{transform:translateX(-100%)}}
+@keyframes scroll{
+  0%   { transform:translateX(100vw); }
+  100% { transform:translateX(-100%); }
+}
+#liveBannerText span { margin:0 30px; }
 </style>
 </head>
 </body>
@@ -504,65 +508,18 @@ bar + footer */
     <div id="scrambleText">TAP MASTER</div>
   </div>
   
-  <!-- EPIC FULL-LENGTH BANNER — your cracked version, now on steroids -->
-<div id="bannerPage" style="background:linear-gradient(90deg,#000,#1a0033,#000); 
-                           padding:12px 0; 
-                           border-bottom:3px solid #00ffa3; 
-                           box-shadow:0 4px 25px rgba(0,255,163,0.5); 
+  <!-- LIVE FOMO BANNER — FULL WIDTH, REAL DATA, NO CUTOFF, DISAPPEARS ON PLAY -->
+<div id="liveBanner" style="background:linear-gradient(90deg,#000,#1a0033,#000); 
+                           padding:14px 0; 
+                           border-bottom:4px solid #00FFA3; 
+                           box-shadow:0 6px 30px rgba(0,255,163,0.6); 
                            overflow:hidden; 
                            margin:0 auto 24px; 
-                           max-width:94%;">
+                           width:100%; 
+                           max-width:100%;">
   
-  <div style="display:inline-block; white-space:nowrap; animation:scroll 48s linear infinite; font-size:15px; font-weight:600;">
-    
-    <!-- ONE SUPER LONG BLOCK — repeat exactly twice -->
-    <span style="display:inline-flex; gap:50px; align-items:center; padding:0 80px;">
-      
-      <span style="color:#00FFA3;font-weight:900;text-shadow:0 0 12px #00FFA3;">TODAY’S POT ₦4,820,000</span>
-      <span style="color:#fff;">•</span>
-      <span style="color:#FF2D55;font-weight:900;">1ST WINS ₦1,900,000</span>
-      <span style="color:#fff;">•</span>
-      <span style="color:#FFD700;font-weight:800;">Reset in 06h 12m</span>
-      <span style="color:#fff;">•</span>
-      <span style="color:#00FFA3;font-weight:900;">davido_fan just smashed 28.4M taps</span>
-      <span style="color:#fff;">•</span>
-      <span style="color:#FF2D55;font-weight:900;">wizkid_army climbing fast — #8 spot</span>
-      <span style="color:#fff;">•</span>
-      <span style="color:#00FFA3;">₦17.4M paid out this month</span>
-      <span style="color:#fff;">•</span>
-      <span style="color:#FFD700;">Top 10 cashing ₦500k–₦1.9M daily</span>
-      <span style="color:#fff;">•</span>
-      <span style="color:#FF2D55;">burnaboy_geng just cashed ₦850k</span>
-      <span style="color:#fff;">•</span>
-      <span style="color:#00FFA3;">You’re #127 — only 1,204 taps to top-10</span>
-      <span style="color:#fff;">•</span>
-      <span style="color:#FFD700;">Next payout in 5h 58m</span>
-      
-    </span>
-
-    <!-- EXACT SAME BLOCK AGAIN — for perfect seamless loop -->
-    <span style="display:inline-flex; gap:50px; align-items:center; padding:0 80px;">
-      <span style="color:#00FFA3;font-weight:900;text-shadow:0 0 12px #00FFA3;">TODAY’S POT ₦4,820,000</span>
-      <span style="color:#fff;">•</span>
-      <span style="color:#FF2D55;font-weight:900;">1ST WINS ₦1,900,000</span>
-      <span style="color:#fff;">•</span>
-      <span style="color:#FFD700;font-weight:800;">Reset in 06h 12m</span>
-      <span style="color:#fff;">•</span>
-      <span style="color:#00FFA3;font-weight:900;">davido_fan just smashed 28.4M taps</span>
-      <span style="color:#fff;">•</span>
-      <span style="color:#FF2D55;font-weight:900;">wizkid_army climbing fast — #8 spot</span>
-      <span style="color:#fff;">•</span>
-      <span style="color:#00FFA3;">₦17.4M paid out this month</span>
-      <span style="color:#fff;">•</span>
-      <span style="color:#FFD700;">Top 10 cashing ₦500k–₦1.9M daily</span>
-      <span style="color:#fff;">•</span>
-      <span style="color:#FF2D55;">burnaboy_geng just cashed ₦850k</span>
-      <span style="color:#fff;">•</span>
-      <span style="color:#00FFA3;">You’re #127 — only 1,204 taps to top-10</span>
-      <span style="color:#fff;">•</span>
-      <span style="color:#FFD700;">Next payout in 5h 58m</span>
-    </span>
-
+  <div id="liveBannerText" style="display:inline-block; white-space:nowrap; animation:scroll 50s linear infinite; font-size:15px; font-weight:700;">
+    <!-- This gets injected LIVE by JS below -->
   </div>
 </div>
   
@@ -2539,6 +2496,66 @@ document.body.addEventListener('click', function(e) {
     uiClickSound.play().catch(() => {});
   }
 }, true); // ← "true" = capture phase (catches clicks even on dynamically added buttons)
+async function updateLiveBanner() {
+  const key = getLeaderboardKey("daily");
+  const usersCol = collection(db, "users");
+  
+  try {
+    const snap = await getDocs(usersCol);
+    const scores = [];
+
+    snap.forEach(doc => {
+      const data = doc.data();
+      const taps = data.tapsDaily?.[key] || 0;
+      if (taps > 0) {
+        scores.push({
+          name: data.chatId || "Anon",
+          taps: taps,
+          uid: doc.id
+        });
+      }
+    });
+
+    scores.sort((a, b) => b.taps - a.taps);
+    const top3 = scores.slice(0, 3);
+    const topPlayer = top3[0];
+
+    // Format names nicely
+    const formatName = (n) => n.split(" ").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+
+    // DYNAMIC MESSAGES — changes every refresh
+    const messages = [
+      `TODAY’S POT ₦4,820,000`,
+      `1ST WINS ₦1,900,000`,
+      `Reset in 06h 12m`,
+      `${formatName(topPlayer.name)} is DOMINATING with ${topPlayer.taps.toLocaleString()} taps!`,
+      top3[1] ? `${formatName(top3[1].name)} chasing hard at #2 (${top3[1].taps.toLocaleString()})` : "",
+      top3[2] ? `#3 ${formatName(top3[2].name)} holding strong` : "",
+      `₦17.4M paid out this month`,
+      `Top 10 cashing ₦500k–₦1.9M daily`,
+      `You’re only 1,204 taps from top-10 — MOVE!`,
+      `Last payout: burnaboy_geng cashed ₦920k 11 mins ago`,
+    ].filter(Boolean);
+
+    // Build the scrolling text
+    let bannerHTML = "";
+    messages.forEach(msg => {
+      bannerHTML += `<span style="color:#00FFA3;font-weight:900;text-shadow:0 0 12px #00FFA3;">${msg}</span><span style="color:#fff;"> • </span>`;
+    });
+
+    // Duplicate for seamless loop
+    document.getElementById("liveBannerText").innerHTML = bannerHTML + bannerHTML;
+
+  } catch (err) {
+    console.log("Banner update failed", err);
+    document.getElementById("liveBannerText").innerHTML = 
+      `<span style="color:#00FFA3;">LIVE LEADERBOARD • ₦4.8M POT • TOP 10 CASHING DAILY • JOIN THE WAR</span>` 
+      + `<span style="color:#fff;"> • </span>`;
+  }
+}
+// UPDATE EVERY 30 SECONDS (or after every tap)
+setInterval(updateLiveBanner, 30000);
+updateLiveBanner(); // First load
 </script>
 </body>
 </html>
