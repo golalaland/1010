@@ -1467,42 +1467,39 @@ function triggerHaptic() {
 //   START SESSION – FINAL, COMPLETE & WORKING
 // ======================================================
 function startSession() {
-
-  // ─────── FULL RESET (THIS WAS MISSING!) ───────
+  // FULL RESET
   taps = 0;
   earnings = 0;
-  timer = SESSION_DURATION;        // ← critical!
+  timer = SESSION_DURATION;
   bonusLevel = 1;
   progress = 0;
   tapsForNext = 100;
   cashCounter = 0;
   cashThreshold = randomInt(1, 12);
 
-  running = true;                  // ← critical!
+  running = true;
   tapLocked = false;
   tapButton.disabled = false;
 
-  // Reset red hot mode
-  RedHotMode.reset();
-
-  // UI reset
+  RedHotMode.reset();                    // clean state
   trainBar && (trainBar.style.width = "100%");
   updateBonusBar();
   updateUI();
 
-  // Clear any old interval
   if (intervalId) clearInterval(intervalId);
 
-  // ─────── MAIN GAME LOOP ───────
+  // MAIN GAME LOOP — 100% RELIABLE
   intervalId = setInterval(() => {
     if (!running) return;
 
     timer--;
+
     if (timer <= 0) {
       timer = 0;
       running = false;
       clearInterval(intervalId);
-      endSessionImmediate();
+      intervalId = null;
+      showEndGameModal();
       endSessionRecord();
       return;
     }
@@ -1510,22 +1507,27 @@ function startSession() {
     updateUI();
     trainBar && (trainBar.style.width = (timer / SESSION_DURATION * 100) + "%");
 
-    // Random red-hot trap (~11% chance every 10 sec)
+    // RED HOT TRAP — appears ~every 10 sec after 15 sec left
     if (timer % 10 === 3 && timer > 15) {
       maybeTriggerRedHot();
     }
 
   }, 1000);
+}
 
-  // Final UI refresh
-  updateUI();
+// ======================================================
+//   END SESSION — CLEAN & SAFE
+// ======================================================
+function endSessionImmediate() {
+  running = false;
+  tapLocked = true;
+  tapButton.disabled = true;
+  clearInterval(intervalId);
+  intervalId = null;
 }
 
 // ======================================================
 //   FIRESTORE — ASYNC RECORDING
-// ======================================================
-// ======================================================
-//   FIRESTORE — SAVE SESSION (CLEAN & MODERN 2025)
 // ======================================================
 async function endSessionRecord() {
   if (!currentUser?.uid || taps <= 0) return;
@@ -1716,6 +1718,9 @@ tapButton?.addEventListener(tapEvent, debounce(async (e) => {
   await handleNormalTap();
 
 }, 50));
+
+
+
 
 // ======================================================
 //  RED HOT DEVIL MODE – MODULAR & BULLETPROOF
@@ -2766,9 +2771,9 @@ async function updateLiveBanner() {
     el.innerHTML = `<span style="color:#00FFA3;text-shadow:0 0 12px #00FFA3;">LIVE • ₦4.82M POT • WAR DON START</span><span style="color:#666;"> • </span>`.repeat(6);
   }
 }
-
 setInterval(updateLiveBanner, 21000);
 updateLiveBanner();
+RedHotMode.init();
 </script>
 </body>
 </html>
