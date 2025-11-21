@@ -537,6 +537,11 @@ bar + footer */
   100% { transform: translateX(-100%); }
 }
 #liveBannerText { min-width: 200vw; }
+.streak-day-mini {display:flex;flex-direction:column;align-items:center;gap:3px;font-size:9px;color:#00ff88;font-weight:800;opacity:0.6;transition:all .4s;}
+.streak-dot {width:12px;height:12px;border-radius:50%;background:#333;border:2px solid #00ff88;box-shadow:0 0 8px rgba(0,255,136,.4);transition:all .5s;}
+.streak-dot.active {background:#00ff88;box-shadow:0 0 20px #00ff88,0 0 30px #00ff88;transform:scale(1.4);animation:pulse 1.5s infinite alternate;}
+.streak-day-mini.active {opacity:1;transform:translateY(-3px);}
+@keyframes pulse {from{box-shadow:0 0 20px #00ff88;}to{box-shadow:0 0 40px #00ff88;}}
 </style>
 </head>
 </body>
@@ -765,6 +770,29 @@ bar + footer */
         Checkout today's top tappers who dominate the leaderboard.
       </p>
 
+
+        <!-- WEEKLY STREAK BAR – GUARANTEED TO SHOW -->
+<div id="weeklyStreakBar" style="margin:16px 0 8px;padding:14px 16px;background:rgba(0,255,136,0.08);border:1.5px solid rgba(0,255,136,0.4);border-radius:16px;box-shadow:0 0 20px rgba(0,255,136,0.25);text-align:center;">
+  <div style="font-size:11px;color:#00ff88;font-weight:800;letter-spacing:1px;text-shadow:0 0 8px #00ff88;">WEEKLY FIRE STREAK</div>
+  <div style="font-size:19px;font-weight:900;color:#00ff88;text-shadow:0 0 16px #00ff88;margin:6px 0;">
+    <span id="streakDayCount">0</span>/7 DAYS
+  </div>
+
+  <!-- 7 DAYS – HARD CODED SO IT ALWAYS SHOWS -->
+  <div style="display:flex;justify-content:space-between;gap:4px;margin:10px 0;">
+    <div class="streak-day-mini"><span class="streak-dot"></span><span class="streak-label">SUN</span></div>
+    <div class="streak-day-mini"><span class="streak-dot"></span><span class="streak-label">MON</span></div>
+    <div class="streak-day-mini"><span class="streak-dot"></span><span class="streak-label">TUE</span></div>
+    <div class="streak-day-mini"><span class="streak-dot"></span><span class="streak-label">WED</span></div>
+    <div class="streak-day-mini"><span class="streak-dot"></span><span class="streak-label">THU</span></div>
+    <div class="streak-day-mini"><span class="streak-dot"></span><span class="streak-label">FRI</span></div>
+    <div class="streak-day-mini"><span class="streak-dot"></span><span class="streak-label">SAT</span></div>
+  </div>
+
+  <button id="claimStreakRewardBtn" style="margin-top:12px;width:100%;padding:10px 0;border:none;border-radius:12px;background:#333;color:#666;font-weight:900;font-size:14px;opacity:0.4;pointer-events:none;">
+    CLAIM 350 STRZ
+  </button>
+</div>
               <!-- MY TAPS TODAY – 2nd 1st 3rd PERFECTLY JOINED -->
       <div id="myTapsToday" style="background:linear-gradient(135deg,rgba(255,215,0,0.18),rgba(255,140,0,0.08));border:1.5px solid #FFD700;border-radius:14px;padding:11px 13px;margin:16px 0 6px;display:flex;align-items:center;gap:10px;box-shadow:0 3px 12px rgba(255,215,0,0.25);">
         <div style="flex-shrink:0;font-size:28px;opacity:0.9;">✨</div>
