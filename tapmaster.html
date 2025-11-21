@@ -490,19 +490,13 @@ bar + footer */
     0% { transform: rotate(0deg);}
     100% { transform: rotate(360deg);}
   }
-/* Only these two animations – nothing else needed */
-@keyframes tickerSlide{
+@keyframes scroll {
   0%   { transform:translateX(100%); }
   100% { transform:translateX(-100%); }
 }
-@keyframes tickerFade{
-  0%   { opacity:1; }
-  80%  { opacity:1; }
-  100% { opacity:0; display:none; }
-}
-
-/* Show only on start screen */
-.show-marquee #tickerPopup { display:block !important; }
+#simpleTicker span { color:#00FFA3; font-weight:900; text-shadow:0 0 10px #00FFA3; }
+#simpleTicker span.red { color:#FF2D55; font-weight:800; }
+#simpleTicker span.gold { color:#FFD700; }
 </style>
 </head>
 </body>
@@ -524,48 +518,12 @@ bar + footer */
 </div>
 
 
-<!-- POPUP TICKER – replaces marquee, bulletproof -->
-<div id="tickerPopup" style="
-  position:fixed; top:0; left:0; width:100%; z-index:9999;
-  background:linear-gradient(90deg,#000,#1a0033,#000);
-  padding:10px 0; border-bottom:3px solid #00FFA3;
-  box-shadow:0 4px 20px rgba(0,255,163,0.4);
-  text-align:center; color:#fff; font-size:15px;
-  animation: tickerFade 10s forwards;
-  pointer-events:none; display:none;
-">
-  <div style="display:inline-flex; gap:40px; align-items:center; animation: tickerSlide 35s linear infinite;">
-    
-    <!-- Your exact same info – duplicated twice for smooth loop -->
-    <span style="display:inline-flex; gap:40px; align-items:center; white-space:nowrap;">
-      <span style="color:#00FFA3;font-weight:900;text-shadow:0 0 10px #00FFA3;">TODAY’S POT ₦4,820,000</span>
-      <span style="color:#fff;">•</span>
-      <span style="color:#FF2D55;font-weight:800;">1ST WINS ₦1,900,000</span>
-      <span style="color:#fff;">•</span>
-      <span style="color:#FFD700;">Reset in 06h 12m</span>
-      <span style="color:#fff;">•</span>
-      <span style="color:#00FFA3;">You’re #127 – 1,204 taps behind #10</span>
-      <span style="color:#fff;">•</span>
-      <span style="color:#FF2D55;">davido_fan just hit 28.4M taps</span>
-      <span style="color:#fff;">•</span>
-      <span style="color:#00FFA3;">₦17.4M paid this month</span>
-    </span>
-    
-    <!-- Second copy – perfect loop -->
-    <span style="display:inline-flex; gap:40px; align-items:center; white-space:nowrap;">
-      <span style="color:#00FFA3;font-weight:900;text-shadow:0 0 10px #00FFA3;">TODAY’S POT ₦4,820,000</span>
-      <span style="color:#fff;">•</span>
-      <span style="color:#FF2D55;font-weight:800;">1ST WINS ₦1,900,000</span>
-      <span style="color:#fff;">•</span>
-      <span style="color:#FFD700;">Reset in 06h 12m</span>
-      <span style="color:#fff;">•</span>
-      <span style="color:#00FFA3;">You’re #127 – 1,204 taps behind #10</span>
-      <span style="color:#fff;">•</span>
-      <span style="color:#FF2D55;">davido_fan just hit 28.4M taps</span>
-      <span style="color:#fff;">•</span>
-      <span style="color:#00FFA3;">₦17.4M paid this month</span>
-    </span>
-    
+<!-- SUPER SIMPLE TICKER – works every time -->
+<div id="simpleTicker" style="display:none; position:fixed; top:0; left:0; width:100%; z-index:9999; background:linear-gradient(90deg,#000,#1a0033,#000); padding:10px 0; border-bottom:3px solid #00FFA3; box-shadow:0 4px 20px rgba(0,255,163,0.4); text-align:center; line-height:1.8;">
+  <div id="tickerText" style="display:inline-block; white-space:nowrap; animation:scroll 40s linear infinite;">
+    TODAY’S POT ₦4,820,000  •  1ST WINS ₦1,900,000  •  Reset in 06h 12m  •  You’re #127 – 1,204 taps behind #10  •  davido_fan just hit 28.4M taps  •  ₦17.4M paid this month
+       
+    TODAY’S POT ₦4,820,000  •  1ST WINS ₦1,900,000  •  Reset in 06h 12m  •  You’re #127 – 1,204 taps behind #10  •  davido_fan just hit 28.4M taps  •  ₦17.4M paid this month
   </div>
 </div>
 
@@ -2529,12 +2487,13 @@ document.body.addEventListener('click', function(e) {
     uiClickSound.play().catch(() => {});
   }
 }, true); // ← "true" = capture phase (catches clicks even on dynamically added buttons)
-// When player clicks Play → kill it instantly (optional)
-document.getElementById('startBtn')?.addEventListener('click', () => {
-  const popup = document.getElementById('tickerPopup');
-  popup.style.opacity = '0';
-  setTimeout(() => popup.style.display = 'none', 600);
-  document.body.classList.remove('show-marquee');
+
+// *Show ticker when page loads
+document.getElementById ('simpleTicker').style.display = 'block';
+
+// *Hide when Play button is clicked
+document.getElementById ('startBtn')?.addEventListener('click', function() {
+  document.getElementById ('simpleTicker').style.display = 'none';
 });
 </script>
 </body>
