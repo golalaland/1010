@@ -537,6 +537,11 @@ bar + footer */
   100% { transform: translateX(-100%); }
 }
 #liveBannerText { min-width: 200vw; }
+.streak-day-mini { display:flex;flex-direction:column;align-items:center;gap:3px;font-size:9px;color:#00ff88;font-weight:800;opacity:0.5;transition:all 0.4s; }
+.streak-dot { width:11px;height:11px;border-radius:50%;background:#333;border:2px solid #00ff88;box-shadow:0 0 8px rgba(0,255,136,0.3);transition:all 0.5s; }
+.streak-dot.active { background:#00ff88;box-shadow:0 0 20px #00ff88,0 0 30px #00ff88;transform:scale(1.3);animation:neonPulse 1.5s infinite alternate; }
+.streak-day-mini.active { opacity:1;transform:translateY(-2px); }
+@keyframes neonPulse { from { box-shadow:0 0 20px #00ff88; } to { box-shadow:0 0 40px #00ff88,0 0 50px #00ff88; } }
 </style>
 </head>
 </body>
@@ -764,6 +769,42 @@ bar + footer */
       <p id="leaderboardDescription" style="font-size:13.8px;color:#ddd;line-height:1.5;margin:10px 0;text-align:center;">
         Checkout today's top tappers who dominate the leaderboard.
       </p>
+      
+            <!-- NEON WEEKLY STREAK BAR – FITS PERFECTLY IN YOUR GOLDEN DESIGN -->
+      <div id="weeklyStreakBar" style="margin:16px 0 8px;padding:14px 16px;background:rgba(0,255,136,0.08);border:1.5px solid rgba(0,255,136,0.4);border-radius:16px;box-shadow:0 0 20px rgba(0,255,136,0.25),inset 0 0 15px rgba(0,255,136,0.05);position:relative;overflow:hidden;">
+        
+        <!-- Glowing Header -->
+        <div style="text-align:center;margin-bottom:12px;">
+          <div style="font-size:11px;color:#00ff88;font-weight:800;letter-spacing:1px;text-shadow:0 0 8px #00ff88;">
+            WEEKLY FIRE STREAK
+          </div>
+          <div style="font-size:19px;font-weight:900;color:#00ff88;text-shadow:0 0 16px #00ff88;margin-top:4px;">
+            <span id="streakDayCount">0</span>/7 DAYS
+          </div>
+        </div>
+
+        <!-- 7 Neon Circles + Day Labels (Sun–Sat) -->
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;">
+          <div style="flex:1;display:flex;justify-content:space-between;">
+            <!-- JS fills these 7 -->
+            <div class="streak-day-mini" data-day="0"><span class="streak-dot"></span><span class="streak-label">SUN</span></div>
+            <div class="streak-day-mini" data-day="1"><span class="streak-dot"></span><span class="streak-label">MON</span></div>
+            <div class="streak-day-mini" data-day="2"><span class="streak-dot"></span><span class="streak-label">TUE</span></div>
+            <div class="streak-day-mini" data-day="3"><span class="streak-dot"></span><span class="streak-label">WED</span></div>
+            <div class="streak-day-mini" data-day="4"><span class="streak-dot"></span><span class="streak-label">THU</span></div>
+            <div class="streak-day-mini" data-day="5"><span class="streak-dot"></span><span class="streak-label">FRI</span></div>
+            <div class="streak-day-mini" data-day="6"><span class="streak-dot"></span><span class="streak-label">SAT</span></div>
+          </div>
+        </div>
+
+        <!-- CLAIM BUTTON – Lights up like a nuclear reactor when complete -->
+        <button id="claimStreakRewardBtn" style="margin-top:14px;width:100%;padding:11px 0;border:none;border-radius:12px;font-weight:900;font-size:14px;cursor:pointer;transition:all 0.4s;opacity:0.4;pointer-events:none;background:#333;color:#666;">
+          CLAIM 350 STRZ
+        </button>
+
+        <!-- Hidden glow effect when claimable -->
+        <div id="claimGlow" style="position:absolute;inset:0;border-radius:16px;pointer-events:none;opacity:0;transition:opacity 0.6s;box-shadow:0 0 30px rgba(0,255,136,0.8);"></div>
+      </div>
 
               <!-- MY TAPS TODAY – 2nd 1st 3rd PERFECTLY JOINED -->
       <div id="myTapsToday" style="background:linear-gradient(135deg,rgba(255,215,0,0.18),rgba(255,140,0,0.08));border:1.5px solid #FFD700;border-radius:14px;padding:11px 13px;margin:16px 0 6px;display:flex;align-items:center;gap:10px;box-shadow:0 3px 12px rgba(255,215,0,0.25);">
@@ -2860,6 +2901,52 @@ document.body.addEventListener('click', function(e) {
   }
 }, true); // ← "true" = capture phase (catches clicks even on dynamically added buttons)
 
+// STREAK MARSHALL
+function renderStreakUI() {
+  const days = ['SUN','MON','TUE','WED','THU','FRI','SAT'];
+  const today = new Date().getDay(); // 0 = Sunday
+  const weekData = currentUser.weekStreak || [];
+
+  let completedCount = 0;
+  document.querySelectorAll('.streak-day-mini').forEach((el, i) => {
+    const played = weekData[i]?.played || false;
+    const dot = el.querySelector('.streak-dot');
+    const parent = el.parentElement;
+
+    if (played) {
+      dot.classList.add('active');
+      parent.classList.add('active');
+      completedCount++;
+    } else {
+      dot.classList.remove('active');
+      parent.classList.remove('active');
+    }
+  });
+
+  document.getElementById('streakDayCount').textContent = completedCount;
+
+  const claimBtn = document.getElementById('claimStreakRewardBtn');
+  const glow = document.getElementById('claimGlow');
+
+  if (completedCount === 7) {
+    claimBtn.style.opacity = "1";
+    claimBtn.style.pointerEvents = "auto";
+    claimBtn.style.background = "linear-gradient(90deg,#00ff88,#00cc66)";
+    claimBtn.style.color = "#000";
+    claimBtn.style.boxShadow = "0 0 30px rgba(0,255,136,0.8)";
+    claimBtn.textContent = "CLAIM 350 STRZ NOW";
+    glow.style.opacity = "1";
+  } else {
+    claimBtn.style.opacity = "0.4";
+    claimBtn.style.pointerEvents = "none";
+    claimBtn.style.background = "#333";
+    claimBtn.style.color = "#666";
+    claimBtn.style.boxShadow = "none";
+    claimBtn.textContent = `CLAIM 350 STRZ (${completedCount}/7)`;
+    glow.style.opacity = "0";
+  }
+}
+
 // THIS JS ONLY UPDATES THE TEXT — banner looks full from second 1
 async function updateLiveBanner() {
   const el = document.getElementById("liveBannerText");
@@ -2931,7 +3018,6 @@ async function updateLiveBanner() {
     el.innerHTML = `<span style="color:#00FFA3;text-shadow:0 0 16px #00FFA3;">LIVE • ₦4.82M POT • WAR DON START • NO MERCY</span><span style="color:#666;"> • </span>`.repeat(6);
   }
 }
-
 // Update every 21 seconds — feels alive
 setInterval(updateLiveBanner, 21000);
 // Run once on load so it’s never blank
