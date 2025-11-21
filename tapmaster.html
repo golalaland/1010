@@ -1661,6 +1661,42 @@ const handleNormalTap = debounce(async () => {
     currentUser.totalTaps = (currentUser.totalTaps || 0) + 1;
   }
 
+  // ———————————————————————————————
+  //  BID ROYALE: RECORD TAP IF USER JOINED TODAY'S BID
+  // ———————————————————————————————
+  if (currentUser?.uid && window.CURRENT_ROUND_ID) {
+    // Cache check once per session — no spam queries
+    if (typeof window.userInTodayBid === "undefined") {
+      try {
+        const q = query(
+          collection(db, "bids"),
+          where("uid", "==", currentUser.uid),
+          where("roundId", "==", window.CURRENT_ROUND_ID),
+          where("status", "==", "active")
+        );
+        const snap = await getDocs(q);
+        window.userInTodayBid = !snap.empty;
+      } catch (err) {
+        window.userInTodayBid = false; // fail-safe
+      }
+    }
+
+    // If user is in today's bid → save individual tap for live leaderboard
+    if (window.userInTodayBid) {
+      addDoc(collection(db, "taps"), {
+        uid: currentUser.uid,
+        username: currentUser.username || currentUser.displayName || "Warrior",
+        count: 1,
+        roundId: window.CURRENT_ROUND_ID,
+        inBid: true,                    // THIS MAKES IT SHOW IN BID LEADERBOARD
+        timestamp: serverTimestamp()
+      }).catch(() => {}); // fire-and-forget — never slows down tapping
+    }
+  }
+  // ———————————————————————————————
+  //  END OF BID LOGIC
+  // ———————————————————————————————
+
   progress++;
   cashCounter++;
   showFloatingPlus(tapButton, "+1");
