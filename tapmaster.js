@@ -704,12 +704,25 @@ async function endSessionRecord() {
         if (!snap.exists()) throw "User missing";
         const currentCash = Number(snap.data()?.cash || 0);
         t.update(userRef, { cash: currentCash + sessionEarnings });
-      }).then(() => {
-        // ONLY update local cache — NO UI CODE HERE
+           }).then(() => {
+        // SUCCESS: Cash successfully written to Firestore
         currentUser.cash = (currentUser.cash || 0) + sessionEarnings;
-        console.log("%c Final cash awarded: +₦" + sessionEarnings, "color:#0f9");
+
+        // FORCE UI TO SHOW CORRECT TOTAL CASH IMMEDIATELY
+        if (cashCountEl) {
+          cashCountEl.textContent = '₦' + formatNumber(currentUser.cash);
+        }
+        if (earningsEl) {
+          earningsEl.textContent = '₦0'; // reset mini display
+        }
+        if (miniEarnings) {
+          miniEarnings.textContent = '₦0';
+        }
+
+        console.log("%c CASH AWARDED & UI UPDATED: ₦" + formatNumber(currentUser.cash), "color:#0f9; font-weight:bold;");
       }).catch((err) => {
-        console.warn("Final cash award failed (will succeed next round)", err);
+        console.warn("Final cash award failed — will retry next round", err);
+        // DO NOT reset sessionAlreadySaved here — cash will be awarded next time
       });
     }
   }
@@ -819,23 +832,19 @@ cancelPlay?.addEventListener("click", () => {
 });
 
 confirmPlay?.addEventListener("click", async () => {
-  let localStars = parseInt(starCountEl?.textContent.replace(/,/g, '') || "0", 10);
-
-  if (currentUser?.uid) {
-    const r = await tryDeductStarsForJoin(STAR_COST);
-    if (!r.ok) {
-      alert(r.message || "Not enough stars");
-      return;
-    }
-  } else {
-    if (localStars < STAR_COST) {
-      alert("Not enough stars");
-      return;
-    }
-    localStars -= STAR_COST;
-    starCountEl.textContent = formatNumber(localStars);
+  // === 1. DEDUCT STARS — ONLY ONE WAY, ALWAYS ===
+  const result = await tryDeductStarsForJoin(STAR_COST);
+  if (!result.ok) {
+    alert(result.message || "Not enough stars");
+    return;
   }
 
+  // === 2. UPDATE UI FROM FIRESTORE VALUE (NEVER USE localStars) ===
+  if (starCountEl && currentUser?.stars !== undefined) {
+    starCountEl.textContent = formatNumber(currentUser.stars);
+  }
+
+  // === 3. START THE GAME ===
   if (playModal) playModal.style.display = "none";
   if (posterImg) posterImg.style.display = "none";
   if (startPage) startPage.style.display = "none";
