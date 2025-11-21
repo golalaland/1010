@@ -1250,57 +1250,6 @@ const SESSION_DURATION = 60;
 let currentUser = null;
 const tapEvent = ('ontouchstart' in window) ? 'touchstart' : 'click';
 
-// AUTH LISTENER — LOAD USERNAME ONCE (chatId from Firestore)
-onAuthStateChanged(auth, async (user) => {
-  if (!user) {
-    currentUser = null;
-    return;
-  }
-
-  try {
-    const userDoc = await getDoc(doc(db, "users", user.uid));
-    let username = "Player";
-
-    if (userDoc.exists()) {
-      const data = userDoc.data();
-
-      username = data.chatId ||
-                 data.username ||
-                 (user.email ? user.email.replace(/,/g, '.').split('@')[0] : null) ||
-                 "Player" + user.uid.slice(-4);
-
-      currentUser = {
-        uid: user.uid,
-        email: user.email,
-        chatId: data.chatId || null,
-        username: username,
-        stars: data.stars || 0,
-        cash: data.cash || 0,
-        totalTaps: data.totalTaps || 0
-      };
-
-      if (profileNameEl) profileNameEl.textContent = username;
-      if (starCountEl) starCountEl.textContent = (data.stars || 0).toLocaleString();
-      if (cashCountEl) cashCountEl.textContent = (data.cash || 0).toLocaleString();
-    } else {
-      username = user.email ? user.email.replace(/,/g, '.').split('@')[0] : "NewPlayer";
-      currentUser = {
-        uid: user.uid,
-        email: user.email,
-        username: username,
-        stars: 0,
-        cash: 0,
-        totalTaps: 0
-      };
-    }
-
-    console.log("User loaded →", username);
-  } catch (err) {
-    console.error("Auth error:", err);
-    currentUser = { uid: user.uid, username: "ErrorUser" };
-  }
-});
-
 // ---------- LOCAL POT ----------
 const KEY_POT = 'moneytrain_pot';
 const KEY_RESET_DAY = 'moneytrain_reset_day';
@@ -1732,10 +1681,10 @@ const handleNormalTap = debounce(async () => {
       }
     }
 
- if (window.userInTodayBid && currentUser?.username) {
+ if (window.userInTodayBid && currentUser?.chatId) {
   addDoc(collection(db, "taps"), {
-    uid: currentUser.uid,
-    username: currentUser.username,
+    uid: currentUser.uid || currentUser.email?.replace(/\./g, ','),
+    username: currentUser.chatId,
     count: 1,
     roundId: window.CURRENT_ROUND_ID,
     inBid: true,
