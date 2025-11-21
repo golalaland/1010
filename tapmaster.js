@@ -867,10 +867,6 @@ document.head.appendChild(style);
 // ---------- INITIALIZE ----------
 initializePot();
 loadCurrentUserForGame();
-
-// RIGHT AFTER you load currentUser — add this line:
-await loadCurrentUserForGame();
-await startWeeklyStreakSystem();   // ← THIS MAKES IT WORK
   
 // ---------- START FLOW ----------
 startBtn?.addEventListener("click", () => {
@@ -1482,107 +1478,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 });
-
-
-// ======================================================
-//  WEEKLY STREAK SYSTEM — RECORDS & PAYS 350 STRZ
-// ======================================================
-
-// Call this ONCE when user logs in / game starts (after currentUser is loaded)
-async function startWeeklyStreakSystem() {
-  if (!currentUser?.uid) return;
-
-  const today = new Date();
-  const todayKey = today.toISOString().split('T')[0]; // YYYY-MM-DD
-  const weekStart = getSunday(today); // Sunday of this week
-  const weekKey = weekStart.toISOString().split('T')[0]; // e.g. 2025-08-03
-
-  const userRef = doc(db, "users", currentUser.uid);
-
-  try {
-    const snap = await getDoc(userRef);
-    const data = snap.exists() ? snap.data() : {};
-
-    // Load or init streak data
-    let streakDays = data.streakDays || {};           // { "2025-08-05": true }
-    let lastClaimWeek = data.lastStreakClaim || null; // "2025-08-03"
-
-    // Mark today as played (if not already)
-    if (!streakDays[todayKey]) {
-      streakDays[todayKey] = true;
-      await updateDoc(userRef, { streakDays: streakDays });
-    }
-
-    // Build current week array (Sun → Sat)
-    const weekArray = [];
-    for (let i = 0; i < 7; i++) {
-      const day = new Date(weekStart);
-      day.setDate(day.getDate() + i);
-      const key = day.toISOString().split('T')[0];
-      weekArray.push({ played: !!streakDays[key] });
-    }
-
-    // Save to currentUser for instant UI
-    currentUser.weekStreak = weekArray;
-    currentUser.currentWeekStart = weekKey;
-    currentUser.lastStreakClaim = lastClaimWeek;
-
-    // Update UI now
-    forceRenderStreak();
-
-    // Auto-update every 5 minutes (in case they leave tab open)
-    setInterval(forceRenderStreak, 300000);
-
-  } catch (e) {
-    console.error("Streak error:", e);
-  }
-}
-
-// Helper: get Sunday of current week
-function getSunday(d) {
-  const date = new Date(d);
-  const day = date.getDay();
-  const diff = date.getDate() - day; // Sunday = 0
-  return new Date(date.setDate(diff));
-}
-
-// Add this after your modal opens
-document.getElementById('claimStreakRewardBtn')?.addEventListener('click', claimWeeklyStreak);
-
-// CALL THIS WHEN USER TAPS THE CLAIM BUTTON
-async function claimWeeklyStreak() {
-  if (!currentUser?.uid || currentUser.weekStreak?.filter(d => d.played).length !== 7) return;
-
-  const weekKey = currentUser.currentWeekStart;
-  if (currentUser.lastStreakClaim === weekKey) {
-    alert("Already claimed this week!");
-    return;
-  }
-
-  const userRef = doc(db, "users", currentUser.uid);
-
-  await runTransaction(db, async (t) => {
-    const snap = await t.get(userRef);
-    const data = snap.data();
-
-    if (data.lastStreakClaim === weekKey) throw "Already claimed";
-
-    t.update(userRef, {
-      stars: (data.stars || 0) + 350,
-      lastStreakClaim: weekKey,
-      updatedAt: serverTimestamp()
-    });
-  });
-
-  // Update local
-  currentUser.stars += 350;
-  currentUser.lastStreakClaim = weekKey;
-
-  // UI celebration
-  triggerConfetti();
-  alert("350 STRZ CLAIMED! Weekly streak paid");
-  forceRenderStreak(); // reset visuals
-}
 
 /* ============================================================
    TAPMASTER — FULLY WORKING, NO HANG, CLEAN VERSION
