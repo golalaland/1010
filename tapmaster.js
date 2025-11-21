@@ -312,25 +312,6 @@ async function tryDeductStarsForJoin(cost) {
     return { ok: false, message: e.message || "Could not deduct stars" };
   }
 }
-// ---------- GIVE CASH ----------
-async function giveCashToUser(amount){
-  if(!currentUser?.uid) return {ok:false};
-  const userRef = doc(db,"users",currentUser.uid);
-  try{
-    await runTransaction(db,async t=>{
-      const u = await t.get(userRef);
-      if(!u.exists()) throw new Error("User not found");
-      const newCash = Number(u.data().cash||0) + Number(amount);
-      t.update(userRef,{cash:newCash});
-      currentUser.cash = newCash;
-    });
-    cashCountEl && (cashCountEl.textContent='₦'+formatNumber(currentUser.cash));
-    return {ok:true};
-  } catch(e){ console.error("giveCashToUser error", e); return {ok:false,message:e.message}; }
-}
-
-
-
 
 // ---------- FLOATING +1 ----------
 function showFloatingPlus(parent,text){
@@ -506,16 +487,23 @@ const handleNormalTap = debounce(async () => {
 
   // CASH AWARD — only real-time write
   if (cashCounter >= cashThreshold) {
-    cashCounter = 0;
-    cashThreshold = randomInt(1, 12);
-    const pot = getStoredPot() ?? DAILY_INITIAL_POT;
-    if (pot > 0) {
-      earnings += CASH_PER_AWARD;
-      sessionEarnings += CASH_PER_AWARD;
-      setStoredPot(Math.max(0, pot - CASH_PER_AWARD));
-      await giveCashToUser(CASH_PER_AWARD);
-    }
+  cashCounter = 0;
+  cashThreshold = randomInt(1, 12);
+
+  const pot = getStoredPot() ?? DAILY_INITIAL_POT;
+  if (pot > 0) {
+    earnings += CASH_PER_AWARD;
+    sessionEarnings += CASH_PER_AWARD;        // ← This will be saved at the end
+    setStoredPot(Math.max(0, pot - CASH_PER_AWARD));
+
+    // REMOVE THIS LINE COMPLETELY:
+    // await giveCashToUser(CASH_PER_AWARD);
+
+    // Just show floating +₦ and update UI locally
+    showFloatingPlus(tapButton, "+₦1");
+    updateUI();
   }
+}
 
   // BONUS LEVEL UP
   if (progress >= tapsForNext) {
@@ -692,7 +680,7 @@ async function endSessionRecord() {
       }).catch(() => {}); // Silent — leaderboard is best-effort
     }
 
-    // === 4. UPDATE LOCAL CACHE (UI stays snappy) ===
+   // === 4. UPDATE LOCAL CACHE (UI stays snappy) ===
     currentUser.totalTaps = (currentUser.totalTaps || 0) + sessionTaps;
 
     console.log("%c Session saved successfully!", "color:#0f9;font-weight:bold", {
@@ -705,11 +693,34 @@ async function endSessionRecord() {
     return true;
   } catch (err) {
     console.error("%c Save failed (will retry on next round)", "color:#f66", err);
-    sessionAlreadySaved = false; // Allow retry next time
+    sessionAlreadySaved = false; // Allow retry
     return false;
+  } finally {
+    // === GIVE FINAL CASH EARNED THIS ROUND (ONLY ONCE — EVEN IF SAVE FAILED) ===
+    // We do this in `finally` so:
+    // - It runs whether save succeeded or failed
+    // - But only ONCE per session (thanks to sessionAlreadySaved guard at top)
+    if (sessionEarnings > 0 && currentUser?.uid) {
+      const userRef = doc(db, "users", uid);
+      runTransaction(db, async (t) => {
+        const snap = await t.get(userRef);
+        if (!snap.exists()) throw "User missing";
+        const currentCash = Number(snap.data()?.cash || 0);
+        t.update(userRef, { cash: currentCash + sessionEarnings });
+      }).then(() => {
+        // Success → update local UI
+        currentUser.cash = (currentUser.cash || 0) + sessionEarnings;
+        if (cashCountEl) {
+          cashCountEl.textContent = '₦' + formatNumber(currentUser.cash);
+        }
+        console.log("%c Final cash awarded: +₦" + sessionEarnings, "color:#0f9");
+      }).catch((err) => {
+        console.warn("Final cash award failed (will succeed next round)", err);
+        // Don't reset sessionAlreadySaved here — cash can still be awarded later
+      });
+    }
   }
 }
-
 // ======================================================
 //  RED HOT DEVIL MODE — EXACTLY AS YOU HAD IT
 // ======================================================
