@@ -537,6 +537,13 @@ bar + footer */
   100% { transform: translateX(-100%); }
 }
 #liveBannerText { min-width: 200vw; }
+/* DETTY REWARDS MODAL — PURE FIRE */
+#dettyRewardsModal .girl-card { position:absolute;inset:0;opacity:0;transform:scale(0.9);transition:all 0.4s ease; }
+#dettyRewardsModal .girl-card.active { opacity:1;transform:scale(1);z-index:2; }
+.swipe-dot { width:10px;height:10px;border-radius:50%;background:#ff00aa;opacity:0.4;transition:opacity 0.3s; }
+.swipe-dot.active { opacity:1;transform:scale(1.4);box-shadow:0 0 15px #ff00aa; }
+@keyframes pulse { 0%,100% {opacity:0.4} 50% {opacity:0.8} }
+@keyframes shimmer { 0% {transform:translateX(-100%)} 100% {transform:translateX(100%)} }
 </style>
 </head>
 </body>
@@ -701,6 +708,7 @@ bar + footer */
       <button id="rulesBtn"        class="tiny-action-btn" data-title="Game Rules">📋</button>
       <button id="bidBtn"          class="tiny-action-btn" data-title="Place Bid">🏁</button>
       <button id="starMarketBtn"   class="tiny-action-btn" data-title="Star Market">🏪</button>
+      <button id="dettyRewardsBtn" class="tiny-action-btn" data-title="Exclusive Rewards">🪩</button>
     </div>
 
   </div>
@@ -1050,6 +1058,86 @@ bar + footer */
     </div>
   </div>
 </div>
+
+<!-- DETTY REWARDS MODAL — WEEKLY TOP TAPPERS GET LAP DANCES & FEMALE EXPERIENCE 🔥🪩 -->
+<div id="dettyRewardsModal" class="modal-backdrop" style="display:none;">
+  <div class="modal" style="width:94%;max-width:400px;max-height:94vh;overflow:hidden;display:flex;flex-direction:column;background:#0a001a;border:4px solid #ff00aa;border-radius:22px;box-shadow:0 0 80px rgba(255,0,170,0.7),inset 0 0 40px rgba(255,0,170,0.3);position:relative;">
+
+    <!-- GLOWING NEON HEADER -->
+    <div style="padding:20px 16px 14px;text-align:center;position:relative;overflow:hidden;">
+      <div style="position:absolute;inset:0;background:linear-gradient(90deg,transparent,#ff00aa88,transparent);animation:pulse 3s infinite;"></div>
+      <h3 style="margin:0;font-family:'Press Start 2P',cursive;font-size:17px;color:#ff00ff;text-shadow:0 0 20px #ff00ff,0 0 40px #ff00aa;letter-spacing:2px;position:relative;z-index:2;">
+        DETTYVERSE VIP REWARDS
+      </h3>
+      <div style="margin-top:8px;font-size:13px;color:#ff66ff;font-weight:900;text-shadow:0 0 10px #ff00ff;">
+        Top 10 Weekly Tappers Only 🪩🔥
+      </div>
+    </div>
+
+    <!-- SWIPEABLE GIRL CARDS — PORTRAIT VIDEOS + PROFILES -->
+    <div style="flex:1;overflow:hidden;position:relative;background:#11002b;">
+      <div id="girlSwiper" style="width:100%;height:100%;position:relative;">
+
+        <!-- EXAMPLE CARD — DUPLICATE THIS FOR EACH GIRL -->
+        <div class="girl-card active" data-name="Lola" data-age="23" data-city="Lagos">
+          <div style="height:100%;display:flex;flex-direction:column;background:linear-gradient(to bottom,#1a0033,#000);">
+            <!-- VIDEO FRAME -->
+            <div style="flex:1;position:relative;overflow:hidden;border-radius:16px 16px 0 0;">
+              <video autoplay loop muted playsinline style="width:100%;height:100%;object-fit:cover;filter:brightness(1.1) contrast(1.2);">
+                <source src="https://yourdomain.com/videos/lola-dance.mp4" type="video/mp4">
+              </video>
+              <div style="position:absolute;inset:0;background:linear-gradient(transparent 60%,#000 100%);"></div>
+              <div style="position:absolute;top:12px;right:12px;background:#ff00aa;padding:6px 12px;border-radius:50px;font-size:12px;color:#000;font-weight:900;">LIVE</div>
+            </div>
+
+            <!-- PROFILE SECTION -->
+            <div style="padding:18px 20px;background:rgba(255,0,170,0.15);border-top:2px solid #ff00aa;">
+              <h4 style="margin:0 0 6px;font-size:20px;color:#ff00ff;text-shadow:0 0 10px #ff00aa;">Lola 🪩</h4>
+              <div style="display:flex;gap:16px;font-size:14px;color:#ff99ff;">
+                <span>23 • Lagos</span>
+                <span>Private Lap Dance</span>
+              </div>
+              <div style="margin-top:12px;background:rgba(255,0,170,0.3);padding:12px;border-radius:12px;text-align:center;font-size:13px;color:#fff;">
+                "I go slow… then fast. Only for real tappers 😈"
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- END CARD -->
+
+        <!-- Add 5–10 more .girl-card divs here with different videos/names -->
+
+      </div>
+
+      <!-- SWIPE DOTS -->
+      <div style="position:absolute;bottom:16px;left:50%;transform:translateX(-50%);display:flex;gap:8px;z-index:10;">
+        <div class="swipe-dot active"></div>
+        <div class="swipe-dot"></div>
+        <div class="swipe-dot"></div>
+        <div class="swipe-dot"></div>
+      </div>
+
+      <!-- SWIPE ARROWS -->
+      <button class="swipe-left" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);background:rgba(255,0,170,0.4);border:none;width:44px;height:44px;border-radius:50%;color:#fff;font-size:24px;z-index:10;">‹</button>
+      <button class="swipe-right" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:rgba(255,0,170,0.4);border:none;width:44px;height:44px;border-radius:50%;color:#fff;font-size:24px;z-index:10;">›</button>
+    </div>
+
+    <!-- BOTTOM CALL TO ACTION -->
+    <div style="padding:20px;background:linear-gradient(90deg,#ff00aa,#ff0066);text-align:center;position:relative;overflow:hidden;">
+      <div style="position:absolute;inset:0;background:linear-gradient(45deg,transparent 30%,rgba(255,255,255,0.1) 50%,transparent 70%);animation:shimmer 4s infinite;"></div>
+      <div style="font-size:15px;color:#fff;font-weight:900;letter-spacing:1px;position:relative;z-index:2;">
+        TAP HARDER. RANK HIGHER. CLAIM HER.
+      </div>
+      <div style="margin-top:8px;font-size:22px;color:#fff;text-shadow:0 0 20px #fff;">
+        Current #1 gets first pick 🔥
+      </div>
+    </div>
+
+    <!-- CLOSE BUTTON -->
+    <button id="closeDettyRewards" style="position:absolute;top:12px;right:12px;background:rgba(0,0,0,0.5);border:2px solid #ff00aa;width:40px;height:40px;border-radius:50%;color:#ff00aa;font-size:20px;font-weight:bold;">X</button>
+  </div>
+</div>
+
 <!-- SOUNDS - All your GitHub sounds in one place -->
 <audio id="tapSound"     src="https://raw.githubusercontent.com/golalaland/1010/main/pop-reverb-423718.mp3"     preload="auto"></audio>
 <audio id="confettiSound" src="https://raw.githubusercontent.com/golalaland/1010/main/material-mold-394512.mp3" preload="auto"></audio>
