@@ -668,18 +668,17 @@ async function endSessionRecord() {
       });
     });
 
-    // === 3. BID LEADERBOARD (fire and forget) ===
-    if (window.CURRENT_ROUND_ID && sessionTaps > 0) {
-      addDoc(collection(db, "liveTaps"), {
-        uid: currentUser.uid,
-        username: currentUser.chatId || "Player",
-        taps: sessionTaps,
-        totalToday: currentUser.totalTaps + sessionTaps,
-        roundId: window.CURRENT_ROUND_ID,
-        inBid: true,
-        timestamp: serverTimestamp(),
-      }).catch(() => {});
-    }
+  // === 3. BID LEADERBOARD — ONLY IF IN ACTIVE BID ===
+if (window.CURRENT_ROUND_ID && sessionTaps > 0) {
+  addDoc(collection(db, "taps"), {
+    uid: currentUser.uid,
+    username: currentUser.chatId || "Player",
+    count: sessionTaps,
+    roundId: window.CURRENT_ROUND_ID,
+    inBid: true,
+    timestamp: serverTimestamp()
+  }).catch(() => {}); // fire-and-forget
+}
 
     // === 4. UPDATE LOCAL UI INSTANTLY ===
     currentUser.cash += sessionEarnings;
@@ -1424,13 +1423,27 @@ document.addEventListener('DOMContentLoaded', () => {
 const PRIZE_PER_PLAYER = 5000;
 const BID_COST = 50;
 
-// ONE AND ONLY — Lagos time round ID (used everywhere)
+// GLOBAL ROUND ID — ALWAYS UP-TO-DATE, EVEN AT MIDNIGHT
 function getTodayRound() {
   const d = new Date();
-  const lagos = new Date(d.getTime() + 60*60*1000); // UTC+1
-  return "round_" + lagos.toISOString().split('T')[0];
+  const lagos = new Date(d.getTime() + 60*60*1000); // UTC+1 = Lagos
+  return "round_" + lagos.toISOString().split('T')[0]; // e.g. round_2025-11-22
 }
-const CURRENT_ROUND_ID = getTodayRound();
+
+// DO NOT USE const — USE window + auto-update
+window.getCurrentRoundId = () => getTodayRound();
+
+// Auto-update every minute (so midnight rollover is instant)
+setInterval(() => {
+  const newId = getTodayRound();
+  if (window.CURRENT_ROUND_ID !== newId) {
+    console.log("%c ROUND ROLLOVER → NEW DAY!", "color:#0f9;font-size:18px");
+    window.CURRENT_ROUND_ID = newId;
+  }
+}, 60000); // every minute
+
+// INITIAL SET
+window.CURRENT_ROUND_ID = getTodayRound();
 
 // CUSTOM ALERT (replaces browser alert)
 function showNiceAlert(message) {
