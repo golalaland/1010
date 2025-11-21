@@ -556,6 +556,7 @@ tapButton?.addEventListener(tapEvent, debounce(async (e) => {
 //  START SESSION — FULL RESET
 // ======================================================
 function startSession() {
+  sessionAlreadySaved = false; // ← ADD THIS
   taps = 0;
   earnings = 0;
   timer = SESSION_DURATION;
@@ -607,79 +608,105 @@ function startSession() {
 // ======================================================
 //  END SESSION RECORD — 1 ATOMIC WRITE ONLY
 // ======================================================
+let sessionAlreadySaved = false; // ← Global guard (reset in startSession())
+
 async function endSessionRecord() {
-  if (!currentUser?.uid || sessionTaps <= 0) return;
+  // === PREVENT DOUBLE SAVES & INVALID CALLS ===
+  if (sessionAlreadySaved || !currentUser?.uid || sessionTaps <= 0) {
+    return false;
+  }
+
+  sessionAlreadySaved = true; // Mark as saved immediately
 
   const uid = currentUser.uid;
   const userRef = doc(db, "users", uid);
-  const sessionsRef = collection(db, "tapSessions");
-
   const now = new Date();
-  const dailyKey = now.toISOString().split("T")[0];
-  const weeklyKey = `${now.getFullYear()}-W${getWeekNumber(now)}`;
-  const monthlyKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+
+  // === TIME KEYS (Lagos time — consistent with your round logic) ===
+  const lagosOffset = 60 * 60 * 1000; // UTC+1
+  const lagosTime = new Date(now.getTime() + lagosOffset);
+  const dailyKey = lagosTime.toISOString().split("T")[0];
+  const weeklyKey = `${lagosTime.getFullYear()}-W${getWeekNumber(lagosTime)}`;
+  const monthlyKey = `${lagosTime.getFullYear()}-${String(lagosTime.getMonth() + 1).padStart(2, "0")}`;
 
   try {
+    // === 1. UPDATE USER STATS (ONE atomic transaction) ===
     await runTransaction(db, async (transaction) => {
-      const snap = await transaction.get(userRef);
-      const data = snap.data() || {};
+      const userSnap = await transaction.get(userRef);
 
-      const newTotal = (data.totalTaps || 0) + sessionTaps;
+      const existing = userSnap.data() || {};
+      const currentDaily = existing.tapsDaily?.[dailyKey] || 0;
+      const currentWeekly = existing.tapsWeekly?.[weeklyKey] || 0;
+      const currentMonthly = existing.tapsMonthly?.[monthlyKey] || 0;
 
       const updateData = {
-        totalTaps: newTotal,
+        totalTaps: (existing.totalTaps || 0) + sessionTaps,
         lastEarnings: sessionEarnings,
         lastBonus: sessionBonusLevel,
         updatedAt: serverTimestamp(),
-        tapsDaily: { ...(data.tapsDaily || {}), [dailyKey]: (data.tapsDaily?.[dailyKey] || 0) + sessionTaps },
-        tapsWeekly: { ...(data.tapsWeekly || {}), [weeklyKey]: (data.tapsWeekly?.[weeklyKey] || 0) + sessionTaps },
-        tapsMonthly: { ...(data.tapsMonthly || {}), [monthlyKey]: (data.tapsMonthly?.[monthlyKey] || 0) + sessionTaps },
+
+        // Merge new taps into nested maps safely
+        tapsDaily: { ...existing.tapsDaily, [dailyKey]: currentDaily + sessionTaps },
+        tapsWeekly: { ...existing.tapsWeekly, [weeklyKey]: currentWeekly + sessionTaps },
+        tapsMonthly: { ...existing.tapsMonthly, [monthlyKey]: currentMonthly + sessionTaps },
       };
 
-      if (!snap.exists()) {
+      if (!userSnap.exists()) {
+        // First-time user
         transaction.set(userRef, {
           uid,
-          chatId: currentUser.chatId || uid,
+          chatId: currentUser.chatId || uid.split(",").pop(),
           email: currentUser.email || "",
           stars: currentUser.stars || 0,
           cash: currentUser.cash || 0,
+          totalTaps: sessionTaps,
           createdAt: serverTimestamp(),
-          ...updateData
+          ...updateData,
         });
       } else {
         transaction.update(userRef, updateData);
       }
     });
 
-    // Session log
-    await addDoc(sessionsRef, {
+    // === 2. LOG SESSION (fire-and-forget — non-blocking) ===
+    addDoc(collection(db, "tapSessions"), {
       uid,
-      chatId: currentUser.chatId || uid,
+      chatId: currentUser.chatId || "Player",
       taps: sessionTaps,
       earnings: sessionEarnings,
       bonusLevel: sessionBonusLevel,
       redHotPunishments: RedHotMode.punishmentCount || 0,
       timestamp: serverTimestamp(),
-    });
+    }).catch((err) => console.warn("Session log failed (non-critical):", err));
 
-    // ONE FINAL BID LEADERBOARD UPDATE (so others see it instantly on reload)
-    if (window.CURRENT_ROUND_ID && currentUser?.uid) {
+    // === 3. LIVE BID LEADERBOARD UPDATE (only if in active round) ===
+    if (window.CURRENT_ROUND_ID) {
       addDoc(collection(db, "liveTaps"), {
         uid,
         username: currentUser.chatId || "Player",
         taps: sessionTaps,
         totalToday: (currentUser.totalTaps || 0) + sessionTaps,
         roundId: window.CURRENT_ROUND_ID,
-        timestamp: serverTimestamp()
-      }).catch(() => {});
+        inBid: true,
+        timestamp: serverTimestamp(),
+      }).catch(() => {}); // Silent — leaderboard is best-effort
     }
 
-    // Update local cache
+    // === 4. UPDATE LOCAL CACHE (UI stays snappy) ===
     currentUser.totalTaps = (currentUser.totalTaps || 0) + sessionTaps;
 
-    console.log("Session saved perfectly:", { sessionTaps, sessionEarnings });
+    console.log("%c Session saved successfully!", "color:#0f9;font-weight:bold", {
+      sessionTaps,
+      sessionEarnings,
+      bonus: sessionBonusLevel,
+      dailyKey,
+    });
+
+    return true;
   } catch (err) {
-    console.error("Save failed:", err);
+    console.error("%c Save failed (will retry on next round)", "color:#f66", err);
+    sessionAlreadySaved = false; // Allow retry next time
+    return false;
   }
 }
 
@@ -814,9 +841,41 @@ confirmPlay?.addEventListener("click", async () => {
   }, 700);
 });
 
-// AUTO-SAVE ON PAGE CLOSE / PLAY AGAIN
-window.addEventListener("beforeunload", () => {
-  if (sessionTaps > 0) endSessionRecord();
+// ─────── ULTRA RELIABLE SAVE ON EXIT / PLAY AGAIN ───────
+function attemptSaveSession() {
+  if (sessionTaps > 0 && currentUser?.uid) {
+    endSessionRecord(); // fire and forget
+    console.log("Emergency save triggered");
+  }
+}
+
+// 1. Play Again button → save BEFORE reload
+setTimeout(() => {
+  const playAgainBtn = document.getElementById('playAgainBtn');
+  if (playAgainBtn) {
+    playAgainBtn.replaceWith(playAgainBtn.cloneNode(true)); // remove old listeners
+    document.getElementById('playAgainBtn').addEventListener('click', () => {
+      attemptSaveSession();
+      setTimeout(() => location.reload(), 300); // small delay to let save finish
+    });
+  }
+}, 500);
+
+// 2. Visibility change (user switches app, closes tab, etc.)
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') {
+    attemptSaveSession();
+  }
+});
+
+// 3. Pagehide (more reliable than beforeunload on mobile)
+window.addEventListener('pagehide', () => {
+  attemptSaveSession();
+});
+
+// 4. Optional: fallback beforeunload (still good for desktop)
+window.addEventListener('beforeunload', () => {
+  attemptSaveSession();
 });
 
 /* ------------------------------
