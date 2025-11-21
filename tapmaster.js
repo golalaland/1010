@@ -843,14 +843,6 @@ setTimeout(() => {
   }
 }, 500);
 
-// 5. FIXED: EMERGENCY SAVE ON EXIT
-const emergencySave = () => { if (!sessionAlreadySaved) endSessionRecord(); };
-window.addEventListener('pagehide', emergencySave);
-window.addEventListener('beforeunload', emergencySave);
-document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'hidden') emergencySave();
-});
-
 /* ------------------------------
    LEADERBOARD SETUP (FIXED + CLEAN)
 ------------------------------- */
