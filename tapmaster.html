@@ -2806,55 +2806,81 @@ document.body.addEventListener('click', function(e) {
   }
 }, true); // ← "true" = capture phase (catches clicks even on dynamically added buttons)
 
-// THIS JS ONLY **UPDATES** THE TEXT — banner already looks full from second 1
+// THIS JS ONLY UPDATES THE TEXT — banner looks full from second 1
 async function updateLiveBanner() {
   const el = document.getElementById("liveBannerText");
   if (!el) return;
 
   try {
     const key = getLeaderboardKey("daily");
-    const snap = await getDocs(collection(db, "users"));
+
+    // Get ALL users with daily taps in one query (fast + accurate)
+    const usersSnap = await getDocs(collection(db, "users"));
     const scores = [];
 
-    snap.forEach(doc => {
+    usersSnap.forEach(doc => {
       const d = doc.data();
       const taps = d.tapsDaily?.[key] || 0;
-      if (taps > 0) {
-        const name = (d.chatId || d.username || "Player").replace(/^@/, '').trim();
-        scores.push({ name: name || "Player", taps });
-      }
+      if (taps <= 0) return;
+
+      // 100% REAL NAME — chatId first, always
+      const rawName = d.chatId || d.username || d.email?.split('@')[0] || "Unknown";
+      const name = rawName.replace(/^@/, '').trim().substring(0, 18); // clean & cap length
+
+      scores.push({ name: name || "Player", taps });
     });
 
+    // Sort by taps
     scores.sort((a, b) => b.taps - a.taps);
-    const top1 = scores[0], top2 = scores[1], top3 = scores[2];
 
+    const top1 = scores[0];
+    const top2 = scores[1];
+    const top3 = scores[2];
+    const top10 = scores[9];
+
+    // YOUR NEW GOD-TIER MESSAGES (rotate every 21 sec)
     const messages = [
-      {text: "LIVE • ₦4.82M POT",                color: "#00FFA3", glow: true},
-      {text: "1ST WINS ₦1.9M",                   color: "#FF2D55", glow: false},
-      top1 ? {text: `${top1.name.toUpperCase()} IS EATING • ${top1.taps.toLocaleString()} TAPS`, color: "#00FFA3", glow: true} : null,
-      top2 ? {text: `#2 ${top2.name} CHASING HARD`, color: "#FFD700", glow: false} : null,
-      top3 ? {text: `#3 ${top3.name} HOLDING`,   color: "#FFD700", glow: false} : null,
-      {text: "₦17.4M PAID THIS MONTH",           color: "#00FFA3", glow: true},
-      {text: "LAST CASH OUT ₦920K • 11 MINS AGO",color: "#FF2D55", glow: false},
-      {text: "TOP 10 CASHING DAILY",             color: "#FFD700", glow: false},
-      {text: "YOU’RE ~1,200 TAPS FROM TOP-10 • MOVE!", color: "#00FFA3", glow: true},
-      {text: "RESET IN ~6H • WAR DON START",     color: "#FF2D55", glow: false},
-    ].filter(Boolean);
+      { text: "LIVE • ₦4.82M POT • WAR DON START",                    color: "#00FFA3", glow: true },
+      { text: "1ST TAKES ₦1.9M • NO MERCY",                           color: "#FF2D55", glow: true },
+      
+      top1 ? { text: `${top1.name.toUpperCase()} IS MURDERING • ${top1.taps.toLocaleString()} TAPS`, color: "#00FFA3", glow: true } : null,
+      top2 ? { text: `#2 ${top2.name.toUpperCase()} IS HUNGRY`,       color: "#FFD700", glow: false } : null,
+      top3 ? { text: `#3 ${top3.name.toUpperCase()} STILL BREATHING`, color: "#FFD700", glow: false } : null,
+
+      { text: "₦17.4M PAID THIS MONTH • REAL CASH",                   color: "#00FFA3", glow: true },
+      { text: "LAST CASH OUT ₦920K • 11 MINS AGO",                    color: "#FF2D55", glow: false },
+      { text: "TOP 10 CASH DAILY • NO EXCUSES",                       color: "#FFD700", glow: true },
+
+      top10 ? { text: `YOU NEED ${(top10.taps + 5000).toLocaleString()} TAPS TO ENTER TOP-10`, color: "#00FFA3", glow: true } : null,
+      
+      { text: "RESET IN ~6H • ONLY THE STRONG EAT",                   color: "#FF2D55", glow: true },
+      { text: "FINGERS BLEEDING YET? KEEP GOING",                     color: "#00FFA3", glow: true },
+      { text: "YOUR MAMA CAN’T SAVE YOU NOW",                         color: "#FF2D55", glow: true },
+      { text: "TAP OR REMAIN BROKE • CHOOSE",                         color: "#FFD700", glow: true },
+      { text: "LEADERBOARD DOESN’T LIE • MOVE!",                      color: "#00FFA3", glow: true },
+    ].filter(Boolean); // remove nulls
+
+    // Shuffle messages every cycle for max chaos
+    const shuffled = messages.sort(() => Math.random() - 0.5);
 
     let html = "";
-    messages.forEach(m => {
-      html += `<span style="color:${m.color};font-weight:900;${m.glow?'text-shadow:0 0 12px #00FFA3;':''}">${m.text}</span><span style="color:#666;"> • </span>`;
+    shuffled.forEach(m => {
+      html += `<span style="color:${m.color};font-weight:900;${m.glow ? 'text-shadow:0 0 16px currentColor;' : ''}">${m.text}</span><span style="color:#666;"> • </span>`;
     });
 
-    // Triple content = perfect seamless + instant full look
+    // Triple repeat = seamless scroll + instant full look
     el.innerHTML = html.repeat(3);
 
   } catch (err) {
-    // never white-only
-    el.innerHTML = `<span style="color:#00FFA3;text-shadow:0 0 12px #00FFA3;">LIVE • ₦4.82M POT • WAR DON START</span><span style="color:#666;"> • </span>`.repeat(6);
+    console.warn("Banner update failed:", err);
+    // Fallback fire message
+    el.innerHTML = `<span style="color:#00FFA3;text-shadow:0 0 16px #00FFA3;">LIVE • ₦4.82M POT • WAR DON START • NO MERCY</span><span style="color:#666;"> • </span>`.repeat(6);
   }
 }
+
+// Update every 21 seconds — feels alive
 setInterval(updateLiveBanner, 21000);
+// Run once on load so it’s never blank
 updateLiveBanner();
 RedHotMode.init();
 </script>
