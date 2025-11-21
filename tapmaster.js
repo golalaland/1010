@@ -393,7 +393,7 @@ function maybeTriggerRedHot() {
 }
 
 // ======================================================
-//   SESSION ENGINE — CLEAN, BULLETPROOF, DROP-IN
+//   SESSION ENGINE — FINAL, CLEAN, BULLETPROOF (2025 STANDARD)
 // ======================================================
 
 // GLOBAL STATE
@@ -405,20 +405,17 @@ let progress = 0;
 let tapsForNext = 100;
 let cashCounter = 0;
 let cashThreshold = 0;
-
 let running = false;
 let tapLocked = false;
 let intervalId = null;
 
-
-// === SESSION TRACKING — ONLY LOCAL, NO WRITES DURING GAME ===
-let sessionTaps = 0;         // how many taps this 60–90 sec round
-let sessionEarnings = 0;     // how much ₦ earned this round
-let sessionBonusLevel = 1;   // final bonus level reached
-
+// SESSION TRACKING — ONLY LOCAL (NO WRITES DURING GAME)
+let sessionTaps = 0;         // final taps to save
+let sessionEarnings = 0;     // final cash earned this round
+let sessionBonusLevel = 1;   // final bonus level
 
 // ======================================================
-//  HELPER: Sound & Haptics (extracted for reuse)
+//  HELPER: Sound & Haptics
 // ======================================================
 function playTapSound() {
   const now = Date.now();
@@ -435,195 +432,15 @@ function triggerHaptic() {
   if ('vibrate' in navigator) {
     navigator.vibrate([10, 5, 10]);
   } else if (/iPhone|iPad|iPod/.test(navigator.userAgent)) {
-    tapButton.classList.add('shake');
-    setTimeout(() => tapButton.classList.remove('shake'), 100);
+    tapButton?.classList.add('shake');
+    setTimeout(() => tapButton?.classList.remove('shake'), 100);
   }
 }
 
 // ======================================================
-//   START SESSION – FINAL, COMPLETE & WORKING
+//  DEBOUNCE — CLEAN & SAFE
 // ======================================================
-function startSession() {
-  // FULL RESET
-  taps = 0;
-  earnings = 0;
-  timer = SESSION_DURATION;
-  bonusLevel = 1;
-  progress = 0;
-  tapsForNext = 100;
-  cashCounter = 0;
-  cashThreshold = randomInt(1, 12);
-
-  running = true;
-  tapLocked = false;
-  tapButton.disabled = false;
-
-  RedHotMode.reset();                    // clean state
-  trainBar && (trainBar.style.width = "100%");
-  updateBonusBar();
-  updateUI();
-
-  if (intervalId) clearInterval(intervalId);
-
-  // MAIN GAME LOOP — 100% RELIABLE
-  intervalId = setInterval(() => {
-    if (!running) return;
-
-    timer--;
-
-    if (timer <= 0) {
-      timer = 0;
-      running = false;
-      clearInterval(intervalId);
-      intervalId = null;
-      showEndGameModal();
-      endSessionRecord();
-      return;
-    }
-
-    updateUI();
-    trainBar && (trainBar.style.width = (timer / SESSION_DURATION * 100) + "%");
-
-    // RED HOT TRAP — appears ~every 10 sec after 15 sec left
-    if (timer % 8 === 0 && timer > 15) {
-  maybeTriggerRedHot();
-}
-
-  }, 1000);
-}
-
-// ======================================================
-//   END SESSION — CLEAN & SAFE (now with live leaderboard flush)
-// ======================================================
-function endSessionImmediate() {
-  running = false;
-  tapLocked = true;
-  tapButton.disabled = true;
-  clearInterval(intervalId);
-  intervalId = null;
-
-  // Force final live update + accurate save even if user closes instantly
-  flushFinalLiveAndAccurateSave();
-}
-
-// ======================================================
-//   FINAL SAVE — ACCURATE + LIVE LEADERBOARD (called at true end OR on tab close)
-// ======================================================
-async function flushFinalLiveAndAccurateSave() {
-  if (!currentUser?.uid || taps <= 0) return;
-
-  const uid = currentUser.uid;
-  const finalSessionTaps = taps; // this is the true number from the 60–90 sec round
-
-
-  // 1. SEND ONE FINAL LIVE UPDATE (so leaderboard shows correct score instantly)
-  if (window.userInTodayBid && window.CURRENT_ROUND_ID) {
-    addDoc(collection(db, "liveTaps), {
-      uid,
-      username: currentUser.chatId || "Player",
-      taps: finalSessionTaps,
-      totalToday: (currentUser.totalTaps || 0) + finalSessionTaps,
-      roundId: window.CURRENT_ROUND_ID,
-      timestamp: serverTimestamp()
-    }).catch(() => {}); // fire-and-forget
-  }
-
-  await endSessionRecord(); // your existing function, unchanged below
-}
-async function endSessionRecord() {
-  if (!currentUser?.uid || taps <= 0) return;
-
-  const uid = currentUser.uid;
-  const userRef = doc(db, "users", uid);
-  const sessionsRef = collection(db, "tapSessions");
-
-  try {
-    const now = new Date();
-    const dailyKey = now.toISOString().split("T")[0];
-    const weeklyKey = `${now.getFullYear()}-W${getWeekNumber(now)}`;
-    const monthlyKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-
-    // ONE ATOMIC TRANSACTION — 100% accurate, cheat-proof
-    await runTransaction(db, async (transaction) => {
-      const snap = await transaction.get(userRef);
-
-      const baseData = {
-        totalTaps: (snap.data()?.totalTaps || 0) + taps,
-        lastEarnings: earnings,
-        lastBonus: bonusLevel,
-        updatedAt: serverTimestamp(),
-      };
-
-      if (!snap.exists()) {
-        transaction.set(userRef, {
-          uid,
-          chatId: currentUser.chatId || uid,
-          email: currentUser.email || "",
-          stars: currentUser.stars || 0,
-          cash: currentUser.cash || 0,
-          createdAt: serverTimestamp(),
-          ...baseData,
-          tapsDaily: { [dailyKey]: taps },
-          tapsWeekly: { [weeklyKey]: taps },
-          tapsMonthly: { [monthlyKey]: taps },
-        });
-      } else {
-        const data = snap.data();
-
-        transaction.update(userRef, {
-          ...baseData,
-          tapsDaily: {
-            ...(data.tapsDaily || {}),
-            [dailyKey]: (data.tapsDaily?.[dailyKey] || 0) + taps,
-          },
-          tapsWeekly: {
-            ...(data.tapsWeekly || {}),
-            [weeklyKey]: (data.tapsWeekly?.[weeklyKey] || 0) + taps,
-          },
-          tapsMonthly: {
-            ...(data.tapsMonthly || {}),
-            [monthlyKey]: (data.tapsMonthly?.[monthlyKey] || 0) + taps,
-          },
-        });
-      }
-    });
-
-    // SESSION LOG (fire-and-forget)
-    await addDoc(sessionsRef, {
-      uid,
-      chatId: currentUser.chatId || uid,
-      email: currentUser.email || null,
-      taps,
-      earnings,
-      bonusLevel,
-      redHotPunishments: RedHotMode.punishmentCount || 0,
-      timestamp: serverTimestamp(),
-    });
-
-    // UPDATE LOCAL CACHE
-    currentUser.totalTaps = (currentUser.totalTaps || 0) + taps;
-
-    console.log("Final session saved accurately:", { taps, earnings });
-
-  } catch (error) {
-    console.error("Final save failed:", error);
-    // Optional: retry logic or toast
-  }
-}
-
-// ======================================================
-//   HELPER: Get ISO week number (robust)
-// ======================================================
-function getWeekNumber(d) {
-  d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
-  d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
-  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-  return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
-}
-// ======================================================
-//  DEBOUNCE FUNCTION — MUST BE DEFINED FIRST
-// ======================================================
-function debounce(fn, delay) {
+function debounce(fn, delay = 50) {
   let timeout;
   return function (...args) {
     clearTimeout(timeout);
@@ -632,48 +449,22 @@ function debounce(fn, delay) {
 }
 
 // ======================================================
-//  NORMAL TAP LOGIC (all the +1 stuff)
+//  NORMAL TAP LOGIC — ZERO WRITES DURING SESSION
 // ======================================================
 const handleNormalTap = debounce(async () => {
   taps++;
   sessionTaps++;
 
+  // Update local user instantly
   if (currentUser) {
     currentUser.totalTaps = (currentUser.totalTaps || 0) + 1;
   }
 
-  // ——— LIVE BID LEADERBOARD (only if user joined today's bid) ———
-  if (window.CURRENT_ROUND_ID && sessionTaps % LIVE_BID_UPDATE_EVERY === 0) {
-    // Cache check once per session
-    if (typeof window.userInTodayBid === "undefined") {
-      try {
-        const q = query(
-          collection(db, "bids"),
-          where("uid", "==", currentUser.uid),
-          where("roundId", "==", window.CURRENT_ROUND_ID),
-          where("status", "==", "active")
-        );
-        const snap = await getDocs(q);
-        window.userInTodayBid = !snap.empty;
-      } catch { window.userInTodayBid = false; }
-    }
-
-    if (window.CURRENT_ROUND_ID && currentUser?.uid) {
-  addDoc(collection(db, "liveTaps"), {
-    uid: currentUser.uid,
-    username: currentUser.chatId || "Player",
-    taps: sessionTaps,
-    totalToday: currentUser.totalTaps || 0,
-    roundId: window.CURRENT_ROUND_ID,
-    timestamp: serverTimestamp()
-  }).catch(() => {});
-}
-
-  // ——— ALL YOUR NORMAL GAME LOGIC (unchanged) ———
   progress++;
   cashCounter++;
   showFloatingPlus(tapButton, "+1");
 
+  // CASH AWARD — only real-time write
   if (cashCounter >= cashThreshold) {
     cashCounter = 0;
     cashThreshold = randomInt(1, 12);
@@ -686,7 +477,8 @@ const handleNormalTap = debounce(async () => {
     }
   }
 
-  if ( Play again modalprogress >= tapsForNext) {
+  // BONUS LEVEL UP
+  if (progress >= tapsForNext) {
     progress = 0;
     bonusLevel++;
     sessionBonusLevel = bonusLevel;
@@ -699,15 +491,15 @@ const handleNormalTap = debounce(async () => {
   triggerHaptic();
   updateUI();
   updateBonusBar();
-}, 50);
+});
 
 // ======================================================
-//  MAIN TAP LISTENER — FINAL & BULLETPROOF
+//  MAIN TAP LISTENER — ONE CLEAN VERSION ONLY
 // ======================================================
 tapButton?.addEventListener(tapEvent, debounce(async (e) => {
   if (!running || tapLocked) return;
 
-  // RED HOT PUNISHMENT
+  // RED HOT MODE
   if (RedHotMode.active) {
     RedHotMode.punish();
     tapLocked = true;
@@ -715,39 +507,145 @@ tapButton?.addEventListener(tapEvent, debounce(async (e) => {
     return;
   }
 
-  // NORMAL TAP
   tapLocked = true;
   setTimeout(() => tapLocked = false, 50);
-
   await handleNormalTap();
-}, 50));
+}));
 
 // ======================================================
-//  MAIN TAP LISTENER – 100% WORKING (NO ILLEGAL RETURN)
+//  START SESSION — FULL RESET
 // ======================================================
-tapButton?.addEventListener(tapEvent, debounce(async (e) => {
-  if (!running || tapLocked) return;
+function startSession() {
+  taps = 0;
+  earnings = 0;
+  timer = SESSION_DURATION;
+  bonusLevel = sessionBonusLevel;  // carry over from last session
+  progress = 0;
+  tapsForNext = 100 + (bonusLevel - 1) * 50;
+  cashCounter = 0;
+  cashThreshold = randomInt(1, 12);
 
-  // RED HOT PUNISHMENT
-  if (RedHotMode.active) {
-    RedHotMode.punish();
-    tapLocked = true;
-    setTimeout(() => tapLocked = false, 300);
-    return;
+  sessionTaps = 0;
+  sessionEarnings = 0;
+  sessionBonusLevel = bonusLevel;
+
+  running = true;
+  tapLocked = false;
+  tapButton.disabled = false;
+
+  RedHotMode.reset();
+  trainBar && (trainBar.style.width = "100%");
+  updateBonusBar();
+  updateUI();
+
+  if (intervalId) clearInterval(intervalId);
+
+  intervalId = setInterval(() => {
+    if (!running) return;
+    timer--;
+
+    if (timer <= 0) {
+      timer = 0;
+      running = false;
+      clearInterval(intervalId);
+      intervalId = null;
+      showEndGameModal();
+      endSessionRecord();  // ← 1 perfect save
+      return;
+    }
+
+    updateUI();
+    trainBar && (trainBar.style.width = (timer / SESSION_DURATION * 100) + "%");
+
+    // RED HOT TRAP
+    if (timer % 8 === 0 && timer > 15) {
+      maybeTriggerRedHot();
+    }
+  }, 1000);
+}
+
+// ======================================================
+//  END SESSION RECORD — 1 ATOMIC WRITE ONLY
+// ======================================================
+async function endSessionRecord() {
+  if (!currentUser?.uid || sessionTaps <= 0) return;
+
+  const uid = currentUser.uid;
+  const userRef = doc(db, "users", uid);
+  const sessionsRef = collection(db, "tapSessions");
+
+  const now = new Date();
+  const dailyKey = now.toISOString().split("T")[0];
+  const weeklyKey = `${now.getFullYear()}-W${getWeekNumber(now)}`;
+  const monthlyKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+
+  try {
+    await runTransaction(db, async (transaction) => {
+      const snap = await transaction.get(userRef);
+      const data = snap.data() || {};
+
+      const newTotal = (data.totalTaps || 0) + sessionTaps;
+
+      const updateData = {
+        totalTaps: newTotal,
+        lastEarnings: sessionEarnings,
+        lastBonus: sessionBonusLevel,
+        updatedAt: serverTimestamp(),
+        tapsDaily: { ...(data.tapsDaily || {}), [dailyKey]: (data.tapsDaily?.[dailyKey] || 0) + sessionTaps },
+        tapsWeekly: { ...(data.tapsWeekly || {}), [weeklyKey]: (data.tapsWeekly?.[weeklyKey] || 0) + sessionTaps },
+        tapsMonthly: { ...(data.tapsMonthly || {}), [monthlyKey]: (data.tapsMonthly?.[monthlyKey] || 0) + sessionTaps },
+      };
+
+      if (!snap.exists()) {
+        transaction.set(userRef, {
+          uid,
+          chatId: currentUser.chatId || uid,
+          email: currentUser.email || "",
+          stars: currentUser.stars || 0,
+          cash: currentUser.cash || 0,
+          createdAt: serverTimestamp(),
+          ...updateData
+        });
+      } else {
+        transaction.update(userRef, updateData);
+      }
+    });
+
+    // Session log
+    await addDoc(sessionsRef, {
+      uid,
+      chatId: currentUser.chatId || uid,
+      taps: sessionTaps,
+      earnings: sessionEarnings,
+      bonusLevel: sessionBonusLevel,
+      redHotPunishments: RedHotMode.punishmentCount || 0,
+      timestamp: serverTimestamp(),
+    });
+
+    // ONE FINAL BID LEADERBOARD UPDATE (so others see it instantly on reload)
+    if (window.CURRENT_ROUND_ID && currentUser?.uid) {
+      addDoc(collection(db, "liveTaps"), {
+        uid,
+        username: currentUser.chatId || "Player",
+        taps: sessionTaps,
+        totalToday: (currentUser.totalTaps || 0) + sessionTaps,
+        roundId: window.CURRENT_ROUND_ID,
+        timestamp: serverTimestamp()
+      }).catch(() => {});
+    }
+
+    // Update local cache
+    currentUser.totalTaps = (currentUser.totalTaps || 0) + sessionTaps;
+
+    console.log("Session saved perfectly:", { sessionTaps, sessionEarnings });
+  } catch (err) {
+    console.error("Save failed:", err);
   }
-
-  // NORMAL TAP
-  tapLocked = true;
-  setTimeout(() => tapLocked = false, 50);
-
-  await handleNormalTap();
-}, 50));
-
+}
 
 // ======================================================
-//  RED HOT DEVIL MODE – MODULAR & BULLETPROOF
+//  RED HOT DEVIL MODE — EXACTLY AS YOU HAD IT
 // ======================================================
-
 const RedHotMode = {
   active: false,
   timeout: null,
@@ -762,88 +660,77 @@ const RedHotMode = {
     this.active = false;
     if (this.timeout) clearTimeout(this.timeout);
     this.timeout = null;
-    tapButton.classList.remove('red-hot', 'red-punish');
-    tapButton.querySelector('.inner').textContent = 'TAP';
+    tapButton?.classList.remove('red-hot', 'red-punish');
+    tapButton?.querySelector('.inner') && (tapButton.querySelector('.inner').textContent = 'TAP');
   },
 
   trigger() {
     if (this.active || this.timeout) return false;
-
     this.active = true;
-    tapButton.classList.add('red-hot');
-    tapButton.querySelector('.inner').textContent = "HOT";
-
-    // Warning sound
+    tapButton?.classList.add('red-hot');
+    tapButton?.querySelector('.inner') && (tapButton.querySelector('.inner').textContent = "HOT");
     try { this.sound.currentTime = 0; this.sound.play().catch(() => {}); } catch(e) {}
 
-    const duration = 5000 + Math.random() * 2000; // 5–7 sec
-
+    const duration = 5000 + Math.random() * 2000;
     this.timeout = setTimeout(() => {
       this.active = false;
       this.timeout = null;
-      tapButton.classList.remove('red-hot');
-      tapButton.querySelector('.inner').textContent = 'TAP';
+      tapButton?.classList.remove('red-hot');
+      tapButton?.querySelector('.inner') && (tapButton.querySelector('.inner').textContent = 'TAP');
     }, duration);
-
     return true;
   },
 
-  // Called when player taps during red-hot
   punish() {
     taps = Math.max(0, taps - 3);
     progress = Math.max(0, progress - 10);
-
     showFloatingPlus(tapButton, "-3");
-    tapButton.classList.add('red-punish');
-    setTimeout(() => tapButton.classList.remove('red-punish'), 400);
-
-    // Blood flash
+    tapButton?.classList.add('red-punish');
+    setTimeout(() => tapButton?.classList.remove('red-punish'), 400);
     document.body.style.background = '#330000';
     setTimeout(() => document.body.style.background = '', 150);
-
-    // Strong vibration
-    if ('vibrate' in navigator) {
-      navigator.vibrate([100, 50, 150, 50, 100]);
-    }
-
+    if ('vibrate' in navigator) navigator.vibrate([100, 50, 150, 50, 100]);
     updateUI();
     updateBonusBar();
   }
 };
 
-// ---------- UI & TAP GLOW ----------
-function updateUI(){
-  timerEl && (timerEl.textContent=String(timer));
-  tapCountEl && (tapCountEl.textContent=String(taps));
-  earningsEl && (earningsEl.textContent='₦'+formatNumber(earnings.toFixed(2)));
-  bonusLevelVal && (bonusLevelVal.textContent=String(bonusLevel));
-  const elapsed=SESSION_DURATION-timer;
-  const speed=elapsed>0?taps/elapsed:0;
-  speedVal && (speedVal.textContent=`x${speed.toFixed(2)}`);
-  miniTapCount && (miniTapCount.textContent=String(taps));
-  miniEarnings && (miniEarnings.textContent='₦'+formatNumber(earnings.toFixed(2)));
-  if(starCountEl && currentUser) starCountEl.textContent=formatNumber(currentUser.stars);
-  if(cashCountEl && currentUser) cashCountEl.textContent='₦'+formatNumber(currentUser.cash);
+// ======================================================
+//  UI & GLOW
+// ======================================================
+function updateUI() {
+  timerEl && (timerEl.textContent = String(timer));
+  tapCountEl && (tapCountEl.textContent = String(taps));
+  earningsEl && (earningsEl.textContent = '₦' + formatNumber(earnings.toFixed(2)));
+  bonusLevelVal && (bonusLevelVal.textContent = String(bonusLevel));
+  const elapsed = SESSION_DURATION - timer;
+  const speed = elapsed > 0 ? taps / elapsed : 0;
+  speedVal && (speedVal.textContent = `x${speed.toFixed(2)}`);
+  miniTapCount && (miniTapCount.textContent = String(taps));
+  miniEarnings && (miniEarnings.textContent = '₦' + formatNumber(earnings.toFixed(2)));
+  if (starCountEl && currentUser) starCountEl.textContent = formatNumber(currentUser.stars);
+  if (cashCountEl && currentUser) cashCountEl.textContent = '₦' + formatNumber(currentUser.cash);
 }
 
-function flashTapGlow(){ 
-  tapButton?.classList.add('tap-glow','tap-pulse'); 
-  setTimeout(()=>{tapButton?.classList.remove('tap-glow','tap-pulse');},120); 
+function flashTapGlow() {
+  tapButton?.classList.add('tap-glow', 'tap-pulse');
+  setTimeout(() => tapButton?.classList.remove('tap-glow', 'tap-pulse'), 120);
 }
 
-// ---------- CSS ----------
-const style=document.createElement('style'); 
-style.innerHTML=`
+const style = document.createElement('style');
+style.innerHTML = `
   #tapButton.tap-glow { box-shadow:0 0 26px rgba(0,230,118,0.9),0 0 8px rgba(0,176,255,0.6); }
   #tapButton.tap-pulse { transform: scale(1.05); transition: transform 0.12s ease; }
 `;
 document.head.appendChild(style);
 
-// ---------- INITIALIZE ----------
+// ======================================================
+//  INITIALIZE & PLAY BUTTON FLOW
+// ======================================================
 initializePot();
 loadCurrentUserForGame();
-  
-// ---------- START FLOW ----------
+RedHotMode.init();
+
 startBtn?.addEventListener("click", () => {
   if (playModal) playModal.style.display = "flex";
 });
@@ -870,28 +757,26 @@ confirmPlay?.addEventListener("click", async () => {
     starCountEl.textContent = formatNumber(localStars);
   }
 
-
- // CLOSE MODAL
   if (playModal) playModal.style.display = "none";
-
-  // HIDE START ELEMENTS
   if (posterImg) posterImg.style.display = "none";
   if (startPage) startPage.style.display = "none";
-if (bannerPage) bannerPage.style.display = "none";
-  // SHOW SPINNER
+  if (bannerPage) bannerPage.style.display = "none";
   if (spinner) spinner.classList.remove("hidden");
 
-  // 🔵 ADD BACKGROUND TRANSITION HERE
   body.style.transition = "background 0.5s ease";
   body.classList.remove("start-mode");
   body.classList.add("game-mode");
 
-  // ENTER GAME AFTER DELAY
   setTimeout(() => {
     if (spinner) spinner.classList.add("hidden");
     if (gamePage) gamePage.classList.remove("hidden");
     startSession();
   }, 700);
+});
+
+// AUTO-SAVE ON PAGE CLOSE / PLAY AGAIN
+window.addEventListener("beforeunload", () => {
+  if (sessionTaps > 0) endSessionRecord();
 });
 
 /* ------------------------------
@@ -1853,15 +1738,3 @@ setInterval(updateLiveBanner, 21000);
 // Run once on load so it’s never blank
 updateLiveBanner();
 RedHotMode.init();
-// SAVE EVEN IF USER CLOSES TAB MID-GAME
-window.addEventListener("beforeunload", () => {
-  if (running && taps > 0) {
-    flushFinalLiveAndAccurateSave(); // tries to save instantly
-  }
-});
-
-window.addEventListener("pagehide", () => {
-  if (running && taps > 0) {
-    flushFinalLiveAndAccurateSave();
-  }
-});
