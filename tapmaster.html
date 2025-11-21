@@ -1311,22 +1311,32 @@ async function loadCurrentUserForGame() {
   } catch(err){ console.warn("loadCurrentUserForGame error",err); }
 }
 
-// ---------- DEDUCT STARS ----------
-async function tryDeductStarsForJoin(cost){
-  if(!currentUser?.uid) return {ok:false,message:"You are not logged in"};
-  const userRef = doc(db,"users",currentUser.uid);
-  try{
-    await runTransaction(db,async t=>{
+// ---------- DEDUCT STARS WITH ANIMATION ----------
+async function tryDeductStarsForJoin(cost) {
+  if (!currentUser?.uid) return { ok: false, message: "You are not logged in" };
+
+  const userRef = doc(db, "users", currentUser.uid);
+  const previousStars = currentUser.stars ?? 0;
+
+  try {
+    await runTransaction(db, async (t) => {
       const u = await t.get(userRef);
-      if(!u.exists()) throw new Error("User not found");
-      const currentStars = Number(u.data().stars||0);
-      if(currentStars<cost) throw new Error("Not enough stars");
-      t.update(userRef,{stars:currentStars-cost});
-      currentUser.stars = currentStars-cost;
+      if (!u.exists()) throw new Error("User not found");
+      const currentStars = Number(u.data().stars || 0);
+      if (currentStars < cost) throw new Error("Not enough stars");
+      t.update(userRef, { stars: currentStars - cost });
+      currentUser.stars = currentStars - cost;
     });
-    starCountEl && (starCountEl.textContent=formatNumber(currentUser.stars));
-    return {ok:true};
-  } catch(e){ return {ok:false,message:e.message||"Could not deduct stars"}; }
+
+    // ← THIS IS THE ONLY CHANGE
+    if (starCountEl) {
+      animateDeduct(starCountEl, previousStars, currentUser.stars, 700);
+    }
+
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, message: e.message || "Could not deduct stars" };
+  }
 }
 
 // ---------- GIVE CASH ----------
@@ -1488,6 +1498,39 @@ function triggerHaptic() {
     tapButton.classList.add('shake');
     setTimeout(() => tapButton.classList.remove('shake'), 100);
   }
+}
+
+  
+// ======================================================
+//  DEDUCT ANIMATION FUNCTION ODO
+// ======================================================
+function animateDeduct(el, from, to, duration = 600) {
+  if (from === to) {
+    el.textContent = formatNumber(to);
+    return;
+  }
+
+  const startTime = performance.now();
+  const diff = to - from; // negative when deducting
+
+  function step(now) {
+    const elapsed = now - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+    
+    // Ease-out cubic for snappy feel
+    const ease = 1 - Math.pow(1 - progress, 3);
+    
+    const current = Math.round(from + diff * ease);
+    el.textContent = formatNumber(current);
+
+    if (progress < 1) {
+      requestAnimationFrame(step);
+    } else {
+      el.textContent = formatNumber(to);
+    }
+  }
+
+  requestAnimationFrame(step);
 }
 
 // ======================================================
