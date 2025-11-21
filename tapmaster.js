@@ -633,6 +633,7 @@ async function endSessionRecord() {
   if (sessionAlreadySaved || !currentUser?.uid || (sessionTaps + sessionEarnings) === 0) return;
 
   sessionAlreadySaved = true;
+
   const userRef = doc(db, "users", currentUser.uid);
   const now = new Date();
   const lagosTime = new Date(now.getTime() + 60*60*1000);
@@ -645,12 +646,9 @@ async function endSessionRecord() {
       const snap = await t.get(userRef);
       const data = snap.data() || {};
 
-      const newCash = (data.cash || 0) + sessionEarnings;
-      const newTotalTaps = (data.totalTaps || 0) + sessionTaps;
-
       t.update(userRef, {
-        cash: newCash,
-        totalTaps: newTotalTaps,
+        cash: (data.cash || 0) + sessionEarnings,
+        totalTaps: (data.totalTaps || 0) + sessionTaps,
         lastEarnings: sessionEarnings,
         updatedAt: serverTimestamp(),
         tapsDaily: { ...data.tapsDaily, [dailyKey]: (data.tapsDaily?.[dailyKey] || 0) + sessionTaps },
@@ -659,27 +657,26 @@ async function endSessionRecord() {
       });
     });
 
-    // UPDATE LOCAL USER
+    // UPDATE LOCAL STATE
     currentUser.cash += sessionEarnings;
     currentUser.totalTaps += sessionTaps;
 
-    // UPDATE UI IMMEDIATELY
-    cashCountEl && (cashCountEl.textContent = '₦' + formatNumber(currentUser.cash));
+    // UPDATE UI
+    if (cashCountEl) cashCountEl.textContent = '₦' + formatNumber(currentUser.cash);
+    if (earningsEl) earningsEl.textContent = '₦0';
+    if (miniEarnings) miniEarnings.textContent = '₦0';
 
-    // LOG SESSION (NON-BLOCKING)
-    addDoc(collection(db, "tapSessions"), {
-      uid: currentUser.uid,
-      chatId: currentUser.chatId,
-      taps: sessionTaps,
-      earnings: sessionEarnings,
-      timestamp: serverTimestamp()
-    }).catch(() => {});
-
-    console.log("%cSAVED TO FIRESTORE: +₦" + sessionEarnings + " | +" + sessionTaps + " taps", "color:#0f9;font-size:16px");
+    console.log("%c ROUND SAVED — CASH & TAPS SECURED", "color:#0f9;font-size:18px;font-weight:bold");
+    return true;
 
   } catch (err) {
-    console.error("Save failed", err);
-    sessionAlreadySaved = false; // allow retry
+    console.error("%c SAVE FAILED — RETRYING NEXT ROUND", "color:#f66;background:#300;padding:10px", err);
+    sessionAlreadySaved = false;
+    return false;
+
+  } finally {
+    // NOTHING HERE. EVER.
+    // Cash is saved above. Double write = banned forever.
   }
 }
     // === 2. LOG SESSION (fire-and-forget — non-blocking) ===
@@ -707,50 +704,31 @@ async function endSessionRecord() {
     }
 
    // === 4. UPDATE LOCAL CACHE (UI stays snappy) ===
-    currentUser.totalTaps = (currentUser.totalTaps || 0) + sessionTaps;
+       // SUCCESS → UPDATE LOCAL USER & UI
+    currentUser.cash += sessionEarnings;
+    currentUser.totalTaps += sessionTaps;
 
-    console.log("%c Session saved successfully!", "color:#0f9;font-weight:bold", {
-      sessionTaps,
-      sessionEarnings,
-      bonus: sessionBonusLevel,
-      dailyKey,
-    });
+    // Update UI instantly (no waiting for reload)
+    if (cashCountEl) {
+      cashCountEl.textContent = '₦' + formatNumber(currentUser.cash);
+    }
+    if (earningsEl) earningsEl.textContent = '₦0';
+    if (miniEarnings) miniEarnings.textContent = '₦0';
+
+    console.log("%c ROUND SAVED PERFECTLY! +₦" + sessionEarnings + " | +" + sessionTaps + " taps", "color:#0f9;font-size:18px;font-weight:bold");
 
     return true;
+
   } catch (err) {
-    console.error("%c Save failed (will retry on next round)", "color:#f66", err);
-    sessionAlreadySaved = false; // Allow retry
+    console.error("%c SAVE FAILED — WILL RETRY NEXT ROUND", "color:#f66;background:#300;padding:10px;border-radius:8px", err);
+    sessionAlreadySaved = false; // ← Allow retry on next Play Again
     return false;
-   } finally {
-    // === GIVE FINAL CASH EARNED THIS ROUND (ONLY ONCE) ===
-    if (sessionEarnings > 0 && currentUser?.uid) {
-      const userRef = doc(db, "users", uid);
-      runTransaction(db, async (t) => {
-        const snap = await t.get(userRef);
-        if (!snap.exists()) throw "User missing";
-        const currentCash = Number(snap.data()?.cash || 0);
-        t.update(userRef, { cash: currentCash + sessionEarnings });
-           }).then(() => {
-        // SUCCESS: Cash successfully written to Firestore
-        currentUser.cash = (currentUser.cash || 0) + sessionEarnings;
 
-        // FORCE UI TO SHOW CORRECT TOTAL CASH IMMEDIATELY
-        if (cashCountEl) {
-          cashCountEl.textContent = '₦' + formatNumber(currentUser.cash);
-        }
-        if (earningsEl) {
-          earningsEl.textContent = '₦0'; // reset mini display
-        }
-        if (miniEarnings) {
-          miniEarnings.textContent = '₦0';
-        }
-
-        console.log("%c CASH AWARDED & UI UPDATED: ₦" + formatNumber(currentUser.cash), "color:#0f9; font-weight:bold;");
-      }).catch((err) => {
-        console.warn("Final cash award failed — will retry next round", err);
-        // DO NOT reset sessionAlreadySaved here — cash will be awarded next time
-      });
-    }
+  } finally {
+    // DO NOT DO ANYTHING HERE
+    // Cash is ALREADY saved in the main transaction above
+    // This finally block should be EMPTY
+    // Double cash write = death. We killed it.
   }
 }
 // ======================================================
