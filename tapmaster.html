@@ -1102,21 +1102,21 @@ bar + footer */
   </div>
 </div>
 
-<!-- DETTY REWARDS MODAL — HARDCODED & FULLY WORKING (NO EXTERNAL DEPENDENCIES) -->
-<div id="dettyRewardsModal" class="modal-backdrop" style="display:none;">
+<!-- DETTY REWARDS MODAL — FINAL FIXED & FULLY WORKING -->
+<div id="dettyRewardsModal" class="modal-backdrop" style="display:block;position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:9999;align-items:center;justify-content:center;">
   <div class="modal" style="width:94%;max-width:400px;max-height:94vh;overflow:hidden;display:flex;flex-direction:column;background:#0a001a;border:4px solid #ff00aa;border-radius:22px;box-shadow:0 0 80px rgba(255,0,170,0.7);position:relative;">
 
     <!-- HEADER -->
     <div style="padding:20px 16px 14px;text-align:center;position:relative;overflow:hidden;">
       <div style="position:absolute;inset:0;background:linear-gradient(90deg,transparent,#ff00aa88,transparent);animation:pulse 3s infinite;"></div>
-      <h3 style="margin:0;font-family:'Press Start 2P',cursive;font-size:17px;color:#ff00ff;text-shadow:0 0 20px #ff00ff;letter-spacing:2px;z-index:2;">
+      <h3 style="margin:0;font-family:'Press Start 2P',cursive;font-size:17px;color:#ff00ff;letter-spacing:2px;position:relative;z-index:2;">
         DETTYVERSE VIP REWARDS
       </h3>
       <div style="margin-top:8px;font-size:13px;color:#ff66ff;font-weight:900;">Top 10 Weekly Tappers Only</div>
     </div>
 
-    <!-- SWIPER -->
-    <div style="flex:1;overflow:hidden;position:relative;">
+    <!-- SWIPER CONTAINER — THIS IS THE KEY FIX (min-height:0) -->
+    <div style="flex:1;overflow:hidden;position:relative;min-height:0;">
       <div id="girlSwiper" style="width:100%;height:100%;position:relative;">
 
         <!-- GIRL 1 — LOLA -->
@@ -1127,7 +1127,7 @@ bar + footer */
                 <source src="https://cdn.shopify.com/videos/c/o/v/87837772a4ac49c78d6c8f01c6c738ae.mp4" type="video/mp4">
               </video>
               <div style="position:absolute;inset:0;background:linear-gradient(transparent 55%,#000 100%);"></div>
-              <div style="position:absolute;top:12px;right:12px;background:#ff00aa;padding:6px 12px;border-radius:50px;font-size:12px;color:#000;font-weight:900;">LIVE</div>
+              <div class="live-badge">LIVE</div>
             </div>
             <div style="padding:18px 20px;background:rgba(255,0,170,0.2);">
               <h4 style="margin:0 0 6px;font-size:21px;color:#ff00ff;">Lola</h4>
@@ -1150,7 +1150,7 @@ bar + footer */
                 <source src="https://videos.pexels.com/video-files/855305/855305-hd_1920_1080_30fps.mp4" type="video/mp4">
               </video>
               <div style="position:absolute;inset:0;background:linear-gradient(transparent 55%,#000 100%);"></div>
-              <div style="live-badge">LIVE</div>
+              <div class="live-badge">LIVE</div>
             </div>
             <div style="padding:18px 20px;background:rgba(255,0,170,0.2);">
               <h4 style="margin:0 0 6px;font-size:21px;color:#ff00ff;">Chloe</h4>
@@ -1173,7 +1173,7 @@ bar + footer */
               <div class="live-badge">LIVE</div>
             </div>
             <div style="padding:18px 20px;background:rgba(255,0,170,0.2);">
-              <h4 style="margin:0 0 6px;font-size:21px;color:#ff00ff;">Naya</h4>
+              <h4 style="margin:0 0 6px;font-size:21px;color:#ff00ff;">Maya</h4>
               <div style="display:flex;gap:16px;font-size:14px;color:#ff99ff;">
                 <span>24 • PH</span>
                 <span>Shower Show</span>
@@ -1213,8 +1213,8 @@ bar + footer */
       </div>
 
       <!-- ARROWS -->
-      <button class="swipe-left" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);background:rgba(255,0,170,0.5);border:none;width:44px;height:44px;border-radius:50%;color:#fff;font-size:26px;z-index:10;">‹</button>
-      <button class="swipe-right" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:rgba(255,0,170,0.5);border:none;width:44px;height:44px;border-radius:50%;color:#fff;font-size:26px;z-index:10;">›</button>
+      <button class="swipe-left" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);background:rgba(255,0,170,0.5);border:none;width:44px;height:44px;border-radius:50%;color:#fff;font-size:26px;z-index:10;cursor:pointer;">‹</button>
+      <button class="swipe-right" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:rgba(255,0,170,0.5);border:none;width:44px;height:44px;border-radius:50%;color:#fff;font-size:26px;z-index:10;cursor:pointer;">›</button>
     </div>
 
     <!-- BOTTOM FIRE TEXT -->
@@ -1227,7 +1227,7 @@ bar + footer */
       </div>
     </div>
 
-    <button id="closeDettyRewards" style="position:absolute;top:12px;right:12px;background:rgba(0,0,0,0.6);border:2px solid #ff00aa;width:40px;height:40px;border-radius:50%;color:#ff00aa;font-size:20px;">X</button>
+    <button id="closeDettyRewards" style="position:absolute;top:12px;right:12px;background:rgba(0,0,0,0.6);border:2px solid #ff00aa;width:40px;height:40px;border-radius:50%;color:#ff00aa;font-size:20px;cursor:pointer;">X</button>
   </div>
 </div>
 
