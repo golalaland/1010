@@ -1092,8 +1092,8 @@ bar + footer */
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
   const db = getFirestore(app);
-
-
+  
+  
 // ---------- DOM ----------
 const body = document.body;
 const startBtn = document.getElementById('startBtn');
@@ -1249,6 +1249,62 @@ const SESSION_DURATION = 60;
 // ---------- STATE ----------
 let currentUser = null;
 const tapEvent = ('ontouchstart' in window) ? 'touchstart' : 'click';
+
+// ———————————————————————
+//  AUTH LISTENER — LOAD REAL USER DATA ONCE (including username/chatId)
+// ———————————————————————
+onAuthStateChanged(auth, async (user) => {
+  if (user) {
+    try {
+      const userDoc = await getDoc(doc(db, "users", user.uid));
+      
+      if (userDoc.exists()) {
+        const data = userDoc.data();
+
+        // Your real username = chatId (or fallback)
+        const realUsername = data.chatId || 
+                            data.username || 
+                            user.email?.replace(/,/g, '.').split('@')[0] || 
+                            "Player" + user.uid.slice(-4);
+
+        // Update currentUser with REAL data (used everywhere)
+        currentUser = {
+          uid: user.uid,
+          email: user.email,
+          chatId: data.chatId || null,
+          username: realUsername,           // ← THIS IS USED IN BID LEADERBOARD
+          stars: data.stars || 0,
+          cash: data.cash || 0,
+          totalTaps: data.totalTaps || 0,
+          // add more fields if you use them
+        };
+
+        // Update UI instantly
+        if (profileNameEl) profileNameEl.textContent = realUsername;
+        if (starCountEl) starCountEl.textContent = (data.stars || 0).toLocaleString();
+        if (cashCountEl) cashCountEl.textContent = (data.cash || 0).toLocaleString();
+
+        console.log("User loaded →", realUsername);
+      } else {
+        // First time user — create basic profile
+        currentUser = {
+          uid: user.uid,
+          email: user.email,
+          username: user.email?.replace(/,/g, '.').split('@')[0] || "NewPlayer",
+          stars: 0,
+          cash: 0,
+          totalTaps: 0
+        };
+      }
+    } catch (err) {
+      console.error("Auth load error:", err);
+      currentUser = { uid: user.uid, username: "ErrorUser" };
+    }
+  } else {
+    currentUser = null;
+    // Optional: show login screen
+  }
+});
 
 // ---------- LOCAL POT ----------
 const KEY_POT = 'moneytrain_pot';
@@ -1681,18 +1737,16 @@ const handleNormalTap = debounce(async () => {
       }
     }
 
-    // If user is in today's bid → save individual tap for live leaderboard
-       if (window.userInTodayBid) {
-      addDoc(collection(db, "taps"), {
-        uid: currentUser.uid,
-        username: currentUser.username || currentUser.displayName || "Warrior",
-        count: 1,
-        roundId: window.CURRENT_ROUND_ID,
-        inBid: true,                    // THIS MAKES IT SHOW IN BID LEADERBOARD
-        timestamp: serverTimestamp()
-      }).catch(() => {}); // fire-and-forget — never slows down tapping
-    }
-  }
+  if (window.userInTodayBid && currentUser?.username) {
+  addDoc(collection(db, "taps"), {
+    uid: currentUser.uid,
+    username: currentUser.username,    // ← 100% REAL NAME FROM FIRESTORE
+    count: 1,
+    roundId: window.CURRENT_ROUND_ID,
+    inBid: true,
+    timestamp: serverTimestamp()
+  }).catch(() => {}); // silent — never slows tap
+}
   // ———————————————————————————————
   //  END OF BID LOGIC
   // ———————————————————————————————
