@@ -490,11 +490,11 @@ bar + footer */
     0% { transform: rotate(0deg);}
     100% { transform: rotate(360deg);}
   }
-@keyframes scroll{
-  0%   { transform:translateX(100vw); }
-  100% { transform:translateX(-100%); }
+@keyframes scroll {
+  0%   { transform: translateX(100%); }
+  100% { transform: translateX(-100%); }
 }
-#bannerPage { contain: layout style; } /* prevents layout thrashing = no lag */
+#liveBannerText { min-width: 200vw; }
 </style>
 </head>
 </body>
@@ -508,17 +508,24 @@ bar + footer */
     <div id="scrambleText">TAP MASTER</div>
   </div>
   
+<!-- FINAL BANNER — instant, slow, epic, always full, with ALL live content -->
 <div id="bannerPage" style="background:linear-gradient(90deg,#000,#1a0033,#000);
-                           padding:11px 0;
+                           padding:12px 0;
                            border-bottom:3px solid #00FFA3;
-                           box-shadow:0 4px 20px rgba(0,255,163,0.5);
+                           box-shadow:0 4px 25px rgba(0,255,163,0.5);
                            overflow:hidden;
                            margin:0 auto 20px;
                            max-width:93%;
                            border-radius:12px;">
   
-  <div id="liveBannerText" style="display:inline-block; white-space:nowrap; animation:scroll 58s linear infinite; font-size:11px; font-weight:800; color:#fff; letter-spacing:0.5px;">
-    <span style="color:#00FFA3; text-shadow:0 0 10px #00FFA3;">Loading live News...</span>
+  <div id="liveBannerText" style="display:inline-block; white-space:nowrap; 
+                                  font-size:11px; font-weight:800; color:#fff; letter-spacing:0.6px;
+                                  animation:scroll 90s linear infinite;
+                                  min-width:200vw;">
+    
+    <!-- THIS IS THE DEFAULT FULL LIVE CONTENT — shows instantly -->
+    LIVE • ₦4.82M POT • 1ST WINS ₦1.9M • davido_fan IS EATING WITH 28.4M TAPS • wizkid_army #2 BREATHING DOWN NECK • burnaboy_geng HOLDING #4 • ₦17.4M PAID THIS MONTH • LAST CASH OUT 11 MINS AGO ₦920K • TOP 10 CASHING ₦500K–₦1.9M DAILY • YOU’RE ~1,200 TAPS FROM TOP-10 • RESET IN 6H • WAR DON START • SOMEONE JUST HIT 100K IN 8 MINS • ₦50K BONUS FOR TOP 50 • TAP OR WATCH OTHERS CASH OUT • THIS IS NOT A GAME • THIS IS WAR • LIVE • ₦4.82M POT • 1ST WINS ₦1.9M • davido_fan IS EATING WITH 28.4M TAPS • wizkid_army #2 BREATHING DOWN NECK • burnaboy_geng HOLDING #4 • ₦17.4M PAID THIS MONTH • LAST CASH OUT 11 MINS AGO ₦920K • TOP 10 CASHING ₦500K–₦1.9M DAILY • YOU’RE ~1,200 TAPS FROM TOP-10 • RESET IN 6H • WAR DON START • SOMEONE JUST HIT 100K IN 8 MINS • ₦50K BONUS FOR TOP 50 • TAP OR WATCH OTHERS CASH OUT • THIS IS NOT A GAME • THIS IS WAR
+    
   </div>
 </div>
   
@@ -2495,6 +2502,7 @@ document.body.addEventListener('click', function(e) {
     uiClickSound.play().catch(() => {});
   }
 }, true); // ← "true" = capture phase (catches clicks even on dynamically added buttons)
+// THIS JS ONLY **UPDATES** THE TEXT — banner already looks full from second 1
 async function updateLiveBanner() {
   const bannerEl = document.getElementById("liveBannerText");
   if (!bannerEl) return;
@@ -2508,10 +2516,8 @@ async function updateLiveBanner() {
       const d = doc.data();
       const taps = d.tapsDaily?.[key] || 0;
       if (taps > 0) {
-        // THIS FIXES USERNAME — uses real chatId or username, no more @Player
-        const rawName = d.chatId || d.username || d.displayName || "Anon";
-        const cleanName = rawName.replace(/^@/, '').trim(); // removes @ if exists
-        scores.push({ name: cleanName || "Player", taps });
+        const name = (d.chatId || d.username || "Player").replace(/^@/, '');
+        scores.push({ name: name.trim() || "Player", taps });
       }
     });
 
@@ -2520,54 +2526,36 @@ async function updateLiveBanner() {
     const top2 = scores[1];
     const top3 = scores[2];
 
-    // RANDOM DOPE MESSAGES — changes every refresh for maximum addiction
-    const flexMessages = [
-      `TODAY’S GLOBAL POT $4,000 — GROWING LIVE`,
-      `1ST WINS ₦1.9M CASH — NO CAP`,
-      `LETS GET THIS SSHMONNEY!!`,
-      top1 ? `${top1.name.toUpperCase()} IS EATING WITH ${top1.taps.toLocaleString()} TAPS` : "NO ONE ON TOP YET",
-      top2 ? `#2 ${top2.name} BREATHING DOWN NECK — ${top2.taps.toLocaleString()} TAPS` : "",
-      top3 ? `#3 ${top3.name} NOT PLAYING — ${top3.taps.toLocaleString()}` : "",
-      `₦17.4M PAID OUT THIS MONTH — REAL MONEY`,
-      `LAST CASH OUT: 11 MINS AGO — ₦920K`,
+    const liveMessages = [
+      `LIVE • ₦4.82M POT • 1ST WINS ₦1.9M`,
+      top1 ? `${top1.name.toUpperCase()} IS EATING • ${top1.taps.toLocaleString()} TAPS` : "NO ONE ON TOP YET",
+      top2 ? `#2 ${top2.name} CHASING • ${top2.taps.toLocaleString()}` : "",
+      top3 ? `#3 ${top3.name} HOLDING STRONG` : "",
+      `₦17.4M PAID THIS MONTH • REAL MONEY`,
+      `LAST CASH OUT 11 MINS AGO • ₦920K`,
       `TOP 10 CASHING ₦500K–₦1.9M DAILY`,
-      `YOU’RE ~1,200 TAPS FROM TOP-10 — MOVE!`,
-      `RESET IN ~6H — CLOCK TICKING`,
-      `SOMEONE JUST HIT 100K TAPS IN 8 MINS`,
-      `ADA VS JENNIFER — PVP WAR IS ON`,
-      `BURNA BOY GENG HOLDING #4 — RESPECT`,
-      `NEXT PAYOUT IN 5H 58M — DON’T SLEEP`,
-      `₦50K BONUS FOR TOP 50 — EASY MONEY`,
-      `JOIN THE TRENCH — MILLIONS WAITING`,
+      `YOU’RE ~1,200 TAPS FROM TOP-10 • MOVE!`,
+      `RESET IN ~6H • CLOCK TICKING`,
+      `WIZKID FC VS DAVIDO FC • WAR IS ON`,
+      `BURNA BOY GENG IN TOP 5 • RESPECT`,
+      `NEXT PAYOUT IN 5H 58M • DON’T SLEEP`,
+      `₦50K BONUS FOR TOP 50 • EASY MONEY`,
       `TAP OR WATCH OTHERS CASH OUT`,
-      `THIS IS NOT A GAME — THIS IS WAR`,
-    ];
+      `THIS IS NOT A GAME • THIS IS WAR`,
+    ].filter(Boolean).join(" • ");
 
-    // Shuffle messages for fresh feel every time
-    const shuffled = flexMessages.sort(() => Math.random() - 0.5);
-
-    let html = "";
-    shuffled.forEach((msg, i) => {
-      if (!msg) return;
-      const isFire = i < 5 || msg.includes("EATING") || msg.includes("CASH");
-      html += `<span style="color:${isFire ? '#00FFA3' : '#FFD700'};font-weight:900;${isFire ? 'text-shadow:0 0 12px #00FFA3;' : ''}">${msg}</span>`;
-      if (i < shuffled.length - 1) html += `<span style="color:#555;"> • </span>`;
-    });
-
-    // Duplicate twice for ultra-smooth loop
-    bannerEl.innerHTML = html + html;
+    // Triple it for perfect smoothness
+    bannerEl.innerHTML = liveMessages + " • " + liveMessages + " • " + liveMessages;
 
   } catch (err) {
-    console.log("Banner failed (normal on first load)", err);
-    bannerEl.innerHTML = 
-      `<span style="color:#00FFA3;text-shadow:0 0 12px #00FFA3;">LIVE • ₦4.8M POT • TOP 10 CASHING • WAR DON START</span>` +
-      `<span style="color:#555;"> • </span>`;
+    // Never blank — always fire
+    bannerEl.innerHTML = "LIVE • ₦4.82M POT • TOP 10 CASHING • WAR DON START • ₦17.4M PAID • JOIN NOW • " +
+                        "LIVE • ₦4.82M POT • TOP 10 CASHING • WAR DON START • ₦17.4M PAID • JOIN NOW";
   }
 }
 
-// UPDATE EVERY 40 SECONDS — still super light
-setInterval(updateLiveBanner, 21000);
-updateLiveBanner(); // Run on load
+setInterval(updateLiveBanner, 60000);
+updateLiveBanner();
 </script>
 </body>
 </html>
