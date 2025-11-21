@@ -497,11 +497,15 @@ body {
 body.start-mode {
 background: url('https://cdn.shopify.com/s/files/1/0962/6648/6067/files/9F6F9EAC-F165-4C70-85CB-B2351A3B8C59.png?v=1763282422') center/cover no-repeat fixed;
 }
+@keyframes scroll{0%{transform:translateX(100%)}100%{transform:translateX(-100%)}}
 </style>
 </head>
 </body>
 
 <div id="appWrapper">
+  
+  <!-- Put this right after <body> -->
+<div id="startScreen" style="position:relative; width:100%; min-height:100vh; text-align:center;">
   
 
   <!-- Your marquee – now inside startScreen, not fixed -->
