@@ -2762,16 +2762,6 @@ if (!window.bidEngineStarted) {
   startDailyBidEngine();
 }
 
-// ADD THIS FUNCTION ONCE (anywhere in your code)
-const getRealUsername = () => {
-  if (currentUser?.chatId) return currentUser.chatId;
-  if (currentUser?.email) {
-    return currentUser.email.replace(/,/g, '.').split('@')[0];
-  }
-  return "Player" + (currentUser?.uid?.slice(-6) || "X");
-};
-
-
 // ---------- AUDIO UNLOCK (required for mobile) ----------
 let audioUnlocked = false;
 function unlockAudio() {
