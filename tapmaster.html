@@ -490,14 +490,13 @@ bar + footer */
     0% { transform: rotate(0deg);}
     100% { transform: rotate(360deg);}
   }
-/* Background + marquee animation */
-body.start-mode {
-  background: url('https://cdn.shopify.com/s/files/1/0962/6648/6067/files/9F6F9EAC-F165-4C70-85CB-B2351A3B8C59.png?v=1763282422') center/cover no-repeat fixed;
-}
-body.game-mode {
+/* NO ZOOM AT ALL — normal full view for BOTH screens */
+body {
   background: url('https://cdn.shopify.com/s/files/1/0962/6648/6067/files/64EB80F3-9BE7-4D39-8C96-5608B941E4DC.png?v=1763280746') center/cover no-repeat fixed;
 }
-@keyframes scroll{0%{transform:translateX(100%)}100%{transform:translateX(-100%)}}
+body.start-mode {
+background: url('https://cdn.shopify.com/s/files/1/0962/6648/6067/files/9F6F9EAC-F165-4C70-85CB-B2351A3B8C59.png?v=1763282422') center/cover no-repeat fixed;
+}
 </style>
 </head>
 </body>
@@ -505,16 +504,6 @@ body.game-mode {
 <div id="appWrapper">
   
 
-  
-  <!-- Header -->
-<div id="gameHeader">
-  <div id="welcomeText">WELCOME TO</div>
-  <div id="scrambleText">TAP MASTER</div>
-</div>
-
-<!-- Put this right after <body> -->
-<div id="startScreen" style="position:relative; width:100%; min-height:100vh; text-align:center;">
-  
   <!-- Your marquee – now inside startScreen, not fixed -->
   <div id="startScreenMarquee" style="width:100%; background:linear-gradient(90deg,#000,#1a0033,#000); 
               padding:10px 0; overflow:hidden; border-bottom:3px solid #00FFA3; 
@@ -2533,15 +2522,9 @@ document.body.addEventListener('click', function(e) {
 
 // ONE CLICK = EVERYTHING WORKS
 document.getElementById('startBtn').addEventListener('click', () => {
-  // Hide entire start screen (including marquee)
   document.getElementById('startScreen').style.display = 'none';
-  
-  // Show game
   document.getElementById('gameScreen').style.display = 'block';
-  
-  // Switch background from zoomed → normal
-  document.body.classList.remove('start-mode');
-  document.body.classList.add('game-mode');
+  // No need to switch classes anymore — background is already perfect
 });
 </script>
 </body>
