@@ -502,29 +502,29 @@ body.game-mode   #startScreenMarquee { display: none !important; }
 <div id="appWrapper">
   
 <div id="startScreenMarquee" style="position:fixed; top:0; left:0; width:100%; z-index:1000; pointer-events:none; display:none;">
-  <div id="killerMarquee" style="width:100%; background:linear-gradient(90deg,#000,#1a0033,#000); padding:11px 0; overflow:hidden; border-bottom:3px solid #00FFA3; box-shadow:0 4px 30px rgba(0,255,163,0.5); pointer-events:auto;">
+  <div style="background:linear-gradient(90deg,#000,#1a0033,#000); padding:11px 0; overflow:hidden; border-bottom:3px solid #00FFA3; box-shadow:0 4px 30px rgba(0,255,163,0.5); pointer-events:auto;">
     
-    <div class="marquee-wrapper" style="display:flex; width:200%; animation: scroll-left 11s linear infinite;">
+    <div style="display:flex; animation:scroll 60s linear infinite; white-space:nowrap;">
       
-      <!-- EXACT SAME CONTENT TWICE — this is the trick -->
-      <div class="marquee-set" style="display:flex; gap:50px; align-items:center; width:100%;">
-        <span style="color:#00FFA3; font-weight:900; font-size:15px; text-shadow:0 0 12px #00FFA3;">TODAY’S POT ₦4,820,000</span>
-        <span style="color:#FF2D55; font-weight:900;">1ST WINS ₦1,900,000</span>
+      <!-- DUPLICATE THIS LINE EXACTLY TWICE (only 2 copies) -->
+      <span style="display:inline-flex; gap:50px; align-items:center; padding-right:50px;">
+        <span style="color:#00FFA3;font-weight:900;font-size:15px;text-shadow:0 0 12px #00FFA3;">TODAY’S POT ₦4,820,000</span>
+        <span style="color:#FF2D55;font-weight:900;">1ST WINS ₦1,900,000</span>
         <span style="color:#FFD700;">Reset 06h 12m 44s</span>
         <span style="color:#00FFA3;">You #127 — 1,204 taps to top-10</span>
         <span style="color:#FF2D55;">davido_fan just hit 28.4M taps</span>
         <span style="color:#00FFA3;">₦17.4M paid this month</span>
-      </div>
+      </span>
       
-      <!-- SECOND COPY — exactly the same -->
-      <div class="marquee-set" style="display:flex; gap:50px; align-items:center; width:100%;">
-        <span style="color:#00FFA3; font-weight:900; font-size:15px; text-shadow:0 0 12px #00FFA3;">TODAY’S POT ₦4,820,000</span>
-        <span style="color:#FF2D55; font-weight:900;">1ST WINS ₦1,900,000</span>
+      <!-- SECOND IDENTICAL COPY (this makes it seamless) -->
+      <span style="display:inline-flex; gap:50px; align-items:center; padding-right:50px;">
+        <span style="color:#00FFA3;font-weight:900;font-size:15px;text-shadow:0 0 12px #00FFA3;">TODAY’S POT ₦4,820,000</span>
+        <span style="color:#FF2D55;font-weight:900;">1ST WINS ₦1,900,000</span>
         <span style="color:#FFD700;">Reset 06h 12m 44s</span>
         <span style="color:#00FFA3;">You #127 — 1,204 taps to top-10</span>
         <span style="color:#FF2D55;">davido_fan just hit 28.4M taps</span>
         <span style="color:#00FFA3;">₦17.4M paid this month</span>
-      </div>
+      </span>
       
     </div>
   </div>
