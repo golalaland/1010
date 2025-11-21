@@ -567,7 +567,8 @@ tapButton?.addEventListener(tapEvent, debounce(async (e) => {
 //  START SESSION — FULL RESET
 // ======================================================
 function startSession() {
-  sessionAlreadySaved = false; // ← ADD THIS
+  console.log("%c STARTING NEW ROUND — RESETTING SAVE GUARD", "color:#ff00aa;font-weight:bold");
+  sessionAlreadySaved = false;  // ← THIS IS THE MISSING LINE
   taps = 0;
   earnings = 0;
   timer = SESSION_DURATION;
@@ -818,6 +819,8 @@ confirmPlay?.addEventListener("click", async () => {
   setTimeout(() => {
     if (spinner) spinner.classList.add("hidden");
     if (gamePage) gamePage.classList.remove("hidden");
+    console.log("%c NEW ROUND STARTED — sessionAlreadySaved RESET", "color:#0f9;font-size:20px");
+sessionAlreadySaved = false;
     startSession();
   }, 700);
 });
