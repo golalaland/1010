@@ -537,56 +537,6 @@ bar + footer */
   100% { transform: translateX(-100%); }
 }
 #liveBannerText { min-width: 200vw; }
-/* DETTY REWARDS MODAL — PURE FIRE */
-/* DETTY REWARDS MODAL — FINAL CLEAN CSS (NO TEXT GLOW ON TITLE) */
-#dettyRewardsModal .girl-card {
-  position: absolute;
-  inset: 0;
-  opacity: 0;
-  transform: scale(0.92);
-  transition: all 0.42s cubic-bezier(0.22, 1, 0.36, 1);
-}
-#dettyRewardsModal .girl-card.active {
-  opacity: 1;
-  transform: scale(1);
-  z-index: 2;
-}
-
-.swipe-dot {
-  width: 11px;
-  height: 11px;
-  border-radius: 50%;
-  background: #ff00aa;
-  opacity: 0.4;
-  transition: all 0.3s;
-}
-.swipe-dot.active {
-  opacity: 1;
-  transform: scale(1.5);
-  box-shadow: 0 0 16px #ff00aa;
-}
-
-@keyframes pulse {
-  0%, 100% { opacity: 0.3; }
-  50% { opacity: 0.7; }
-}
-@keyframes shimmer {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(100%); }
-}
-
-/* LIVE badge — clean & sharp */
-.live-badge {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  background: #ff00aa;
-  color: #000;
-  padding: 6px 12px;
-  border-radius: 50px;
-  font-size: 12px;
-  font-weight: 900;
-}
 </style>
 </head>
 </body>
@@ -751,7 +701,6 @@ bar + footer */
       <button id="rulesBtn"        class="tiny-action-btn" data-title="Game Rules">📋</button>
       <button id="bidBtn"          class="tiny-action-btn" data-title="Place Bid">🏁</button>
       <button id="starMarketBtn"   class="tiny-action-btn" data-title="Star Market">🏪</button>
-      <button id="dettyRewardsBtn" class="tiny-action-btn" data-title="Exclusive Rewards">🪩</button>
     </div>
 
   </div>
@@ -1099,135 +1048,6 @@ bar + footer */
         </div>
       </div>
     </div>
-  </div>
-</div>
-
-<!-- DETTY REWARDS MODAL — FINAL FIXED & FULLY WORKING -->
-<div id="dettyRewardsModal" class="modal-backdrop" style="display:block;position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:9999;align-items:center;justify-content:center;">
-  <div class="modal" style="width:94%;max-width:400px;max-height:94vh;overflow:hidden;display:flex;flex-direction:column;background:#0a001a;border:4px solid #ff00aa;border-radius:22px;box-shadow:0 0 80px rgba(255,0,170,0.7);position:relative;">
-
-    <!-- HEADER -->
-    <div style="padding:20px 16px 14px;text-align:center;position:relative;overflow:hidden;">
-      <div style="position:absolute;inset:0;background:linear-gradient(90deg,transparent,#ff00aa88,transparent);animation:pulse 3s infinite;"></div>
-      <h3 style="margin:0;font-family:'Press Start 2P',cursive;font-size:17px;color:#ff00ff;letter-spacing:2px;position:relative;z-index:2;">
-        DETTYVERSE VIP REWARDS
-      </h3>
-      <div style="margin-top:8px;font-size:13px;color:#ff66ff;font-weight:900;">Top 10 Weekly Tappers Only</div>
-    </div>
-
-    <!-- SWIPER CONTAINER — THIS IS THE KEY FIX (min-height:0) -->
-    <div style="flex:1;overflow:hidden;position:relative;min-height:0;">
-      <div id="girlSwiper" style="width:100%;height:100%;position:relative;">
-
-        <!-- GIRL 1 — LOLA -->
-        <div class="girl-card active" data-name="Lola">
-          <<div style="height:100%;display:flex;flex-direction:column;background:transparent;">
-            <div style="flex:1;position:relative;overflow:hidden;">
-              <video autoplay loop muted playsinline poster="https://i.imgur.com/8p5iA1G.jpeg" style="width:100%;height:100%;object-fit:cover;">
-                <source src="https://cdn.shopify.com/videos/c/o/v/87837772a4ac49c78d6c8f01c6c738ae.mp4" type="video/mp4">
-              </video>
-              <div style="position:absolute;inset:0;background:linear-gradient(transparent 55%,#000 100%);"></div>
-              <div class="live-badge">LIVE</div>
-            </div>
-            <div style="padding:18px 20px;background:rgba(255,0,170,0.2);">
-              <h4 style="margin:0 0 6px;font-size:21px;color:#ff00ff;">Lola</h4>
-              <div style="display:flex;gap:16px;font-size:14px;color:#ff99ff;">
-                <span>23 • Lagos</span>
-                <span>Private Lap Dance</span>
-              </div>
-              <div style="margin-top:12px;background:rgba(255,0,170,0.4);padding:12px;border-radius:12px;font-size:13px;color:#fff;">
-                "Slow grind, no hands… only for the king of taps"
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- GIRL 2 — CHLOE -->
-        <div class="girl-card" data-name="Chloe">
-         <div style="height:100%;display:flex;flex-direction:column;background:transparent;">
-            <div style="flex:1;position:relative;overflow:hidden;">
-              <video autoplay loop muted playsinline poster="https://i.imgur.com/3dL2p8K.jpeg" style="width:100%;height:100%;object-fit:cover;">
-                <source src="https://videos.pexels.com/video-files/855305/855305-hd_1920_1080_30fps.mp4" type="video/mp4">
-              </video>
-              <div style="position:absolute;inset:0;background:linear-gradient(transparent 55%,#000 100%);"></div>
-              <div class="live-badge">LIVE</div>
-            </div>
-            <div style="padding:18px 20px;background:rgba(255,0,170,0.2);">
-              <h4 style="margin:0 0 6px;font-size:21px;color:#ff00ff;">Chloe</h4>
-              <div style="display:flex;gap:16px;font-size:14px;color:#ff99ff;">
-                <span>21 • Abuja</span>
-                <span>Oil + Body Slide</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- GIRL 3 — NAYA -->
-        <div class="girl-card" data-name="Naya">
-        <div style="height:100%;display:flex;flex-direction:column;background:transparent;">
-            <div style="flex:1;position:relative;overflow:hidden;">
-              <video autoplay loop muted playsinline poster="https://i.imgur.com/Qwerty1.jpg" style="width:100%;height:100%;object-fit:cover;">
-                <source src="https://videos.pexels.com/video-files/1721325/1721325-hd_1080_1920_30fps.mp4" type="video/mp4">
-              </video>
-              <div style="position:absolute;inset:0;background:linear-gradient(transparent 55%,#000 100%);"></div>
-              <div class="live-badge">LIVE</div>
-            </div>
-            <div style="padding:18px 20px;background:rgba(255,0,170,0.2);">
-              <h4 style="margin:0 0 6px;font-size:21px;color:#ff00ff;">Maya</h4>
-              <div style="display:flex;gap:16px;font-size:14px;color:#ff99ff;">
-                <span>24 • PH</span>
-                <span>Shower Show</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- GIRL 4 — VIXEN -->
-        <div class="girl-card" data-name="Vixen">
-         <div style="height:100%;display:flex;flex-direction:column;background:transparent;">
-            <div style="flex:1;position:relative;overflow:hidden;">
-              <video autoplay loop muted playsinline poster="https://i.imgur.com/VixenX.jpg" style="width:100%;height:100%;object-fit:cover;">
-                <source src="https://cdn.coverr.co/videos/coverr-woman-dancing-in-neon-lights-5639/1080p.mp4" type="video/mp4">
-              </video>
-              <div style="position:absolute;inset:0;background:linear-gradient(transparent 55%,#000 100%);"></div>
-              <div class="live-badge">LIVE</div>
-            </div>
-            <div style="padding:18px 20px;background:rgba(255,0,170,0.2);">
-              <h4 style="margin:0 0 6px;font-size:21px;color:#ff00ff;">Vixen</h4>
-              <div style="display:flex;gap:16px;font-size:14px;color:#ff99ff;">
-                <span>22 • Dubai</span>
-                <span>Full Body Experience</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-      </div>
-
-      <!-- DOTS -->
-      <div style="position:absolute;bottom:16px;left:50%;transform:translateX(-50%);display:flex;gap:8px;z-index:10;">
-        <div class="swipe-dot active"></div>
-        <div class="swipe-dot"></div>
-        <div class="swipe-dot"></div>
-        <div class="swipe-dot"></div>
-      </div>
-
-      <!-- ARROWS -->
-      <button class="swipe-left" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);background:rgba(255,0,170,0.5);border:none;width:44px;height:44px;border-radius:50%;color:#fff;font-size:26px;z-index:10;cursor:pointer;">‹</button>
-      <button class="swipe-right" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:rgba(255,0,170,0.5);border:none;width:44px;height:44px;border-radius:50%;color:#fff;font-size:26px;z-index:10;cursor:pointer;">›</button>
-    </div>
-
-    <!-- BOTTOM FIRE TEXT -->
-    <div style="padding:20px;background:linear-gradient(90deg,#ff0066,#ff00aa);text-align:center;">
-      <div style="font-size:16px;color:#fff;font-weight:900;letter-spacing:1px;">
-        TAP HARDER. RANK HIGHER. CLAIM HER.
-      </div>
-      <div style="margin-top:8px;font-size:22px;color:#fff;text-shadow:0 0 20px #fff;">
-        Current #1 gets first pick
-      </div>
-    </div>
-
-    <button id="closeDettyRewards" style="position:absolute;top:12px;right:12px;background:rgba(0,0,0,0.6);border:2px solid #ff00aa;width:40px;height:40px;border-radius:50%;color:#ff00aa;font-size:20px;cursor:pointer;">X</button>
   </div>
 </div>
 
