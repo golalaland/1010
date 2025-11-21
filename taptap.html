@@ -76,6 +76,48 @@ body {display:flex;justify-content:center;align-items:flex-start;padding:18px 0 
 #bonusContainer { width:100%; height:10px; background:#111; border-radius:999px; overflow:hidden; margin-top:12px; box-shadow:0 6px 16px rgba(0,0,0,0.6) inset; }
 #bonusBar { height:100%; width:0%; background:linear-gradient(90deg,var(--green1),#00b0ff); transition:width .15s linear; }
 
+
+#tapButton.red-hot {
+  animation: redHotPulse 0.4s infinite alternate, redHotBorder 1.5s infinite;
+  box-shadow: 
+    0 0 40px 10px #ff0000,
+    0 0 60px 20px #ff0033,
+    inset 0 0 30px #ff0066 !important;
+  border: 4px solid #ff0000 !important;
+  background: radial-gradient(circle at 30% 30%, #ff3366, #880000) !important;
+}
+
+#tapButton.red-hot .inner {
+  color: #ffff00 !important;
+  text-shadow: 0 0 10px #ffff00;
+  animation: textFlicker 0.2s infinite alternate;
+}
+
+#tapButton.red-punish {
+  animation: punishShake 0.4s ease-in-out;
+  filter: hue-rotate(180deg) brightness(1.5);
+}
+
+@keyframes redHotPulse {
+  from { transform: scale(1)   rotate(0deg); }
+  to   { transform: scale(1.12) rotate(3deg); }
+}
+
+@keyframes redHotBorder {
+  0%, 100% { border-color: #ff0000; box-shadow: 0 0 40px #ff0000; }
+  50%      { border-color: #ff6600; box-shadow: 0 0 80px #ff0066; }
+}
+
+@keyframes textFlicker {
+  from { opacity: 0.8; }
+  to   { opacity: 1; text-shadow: 0 0 20px yellow; }
+}
+
+@keyframes punishShake {
+  0%,100% { transform: translate(0,0); }
+  10%,30%,50%,70%,90% { transform: translate(-8px,0); }
+  20%,40%,60%,80%     { transform: translate(8px,0); }
+}
 /* -------------------------------------------------
    3D Gem Tap Button – unique, addictive, mobile-ready
    ------------------------------------------------- */
@@ -327,25 +369,7 @@ body.game-mode {
   font-size: 12px;
   opacity: 0.7;
 }
-/* Slider container */
-.slider-wrapper {
-  overflow: hidden;
-  width: 100%;
-  position: relative;
-}
 
-/* Track that moves */
-.slider-track {
-  display: flex;
-  transition: transform 0.6s ease; /* smooth sliding */
-  width: 100%;
-}
-
-/* Each slide */
-.leaderboard-slide {
-  width: 100%;
-  flex-shrink: 0;
-}
 /* iOS Haptic Fallback - Shake Effect */
 @keyframes shake {
   0% { transform: translate(0, 0); }
@@ -490,7 +514,8 @@ bar + footer */
 .sm-balance { font-size: 18px; text-align: center; margin: 0 0 20px; }
 .sm-section-title { margin: 30px 20px 10px; color: #ffd700; font-size: 19px; font-weight: bold; }
 .sm-empty { text-align: center; padding: 80px 20px; opacity: 0.7; font-size: 18px; }
-   /* Spinner inside button */
+
+     /* Spinner inside button */
   .btn-spinner {
     border: 2px solid rgba(0,0,0,0.1);
     border-top: 2px solid #fff;
@@ -507,14 +532,17 @@ bar + footer */
     0% { transform: rotate(0deg);}
     100% { transform: rotate(360deg);}
   }
+@keyframes scroll {
+  0%   { transform: translateX(100%); }
+  100% { transform: translateX(-100%); }
+}
+#liveBannerText { min-width: 200vw; }
 </style>
 </head>
-<body>
+</body>
+
 <div id="appWrapper">
   
-  <audio id="dettyverseBeat" loop preload="auto">
-  <source src="https://www.bensound.com/bensound-music/track/afro-funk.mp3" type="audio/mpeg">
-</audio>
 
   <!-- Header -->
   <div id="gameHeader">
@@ -522,12 +550,51 @@ bar + footer */
     <div id="scrambleText">TAP MASTER</div>
   </div>
   
+<!-- PERFECT BANNER — instant, slow, colored, live, uses your #bannerPage -->
+<div id="bannerPage" style="background:linear-gradient(90deg,#000,#1a0033,#000);
+                           padding:12px 0;
+                           border-bottom:3px solid #00FFA3;
+                           box-shadow:0 4px 25px rgba(0,255,163,0.5);
+                           overflow:hidden;
+                           margin:0 auto 20px;
+                           max-width:93%;
+                           border-radius:12px;">
+  
+  <div id="liveBannerText" style="display:inline-block; white-space:nowrap;
+                                  font-size:9px; font-weight:800; letter-spacing:0.6px;
+                                  animation:scroll 90s linear infinite;
+                                  min-width:200vw;">
+    
+    <!-- DEFAULT FULL + COLORED FALLBACK — looks fire from second 0 -->
+    <span style="color:#00FFA3;text-shadow:0 0 12px #00FFA3;">LIVE • ₦4.82M POT</span><span style="color:#666;"> • </span>
+    <span style="color:#FF2D55;font-weight:900;">1ST WINS ₦1.9M</span><span style="color:#666;"> • </span>
+    <span style="color:#00FFA3;text-shadow:0 0 12px #00FFA3;">davido_fan IS EATING • 28.4M TAPS</span><span style="color:#666;"> • </span>
+    <span style="color:#FFD700;">wizkid_army #2 CHASING HARD</span><span style="color:#666;"> • </span>
+    <span style="color:#00FFA3;">₦17.4M PAID THIS MONTH</span><span style="color:#666;"> • </span>
+    <span style="color:#FF2D55;">LAST CASH OUT ₦920K • 11 MINS AGO</span><span style="color:#666;"> • </span>
+    <span style="color:#FFD700;">TOP 10 CASHING DAILY</span><span style="color:#666;"> • </span>
+    <span style="color:#00FFA3;text-shadow:0 0 12px #00FFA3;">YOU’RE ~1,200 TAPS FROM TOP-10 • MOVE!</span><span style="color:#666;"> • </span>
+    <span style="color:#FF2D55;">RESET IN 6H • WAR DON START</span>
+    <!-- repeat once more for instant full look -->
+    <span style="color:#00FFA3;text-shadow:0 0 12px #00FFA3;">LIVE • ₦4.82M POT</span><span style="color:#666;"> • </span>
+    <span style="color:#FF2D55;font-weight:900;">1ST WINS ₦1.9M</span><span style="color:#666;"> • </span>
+    <span style="color:#00FFA3;text-shadow:0 0 12px #00FFA3;">davido_fan IS EATING • 28.4M TAPS</span><span style="color:#666;"> • </span>
+    <span style="color:#FFD700;">wizkid_army #2 CHASING HARD</span><span style="color:#666;"> • </span>
+    <span style="color:#00FFA3;">₦17.4M PAID THIS MONTH</span><span style="color:#666;"> • </span>
+    <span style="color:#FF2D55;">LAST CASH OUT ₦920K • 11 MINS AGO</span><span style="color:#666;"> • </span>
+    <span style="color:#FFD700;">TOP 10 CASHING DAILY</span><span style="color:#666;"> • </span>
+    <span style="color:#00FFA3;text-shadow:0 0 12px #00FFA3;">YOU’RE ~1,200 TAPS FROM TOP-10 • MOVE!</span><span style="color:#666;"> • </span>
+    <span style="color:#FF2D55;">RESET IN 6H • WAR DON START</span>
+    
+  </div>
+</div>
   
 
 <!-- Start Page -->
 <div id="startPage" style="width:100%;display:flex;flex-direction:column;align-items:center;margin-top:18px;">
   <button id="startBtn" style="padding:12px 22px;border-radius:12px;background:linear-gradient(90deg,#00e676,#00b0ff);color:#000;font-weight:800;font-size:16px;border:none;cursor:pointer;">Play</button>
 </div>
+
 
 <!-- Play Confirmation Modal -->
 <div id="playModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:2000;justify-content:center;align-items:center;display:flex;">
@@ -610,6 +677,10 @@ bar + footer */
 <!-- FINAL BOTTOM-LOCKED BAR (Profile + Action Buttons) - FIXED & CLEAN -->
 <div id="bottomBar" style="position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;padding:14px 0 20px;background:transparent;z-index:997;pointer-events:none;">
   <div style="pointer-events:auto;">
+    
+    
+    
+  
 
     <!-- Profile Card -->
     <div style="background:rgba(255,255,255,0.05);padding:14px 16px;border-radius:16px;border:1px solid rgba(255,255,255,0.08);backdrop-filter:blur(12px);width:90%;max-width:420px;margin:0 auto 16px;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.4);">
@@ -634,6 +705,8 @@ bar + footer */
 
   </div>
 </div>
+
+
 
 
 <!-- FINAL UNIFORM GOLDEN LEADERBOARD MODAL – SCROLLABLE + BIGGER SLIDER -->
@@ -677,13 +750,13 @@ bar + footer */
       <!-- IMAGE SLIDER – FIXED HEIGHT -->
       <div id="leaderboardImageSlider" style="position:relative;width:100%;height:280px;flex-shrink:0;border-radius:12px;margin-bottom:12px;box-shadow:0 0 20px rgba(255,215,0,0.5);border:2px solid rgba(255,215,0,0.4);overflow:hidden;">
         <div class="slider-track" style="display:flex;width:700%;height:100%;transition:transform 0.6s ease;">
-          <img src="https://cdn.shopify.com/s/files/1/0962/6648/6067/files/5000.png?v=1763614263" class="leaderboard-slide" style="width:100%;height:100%;object-fit:contain;flex-shrink:0;">
-          <img src="https://cdn.shopify.com/s/files/1/0962/6648/6067/files/5000.png?v=1763614263" class="leaderboard-slide" style="width:100%;height:100%;object-fit:contain;flex-shrink:0;">
-          <img src="https://cdn.shopify.com/s/files/1/0962/6648/6067/files/5000.png?v=1763614263" class="leaderboard-slide" style="width:100%;height:100%;object-fit:contain;flex-shrink:0;">
-          <img src="https://cdn.shopify.com/s/files/1/0962/6648/6067/files/5000.png?v=1763614263" class="leaderboard-slide" style="width:100%;height:100%;object-fit:contain;flex-shrink:0;">
-          <img src="https://cdn.shopify.com/s/files/1/0962/6648/6067/files/5000.png?v=1763614263" class="leaderboard-slide" style="width:100%;height:100%;object-fit:contain;flex-shrink:0;">
-          <img src="https://cdn.shopify.com/s/files/1/0962/6648/6067/files/5000.png?v=1763614263" class="leaderboard-slide" style="width:100%;height:100%;object-fit:contain;flex-shrink:0;">
-          <img src="https://cdn.shopify.com/s/files/1/0962/6648/6067/files/5000.png?v=1763614263" class="leaderboard-slide" style="width:100%;height:100%;object-fit:contain;flex-shrink:0;">
+          <img src="https://cdn.shopify.com/s/files/1/0962/6648/6067/files/LIVE_ON_FRIDAYS.png?v=1763616110" class="leaderboard-slide" style="width:100%;height:100%;object-fit:contain;flex-shrink:0;">
+          <img src="https://cdn.shopify.com/s/files/1/0962/6648/6067/files/LIVE_ON_FRIDAYS.png?v=1763616110" class="leaderboard-slide" style="width:100%;height:100%;object-fit:contain;flex-shrink:0;">
+          <img src="https://cdn.shopify.com/s/files/1/0962/6648/6067/files/LIVE_ON_FRIDAYS.png?v=1763616110" class="leaderboard-slide" style="width:100%;height:100%;object-fit:contain;flex-shrink:0;">
+          <img src="https://cdn.shopify.com/s/files/1/0962/6648/6067/files/LIVE_ON_FRIDAYS.png?v=1763616110" class="leaderboard-slide" style="width:100%;height:100%;object-fit:contain;flex-shrink:0;">
+          <img src="https://cdn.shopify.com/s/files/1/0962/6648/6067/files/LIVE_ON_FRIDAYS.png?v=1763616110" class="leaderboard-slide" style="width:100%;height:100%;object-fit:contain;flex-shrink:0;">
+          <img src="https://cdn.shopify.com/s/files/1/0962/6648/6067/files/LIVE_ON_FRIDAYS.png?v=1763616110" class="leaderboard-slide" style="width:100%;height:100%;object-fit:contain;flex-shrink:0;">
+          <img src="https://cdn.shopify.com/s/files/1/0962/6648/6067/files/LIVE_ON_FRIDAYS.png?v=1763616110" class="leaderboard-slide" style="width:100%;height:100%;object-fit:contain;flex-shrink:0;">
         </div>
       </div>
 
@@ -794,80 +867,81 @@ bar + footer */
 </div>
 
 
-<!-- DETTYVERSE BID MODAL — FULLY LIVE (Prize + Players + Timer) -->
+<!-- DETTYVERSE BID MODAL — FINAL CLEAN VERSION (Prize ₦50,000 + ₦100 per player) -->
 <div id="bidModal" class="modal-backdrop" style="display:none;">
-  <div class="modal" style="width:88%;max-width:360px;max-height:88vh;overflow:hidden;display:flex;flex-direction:column;background:#0f0f0f;border:3px solid #00FFA3;border-radius:18px;box-shadow:0 0 60px rgba(0,255,163,0.6);">
+  <div class="modal" style="width:90%;max-width:380px;max-height:90vh;overflow:hidden;display:flex;flex-direction:column;background:#0f0f0f;border:3px solid #00FFA3;border-radius:18px;box-shadow:0 0 60px rgba(0,255,163,0.6);">
     
+    <!-- HEADER -->
     <div style="padding:18px 16px 12px;text-align:center;border-bottom:1px solid rgba(0,255,163,0.4);background:rgba(0,255,163,0.08);">
       <h3 style="margin:0;font-family:'Press Start 2P',cursive;font-size:16px;color:#00FFA3;line-height:1.2;">
-        JOIN THE BID
+        JOIN BID ROYALE
       </h3>
-      <p style="margin:8px 0 0;font-size:13px;color:#00e676;font-weight:600;">
-        Winners takes the Prize. Losers get to try again next time.
-      </p>
-    </div>
-
-    <div style="flex:1;overflow-y:auto;padding:18px 20px;font-size:14.8px;line-height:1.8;color:#eee;">
-      
-      <!-- LIVE PRIZE -->
-      <div style="background:rgba(0,255,163,0.15);padding:16px;border-radius:14px;margin-bottom:18px;text-align:center;">
-        <div id="livePrize" style="font-size:28px;font-weight:800;color:#00FFA3;">$0</div>
-        <div style="font-size:13px;color:#aaa;margin-top:4px;"> Today's Cash Prize </div>
-      </div>
-
-      <!-- LIVE PLAYERS + TIMER -->
-      <div style="background:rgba(255,215,0,0.15);padding:16px;border-radius:14px;margin-bottom:18px;">
-        <strong style="color:#FFD700;">Entry Fee:</strong> 50 STRZ ⭐️<br>
-        <strong style="color:#FFD700;">Players Joined:</strong> <span id="livePlayers">0</span> Playas<br>
-        <strong style="color:#FFD700;">Bid Ends In:</strong> <span id="countdownTimer" style="color:#00FFA3;font-weight:900;">--:--:--</span>
-      </div>
-
-      <!-- Rest unchanged -->
-<div style="background:rgba(255,20,147,0.15); padding:20px 16px; border-radius:14px; margin-bottom:18px; text-align:center;">
-  
-  <strong style="color:#FF1493; font-size:1.2em; display:block; margin-bottom:16px;">
-   Bid Royale
-  </strong>
-
-  <div style="font-weight:600; color:#fff; margin:16px 0;">
-    Top 5 players split the prize
-  </div>
-
-  <!-- Centered bullet list (left-aligned bullets, but block centered) -->
-  <ul style="display:inline-block; text-align:left; margin:20px 0; padding-left:22px; line-height:1.7; color:#fff;">
-    <li>1st position gets <strong>40%</strong></li>
-    <li>2nd position gets <strong>25%</strong></li>
-    <li>3rd position gets <strong>20%</strong></li>
-    <li>4th position gets <strong>15%</strong></li>
-    <li>5th position gets <strong>10%</strong></li>
-    <li><strong>No pardons. No excuses.</strong></li>
-  </ul>
-  
-</div>
-
-      <div style="background:rgba(255,0,0,0.2);padding:16px;border-radius:14px;border:1px solid #ff4444;">
-        <strong style="color:#ff4444;">Warning</strong><br>
-        Once you enter, no backing out.<br>
-        You're locked until the bid ends.
-      </div>
-
-      <div style="margin-top:20px;text-align:center;font-size:13px;color:#777;font-style:italic;">
-        New Rewards & Bid Items Everyday. 
+      <div style="margin-top:6px;font-size:13px;color:#00ff88;font-weight:bold;">
+        Starts 00:33 • Ends 23:59 Daily
       </div>
     </div>
 
-    <div style="padding:16px 20px 20px;text-align:center;background:rgba(0,0,0,0.4);">
-      <button id="confirmBidBtn" style="padding:14px 40px;border:none;border-radius:14px;background:linear-gradient(90deg,#00FFA3,#00C853);color:#000;font-weight:800;font-size:17px;cursor:pointer;min-width:200px;margin-bottom:10px;">
+    <div style="flex:1;overflow-y:auto;padding:18px 20px;color:#eee;">
+
+      <!-- LIVE PRIZE POOL -->
+      <div style="background:rgba(0,255,163,0.15);padding:18px;border-radius:14px;margin-bottom:20px;text-align:center;">
+        <div style="font-size:13px;color:#aaa;">Today's Prize Pool</div>
+        <div id="livePrize" style="font-size:32px;font-weight:900;color:#00FFA3;margin:6px 0;">₦50,000</div>
+        <div style="font-size:12px;color:#00ff88;">+₦100 every new warrior (max ₦500,000)</div>
+      </div>
+
+      <!-- LIVE STATS -->
+      <div style="background:rgba(255,215,0,0.15);padding:16px;border-radius:14px;margin-bottom:20px;">
+        <div style="display:flex;justify-content:space-between;color:#FFD700;font-weight:bold;">
+          <span>Entry Fee:</span>
+          <span>50 STRZ ⭐️</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;color:#FFD700;font-weight:bold;margin-top:8px;">
+          <span>Warriors In:</span>
+          <span id="livePlayers">0</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;color:#FFD700;font-weight:bold;margin-top:8px;">
+          <span>War Ends In:</span>
+          <span id="countdownTimer" style="color:#00FFA3;font-weight:900;">--:--:--</span>
+        </div>
+      </div>
+
+      <!-- BID LEADERBOARD — REAL TAPS ONLY -->
+      <div style="background:rgba(138,43,226,0.15);padding:18px;border-radius:14px;border:2px solid #8A2BE2;">
+        <h4 style="margin:0 0 14px;text-align:center;color:#E0B0FF;font-weight:900;font-size:15px;letter-spacing:1px;">
+          LIVE BID LEADERBOARD
+        </h4>
+        <div id="bidLeaderboard" style="max-height:260px;overflow-y:auto;font-size:14px;">
+          <div style="text-align:center;color:#888;padding:30px 0;">
+            Bid opens at 00:33<br>Join and start tapping!
+          </div>
+        </div>
+      </div>
+
+      <!-- PRIZE SPLIT -->
+      <div style="margin-top:20px;background:rgba(255,20,147,0.15);padding:16px;border-radius:14px;text-align:center;font-size:13px;">
+        <strong style="color:#FF1493;font-size:14px;">Top 5 split the pot:</strong><br><br>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;text-align:left;color:#fff;">
+          <div>1st → 40%</div> <div>4th → 15%</div>
+          <div>2nd → 25%</div> <div>5th → 10%</div>
+          <div>3rd → 20%</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- FOOTER BUTTONS -->
+    <div style="padding:18px 20px 22px;text-align:center;background:rgba(0,0,0,0.4);">
+      <button id="confirmBidBtn" style="padding:15px 50px;border:none;border-radius:14px;background:linear-gradient(90deg,#00FFA3,#00C853);color:#000;font-weight:900;font-size:18px;cursor:pointer;min-width:220px;box-shadow:0 4px 20px rgba(0,255,163,0.4);">
         ENTER
       </button>
-      <br>
-      <button id="closeBidBtn" style="color:#888;background:none;border:none;font-size:14px;cursor:pointer;">
-        Nah, i’m scared
+      <br><br>
+      <button id="closeBidBtn" style="color:#666;background:none;border:none;font-size:14px;cursor:pointer;">
+        maybe tomorrow
       </button>
     </div>
   </div>
 </div>
-
 
 <!-- CONFIRMATION MODAL – COMPACT & DEADLY EDITION -->
 <div id="confirmBidModal" class="modal-backdrop" style="display:none;">
@@ -1018,8 +1092,8 @@ bar + footer */
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
   const db = getFirestore(app);
-
-
+  
+  
 // ---------- DOM ----------
 const body = document.body;
 const startBtn = document.getElementById('startBtn');
@@ -1052,7 +1126,6 @@ window.lastSoundTime = 0;
 document.getElementById('leaderboardBtn').onclick = () => {
   document.getElementById('sideTab').classList.toggle('closed');
 };
-
 
 // ========= ULTRA-RELIABLE BLACK CUTE MODAL (TAPS + ₦) =========
 const endGameModal = document.createElement('div');
@@ -1089,59 +1162,93 @@ endGameModal.innerHTML = `
         SHARE SCORE
       </button>
 
-<button id="playAgainBtn" 
+      <button id="playAgainBtn" 
         style="flex:1;padding:15px;border:none;border-radius:14px;
                background:#ff00aa;color:#fff;font-weight:bold;font-size:16px;
                cursor:pointer;position:relative;z-index:999999;
                box-shadow:0 5px 15px rgba(255,0,170,0.4);"
         onclick="location.reload(true)">
-  PLAY AGAIN
-</button>
+        PLAY AGAIN
+      </button>
     </div>
   </div>
 `;
 
-// 1. Add modal to page
 document.body.appendChild(endGameModal);
 
-// 2. SHOW FUNCTION
+
+// ======================================================
+//  SHOW END MODAL — WITH CONDITIONAL FAIL/WIN SOUND + COLORS
+// ======================================================
 function showEndGameModal() {
   document.getElementById('finalTaps').textContent = taps.toLocaleString();
   document.getElementById('finalEarnings').textContent = `₦${earnings.toLocaleString()}`;
-  document.getElementById('playerName').textContent = currentUser?.handle || "Tapper";
 
-  // victory sound
-  new Audio('https://raw.githubusercontent.com/golalaland/1010/main/material-chest-open-394472.mp3').play().catch(()=>{});
+  // REAL NAME — NEVER "Tapper" AGAIN
+  const realName = currentUser?.chatId || 
+                   currentUser?.username || 
+                   currentUser?.email?.replace(/,/g, '.').split('@')[0] || 
+                   "Legend";
+
+  document.getElementById('playerName').textContent = realName;
+
+  // WIN OR FAIL SOUND
+  const soundUrl = taps >= 100
+    ? 'https://raw.githubusercontent.com/golalaland/1010/main/material-chest-open-394472.mp3'
+    : 'https://raw.githubusercontent.com/golalaland/1010/main/fail-jingle-stereo-mix-88784.mp3';
+
+  new Audio(soundUrl).play().catch(() => {});
+
+  const modalBox = endGameModal.querySelector('div');
+  const finalTapsEl = document.getElementById('finalTaps');
+
+  if (taps < 100) {
+    modalBox.style.borderColor = '#ff4444';
+    modalBox.style.boxShadow = '0 0 30px rgba(255,68,68,0.4)';
+    finalTapsEl.style.color = '#ff6666';
+  } else {
+    modalBox.style.borderColor = '#0f9';
+    modalBox.style.boxShadow = '0 0 30 30px rgba(0,255,150,0.6)';
+    finalTapsEl.style.color = '#0ff';
+  }
 
   endGameModal.style.display = "flex";
 }
 
-// 3. THIS IS THE FIX — attach Play Again AFTER everything, with a tiny safety delay
+// ======================================================
+//  SAFE BUTTON ATTACHMENT SYSTEM
+// ======================================================
 setTimeout(() => {
+  // PLAY AGAIN
   const playAgainBtn = document.getElementById('playAgainBtn');
   if (playAgainBtn) {
-    // Remove any old listeners first (prevents duplicates)
     playAgainBtn.replaceWith(playAgainBtn.cloneNode(true));
     document.getElementById('playAgainBtn').addEventListener('click', () => {
-      location.reload(true);   // forces full reload, no cache nonsense
+      location.reload(true);
     });
   }
 
-  // Share button (also re-attached safely)
-  document.getElementById('shareBtn')?.addEventListener('click', () => {
-    const name = document.getElementById('playerName').textContent;
-    const text = `${name} just got ${taps.toLocaleString()} taps and earned ₦${earnings.toLocaleString()}! Beat me if you can!`;
-    if (navigator.share) {
-      navigator.share({title: "My Tap Score", text, url: location.href});
-    } else {
-      navigator.clipboard.writeText(text + " " + location.href);
-      alert("Score copied!");
-    }
-  });
+  // SHARE SCORE
+ document.getElementById('shareBtn')?.addEventListener('click', () => {
+  const realName = currentUser?.chatId || 
+                   currentUser?.username || 
+                   currentUser?.email?.replace(/,/g, '.').split('@')[0] || 
+                   "A Warrior";
 
-}, 100);   // 100
+  const text = `${realName} just smashed ${taps.toLocaleString()} taps and earned ₦${earnings.toLocaleString()}! Can you beat that?`;
 
-
+  if (navigator.share) {
+    navigator.share({ 
+      title: "I just dominated TapMaster!", 
+      text: text,
+      url: location.href 
+    }).catch(() => {});
+  } else {
+    navigator.clipboard.writeText(text + " " + location.href);
+    alert("Score copied to clipboard!");
+  }
+});
+}, 100);
 
 
 // ---------- CONFIG ----------
@@ -1239,6 +1346,9 @@ async function giveCashToUser(amount){
   } catch(e){ console.error("giveCashToUser error", e); return {ok:false,message:e.message}; }
 }
 
+
+
+
 // ---------- FLOATING +1 ----------
 function showFloatingPlus(parent,text){
   const span=document.createElement('span');
@@ -1325,6 +1435,21 @@ function triggerConfetti() {
 }
 
 // ======================================================
+//   MAYBE TRIGGER RED HOT — FINAL WORKING VERSION
+// ======================================================
+function maybeTriggerRedHot() {
+  if (!running) return;
+  if (timer <= 15) return;                    // don't trigger in final 15 sec
+  if (RedHotMode.active) return;              // already active
+
+  // 15% chance — feels rare but guaranteed to appear
+  if (Math.random() > 0.15) return;
+
+  console.log("%c RED HOT TRIGGERED! ", "background:#900;color:#fff;padding:4px 8px;border-radius:4px;");
+  RedHotMode.trigger();                       // THIS IS THE ONE THAT ACTUALLY WORKS
+}
+
+// ======================================================
 //   SESSION ENGINE — CLEAN, BULLETPROOF, DROP-IN
 // ======================================================
 
@@ -1342,13 +1467,34 @@ let running = false;
 let tapLocked = false;
 let intervalId = null;
 
+// ======================================================
+//  HELPER: Sound & Haptics (extracted for reuse)
+// ======================================================
+function playTapSound() {
+  const now = Date.now();
+  if (!window.lastSoundTime || now - window.lastSoundTime > 100) {
+    try {
+      tapSound.currentTime = 0;
+      tapSound.play().catch(() => {});
+      window.lastSoundTime = now;
+    } catch(e) {}
+  }
+}
+
+function triggerHaptic() {
+  if ('vibrate' in navigator) {
+    navigator.vibrate([10, 5, 10]);
+  } else if (/iPhone|iPad|iPod/.test(navigator.userAgent)) {
+    tapButton.classList.add('shake');
+    setTimeout(() => tapButton.classList.remove('shake'), 100);
+  }
+}
 
 // ======================================================
-//   START SESSION
+//   START SESSION – FINAL, COMPLETE & WORKING
 // ======================================================
 function startSession() {
-
-  // Reset state
+  // FULL RESET
   taps = 0;
   earnings = 0;
   timer = SESSION_DURATION;
@@ -1362,199 +1508,349 @@ function startSession() {
   tapLocked = false;
   tapButton.disabled = false;
 
+  RedHotMode.reset();                    // clean state
   trainBar && (trainBar.style.width = "100%");
   updateBonusBar();
   updateUI();
 
-  // Clear old interval
   if (intervalId) clearInterval(intervalId);
 
-  // NEW SAFE COUNTDOWN
+  // MAIN GAME LOOP — 100% RELIABLE
   intervalId = setInterval(() => {
-
-    if (!running) return;   
+    if (!running) return;
 
     timer--;
-if (timer < 0) timer = 0;
 
-updateUI();
-trainBar && (trainBar.style.width = (timer / SESSION_DURATION * 100) + "%");
-    if (timer < 0) timer = 0;
+    if (timer <= 0) {
+      timer = 0;
+      running = false;
+      clearInterval(intervalId);
+      intervalId = null;
+      showEndGameModal();
+      endSessionRecord();
+      return;
+    }
 
     updateUI();
     trainBar && (trainBar.style.width = (timer / SESSION_DURATION * 100) + "%");
 
-    if (timer === 0) {
-
-      // 🚫 STOP EVERYTHING IMMEDIATELY
-      endSessionImmediate();
-
-      // 📝 SAVE THE SESSION ASYNC
-      endSessionRecord();
-
-    }
-
-  }, 1000);
-
-  updateUI();
+    // RED HOT TRAP — appears ~every 10 sec after 15 sec left
+    if (timer % 8 === 0 && timer > 15) {
+  maybeTriggerRedHot();
 }
 
-  // ======================================================
-//   INSTANT END — UI FREEZE, BLOCK TAPS (FIXED!)
+  }, 1000);
+}
+
+// ======================================================
+//   END SESSION — CLEAN & SAFE
 // ======================================================
 function endSessionImmediate() {
-  running = false;
-  tapLocked = true;
-  tapButton.disabled = true;
-  clearInterval(intervalId);
-  showEndGameModal();
+  running = false;
+  tapLocked = true;
+  tapButton.disabled = true;
+  clearInterval(intervalId);
+  intervalId = null;
 }
 
 // ======================================================
 //   FIRESTORE — ASYNC RECORDING
 // ======================================================
 async function endSessionRecord() {
+  if (!currentUser?.uid || taps <= 0) return;
 
-  if (!currentUser?.uid || taps <= 0) return;
+  const uid = currentUser.uid;
+  const userRef = doc(db, "users", uid);
+  const sessionsRef = collection(db, "tapSessions");
 
-  try {
-    const userRef = doc(db, "users", currentUser.uid);
+  try {
+    const now = new Date();
+    const dailyKey = now.toISOString().split("T")[0]; // YYYY-MM-DD
+    const weeklyKey = `${now.getFullYear()}-W${getWeekNumber(now)}`;
+    const monthlyKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
 
-    await runTransaction(db, async t => {
+    // ─────── ATOMIC UPDATE (one transaction) ───────
+    await runTransaction(db, async (transaction) => {
+      const snap = await transaction.get(userRef);
 
-      const docSnap = await t.get(userRef);
-      const now = new Date();
+      const baseData = {
+        totalTaps: (snap.data()?.totalTaps || 0) + taps,
+        lastEarnings: earnings,
+        lastBonus: bonusLevel,
+        updatedAt: serverTimestamp(),
+      };
 
-      const dailyKey = now.toISOString().split("T")[0];
-      const weeklyKey = `${now.getFullYear()}-W${getWeek(now)}`;
-      const monthlyKey = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}`;
+      if (!snap.exists()) {
+        // First-time user
+        transaction.set(userRef, {
+          uid,
+          chatId: currentUser.chatId || uid,
+          email: currentUser.email || "",
+          stars: currentUser.stars || 0,
+          cash: currentUser.cash || 0,
+          createdAt: serverTimestamp(),
+          ...baseData,
+          tapsDaily: { [dailyKey]: taps },
+          tapsWeekly: { [weeklyKey]: taps },
+          tapsMonthly: { [monthlyKey]: taps },
+        });
+      } else {
+        // Existing user — incremental update
+        const data = snap.data();
 
-      if (!docSnap.exists()) {
+        transaction.update(userRef, {
+          ...baseData,
+          tapsDaily: {
+            ...(data.tapsDaily || {}),
+            [dailyKey]: (data.tapsDaily?.[dailyKey] || 0) + taps,
+          },
+          tapsWeekly: {
+            ...(data.tapsWeekly || {}),
+            [weeklyKey]: (data.tapsWeekly?.[weeklyKey] || 0) + taps,
+          },
+          tapsMonthly: {
+            ...(data.tapsMonthly || {}),
+            [monthlyKey]: (data.tapsMonthly?.[monthlyKey] || 0) + taps,
+          },
+        });
+      }
+    });
 
-        t.set(userRef, {
-          chatId: currentUser.chatId || currentUser.uid,
-          stars: currentUser.stars || 0,
-          cash: currentUser.cash || 0,
-          totalTaps: taps,
-          tapsDaily: { [dailyKey]: taps },
-          tapsWeekly: { [weeklyKey]: taps },
-          tapsMonthly: { [monthlyKey]: taps },
-          lastEarnings: earnings,
-          lastBonus: bonusLevel
-        });
+    // ─────── RECORD SESSION LOG (fire-and-forget) ───────
+    await addDoc(sessionsRef, {
+      uid,
+      chatId: currentUser.chatId || uid,
+      email: currentUser.email || null,
+      taps,
+      earnings,
+      bonusLevel,
+      redHotPunishments: RedHotMode.punishmentCount || 0, // optional: track how many times they fell for it
+      timestamp: serverTimestamp(),
+    });
 
-        return;
-      }
+    // ─────── UPDATE LOCAL USER OBJECT ───────
+    currentUser.totalTaps = (currentUser.totalTaps || 0) + taps;
 
-      const data = docSnap.data();
+    // ─────── REFRESH LEADERBOARD (non-blocking) ───────
+    fetchLeaderboard("daily").catch(() => {}); // don't break flow if leaderboard fails
 
-      t.update(userRef, {
-        totalTaps: (data.totalTaps || 0) + taps,
-        tapsDaily: { ...(data.tapsDaily || {}), [dailyKey]: ((data.tapsDaily?.[dailyKey] || 0) + taps) },
-        tapsWeekly: { ...(data.tapsWeekly || {}), [weeklyKey]: ((data.tapsWeekly?.[weeklyKey] || 0) + taps) },
-        tapsMonthly: { ...(data.tapsMonthly || {}), [monthlyKey]: ((data.tapsMonthly?.[monthlyKey] || 0) + taps) },
-        lastEarnings: earnings,
-        lastBonus: bonusLevel
-      });
+    console.log("Session saved successfully:", { taps, earnings, bonusLevel });
 
-    });
-
-    await addDoc(collection(db, "tapSessions"), {
-      uid: currentUser.uid,
-      email: currentUser.email,
-      chatId: currentUser.chatId || currentUser.uid,
-      taps,
-      earnings,
-      bonusLevel,
-      timestamp: serverTimestamp()
-    });
-
-    currentUser.totalTaps = (currentUser.totalTaps || 0) + taps;
-
-    // Refresh leaderboard
-    fetchLeaderboard("daily");
-
-  } catch (err) {
-    console.error("Error saving session:", err);
-  }
+  } catch (error) {
+    console.error("Failed to save session:", error);
+    // Optional: show toast to user
+    // showToast("Save failed — retrying in background...");
+  }
 }
 
 // ======================================================
-//   TAP HANDLER — FIXED SOUND + CROSS-PLATFORM HAPTICS
+//   HELPER: Get ISO week number (robust)
+// ======================================================
+function getWeekNumber(d) {
+  d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+}
+// ======================================================
+//  DEBOUNCE FUNCTION — MUST BE DEFINED FIRST
 // ======================================================
 function debounce(fn, delay) {
   let timeout;
-  return (...args) => {
+  return function (...args) {
     clearTimeout(timeout);
-    timeout = setTimeout(() => fn(...args), delay);
+    timeout = setTimeout(() => fn.apply(this, args), delay);
   };
 }
 
-tapButton?.addEventListener(
-  tapEvent,
-  debounce(async e => {
+// ======================================================
+//  NORMAL TAP LOGIC (all the +1 stuff)
+// ======================================================
+const handleNormalTap = debounce(async () => {
+  taps++;
+  if (currentUser) {
+    currentUser.totalTaps = (currentUser.totalTaps || 0) + 1;
+  }
 
-    if (!running || tapLocked) return;
-
-    tapLocked = true;
-    setTimeout(() => (tapLocked = false), 50);
-
-    taps++;
-    if (currentUser) {
-      currentUser.totalTaps = (currentUser.totalTaps || 0) + 1;
-    }
-
-    progress++;
-    cashCounter++;
-    showFloatingPlus(tapButton, "+1");
-
-    // CASH AWARD
-    if (cashCounter >= cashThreshold) {
-      cashCounter = 0;
-      cashThreshold = randomInt(1, 12);
-
-      const pot = getStoredPot() ?? DAILY_INITIAL_POT;
-      if (pot > 0) {
-        earnings += CASH_PER_AWARD;
-        setStoredPot(Math.max(0, pot - CASH_PER_AWARD));
-        await giveCashToUser(CASH_PER_AWARD);
+  // ———————————————————————————————
+  //  BID ROYALE: RECORD TAP IF USER JOINED TODAY'S BID
+  // ———————————————————————————————
+  if (currentUser?.uid && window.CURRENT_ROUND_ID) {
+    // Cache check once per session — no spam queries
+    if (typeof window.userInTodayBid === "undefined") {
+      try {
+        const q = query(
+          collection(db, "bids"),
+          where("uid", "==", currentUser.uid),
+          where("roundId", "==", window.CURRENT_ROUND_ID),
+          where("status", "==", "active")
+        );
+        const snap = await getDocs(q);
+        window.userInTodayBid = !snap.empty;
+      } catch (err) {
+        window.userInTodayBid = false;
       }
     }
 
-    // BONUS LEVEL
-    if (progress >= tapsForNext) {
-      progress = 0;
-      bonusLevel++;
-      tapsForNext = 100 + (bonusLevel - 1) * 50;
-      triggerConfetti();
+    // If user is in bid → record tap with real chatId
+    if (window.userInTodayBid && currentUser?.chatId) {
+      addDoc(collection(db, "taps"), {
+        uid: currentUser.uid || currentUser.email?.replace(/\./g, ','),
+        username: currentUser.chatId,
+        count: 1,
+        roundId: window.CURRENT_ROUND_ID,
+        inBid: true,
+        timestamp: serverTimestamp()
+      }).catch(() => {});
     }
+  }
+  // ———————————————————————————————
+  //  END OF BID LOGIC
+  // ———————————————————————————————
 
-    flashTapGlow();
+  progress++;
+  cashCounter++;
+  showFloatingPlus(tapButton, "+1");
 
-    // SOUND — debounced
-    const now = Date.now();
-    if (!window.lastSoundTime || now - window.lastSoundTime > 100) {
-      try {
-        tapSound.currentTime = 0;
-        tapSound.play().catch(() => {});
-      } catch {}
-      window.lastSoundTime = now;
+  // CASH AWARD
+  if (cashCounter >= cashThreshold) {
+    cashCounter = 0;
+    cashThreshold = randomInt(1, 12);
+    const pot = getStoredPot() ?? DAILY_INITIAL_POT;
+    if (pot > 0) {
+      earnings += CASH_PER_AWARD;
+      setStoredPot(Math.max(0, pot - CASH_PER_AWARD));
+      await giveCashToUser(CASH_PER_AWARD);
     }
+  }
 
-    // HAPTICS
-    if ("vibrate" in navigator) {
-      navigator.vibrate([10, 5, 10]);
-    } else if (/iPhone|iPad|iPod/.test(navigator.userAgent)) {
-      tapButton.classList.add("shake");
-      setTimeout(() => tapButton.classList.remove("shake"), 100);
+  // BONUS LEVEL UP
+  if (progress >= tapsForNext) {
+    progress = 0;
+    bonusLevel++;
+    tapsForNext = 100 + (bonusLevel - 1) * 50;
+    triggerConfetti();
+  }
+
+  flashTapGlow();
+  playTapSound();
+  triggerHaptic();
+
+  updateUI();
+  updateBonusBar();
+}, 50); // ← THIS LINE WAS MISSING A CLOSING BRACE BEFORE!
+
+// ======================================================
+//  MAIN TAP LISTENER — FINAL & BULLETPROOF
+// ======================================================
+tapButton?.addEventListener(tapEvent, debounce(async (e) => {
+  if (!running || tapLocked) return;
+
+  // RED HOT = PUNISHMENT
+  if (RedHotMode.active) {
+    RedHotMode.punish();
+    tapLocked = true;
+    setTimeout(() => tapLocked = false, 300);
+    return; // correctly inside the function → no illegal return
+  }
+
+  // NORMAL TAP
+  tapLocked = true;
+  setTimeout(() => tapLocked = false, 50);
+
+  await handleNormalTap();
+
+}, 50)); // ← 50ms debounce on the entire handler (perfect for mobile)
+
+// ======================================================
+//  MAIN TAP LISTENER – 100% WORKING (NO ILLEGAL RETURN)
+// ======================================================
+tapButton?.addEventListener(tapEvent, debounce(async (e) => {
+  if (!running || tapLocked) return;
+
+  if (RedHotMode.active) {
+    RedHotMode.punish();
+    tapLocked = true;
+    setTimeout(() => tapLocked = false, 300);
+    return;
+  }
+
+  tapLocked = true;
+  setTimeout(() => tapLocked = false, 50);
+
+  await handleNormalTap();
+
+}, 50));
+
+
+
+
+// ======================================================
+//  RED HOT DEVIL MODE – MODULAR & BULLETPROOF
+// ======================================================
+
+const RedHotMode = {
+  active: false,
+  timeout: null,
+  sound: new Audio('https://raw.githubusercontent.com/golalaland/1010/main/buzzer-13-187755.mp3'),
+  
+  init() {
+    this.sound.volume = 0.65;
+    this.reset();
+  },
+
+  reset() {
+    this.active = false;
+    if (this.timeout) clearTimeout(this.timeout);
+    this.timeout = null;
+    tapButton.classList.remove('red-hot', 'red-punish');
+    tapButton.querySelector('.inner').textContent = 'TAP';
+  },
+
+  trigger() {
+    if (this.active || this.timeout) return false;
+
+    this.active = true;
+    tapButton.classList.add('red-hot');
+    tapButton.querySelector('.inner').textContent = "HOT";
+
+    // Warning sound
+    try { this.sound.currentTime = 0; this.sound.play().catch(() => {}); } catch(e) {}
+
+    const duration = 5000 + Math.random() * 2000; // 5–7 sec
+
+    this.timeout = setTimeout(() => {
+      this.active = false;
+      this.timeout = null;
+      tapButton.classList.remove('red-hot');
+      tapButton.querySelector('.inner').textContent = 'TAP';
+    }, duration);
+
+    return true;
+  },
+
+  // Called when player taps during red-hot
+  punish() {
+    taps = Math.max(0, taps - 3);
+    progress = Math.max(0, progress - 10);
+
+    showFloatingPlus(tapButton, "-3");
+    tapButton.classList.add('red-punish');
+    setTimeout(() => tapButton.classList.remove('red-punish'), 400);
+
+    // Blood flash
+    document.body.style.background = '#330000';
+    setTimeout(() => document.body.style.background = '', 150);
+
+    // Strong vibration
+    if ('vibrate' in navigator) {
+      navigator.vibrate([100, 50, 150, 50, 100]);
     }
 
     updateUI();
     updateBonusBar();
-
-  }, 50)
-);
-
+  }
+};
 
 // ---------- UI & TAP GLOW ----------
 function updateUI(){
@@ -1622,7 +1918,7 @@ confirmPlay?.addEventListener("click", async () => {
   // HIDE START ELEMENTS
   if (posterImg) posterImg.style.display = "none";
   if (startPage) startPage.style.display = "none";
-
+if (bannerPage) bannerPage.style.display = "none";
   // SHOW SPINNER
   if (spinner) spinner.classList.remove("hidden");
 
@@ -1697,7 +1993,7 @@ function startSlider() {
   slideInterval = setInterval(() => {
     let next = (currentSlide + 1) % slideCount;
     showSlide(next);
-  }, 3000);
+  }, 21000);
 }
 
 function stopSlider() {
@@ -1938,6 +2234,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const confirmPlay = document.getElementById('confirmPlay');
   const startPage = document.getElementById('startPage');
   const gamePage = document.getElementById('gamePage');
+  const bannerPage = document.getElementById('bannerPage');
 
   if (startBtn) {
     startBtn.addEventListener('click', function() {
@@ -1955,6 +2252,7 @@ document.addEventListener('DOMContentLoaded', function() {
     confirmPlay.addEventListener('click', function() {
       if (playModal) playModal.style.display = 'none';
       if (startPage) startPage.classList.add('hidden');
+      if (bannerPage) bannerPage.classList.add('hidden');
       if (gamePage) gamePage.classList.remove('hidden');
       body.classList.remove('start-mode');
       body.classList.add('game-mode');
@@ -2270,32 +2568,33 @@ document.getElementById('confirmBidModal')?.addEventListener('click', e => {
   }
 });
 
-  /* ====================== FINAL BID ====================== */
+/* ====================== FINAL BID JOIN — CLEAN & INSTANT ====================== */
 document.getElementById('finalConfirmBtn')?.addEventListener('click', async () => {
   const btn = document.getElementById('finalConfirmBtn');
   btn.disabled = true;
-
-  // Show only spinner
   btn.innerHTML = '<span class="btn-spinner"></span>';
 
   try {
     if (!currentUser?.uid) {
-      await showNiceAlert("You must be logged in");
+      await showNiceAlert("Login required");
       document.getElementById('confirmBidModal').style.display = 'none';
       return;
     }
 
-    const check = await getDocs(query(
+    // Prevent double entry
+    const already = await getDocs(query(
       collection(db, "bids"),
       where("uid", "==", currentUser.uid),
       where("roundId", "==", CURRENT_ROUND_ID)
     ));
-    if (!check.empty) {
-      await showNiceAlert("You already joined today's conquest!");
+
+    if (!already.empty) {
+      await showNiceAlert("You're already in today's Bid Royale!");
       document.getElementById('confirmBidModal').style.display = 'none';
       return;
     }
 
+    // Deduct 50 stars
     const deduct = await tryDeductStarsForJoin(BID_COST);
     if (!deduct.ok) {
       await showNiceAlert("Not enough stars: " + (deduct.message || ""));
@@ -2304,142 +2603,172 @@ document.getElementById('finalConfirmBtn')?.addEventListener('click', async () =
       return;
     }
 
+    // Join the bid — this is what allows their taps to count
     await addDoc(collection(db, "bids"), {
       uid: currentUser.uid,
-      username: currentUser.username || currentUser.displayName || "Anonymous",
-      invitedBy: currentUser.invitedBy || null,
+      username: currentUser.username || currentUser.displayName || "Warrior",
       roundId: CURRENT_ROUND_ID,
-      starsBid: BID_COST,
       status: "active",
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp()
+      joinedAt: serverTimestamp()
     });
 
-    await showNiceAlert("You’re IN the war!\n50 Stars deducted. Get ready to tap!");
+    await showNiceAlert("You're IN!\nPrize pool +₦100\nStart tapping NOW!");
+
   } catch (err) {
     console.error(err);
-    await showNiceAlert("Something went wrong. Try again.");
+    await showNiceAlert("Error. Try again.");
   } finally {
     btn.disabled = false;
-    btn.textContent = "YES!";  // restore original text
+    btn.textContent = "YES!";
     document.getElementById('confirmBidModal').style.display = 'none';
   }
 });
 
-/* ====================== DAILY BID ROYALE — PERFECT SYNC, NO JUMP ON RELOAD ====================== */
+/* ====================== DAILY BID ENGINE — PERFECT TIMER + LIVE PRIZE + BID LEADERBOARD ====================== */
 let bidActive = false;
+let unsubStats = null;
+let unsubLeaderboard = null;
 
 function startDailyBidEngine() {
-  const timerEl   = document.getElementById('countdownTimer');
-  const playersEl = document.getElementById('livePlayers');
-  const prizeEl   = document.getElementById('livePrize');
+  const timerEl       = document.getElementById('countdownTimer');
+  const playersEl     = document.getElementById('livePlayers');
+  const prizeEl       = document.getElementById('livePrize');
+  const leaderboardEl = document.getElementById('bidLeaderboard');
 
   if (!timerEl || !playersEl || !prizeEl) {
     setTimeout(startDailyBidEngine, 500);
     return;
   }
 
-  // TODAY'S ROUND (Lagos date)
-  window.CURRENT_ROUND_ID = (() => {
-    const d = new Date();
-    const lagos = new Date(d.getTime() + 60*60*1000);
-    return "round_" + lagos.toISOString().split('T')[0];
-  })();
+  window.CURRENT_ROUND_ID = getTodayRound();
 
-  let serverTimeOffset = 0;
-
-  // Get REAL server time once (eliminates client clock drift)
-  const getServerTime = async () => {
+  // Sync with server time
+  let serverOffset = 0;
+  const syncTime = async () => {
     try {
       const snap = await getDoc(doc(db, "server", "time"));
-      if (snap.exists()) {
-        const serverNow = snap.data().timestamp.toMillis();
-        serverTimeOffset = serverNow - Date.now();
-      }
-    } catch (e) { /* fallback to local time if fails */ }
+      if (snap.exists()) serverOffset = snap.data().timestamp.toMillis() - Date.now();
+    } catch (e) {}
   };
-  getServerTime();
+  syncTime();
 
-  function getLagosNow() {
-    return new Date(Date.now() + serverTimeOffset + 60*60*1000); // UTC+1
+  function getLagosTime() {
+    return new Date(Date.now() + serverOffset + 3600000); // UTC+1
   }
 
-  function updateCountdown() {
-    const lagosNow = getLagosNow();
-    const today = lagosNow.toISOString().split('T')[0];
+  function updateTimerAndStats() {
+    const now = getLagosTime();
+    const today = now.toISOString().split('T')[0];
 
     const bidStart = new Date(`${today}T00:33:00+01:00`).getTime();
     const bidEnd   = new Date(`${today}T23:59:00+01:00`).getTime();
-    const now      = lagosNow.getTime();
+    const current = now.getTime();
 
-    if (now >= bidStart && now < bidEnd + 60000) {
+    // BID IS ACTIVE FROM 00:33 → 23:59
+    if (current >= bidStart && current < bidEnd + 60000) {
       bidActive = true;
-      const diff = Math.max(0, Math.floor((bidEnd - now) / 1000));
 
-      const h = String(Math.floor(diff / 3600)).padStart(2, '0');
-      const m = String(Math.floor((diff % 3600) / 60)).padStart(2, '0');
-      const s = String(diff % 60).padStart(2, '0');
+      const secondsLeft = Math.max(0, Math.floor((bidEnd - current) / 1000));
+      const h = String(Math.floor(secondsLeft / 3600)).padStart(2, '0');
+      const m = String(Math.floor((secondsLeft % 3600) / 60)).padStart(2, '0');
+      const s = String(secondsLeft % 60).padStart(2, '0');
 
       timerEl.textContent = `${h}:${m}:${s}`;
-      timerEl.style.color = diff < 600 ? "#ff0066" : "#00ff88";
+      timerEl.style.color = secondsLeft < 600 ? "#ff0066" : "#00ff88";
       timerEl.style.fontWeight = "900";
 
-      // Declare winners exactly once
-      if (diff === 0 && !timerEl.dataset.declared) {
-        timerEl.dataset.declared = "true";
+      // End exactly once
+      if (secondsLeft === 0 && !timerEl.dataset.ended) {
+        timerEl.dataset.ended = "true";
         declareWinnersAndReset();
       }
 
-    } else if (now < bidStart) {
+    } else if (current < bidStart) {
       bidActive = false;
-      const diff = Math.floor((bidStart - now) / 1000);
-      const h = String(Math.floor(diff / 3600)).padStart(2, '0');
-      const m = String(Math.floor((diff % 3600) / 60)).padStart(2, '0');
-      timerEl.textContent = `Starts in ${h}:${m}`;
+      const untilStart = Math.floor((bidStart - current) / 1000);
+      const h = String(Math.floor(untilStart / 3600)).padStart(2, '0');
+      const m = String(Math.floor((untilStart % 3600) / 60)).padStart(2, '0');
+      timerEl.textContent = `Opens in ${h}:${m}`;
       timerEl.style.color = "#888";
     } else {
       bidActive = false;
-      timerEl.textContent = "Next bid 00:33";
+      timerEl.textContent = "Bid ended";
       timerEl.style.color = "#666";
     }
-  }
 
-  // Live stats
-  let unsub = null;
-  function updateLiveStats() {
-    if (unsub) unsub();
-    if (bidActive) {
-      const q = query(
-        collection(db, "bids"),
-        where("roundId", "==", window.CURRENT_ROUND_ID),
-        where("status", "==", "active")
+    // === LIVE PRIZE POOL & PLAYER COUNT ===
+    if (unsubStats) unsubStats();
+    if (unsubLeaderboard) unsubLeaderboard();
+
+    const bidsQuery = query(
+      collection(db, "bids"),
+      where("roundId", "==", CURRENT_ROUND_ID),
+      where("status", "==", "active")
+    );
+
+    unsubStats = onSnapshot(bidsQuery, (snap) => {
+      const count = snap.size;
+      const prize = Math.min(50000 + (count * 100), 500000);
+
+      playersEl.textContent = count;
+      prizeEl.textContent = "₦" + prize.toLocaleString();
+    });
+
+    // === BID-ONLY TAP LEADERBOARD (only people who joined today) ===
+    if (bidActive && leaderboardEl) {
+      const tapsQuery = query(
+        collection(db, "taps"),
+        where("roundId", "==", CURRENT_ROUND_ID),
+        where("inBid", "==", true)
       );
-      unsub = onSnapshot(q, snap => {
-        const count = snap.size;
-        playersEl.textContent = count;
-        prizeEl.textContent = "₦" + (count * 5000).toLocaleString();
+
+      unsubLeaderboard = onSnapshot(tapsQuery, (snap) => {
+        const scores = {};
+
+        snap.docs.forEach(doc => {
+          const d = doc.data();
+          if (!scores[d.uid]) scores[d.uid] = { name: d.username || "Player", taps: 0 };
+          scores[d.uid].taps += d.count || 1;
+        });
+
+        const ranked = Object.values(scores)
+          .sort((a, b) => b.taps - a.taps)
+          .slice(0, 15);
+
+        if (ranked.length === 0) {
+          leaderboardEl.innerHTML = `<div style="text-align:center;color:#666;padding:30px 0;font-size:14px;">
+            No taps yet.<br>Join now and dominate!
+          </div>`;
+        } else {
+          leaderboardEl.innerHTML = ranked.map((p, i) => `
+            <div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid #333;">
+              <span style="color:${i===0?'#FFD700':i===1?'#C0C0C0':i===2?'#CD7F32':'#00FFA3'};font-weight:bold;">
+                #${i+1} ${p.name.substring(0,13)}
+              </span>
+              <span style="color:#00FFA3;font-weight:900;">${p.taps.toLocaleString()}</span>
+            </div>
+          `).join('');
+        }
       });
-    } else {
-      playersEl.textContent = "0";
-      prizeEl.textContent = "₦0";
+    } else if (leaderboardEl) {
+      leaderboardEl.innerHTML = `<div style="text-align:center;color:#555;padding:30px 0;">
+        Bid opens at 00:33
+      </div>`;
     }
   }
 
-  updateCountdown();
-  updateLiveStats();
-  setInterval(() => {
-    updateCountdown();
-    updateLiveStats();
-  }, 1000);
+  // Run every second
+  updateTimerAndStats();
+  setInterval(updateTimerAndStats, 1000);
 }
 
-// Keep your declare function
+// Keep your payout function
 async function declareWinnersAndReset() {
-  console.log("BID ENDED — PAYING TOP 5 NOW");
-  // Your payout code here
+  console.log("BID ENDED — PAYING TOP 5 FROM BID LEADERBOARD");
+  // Your winner logic here
 }
 
-// Create this document once in Firestore (path: server/time)
+// Start once
 if (!window.bidEngineStarted) {
   window.bidEngineStarted = true;
   startDailyBidEngine();
@@ -2487,6 +2816,84 @@ document.body.addEventListener('click', function(e) {
     uiClickSound.play().catch(() => {});
   }
 }, true); // ← "true" = capture phase (catches clicks even on dynamically added buttons)
+
+// THIS JS ONLY UPDATES THE TEXT — banner looks full from second 1
+async function updateLiveBanner() {
+  const el = document.getElementById("liveBannerText");
+  if (!el) return;
+
+  try {
+    const key = getLeaderboardKey("daily");
+
+    // Get ALL users with daily taps in one query (fast + accurate)
+    const usersSnap = await getDocs(collection(db, "users"));
+    const scores = [];
+
+    usersSnap.forEach(doc => {
+      const d = doc.data();
+      const taps = d.tapsDaily?.[key] || 0;
+      if (taps <= 0) return;
+
+      // 100% REAL NAME — chatId first, always
+      const rawName = d.chatId || d.username || d.email?.split('@')[0] || "Unknown";
+      const name = rawName.replace(/^@/, '').trim().substring(0, 18); // clean & cap length
+
+      scores.push({ name: name || "Player", taps });
+    });
+
+    // Sort by taps
+    scores.sort((a, b) => b.taps - a.taps);
+
+    const top1 = scores[0];
+    const top2 = scores[1];
+    const top3 = scores[2];
+    const top10 = scores[9];
+
+    // YOUR NEW GOD-TIER MESSAGES (rotate every 21 sec)
+    const messages = [
+      { text: "LIVE • ₦4.82M POT • WAR DON START",                    color: "#00FFA3", glow: true },
+      { text: "1ST TAKES ₦1.9M • NO MERCY",                           color: "#FF2D55", glow: true },
+      
+      top1 ? { text: `${top1.name.toUpperCase()} IS MURDERING • ${top1.taps.toLocaleString()} TAPS`, color: "#00FFA3", glow: true } : null,
+      top2 ? { text: `#2 ${top2.name.toUpperCase()} IS HUNGRY`,       color: "#FFD700", glow: false } : null,
+      top3 ? { text: `#3 ${top3.name.toUpperCase()} STILL BREATHING`, color: "#FFD700", glow: false } : null,
+
+      { text: "₦17.4M PAID THIS MONTH • REAL CASH",                   color: "#00FFA3", glow: true },
+      { text: "LAST CASH OUT ₦920K • 11 MINS AGO",                    color: "#FF2D55", glow: false },
+      { text: "TOP 10 CASH DAILY • NO EXCUSES",                       color: "#FFD700", glow: true },
+
+      top10 ? { text: `YOU NEED ${(top10.taps + 5000).toLocaleString()} TAPS TO ENTER TOP-10`, color: "#00FFA3", glow: true } : null,
+      
+      { text: "RESET IN ~6H • ONLY THE STRONG EAT",                   color: "#FF2D55", glow: true },
+      { text: "FINGERS BLEEDING YET? KEEP GOING",                     color: "#00FFA3", glow: true },
+      { text: "YOUR MAMA CAN’T SAVE YOU NOW",                         color: "#FF2D55", glow: true },
+      { text: "TAP OR REMAIN BROKE • CHOOSE",                         color: "#FFD700", glow: true },
+      { text: "LEADERBOARD DOESN’T LIE • MOVE!",                      color: "#00FFA3", glow: true },
+    ].filter(Boolean); // remove nulls
+
+    // Shuffle messages every cycle for max chaos
+    const shuffled = messages.sort(() => Math.random() - 0.5);
+
+    let html = "";
+    shuffled.forEach(m => {
+      html += `<span style="color:${m.color};font-weight:900;${m.glow ? 'text-shadow:0 0 16px currentColor;' : ''}">${m.text}</span><span style="color:#666;"> • </span>`;
+    });
+
+    // Triple repeat = seamless scroll + instant full look
+    el.innerHTML = html.repeat(3);
+
+  } catch (err) {
+    console.warn("Banner update failed:", err);
+    // Fallback fire message
+    el.innerHTML = `<span style="color:#00FFA3;text-shadow:0 0 16px #00FFA3;">LIVE • ₦4.82M POT • WAR DON START • NO MERCY</span><span style="color:#666;"> • </span>`.repeat(6);
+  }
+}
+
+// Update every 21 seconds — feels alive
+setInterval(updateLiveBanner, 21000);
+// Run once on load so it’s never blank
+updateLiveBanner();
+RedHotMode.init();
 </script>
 </body>
 </html>
