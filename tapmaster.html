@@ -76,9 +76,7 @@ body {display:flex;justify-content:center;align-items:flex-start;padding:18px 0 
 #bonusContainer { width:100%; height:10px; background:#111; border-radius:999px; overflow:hidden; margin-top:12px; box-shadow:0 6px 16px rgba(0,0,0,0.6) inset; }
 #bonusBar { height:100%; width:0%; background:linear-gradient(90deg,var(--green1),#00b0ff); transition:width .15s linear; }
 
-/* -------------------------------------------------
-   RED HOT Tap Button – unique, addictive, mobile-ready
-   ------------------------------------------------- *
+
 #tapButton.red-hot {
   animation: redHotPulse 0.4s infinite alternate, redHotBorder 1.5s infinite;
   box-shadow: 
@@ -1614,20 +1612,17 @@ const handleNormalTap = debounce(async () => {
 tapButton?.addEventListener(tapEvent, debounce(async (e) => {
   if (!running || tapLocked) return;
 
-  // ——— RED HOT PUNISHMENT ———
   if (RedHotMode.active) {
     RedHotMode.punish();
-
     tapLocked = true;
     setTimeout(() => tapLocked = false, 300);
-    return; // ← now perfectly legal – inside the event handler
+    return;
   }
 
-  // ——— NORMAL TAP ———
   tapLocked = true;
   setTimeout(() => tapLocked = false, 50);
 
-  await handleNormalTap(); // this contains all your +1 logic, sound, haptics, etc.
+  await handleNormalTap();
 
 }, 50));
 
@@ -1697,17 +1692,6 @@ const RedHotMode = {
     updateBonusBar();
   }
 };
-
-// ======================================================
-//  MAYBE TRIGGER RED HOT (call from timer)
-// ======================================================
-function maybeTriggerRedHot() {
-  if (!running) return;
-  if (timer <= 15) return;                    // no traps in final seconds
-  if (Math.random() > 0.11) return;           // ~11% chance (adjust as needed)
-
-  RedHotMode.trigger();
-}
 
 // ---------- UI & TAP GLOW ----------
 function updateUI(){
