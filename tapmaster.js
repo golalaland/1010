@@ -1677,6 +1677,38 @@ function play(soundElement, volume = 1.0) {
   soundElement.volume = volume;
   soundElement.play().catch(() => {});
 }
+
+// Open modal
+document.getElementById('dettyRewardsBtn')?.addEventListener('click', () => {
+  document.getElementById('dettyRewardsModal').style.display = 'flex';
+});
+
+// Close modal
+document.getElementById('closeDettyRewards')?.addEventListener('click', () => {
+  document.getElementById('dettyRewardsModal').style.display = 'none';
+});
+
+// Simple swipe (you can make it fancier later)
+let currentGirl = 0;
+const cards = document.querySelectorAll('.girl-card');
+const dots = document.querySelectorAll('.swipe-dot');
+
+document.querySelector('.swipe-left').addEventListener('click', () => {
+  cards[currentGirl].classList.remove('active');
+  dots[currentGirl].classList.remove('active');
+  currentGirl = (currentGirl - 1 + cards.length) % cards.length;
+  cards[currentGirl].classList.add('active');
+  dots[currentGirl].classList.add('active');
+});
+
+document.querySelector('.swipe-right').addEventListener('click', () => {
+  cards[currentGirl].classList.remove('active');
+  dots[currentGirl].classList.remove('active');
+  currentGirl = (currentGirl + 1) % cards.length;
+  cards[currentGirl].classList.add('active');
+  dots[currentGirl].classList.add('active');
+});
+
 // ---------- ULTRA-RELIABLE UI CLICK SOUND (catches EVERY button) ----------
 const uiClickSound = document.getElementById('uiClickSound');
 
