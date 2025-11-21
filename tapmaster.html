@@ -1608,27 +1608,28 @@ const handleNormalTap = debounce(async () => {
   updateBonusBar();
 }, 50);
 
-// Main tap listener – short & sweet
-tapButton?.addEventListener(tapEvent, debounce(async e => {
+// ======================================================
+//  MAIN TAP LISTENER – 100% WORKING (NO ILLEGAL RETURN)
+// ======================================================
+tapButton?.addEventListener(tapEvent, debounce(async (e) => {
   if (!running || tapLocked) return;
 
-  // RED HOT PUNISHMENT
+  // ——— RED HOT PUNISHMENT ———
   if (RedHotMode.active) {
     RedHotMode.punish();
+
     tapLocked = true;
     setTimeout(() => tapLocked = false, 300);
-    return; // BLOCK ALL REWARDS
+    return; // ← now perfectly legal – inside the event handler
   }
 
-  // Normal flow
+  // ——— NORMAL TAP ———
   tapLocked = true;
   setTimeout(() => tapLocked = false, 50);
 
-  await handleNormalTap();
+  await handleNormalTap(); // this contains all your +1 logic, sound, haptics, etc.
 
 }, 50));
-
-    if (!running || tapLocked) return;
 
 // ======================================================
 //  RED HOT DEVIL MODE – MODULAR & BULLETPROOF
