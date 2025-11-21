@@ -2522,12 +2522,18 @@ document.body.addEventListener('click', function(e) {
   }
 }, true); // ← "true" = capture phase (catches clicks even on dynamically added buttons)
 
-// When Play is clicked → hide the entire start screen (including marquee)
 document.getElementById('startBtn').addEventListener('click', () => {
+  // 1. Hide start screen stuff
   document.getElementById('gameHeader').style.display = 'none';
   document.getElementById('startScreenMarquee').style.display = 'none';
   document.getElementById('startPage').style.display = 'none';
-  // …show your gameplay screen here
+
+  // 2. THIS LINE FIXES THE ZOOMED BACKGROUND
+  document.body.classList.remove('start-mode');
+  document.body.classList.add('game-mode');
+
+  // 3. Show your actual game screen
+  // document.getElementById('gameScreen').style.display = 'block';  // or whatever you use
 });
 </script>
 </body>
