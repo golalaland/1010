@@ -2021,24 +2021,3 @@ setInterval(updateLiveBanner, 21000);
 // Run once on load so it’s never blank
 updateLiveBanner();
 RedHotMode.init();
-// Auto-start everything when the page finishes loading
-if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", initTapMaster);
-} else {
-  initTapMaster();
-}
-
-async function initTapMaster() {
-  try {
-    console.log("%cTAPMASTER LOADED – LET'S GO", "color:#00ff88;font-size:14px;font-weight:900;");
-    await loadCurrentUserForGame();
-    await startWeeklyStreakSystem();
-    updateLiveBanner();
-    forceRenderStreak();
-    // ... any other startup calls
-  } catch (err) {
-    console.error("TapMaster failed to start:", err);
-  }
-}
-
-// END OF FILE — NOTHING AFTER THIS
