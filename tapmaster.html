@@ -1250,9 +1250,7 @@ const SESSION_DURATION = 60;
 let currentUser = null;
 const tapEvent = ('ontouchstart' in window) ? 'touchstart' : 'click';
 
-// ———————————————————————
-//  AUTH LISTENER — LOAD REAL USERNAME ONCE (chatId from Firestore)
-// ———————————————————————
+// AUTH LISTENER — LOAD USERNAME ONCE (chatId from Firestore)
 onAuthStateChanged(auth, async (user) => {
   if (!user) {
     currentUser = null;
@@ -1261,47 +1259,44 @@ onAuthStateChanged(auth, async (user) => {
 
   try {
     const userDoc = await getDoc(doc(db, "users", user.uid));
-    let realUsername = "Player";
+    let username = "Player";
 
     if (userDoc.exists()) {
       const data = userDoc.data();
-      realUsername = data.chatId || 
-                     data.username || 
-                     user.email?.replace(/,/g, '.').split('@')[0] || 
-                     "Player" + user.uid.slice(-4);
 
-      // Update currentUser with REAL data
+      username = data.chatId ||
+                 data.username ||
+                 (user.email ? user.email.replace(/,/g, '.').split('@')[0] : null) ||
+                 "Player" + user.uid.slice(-4);
+
       currentUser = {
         uid: user.uid,
         email: user.email,
         chatId: data.chatId || null,
-        username: realUsername,
+        username: username,
         stars: data.stars || 0,
         cash: data.cash || 0,
         totalTaps: data.totalTaps || 0
       };
 
-      // Update UI
-      if (profileNameEl) profileNameEl.textContent = realUsername;
+      if (profileNameEl) profileNameEl.textContent = username;
       if (starCountEl) starCountEl.textContent = (data.stars || 0).toLocaleString();
       if (cashCountEl) cashCountEl.textContent = (data.cash || 0).toLocaleString();
     } else {
-      // First-time user
-      realUsername = user.email?.replace(/,/g, '.').split('@')[0] || "NewPlayer";
+      username = user.email ? user.email.replace(/,/g, '.').split('@')[0] : "NewPlayer";
       currentUser = {
         uid: user.uid,
         email: user.email,
-        username: realUsername,
+        username: username,
         stars: 0,
         cash: 0,
         totalTaps: 0
       };
     }
 
-    console.log("User loaded →", realUsername);
-
+    console.log("User loaded →", username);
   } catch (err) {
-    console.error("Failed to load user:", err);
+    console.error("Auth error:", err);
     currentUser = { uid: user.uid, username: "ErrorUser" };
   }
 });
