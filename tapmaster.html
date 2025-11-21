@@ -2507,12 +2507,6 @@ document.body.addEventListener('click', function(e) {
     uiClickSound.play().catch(() => {});
   }
 }, true); // ← "true" = capture phase (catches clicks even on dynamically added buttons)
-// ONE LINE — everything disappears cleanly
-document.getElementById('startBtn').addEventListener('click', () => {
-  document.getElementById('startScreen').style.display = 'none';
-  // show your game screen here
-  document.getElementById('gameScreen').style.display = 'block';
-});
 </script>
 </body>
 </html>
