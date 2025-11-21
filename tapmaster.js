@@ -695,11 +695,8 @@ async function endSessionRecord() {
     console.error("%c Save failed (will retry on next round)", "color:#f66", err);
     sessionAlreadySaved = false; // Allow retry
     return false;
-  } finally {
-    // === GIVE FINAL CASH EARNED THIS ROUND (ONLY ONCE — EVEN IF SAVE FAILED) ===
-    // We do this in `finally` so:
-    // - It runs whether save succeeded or failed
-    // - But only ONCE per session (thanks to sessionAlreadySaved guard at top)
+   } finally {
+    // === GIVE FINAL CASH EARNED THIS ROUND (ONLY ONCE) ===
     if (sessionEarnings > 0 && currentUser?.uid) {
       const userRef = doc(db, "users", uid);
       runTransaction(db, async (t) => {
@@ -708,15 +705,11 @@ async function endSessionRecord() {
         const currentCash = Number(snap.data()?.cash || 0);
         t.update(userRef, { cash: currentCash + sessionEarnings });
       }).then(() => {
-        // Success → update local UI
+        // ONLY update local cache — NO UI CODE HERE
         currentUser.cash = (currentUser.cash || 0) + sessionEarnings;
-        if (cashCountEl) {
-          cashCountEl.textContent = '₦' + formatNumber(currentUser.cash);
-        }
         console.log("%c Final cash awarded: +₦" + sessionEarnings, "color:#0f9");
       }).catch((err) => {
         console.warn("Final cash award failed (will succeed next round)", err);
-        // Don't reset sessionAlreadySaved here — cash can still be awarded later
       });
     }
   }
@@ -780,14 +773,22 @@ function updateUI() {
   timerEl && (timerEl.textContent = String(timer));
   tapCountEl && (tapCountEl.textContent = String(taps));
   earningsEl && (earningsEl.textContent = '₦' + formatNumber(earnings.toFixed(2)));
+
+  // CORRECT PLACE — ONLY HERE
+  if (cashCountEl) {
+    if (running) {
+      // During round → show SESSION earnings (goes up live)
+      cashCountEl.textContent = '₦' + formatNumber(earnings);
+    } else {
+      // Round ended → show TOTAL lifetime cash
+      cashCountEl.textContent = '₦' + formatNumber(currentUser.cash || 0);
+    }
+  }
+
   bonusLevelVal && (bonusLevelVal.textContent = String(bonusLevel));
-  const elapsed = SESSION_DURATION - timer;
-  const speed = elapsed > 0 ? taps / elapsed : 0;
-  speedVal && (speedVal.textContent = `x${speed.toFixed(2)}`);
+  speedVal && (speedVal.textContent = `x${(taps / (SESSION_DURATION - timer)).toFixed(2)}`);
   miniTapCount && (miniTapCount.textContent = String(taps));
-  miniEarnings && (miniEarnings.textContent = '₦' + formatNumber(earnings.toFixed(2)));
-  if (starCountEl && currentUser) starCountEl.textContent = formatNumber(currentUser.stars);
-  if (cashCountEl && currentUser) cashCountEl.textContent = '₦' + formatNumber(currentUser.cash);
+  miniEarnings && (miniEarnings.textContent = '₦' + formatNumber(earnings));
 }
 
 function flashTapGlow() {
