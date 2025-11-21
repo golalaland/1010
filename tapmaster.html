@@ -1183,33 +1183,37 @@ document.body.appendChild(endGameModal);
 function showEndGameModal() {
   document.getElementById('finalTaps').textContent = taps.toLocaleString();
   document.getElementById('finalEarnings').textContent = `₦${earnings.toLocaleString()}`;
-  document.getElementById('playerName').textContent = currentUser?.handle || "Tapper";
 
-  // 🏆 WIN SOUND (100+) or 😢 FAIL (<100)
+  // REAL NAME — NEVER "Tapper" AGAIN
+  const realName = currentUser?.chatId || 
+                   currentUser?.username || 
+                   currentUser?.email?.replace(/,/g, '.').split('@')[0] || 
+                   "Legend";
+
+  document.getElementById('playerName').textContent = realName;
+
+  // WIN OR FAIL SOUND
   const soundUrl = taps >= 100
     ? 'https://raw.githubusercontent.com/golalaland/1010/main/material-chest-open-394472.mp3'
     : 'https://raw.githubusercontent.com/golalaland/1010/main/fail-jingle-stereo-mix-88784.mp3';
 
   new Audio(soundUrl).play().catch(() => {});
 
-  // SAFE: select the modal inner box (never null)
   const modalBox = endGameModal.querySelector('div');
   const finalTapsEl = document.getElementById('finalTaps');
 
-  // ✨ Visual feedback
   if (taps < 100) {
     modalBox.style.borderColor = '#ff4444';
     modalBox.style.boxShadow = '0 0 30px rgba(255,68,68,0.4)';
     finalTapsEl.style.color = '#ff6666';
   } else {
     modalBox.style.borderColor = '#0f9';
-    modalBox.style.boxShadow = '0 0 30px rgba(0,255,150,0.4)';
+    modalBox.style.boxShadow = '0 0 30 30px rgba(0,255,150,0.6)';
     finalTapsEl.style.color = '#0ff';
   }
 
   endGameModal.style.display = "flex";
 }
-
 
 // ======================================================
 //  SAFE BUTTON ATTACHMENT SYSTEM
@@ -1225,18 +1229,25 @@ setTimeout(() => {
   }
 
   // SHARE SCORE
-  document.getElementById('shareBtn')?.addEventListener('click', () => {
-    const name = document.getElementById('playerName').textContent;
-    const text = `${name} just got ${taps.toLocaleString()} taps and earned ₦${earnings.toLocaleString()}! Beat me if you can!`;
+ document.getElementById('shareBtn')?.addEventListener('click', () => {
+  const realName = currentUser?.chatId || 
+                   currentUser?.username || 
+                   currentUser?.email?.replace(/,/g, '.').split('@')[0] || 
+                   "A Warrior";
 
-    if (navigator.share) {
-      navigator.share({ title: "My Tap Score", text, url: location.href });
-    } else {
-      navigator.clipboard.writeText(text + " " + location.href);
-      alert("Score copied!");
-    }
-  });
+  const text = `${realName} just smashed ${taps.toLocaleString()} taps and earned ₦${earnings.toLocaleString()}! Can you beat that?`;
 
+  if (navigator.share) {
+    navigator.share({ 
+      title: "I just dominated TapMaster!", 
+      text: text,
+      url: location.href 
+    }).catch(() => {});
+  } else {
+    navigator.clipboard.writeText(text + " " + location.href);
+    alert("Score copied to clipboard!");
+  }
+});
 }, 100);
 
 
