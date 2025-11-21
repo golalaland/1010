@@ -1400,26 +1400,19 @@ function triggerConfetti() {
   }
 }
 
+// ======================================================
+//   MAYBE TRIGGER RED HOT — FINAL WORKING VERSION
+// ======================================================
 function maybeTriggerRedHot() {
-  // 8–15% chance each session, only after first 15 seconds
-  if (timer < SESSION_DURATION - 15) return;
-  if (Math.random() < 0.89) return; // ~11% chance
+  if (!running) return;
+  if (timer <= 15) return;                    // don't trigger in final 15 sec
+  if (RedHotMode.active) return;              // already active
 
-  if (isRedHot || redHotTimeout) return;
+  // 15% chance — feels rare but guaranteed to appear
+  if (Math.random() > 0.15) return;
 
-  isRedHot = true;
-  tapButton.classList.add('red-hot');
-
-  // Play warning sound (optional but scary good)
-  try { redHotSound.currentTime = 0; redHotSound.play().catch(() => {}); } catch(e) {}
-
-  const duration = 5000 + Math.random() * 2000; // 5–7 seconds
-
-  redHotTimeout = setTimeout(() => {
-    isRedHot = false;
-    tapButton.classList.remove('red-hot');
-    redHotTimeout = null;
-  }, duration);
+  console.log("%c RED HOT TRIGGERED! ", "background:#900;color:#fff;padding:4px 8px;border-radius:4px;");
+  RedHotMode.trigger();                       // THIS IS THE ONE THAT ACTUALLY WORKS
 }
 
 // ======================================================
