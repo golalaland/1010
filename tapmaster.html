@@ -1501,9 +1501,9 @@ function startSession() {
     trainBar && (trainBar.style.width = (timer / SESSION_DURATION * 100) + "%");
 
     // RED HOT TRAP — appears ~every 10 sec after 15 sec left
-    if (timer % 10 === 3 && timer > 15) {
-      maybeTriggerRedHot();
-    }
+    if (timer % 8 === 0 && timer > 15) {
+  maybeTriggerRedHot();
+}
 
   }, 1000);
 }
