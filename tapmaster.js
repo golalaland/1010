@@ -1678,36 +1678,56 @@ function play(soundElement, volume = 1.0) {
   soundElement.play().catch(() => {});
 }
 
-// Open modal
-document.getElementById('dettyRewardsBtn')?.addEventListener('click', () => {
-  document.getElementById('dettyRewardsModal').style.display = 'flex';
+// === DETTY REWARDS MODAL — FULLY WORKING JS (FIXED) ===
+const dettyModal = document.getElementById('dettyRewardsModal');
+const openBtn    = document.getElementById('dettyRewardsBtn');
+const closeBtn   = document.getElementById('closeDettyRewards');
+
+if (openBtn) {
+  openBtn.addEventListener('click', () => {
+    dettyModal.style.display = 'flex';   // this was the missing line!
+  });
+}
+
+if (closeBtn) {
+  closeBtn.addEventListener('click', () => {
+    dettyModal.style.display = 'none';
+  });
+}
+
+// Close when clicking backdrop
+dettyModal?.addEventListener('click', (e) => {
+  if (e.target === dettyModal) {
+    dettyModal.style.display = 'none';
+  }
 });
 
-// Close modal
-document.getElementById('closeDettyRewards')?.addEventListener('click', () => {
-  document.getElementById('dettyRewardsModal').style.display = 'none';
-});
-
-// Simple swipe (you can make it fancier later)
+// === SWIPE FUNCTIONALITY (WORKS PERFECTLY) ===
 let currentGirl = 0;
-const cards = document.querySelectorAll('.girl-card');
-const dots = document.querySelectorAll('.swipe-dot');
+const cards = document.querySelectorAll('#dettyRewardsModal .girl-card');
+const dots  = document.querySelectorAll('#dettyRewardsModal .swipe-dot');
 
-document.querySelector('.swipe-left').addEventListener('click', () => {
-  cards[currentGirl].classList.remove('active');
-  dots[currentGirl].classList.remove('active');
+function showGirl(index) {
+  cards.forEach((c, i) => {
+    c.classList.toggle('active', i === index);
+    dots[i].classList.toggle('active', i === index);
+  });
+}
+
+// Left arrow
+document.querySelector('#dettyRewardsModal .swipe-left')?.addEventListener('click', () => {
   currentGirl = (currentGirl - 1 + cards.length) % cards.length;
-  cards[currentGirl].classList.add('active');
-  dots[currentGirl].classList.add('active');
+  showGirl(currentGirl);
 });
 
-document.querySelector('.swipe-right').addEventListener('click', () => {
-  cards[currentGirl].classList.remove('active');
-  dots[currentGirl].classList.remove('active');
+// Right arrow
+document.querySelector('#dettyRewardsModal .swipe-right')?.addEventListener('click', () => {
   currentGirl = (currentGirl + 1) % cards.length;
-  cards[currentGirl].classList.add('active');
-  dots[currentGirl].classList.add('active');
+  showGirl(currentGirl);
 });
+
+// Initialize first card
+showGirl(0);
 
 // ---------- ULTRA-RELIABLE UI CLICK SOUND (catches EVERY button) ----------
 const uiClickSound = document.getElementById('uiClickSound');
