@@ -1442,45 +1442,36 @@ let running = false;
 let tapLocked = false;
 let intervalId = null;
 
-let isRedHot = false;
-let redHotTimeout = null;
-let redHotSound = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-wrong-answer-fail-notification-946.mp3'); // or your own sound
-redHotSound.volume = 0.6;
+// ======================================================
+//  HELPER: Sound & Haptics (extracted for reuse)
+// ======================================================
+function playTapSound() {
+  const now = Date.now();
+  if (!window.lastSoundTime || now - window.lastSoundTime > 100) {
+    try {
+      tapSound.currentTime = 0;
+      tapSound.play().catch(() => {});
+      window.lastSoundTime = now;
+    } catch(e) {}
+  }
+}
 
+function triggerHaptic() {
+  if ('vibrate' in navigator) {
+    navigator.vibrate([10, 5, 10]);
+  } else if (/iPhone|iPad|iPod/.test(navigator.userAgent)) {
+    tapButton.classList.add('shake');
+    setTimeout(() => tapButton.classList.remove('shake'), 100);
+  }
+}
 
 // ======================================================
 //   START SESSION  (FINAL FIXED VERSION)
 // ======================================================
 function startSession() {
+  // ... your existing reset code ...
 
-  // Reset all state (including red hot)
-  taps = 0;
-  earnings = 0;
-  timer = SESSION_DURATION;
-  bonusLevel = 1;
-  progress = 0;
-  tapsForNext = 100;
-  cashCounter = 0;
-  cashThreshold = randomInt(1, 12);
-
-  // Reset red hot state
-  isRedHot = false;
-  if (redHotTimeout) {
-    clearTimeout(redHotTimeout);
-    redHotTimeout = null;
-  }
-  tapButton.classList.remove('red-hot');
-  tapButton.querySelector('.inner').textContent = "TAP";   // reset text
-
-  running = true;
-  tapLocked = false;
-  tapButton.disabled = false;
-
-  trainBar && (trainBar.style.width = "100%");
-  updateBonusBar();
-  updateUI();
-
-  if (intervalId) clearInterval(intervalId);
+  RedHotMode.reset();  // ← important!
 
   intervalId = setInterval(() => {
     if (!running) return;
@@ -1489,21 +1480,16 @@ function startSession() {
     if (timer <= 0) timer = 0;
 
     updateUI();
-    trainBar && (trainBar.style.width = (timer / SESSION_DURATION * 100) + "%");
+    trainBar && (trainBar.style.width = (timer / SESSION_DURATION * 100) + '%');
 
-    // THIS IS THE CORRECT PLACE — INSIDE the interval!
-    if (timer % 10 === 3 && timer > 15) {  // every ~10 sec, but not in final 15 sec
-      maybeTriggerRedHot();
-    }
+    // Trigger red hot every ~10 seconds
+    if (timer % 10 === 3) maybeTriggerRedHot();
 
     if (timer === 0) {
       endSessionImmediate();
       endSessionRecord();
     }
-
   }, 1000);
-
-  updateUI();
 }
 
   // ======================================================
@@ -1586,90 +1572,141 @@ async function endSessionRecord() {
   }
 }
 
-// ======================================================
-//   TAP HANDLER — FIXED SOUND + CROSS-PLATFORM HAPTICS
-// ======================================================
-function debounce(fn, delay) {
-  let timeout;
-  return (...args) => {
-    clearTimeout(timeout);
-    timeout = setTimeout(() => fn(...args), delay);
-  };
-}
+const handleNormalTap = debounce(async () => {
+  taps++;
+  if (currentUser) currentUser.totalTaps = (currentUser.totalTaps || 0) + 1;
 
-tapButton?.addEventListener(
-  tapEvent,
-  debounce(async e => {
+  progress++;
+  cashCounter++;
+  showFloatingPlus(tapButton, "+1");
+
+  // Cash award logic
+  if (cashCounter >= cashThreshold) {
+    cashCounter = 0;
+    cashThreshold = randomInt(1, 12);
+    const pot = getStoredPot() ?? DAILY_INITIAL_POT;
+    if (pot > 0) {
+      earnings += CASH_PER_AWARD;
+      setStoredPot(Math.max(0, pot - CASH_PER_AWARD));
+      await giveCashToUser(CASH_PER_AWARD);
+    }
+  }
+
+  // Bonus level up
+  if (progress >= tapsForNext) {
+    progress = 0;
+    bonusLevel++;
+    tapsForNext = 100 + (bonusLevel - 1) * 50;
+    triggerConfetti();
+  }
+
+  flashTapGlow();
+  playTapSound();
+  triggerHaptic();
+
+  updateUI();
+  updateBonusBar();
+}, 50);
+
+// Main tap listener – short & sweet
+tapButton?.addEventListener(tapEvent, debounce(async e => {
+  if (!running || tapLocked) return;
+
+  // RED HOT PUNISHMENT
+  if (RedHotMode.active) {
+    RedHotMode.punish();
+    tapLocked = true;
+    setTimeout(() => tapLocked = false, 300);
+    return; // BLOCK ALL REWARDS
+  }
+
+  // Normal flow
+  tapLocked = true;
+  setTimeout(() => tapLocked = false, 50);
+
+  await handleNormalTap();
+
+}, 50));
 
     if (!running || tapLocked) return;
 
-    // ——— RED HOT DEVIL MODE ———
-    if (isRedHot) {
-      taps = Math.max(0, taps - 3);
-      progress = Math.max(0, progress - 10);
-      
-      showFloatingPlus(tapButton, "-3");
-      tapButton.classList.add('red-punish');
-      setTimeout(() => tapButton.classList.remove('red-punish'), 400);
+// ======================================================
+//  RED HOT DEVIL MODE – MODULAR & BULLETPROOF
+// ======================================================
 
-      document.body.style.background = '#330000';
-      setTimeout(() => document.body.style.background = '', 150);
+const RedHotMode = {
+  active: false,
+  timeout: null,
+  sound: new Audio('https://assets.mixkit.co/sfx/preview/mixkit-wrong-answer-fail-notification-946.mp3'),
+  
+  init() {
+    this.sound.volume = 0.65;
+    this.reset();
+  },
 
-      if ("vibrate" in navigator) {
-        navigator.vibrate([100, 50, 150, 50, 100]);
-      }
+  reset() {
+    this.active = false;
+    if (this.timeout) clearTimeout(this.timeout);
+    this.timeout = null;
+    tapButton.classList.remove('red-hot', 'red-punish');
+    tapButton.querySelector('.inner').textContent = 'TAP';
+  },
 
-      updateUI();
-      updateBonusBar();
+  trigger() {
+    if (this.active || this.timeout) return false;
 
-      // Prevent any further tap processing + add cooldown
-      tapLocked = true;
-      setTimeout(() => (tapLocked = false), 300);
-      return; // ← THIS BLOCKS THE NORMAL +1 REWARD
-    }
-    // ——————————— END RED HOT ———————————
+    this.active = true;
+    tapButton.classList.add('red-hot');
+    tapButton.querySelector('.inner').textContent = "DON'T";
 
-    // Normal tap flow (only runs if NOT red-hot)
-    tapLocked = true;
-    setTimeout(() => (tapLocked = false), 50);
+    // Warning sound
+    try { this.sound.currentTime = 0; this.sound.play().catch(() => {}); } catch(e) {}
 
-    taps++;
-    if (currentUser) {
-      currentUser.totalTaps = (currentUser.totalTaps || 0) + 1;
-    }
+    const duration = 5000 + Math.random() * 2000; // 5–7 sec
 
-    progress++;
-    cashCounter++;
-    showFloatingPlus(tapButton, "+1");
+    this.timeout = setTimeout(() => {
+      this.active = false;
+      this.timeout = null;
+      tapButton.classList.remove('red-hot');
+      tapButton.querySelector('.inner').textContent = 'TAP';
+    }, duration);
 
-    // ... rest of your original code (cash, bonus, sound, etc.)
-    // unchanged — all good
+    return true;
+  },
 
-    flashTapGlow();
+  // Called when player taps during red-hot
+  punish() {
+    taps = Math.max(0, taps - 3);
+    progress = Math.max(0, progress - 10);
 
-    // SOUND
-    const now = Date.now();
-    if (!window.lastSoundTime || now - window.lastSoundTime > 100) {
-      try {
-        tapSound.currentTime = 0;
-        tapSound.play().catch(() => {});
-        window.lastSoundTime = now;
-      } catch {}
-    }
+    showFloatingPlus(tapButton, "-3");
+    tapButton.classList.add('red-punish');
+    setTimeout(() => tapButton.classList.remove('red-punish'), 400);
 
-    // HAPTICS
-    if ("vibrate" in navigator) {
-      navigator.vibrate([10, 5, 10]);
-    } else if (/iPhone|iPad|iPod/.test(navigator.userAgent)) {
-      tapButton.classList.add("shake");
-      setTimeout(() => tapButton.classList.remove("shake"), 100);
+    // Blood flash
+    document.body.style.background = '#330000';
+    setTimeout(() => document.body.style.background = '', 150);
+
+    // Strong vibration
+    if ('vibrate' in navigator) {
+      navigator.vibrate([100, 50, 150, 50, 100]);
     }
 
     updateUI();
     updateBonusBar();
+  }
+};
 
-  }, 50)
-);
+// ======================================================
+//  MAYBE TRIGGER RED HOT (call from timer)
+// ======================================================
+function maybeTriggerRedHot() {
+  if (!running) return;
+  if (timer <= 15) return;                    // no traps in final seconds
+  if (Math.random() > 0.11) return;           // ~11% chance (adjust as needed)
+
+  RedHotMode.trigger();
+}
 
 // ---------- UI & TAP GLOW ----------
 function updateUI(){
