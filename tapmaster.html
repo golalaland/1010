@@ -1570,15 +1570,31 @@ async function endSessionRecord() {
   }
 }
 
+// ======================================================
+//  DEBOUNCE FUNCTION — MUST BE DEFINED FIRST
+// ======================================================
+function debounce(fn, delay) {
+  let timeout;
+  return function (...args) {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => fn.apply(this, args), delay);
+  };
+}
+
+// ======================================================
+//  NORMAL TAP LOGIC (all the +1 stuff)
+// ======================================================
 const handleNormalTap = debounce(async () => {
   taps++;
-  if (currentUser) currentUser.totalTaps = (currentUser.totalTaps || 0) + 1;
+  if (currentUser) {
+    currentUser.totalTaps = (currentUser.totalTaps || 0) + 1;
+  }
 
   progress++;
   cashCounter++;
   showFloatingPlus(tapButton, "+1");
 
-  // Cash award logic
+  // CASH AWARD
   if (cashCounter >= cashThreshold) {
     cashCounter = 0;
     cashThreshold = randomInt(1, 12);
@@ -1590,7 +1606,7 @@ const handleNormalTap = debounce(async () => {
     }
   }
 
-  // Bonus level up
+  // BONUS LEVEL UP
   if (progress >= tapsForNext) {
     progress = 0;
     bonusLevel++;
@@ -1605,6 +1621,28 @@ const handleNormalTap = debounce(async () => {
   updateUI();
   updateBonusBar();
 }, 50);
+
+// ======================================================
+//  MAIN TAP LISTENER — FINAL & BULLETPROOF
+// ======================================================
+tapButton?.addEventListener(tapEvent, debounce(async (e) => {
+  if (!running || tapLocked) return;
+
+  // RED HOT = PUNISHMENT
+  if (RedHotMode.active) {
+    RedHotMode.punish();
+    tapLocked = true;
+    setTimeout(() => tapLocked = false, 300);
+    return; // correctly inside the function → no illegal return
+  }
+
+  // NORMAL TAP
+  tapLocked = true;
+  setTimeout(() => tapLocked = false, 50);
+
+  await handleNormalTap();
+
+}, 50)); // ← 50ms debounce on the entire handler (perfect for mobile)
 
 // ======================================================
 //  MAIN TAP LISTENER – 100% WORKING (NO ILLEGAL RETURN)
