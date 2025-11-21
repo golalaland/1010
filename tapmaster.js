@@ -1815,3 +1815,175 @@ setInterval(updateLiveBanner, 21000);
 // Run once on load so it’s never blank
 updateLiveBanner();
 RedHotMode.init();
+// ======================================================
+// WEEKLY STREAK SYSTEM — 350 STRZ EVERY 7 DAYS (PERFECT)
+// ======================================================
+
+// Helper: Get Sunday of the current week (Lagos time)
+function getSunday(d) {
+  const date = new Date(d);
+  date.setHours(0, 0, 0, 0);
+  const day = date.getDay(); // 0 = Sunday
+  const diff = date.getDate() - day;
+  return new Date(date.setDate(diff));
+}
+
+// Call this once after currentUser is loaded
+async function startWeeklyStreakSystem() {
+  if (!currentUser?.uid) return;
+
+  const userRef = doc(db, "users", currentUser.uid);
+
+  try {
+    const snap = await getDoc(userRef);
+    const data = snap.exists() ? snap.data() : {};
+
+    const today = new Date();
+    const lagosToday = new Date(today.getTime() + 60*60*1000); // UTC+1
+    const todayKey = lagosToday.toISOString().split('T')[0]; // YYYY-MM-DD
+    const weekStart = getSunday(lagosToday);
+    const weekKey = weekStart.toISOString().split('T')[0]; // e.g. 2025-11-17
+
+    // Initialize streak data
+    let streakDays = data.streakDays || {};
+    let lastClaimWeek = data.lastStreakClaim || null;
+
+    // Mark today as played (only once per day)
+    if (!streakDays[todayKey]) {
+      streakDays[todayKey] = true;
+      await updateDoc(userRef, { streakDays });
+    }
+
+    // Build this week's 7 days
+    const weekArray = [];
+    for (let i = 0; i < 7; i++) {
+      const day = new Date(weekStart);
+      day.setDate(day.getDate() + i);
+      const key = day.toISOString().split('T')[0];
+      weekArray.push({ played: !!streakDays[key] });
+    }
+
+    // Save to currentUser for instant UI
+    currentUser.weekStreak = weekArray;
+    currentUser.currentWeekStart = weekKey;
+    currentUser.lastStreakClaim = lastClaimWeek;
+
+    // Render streak bar
+    forceRenderStreak();
+
+  } catch (e) {
+    console.error("Streak system failed:", e);
+  }
+}
+
+// Force render the beautiful streak bar
+function forceRenderStreak() {
+  if (!currentUser?.weekStreak) {
+    document.getElementById('streakDayCount').textContent = '0';
+    document.querySelectorAll('.streak-day-mini').forEach(el => {
+      el.classList.remove('active');
+      el.querySelector('.streak-dot').classList.remove('active');
+    });
+    const btn = document.getElementById('claimStreakRewardBtn');
+    btn.style.opacity = '0.4';
+    btn.style.pointerEvents = 'none';
+    btn.textContent = 'CLAIM 350 STRZ (0/7)';
+    return;
+  }
+
+  let count = 0;
+  document.querySelectorAll('.streak-day-mini').forEach((el, i) => {
+    const played = currentUser.weekStreak[i]?.played || false;
+    const dot = el.querySelector('.streak-dot');
+    if (played) {
+      dot.classList.add('active');
+      el.classList.add('active');
+      count++;
+    } else {
+      dot.classList.remove('active');
+      el.classList.remove('active');
+    }
+  });
+
+  document.getElementById('streakDayCount').textContent = count;
+
+  const btn = document.getElementById('claimStreakRewardBtn');
+  const claimedThisWeek = currentUser.lastStreakClaim === currentUser.currentWeekStart;
+
+  if (count === 7 && !claimedThisWeek) {
+    btn.style.opacity = '1';
+    btn.style.pointerEvents = 'auto';
+    btn.style.background = 'linear-gradient(90deg,#00ff88,#00cc66)';
+    btn.style.color = '#000';
+    btn.style.boxShadow = '0 0 20px rgba(0,255,136,0.6)';
+    btn.textContent = 'CLAIM 350 STRZ NOW';
+  } else {
+    btn.style.opacity = '0.4';
+    btn.style.pointerEvents = 'none';
+    btn.style.background = '#333';
+    btn.style.color = '#666';
+    btn.style.boxShadow = 'none';
+    btn.textContent = claimedThisWeek 
+      ? 'CLAIMED THIS WEEK' 
+      : `CLAIM 350 STRZ (${count}/7)`;
+  }
+}
+
+// Claim reward — 100% safe
+async function claimWeeklyStreak() {
+  if (!currentUser?.uid) return;
+  if (!currentUser.weekStreak || currentUser.weekStreak.filter(d => d.played).length < 7) {
+    alert("You need 7 days to claim!");
+    return;
+  }
+  if (currentUser.lastStreakClaim === currentUser.currentWeekStart) {
+    alert("Already claimed this week!");
+    return;
+  }
+
+  const userRef = doc(db, "users", currentUser.uid);
+
+  try {
+    await runTransaction(db, async (t) => {
+      const snap = await t.get(userRef);
+      const data = snap.data();
+
+      if (data.lastStreakClaim === currentUser.currentWeekStart) {
+        throw "Already claimed";
+      }
+
+      t.update(userRef, {
+        stars: (data.stars || 0) + 350,
+        lastStreakClaim: currentUser.currentWeekStart,
+        updatedAt: serverTimestamp()
+      });
+    });
+
+    // Update local
+    currentUser.stars += 350;
+    currentUser.lastStreakClaim = currentUser.currentWeekStart;
+
+    // Update UI
+    if (starCountEl) starCountEl.textContent = formatNumber(currentUser.stars);
+    forceRenderStreak();
+    triggerConfetti();
+    alert("350 STRZ CLAIMED! Keep the fire burning!");
+
+  } catch (e) {
+    alert("Claim failed — try again");
+  }
+}
+
+// AUTO CALL THIS AFTER USER LOADS
+document.addEventListener("DOMContentLoaded", async () => {
+  await loadCurrentUserForGame();
+  await startWeeklyStreakSystem(); // THIS MAKES IT LIVE
+});
+
+// Click to claim
+document.getElementById('claimStreakRewardBtn')?.addEventListener('click', claimWeeklyStreak);
+
+// Optional: Update every 2 minutes if tab open
+setInterval(() => {
+  if (currentUser?.uid) startWeeklyStreakSystem();
+}, 120000);
