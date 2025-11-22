@@ -343,7 +343,21 @@ document.addEventListener('DOMContentLoaded', () => {
   const referrer = urlParams.get('ref') || null;
   const validEmailSuffixes = ['@gmail.com','@yahoo.com','@icloud.com','@proton.me','@protonmail.com'];
 
-  function sanitizeKey(key){ return key ? key.replace(/[.#$[\]]/g, ',') : key; }
+  // ────────────────────── REPLACE THIS FUNCTION ──────────────────────
+function sanitizeKey(email) {
+  return email
+    .trim()
+    .toLowerCase()
+    // Replace @ and . (and any stray commas or forbidden chars) with _
+    .replace(/[@.]/g, '_')
+    // Also catch any other Firestore-forbidden chars just in case
+    .replace(/[,\\/*[\]]/g, '_')
+    // Collapse multiple underscores into one (optional but clean)
+    .replace(/_+/g, '_')
+    // Remove leading/trailing underscores
+    .replace(/^_|_$/g, '');
+}
+// ─────────────────────────────────────────────────────────────────────
   function cleanChatId(input){ return input.toLowerCase().replace(/[^a-z0-9_]/g, ''); }
   function isValidEmail(email) { return validEmailSuffixes.some(s => email.endsWith(s)); }
 
