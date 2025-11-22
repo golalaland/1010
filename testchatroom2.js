@@ -833,12 +833,6 @@ function clearReplyAfterSend() {
   refs.messageInputEl.placeholder = "Type a message...";
 }
 
-/* ---------- SCROLL TO BOTTOM (smooth) ---------- */
-function scrollToBottom(el) {
-  if (!el) return;
-  el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
-}
-
 /* ---------- SEND ON CLICK ---------- */
 refs.sendBtn?.addEventListener("click", sendMessage);
 
