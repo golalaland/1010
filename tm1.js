@@ -14,6 +14,7 @@
     serverTimestamp,
     updateDoc,
     getDocs,
+    setDoc,
     query,
     where,
     orderBy,
