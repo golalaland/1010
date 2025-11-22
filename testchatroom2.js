@@ -279,35 +279,36 @@ async function startNotificationsForUID(uid) {
 
 
 
-/* ---------- Helper: Get current user ID ---------- */
+/* ========== CORE EXPORTS & CONFIG ========== */
 export function getCurrentUserId() {
-  return currentUser ? currentUser.uid : localStorage.getItem("userId");
+  return currentUser?.uid || localStorage.getItem("userId") || null;
 }
-window.currentUser = currentUser;
 
-/* ---------- Exports for other scripts ---------- */
+// Make currentUser globally accessible (safe fallback)
+window.currentUser = currentUser || null;
+
+// Firebase core exports (for other scripts)
 export { app, db, rtdb, auth };
 
 const CONFIG = {
   ROOM_ID: "room5",
-  CHAT_COLLECTION: "messages_room5",   // ← auto-derived below (cleaner)
   HIGHLIGHTS_COLLECTION: "highlightVideos",
   NOTIFICATIONS_COLLECTION: "notifications",
   WHITELIST_COLLECTION: "whitelist",
   FEATURED_HOSTS_COLLECTION: "featuredHosts",
-  
-  // Costs (easy to tweak globally)
+
+  // Costs & Rules
   BUZZ_COST: 50,
   SEND_COST: 1,
   MIN_GIFT_STARS: 100,
   HIGHLIGHT_BASE_PRICE: 100,
 
   // Timing
-  STAR_EARNING_INTERVAL_MS: 60_000,  // 1 minute
+  STAR_EARNING_INTERVAL_MS: 60_000,
   AUTO_SCROLL_THRESHOLD: 150,
   NEW_MESSAGE_SHOW_ARROW_AT: 400,
 
-  // Visual
+  // Visual Theme
   GLOW_COLORS: ["#ff006e", "#ff4500", "#ffd700", "#00ffff", "#ff00ff"],
   FIERY_GRADIENTS: [
     ["#ff0000", "#ff8c00"],
@@ -317,21 +318,19 @@ const CONFIG = {
   ]
 };
 
-// Auto-derive collection names (no duplicate strings!)
+// Auto-derived collection (no magic strings!)
 const CHAT_COLLECTION = `messages_${CONFIG.ROOM_ID}`;
 
-/* ---------- Runtime State ---------- */
-let currentUser = null;                    // ← populated after login (real UID)
-let lastMessagesArray = [];                // for render optimization
-let starInterval = null;                   // star earning timer
-let messageListenerUnsubscribe = null;    // Firestore listener cleanup
-let presenceInterval = null;               // online status heartbeat
-let typingTimeout = null;                  // debounce typing indicator
+/* ========== RUNTIME STATE ========== */
+let currentUser = null;
+let lastMessagesArray = [];
+let starInterval = null;
+let messageListenerUnsubscribe = null;
+let presenceInterval = null;
+let typingTimeout = null;
 
-
-// DOM References (cached once)
 const refs = {
-  messagesContainer: null,
+  messagesEl: null,
   inputField: null,
   sendBtn: null,
   buzzBtn: null,
@@ -339,214 +338,225 @@ const refs = {
   notificationsList: null,
   scrollToBottomBtn: null,
   centerScrollArrow: null,
+  onlineCountEl: null,
+  redeemBtn: null,
+  tipBtn: null,
+  chatIDModal: null,
+  chatIDInput: null,
+  chatIDConfirmBtn: null,
+  sendAreaEl: null,
+  messageInputEl: null,
+  cancelReplyBtn: null,
+  userColors: {}
 };
 
-// User cache (for social card + fast lookup)
-const usersByChatId = {};
-const allUsersCache = [];
-
-// Unlocked videos (synced with localStorage + Firestore)
 let unlockedVideos = JSON.parse(localStorage.getItem("userUnlockedVideos") || "[]");
-
-// Debug flag (toggle in console: DEBUG = true)
 window.DEBUG = false;
 
-/* ---------- Helpers ---------- */
-const generateGuestName = () => `GUEST ${Math.floor(1000 + Math.random() * 9000)}`;
-const formatNumberWithCommas = n => new Intl.NumberFormat('en-NG').format(n || 0);
-const sanitizeKey = key => key.replace(/[.#$[\]]/g, ',');
+/* ========== UTILS ========== */
+const generateGuestName = () => `GUEST${Math.floor(1000 + Math.random() * 9000)}`;
+const formatNumber = n => new Intl.NumberFormat('en-NG').format(n || 0);
+const sanitizeKey = key => key.replace(/[.#$[\]]/g, '_');
+const randomColor = () => ["#FFD700","#FF69B4","#87CEEB","#90EE90","#FFB6C1","#FFA07A","#8A2BE2","#00BFA6","#F4A460"][Math.floor(Math.random() * 9)];
 
-function randomColor() {
-  const palette = ["#FFD700","#FF69B4","#87CEEB","#90EE90","#FFB6C1","#FFA07A","#8A2BE2","#00BFA6","#F4A460"];
-  return palette[Math.floor(Math.random() * palette.length)];
-}
+const log = (...args) => window.DEBUG && console.log("%c$STRZ", "color:#ff006e;font-weight:bold", ...args);
+const warn = (...args) => console.warn("%c$STRZ WARN", "color:#ff8c00;font-weight:bold", ...args);
+const error = (...args) => console.error("%c$STRZ ERROR", "color:#ff006e;background:#000;padding:4px 8px;border-radius:4px", ...args);
 
-function showStarPopup(text) {
+/* ========== POPUP HELPERS ========== */
+function showStarPopup(text, options = {}) {
   const popup = document.getElementById("starPopup");
   const starText = document.getElementById("starText");
   if (!popup || !starText) return;
-  starText.innerText = text;
+
+  starText.textContent = text;
   popup.style.display = "block";
-  setTimeout(() => popup.style.display = "none", 1700);
+  popup.style.opacity = "0";
+  popup.style.transform = "translateY(20px)";
+
+  requestAnimationFrame(() => {
+    popup.style.transition = "all 0.4s ease";
+    popup.style.opacity = "1";
+    popup.style.transform = "translateY(0)";
+  });
+
+  clearTimeout(popup.hideTimeout);
+  popup.hideTimeout = setTimeout(() => {
+    popup.style.opacity = "0";
+    popup.style.transform = "translateY(-20px)";
+    setTimeout(() => popup.style.display = "none", 400);
+  }, options.duration || 2000);
 }
 
-/* ---------- Helper: Safe Log (only in debug) ---------- */
-const log = (...args) => window.DEBUG && console.log("%c$STRZ", "color:#ff006e;font-weight:bold;", ...args);
-const warn = (...args) => console.warn("%c$STRZ WARN", "color:#ff8c00;font-weight:bold;", ...args);
-const error = (...args) => console.error("%c$STRZ ERROR", "color:#ff006e;background:#000;padding:4px 8px;", ...args);
+function showGiftAlert(text) {
+  const el = document.getElementById("giftAlert");
+  if (!el) return;
 
-/* ----------------------------
-   ⭐ GIFT MODAL / CHAT BANNER ALERT
------------------------------ */
+  el.textContent = text;
+  el.classList.remove("show");
+  void el.offsetWidth; // trigger reflow
+  el.classList.add("show");
+
+  setTimeout(() => el.classList.remove("show"), 5000);
+}
+
+/* ========== GIFT MODAL ========== */
 async function showGiftModal(targetUid, targetData) {
-  // Stop if required info is missing
-  if (!targetUid || !targetData) return;
-
-  const modal = document.getElementById("giftModal");
-  const titleEl = document.getElementById("giftModalTitle");
-  const amountInput = document.getElementById("giftAmountInput");
-  const confirmBtn = document.getElementById("giftConfirmBtn");
-  const closeBtn = document.getElementById("giftModalClose");
-
-  // Make sure modal exists before doing anything
-  if (!modal || !titleEl || !amountInput || !confirmBtn || !closeBtn) {
-    console.warn("❌ Gift modal elements not found — skipping open");
+  if (!targetUid || !targetData?.chatId) {
+    warn("Gift modal called without target");
     return;
   }
 
-  // 🧩 Reset state before showing
-  titleEl.textContent = "Gift ⭐️";
-  amountInput.value = "";
+  const modal = document.getElementById("giftModal");
+  const title = document.getElementById("giftModalTitle");
+  const input = document.getElementById("giftAmountInput");
+  const confirmBtn = document.getElementById("giftConfirmBtn");
+  const closeBtn = document.getElementById("giftModalClose");
 
-  // 🚫 Don't auto-show unless called intentionally
-  // So we only show the modal *after* all required info is ready
-  requestAnimationFrame(() => {
-    modal.style.display = "flex";
-  });
+  if (!modal || !title || !input || !confirmBtn || !closeBtn) {
+    warn("Gift modal DOM elements missing");
+    return;
+  }
 
-  // Close modal behavior
-  const close = () => {
-    modal.style.display = "none";
-  };
+  title.textContent = `Gift ⭐ to ${targetData.chatId}`;
+  input.value = "";
+  modal.style.display = "flex";
 
+  const close = () => modal.style.display = "none";
   closeBtn.onclick = close;
-  modal.onclick = (e) => {
-    if (e.target === modal) close();
-  };
+  modal.onclick = e => e.target === modal && close();
 
-  // Remove any old listeners on confirm button
   const newConfirmBtn = confirmBtn.cloneNode(true);
   confirmBtn.replaceWith(newConfirmBtn);
 
-  // ✅ Confirm send action
-  newConfirmBtn.addEventListener("click", async () => {
-    const amt = parseInt(amountInput.value) || 0;
-    if (amt < 100) return showStarPopup("🔥 Minimum gift is 100 ⭐️");
-    if ((currentUser?.stars || 0) < amt) return showStarPopup("Not enough stars 💫");
+  newConfirmBtn.onclick = async () => {
+    const amount = parseInt(input.value) || 0;
+    if (amount < CONFIG.MIN_GIFT_STARS) return showStarPopup(`Minimum ${CONFIG.MIN_GIFT_STARS} ⭐`);
+    if ((currentUser?.stars || 0) < amount) return showStarPopup("Not enough stars");
 
-    const fromRef = doc(db, "users", currentUser.uid);
-    const toRef = doc(db, "users", targetUid);
-    const glowColor = randomColor();
+    try {
+      const fromRef = doc(db, "users", currentUser.uid);
+      const toRef = doc(db, "users", targetUid);
+      const color = randomColor();
 
-    const messageData = {
-      content: `💫 ${currentUser.chatId} gifted ${amt} stars ⭐️ to ${targetData.chatId}!`,
-      uid: currentUser.uid,
-      timestamp: serverTimestamp(),
-      highlight: true,
-      buzzColor: glowColor,
-      systemBanner: true,
-      _confettiPlayed: false
-    };
+      const messageData = {
+        content: `${currentUser.chatId} gifted ${amount} stars ⭐ to ${targetData.chatId}!`,
+        uid: currentUser.uid,
+        timestamp: serverTimestamp(),
+        highlight: true,
+        buzzColor: color,
+        systemBanner: true
+      };
 
-    const docRef = await addDoc(collection(db, CHAT_COLLECTION), messageData);
+      const msgRef = await addDoc(collection(db, CHAT_COLLECTION), messageData);
 
-    await Promise.all([
-      updateDoc(fromRef, { stars: increment(-amt), starsGifted: increment(amt) }),
-      updateDoc(toRef, { stars: increment(amt) })
-    ]);
+      await Promise.all([
+        updateDoc(fromRef, {
+          stars: increment(-amount),
+          starsGifted: increment(amount)
+        }),
+        updateDoc(toRef, { stars: increment(amount) })
+      ]);
 
-    showStarPopup(`You sent ${amt} stars ⭐️ to ${targetData.chatId}!`);
-    close();
-
-    renderMessagesFromArray([{ id: docRef.id, data: messageData }]);
-  });
-}
-/* ---------- Gift Alert (Optional Popup) ---------- */
-function showGiftAlert(text) {
-  const alertEl = document.getElementById("giftAlert");
-  if (!alertEl) return;
-
-  alertEl.textContent = text; // just text
-  alertEl.classList.add("show", "glow"); // banner glow
-
-  // ✅ Floating stars removed
-  setTimeout(() => alertEl.classList.remove("show", "glow"), 4000);
+      showStarPopup(`Gifted ${amount} ⭐ to ${targetData.chatId}!`);
+      close();
+      renderMessagesFromArray([{ id: msgRef.id, data: messageData }]);
+    } catch (err) {
+      error("Gift failed:", err);
+      showStarPopup("Gift failed");
+    }
+  };
 }
 
-/* ---------- Redeem Link ---------- */
+/* ========== LINKS ========== */
 function updateRedeemLink() {
-  if (!refs.redeemBtn || !currentUser) return;
-  refs.redeemBtn.href = `https://golalaland.github.io/crdb/shop.html?uid=${encodeURIComponent(currentUser.uid)}`;
-  refs.redeemBtn.style.display = "inline-block";
+  if (refs.redeemBtn && currentUser?.uid) {
+    refs.redeemBtn.href = `https://golalaland.github.io/crdb/shop.html?uid=${currentUser.uid}`;
+    refs.redeemBtn.style.display = "inline-block";
+  }
 }
 
-/* ---------- Tip Link ---------- */
 function updateTipLink() {
-  if (!refs.tipBtn || !currentUser) return;
-  refs.tipBtn.href = `https://golalaland.github.io/crdb/tapmaster.html?uid=${encodeURIComponent(currentUser.uid)}`;
-  refs.tipBtn.style.display = "inline-block";
+  if (refs.tipBtn && currentUser?.uid) {
+    refs.tipBtn.href = `https://golalaland.github.io/crdb/tapmaster.html?uid=${currentUser.uid}`;
+    refs.tipBtn.style.display = "inline-block";
+  }
 }
 
-/* ---------- Presence (Realtime) ---------- */
+/* ========== PRESENCE SYSTEM ========== */
 function setupPresence(user) {
-  if (!rtdb) return;
-  const pRef = rtdbRef(rtdb, `presence/${ROOM_ID}/${sanitizeKey(user.uid)}`);
-  rtdbSet(pRef, { online: true, chatId: user.chatId, email: user.email }).catch(() => {});
-  onDisconnect(pRef).remove().catch(() => {});
+  if (!rtdb || !user?.uid) return;
+
+  const path = `presence/${CONFIG.ROOM_ID}/${sanitizeKey(user.uid)}`;
+  const ref = rtdbRef(rtdb, path);
+
+  rtdbSet(ref, {
+    online: true,
+    chatId: user.chatId || "Guest",
+    lastSeen: serverTimestamp()
+  }).catch(() => {});
+
+  onDisconnect(ref).remove().catch(() => {});
 }
 
 if (rtdb) {
-  onValue(rtdbRef(rtdb, `presence/${ROOM_ID}`), snap => {
-    const users = snap.val() || {};
-    if (refs.onlineCountEl) refs.onlineCountEl.innerText = `(${Object.keys(users).length} online)`;
+  onValue(rtdbRef(rtdb, `presence/${CONFIG.ROOM_ID}`), snap => {
+    const count = Object.keys(snap.val() || {}).length;
+    if (refs.onlineCountEl) {
+      refs.onlineCountEl.textContent = `(${count} online)`;
+    }
   });
 }
 
-/* ---------- User Colors ---------- */
-function setupUsersListener() {
+/* ========== USER COLORS ========== */
+function setupUserColorsListener() {
   onSnapshot(collection(db, "users"), snap => {
     refs.userColors = refs.userColors || {};
-    snap.forEach(docSnap => {
-      refs.userColors[docSnap.id] = docSnap.data()?.usernameColor || "#ffffff";
+    snap.forEach(doc => {
+      const data = doc.data();
+      if (data.usernameColor) refs.userColors[doc.id] = data.usernameColor;
     });
-    if (lastMessagesArray.length) renderMessagesFromArray(lastMessagesArray);
+    if (lastMessagesArray.length > 0) renderMessagesFromArray(lastMessagesArray);
   });
 }
-setupUsersListener();
+setupUserColorsListener();
 
-let tapModalEl = null;
+/* ========== REPLY & REPORT SYSTEM ========== */
 let currentReplyTarget = null;
 
-// Cancel reply
 function cancelReply() {
   currentReplyTarget = null;
-  refs.messageInputEl.placeholder = "Type a message...";
-  if (refs.cancelReplyBtn) {
-    refs.cancelReplyBtn.remove();
-    refs.cancelReplyBtn = null;
-  }
+  if (refs.messageInputEl) refs.messageInputEl.placeholder = "Type a message...";
+  refs.cancelReplyBtn?.remove();
+  refs.cancelReplyBtn = null;
 }
 
-// Show the little cancel reply button
 function showReplyCancelButton() {
-  if (!refs.cancelReplyBtn) {
-    const btn = document.createElement("button");
-    btn.textContent = "✖";
-    btn.style.marginLeft = "6px";
-    btn.style.fontSize = "12px";
-    btn.onclick = cancelReply;
-    refs.cancelReplyBtn = btn;
-    refs.messageInputEl.parentElement.appendChild(btn);
-  }
+  if (refs.cancelReplyBtn) return;
+  const btn = document.createElement("button");
+  btn.textContent = "✖";
+  btn.style.cssText = "margin-left:6px;font-size:12px;background:none;border:none;color:#ff006e;cursor:pointer;";
+  btn.onclick = cancelReply;
+  refs.messageInputEl.parentElement.appendChild(btn);
+  refs.cancelReplyBtn = btn;
 }
 
-// Report a message
 async function reportMessage(msgData) {
+  if (!currentUser) return showStarPopup("Login required");
+
   try {
     const reportRef = doc(db, "reportedmsgs", msgData.id);
-    const reportSnap = await getDoc(reportRef);
-    const reporterChatId = currentUser?.chatId || "unknown";
-    const reporterUid = currentUser?.uid || null;
+    const snap = await getDoc(reportRef);
+    const reporter = currentUser.chatId || "unknown";
 
-    if (reportSnap.exists()) {
-      const data = reportSnap.data();
-      if ((data.reportedBy || []).includes(reporterChatId)) {
-        return showStarPopup("You’ve already reported this message.", { type: "info" });
-      }
+    if (snap.exists() && snap.data().reportedBy?.includes(reporter)) {
+      return showStarPopup("Already reported");
+    }
+
+    if (snap.exists()) {
       await updateDoc(reportRef, {
         reportCount: increment(1),
-        reportedBy: arrayUnion(reporterChatId),
-        reporterUids: arrayUnion(reporterUid),
+        reportedBy: arrayUnion(reporter),
         lastReportedAt: serverTimestamp()
       });
     } else {
@@ -554,397 +564,101 @@ async function reportMessage(msgData) {
         messageId: msgData.id,
         messageText: msgData.content,
         offenderChatId: msgData.chatId,
-        offenderUid: msgData.uid || null,
-        reportedBy: [reporterChatId],
-        reporterUids: [reporterUid],
+        offenderUid: msgData.uid,
+        reportedBy: [reporter],
         reportCount: 1,
         createdAt: serverTimestamp(),
         status: "pending"
       });
     }
-
-    // ✅ Success popup
-    showStarPopup("✅ Report submitted!", { type: "success" });
-
+    showStarPopup("Report sent!");
   } catch (err) {
-    console.error(err);
-    // ❌ Error popup
-    showStarPopup("❌ Error reporting message.", { type: "error" });
+    error("Report failed", err);
+    showStarPopup("Report failed");
   }
 }
 
-// Tap modal for Reply / Report
+let tapModalEl = null;
 function showTapModal(targetEl, msgData) {
   tapModalEl?.remove();
   tapModalEl = document.createElement("div");
-  tapModalEl.className = "tap-modal";
+  tapModalEl.style.cssText = `
+    position:absolute;background:rgba(0,0,0,0.9);color:white;padding:8px 12px;
+    border-radius:8px;font-size:13px;display:flex;gap:12px;z-index:99999;
+    backdrop-filter:blur(8px);border:1px solid #333;
+  `;
 
   const replyBtn = document.createElement("button");
-  replyBtn.textContent = "⏎ Reply";
+  replyBtn.textContent = "Reply";
   replyBtn.onclick = () => {
     currentReplyTarget = { id: msgData.id, chatId: msgData.chatId, content: msgData.content };
-    refs.messageInputEl.placeholder = `Replying to ${msgData.chatId}: ${msgData.content.substring(0, 30)}...`;
+    refs.messageInputEl.placeholder = `Replying to ${msgData.chatId}...`;
     refs.messageInputEl.focus();
     showReplyCancelButton();
     tapModalEl.remove();
   };
 
   const reportBtn = document.createElement("button");
-  reportBtn.textContent = "⚠ Report";
-  reportBtn.onclick = async () => {
-    await reportMessage(msgData);
-    tapModalEl.remove();
-  };
+  reportBtn.textContent = "Report";
+  reportBtn.onclick = () => reportMessage(msgData) && tapModalEl.remove();
 
-  const cancelBtn = document.createElement("button");
-  cancelBtn.textContent = "✕";
-  cancelBtn.onclick = () => tapModalEl.remove();
+  const closeBtn = document.createElement("button");
+  closeBtn.textContent = "✕";
+  closeBtn.onclick = () => tapModalEl.remove();
 
-  tapModalEl.append(replyBtn, reportBtn, cancelBtn);
+  tapModalEl.append(replyBtn, reportBtn, closeBtn);
   document.body.appendChild(tapModalEl);
 
   const rect = targetEl.getBoundingClientRect();
-  tapModalEl.style.position = "absolute";
-  tapModalEl.style.top = rect.top - 40 + window.scrollY + "px";
-  tapModalEl.style.left = rect.left + "px";
-  tapModalEl.style.background = "rgba(0,0,0,0.85)";
-  tapModalEl.style.color = "#fff";
-  tapModalEl.style.padding = "6px 10px";
-  tapModalEl.style.borderRadius = "8px";
-  tapModalEl.style.fontSize = "12px";
-  tapModalEl.style.display = "flex";
-  tapModalEl.style.gap = "6px";
-  tapModalEl.style.zIndex = 9999;
+  tapModalEl.style.top = (rect.top + window.scrollY - 44) + "px";
+  tapModalEl.style.left = (rect.left + window.scrollX) + "px";
 
-  setTimeout(() => tapModalEl?.remove(), 3000);
+  setTimeout(() => tapModalEl?.remove(), 4000);
 }
 
-// Confetti / glow for banners
-// Banner glow only (no confetti)
-function triggerBannerEffect(bannerEl) {
-  bannerEl.style.animation = "bannerGlow 1s ease-in-out infinite alternate";
-
-  // ✅ Confetti removed
-  // const confetti = document.createElement("div");
-  // confetti.className = "confetti";
-  // confetti.style.position = "absolute";
-  // confetti.style.top = "-4px";
-  // confetti.style.left = "50%";
-  // confetti.style.width = "6px";
-  // confetti.style.height = "6px";
-  // confetti.style.background = "#fff";
-  // confetti.style.borderRadius = "50%";
-  // bannerEl.appendChild(confetti);
-  // setTimeout(() => confetti.remove(), 1500);
+/* ========== BANNER GLOW EFFECT ========== */
+function triggerBannerEffect(el) {
+  el.style.animation = "bannerGlow 1.5s ease-in-out infinite alternate";
 }
 
-const NEAR_BOTTOM = 150;
-const SHOW_ARROW_AT = 400;
-let isAtBottom = true;
-let scrollPending = false;
-
-// === Enhanced: Render Messages ===
-function renderMessagesFromArray(messages) {
-  if (!refs.messagesEl) return;
-
-  messages.forEach(item => {
-    if (!item.id || document.getElementById(item.id)) return;
-
-    const m = item.data || item;
-    const wrapper = document.createElement("div");
-    wrapper.className = "msg";
-    wrapper.id = item.id;
-
-    // === Banner Message ===
-    if (m.systemBanner || m.isBanner || m.type === "banner") {
-      wrapper.classList.add("chat-banner");
-      Object.assign(wrapper.style, {
-        textAlign: "center",
-        padding: "4px 0",
-        margin: "4px 0",
-        borderRadius: "8px",
-        background: m.buzzColor || "linear-gradient(90deg,#ffcc00,#ff33cc)",
-        boxShadow: "0 0 16px rgba(255,255,255,0.3)",
-        position: "relative"
-      });
-
-      const innerPanel = document.createElement("div");
-      Object.assign(innerPanel.style, {
-        display: "inline-block",
-        padding: "6px 14px",
-        borderRadius: "6px",
-        background: "rgba(255,255,255,0.35)",
-        backdropFilter: "blur(6px)",
-        color: "#000",
-        fontWeight: "700"
-      });
-      innerPanel.textContent = m.content || "";
-      wrapper.appendChild(innerPanel);
-
-      triggerBannerEffect(wrapper);
-
-      if (window.currentUser?.isAdmin) {
-        const delBtn = document.createElement("button");
-        delBtn.textContent = "Delete";
-        delBtn.title = "Delete Banner";
-        delBtn.style.cssText = "position:absolute;right:6px;top:3px;cursor:pointer;";
-        delBtn.onclick = async () => {
-          await deleteDoc(doc(db, "messages", item.id));
-          wrapper.remove();
-        };
-        wrapper.appendChild(delBtn);
-      }
-    } 
-    // === Regular Message ===
-    else {
-      const usernameEl = document.createElement("span");
-      usernameEl.className = "meta";
-      usernameEl.innerHTML = `${escapeHtml(m.chatId || "Guest")}:`;
-      usernameEl.style.color = (m.uid && refs.userColors?.[m.uid]) ? refs.userColors[m.uid] : "#fff";
-      usernameEl.style.marginRight = "4px";
-      wrapper.appendChild(usernameEl);
-
-      if (m.replyTo) {
-        const replyPreview = document.createElement("div");
-        replyPreview.className = "reply-preview";
-        replyPreview.textContent = m.replyToContent || "Original message";
-        replyPreview.style.cursor = "pointer";
-        replyPreview.onclick = () => {
-          const originalMsg = document.getElementById(m.replyTo);
-          if (originalMsg) {
-            originalMsg.scrollIntoView({ behavior: "smooth", block: "center" });
-            originalMsg.style.outline = "2px solid #FFD700";
-            setTimeout(() => originalMsg.style.outline = "", 1000);
-          }
-        };
-        wrapper.appendChild(replyPreview);
-      }
-
-      const contentEl = document.createElement("span");
-      contentEl.className = "content";
-      contentEl.textContent = " " + (m.content || "");
-      wrapper.appendChild(contentEl);
-
-      wrapper.addEventListener("click", (e) => {
-        e.stopPropagation();
-        showTapModal(wrapper, {
-          id: item.id,
-          chatId: m.chatId,
-          uid: m.uid,
-          content: m.content,
-          replyTo: m.replyTo,
-          replyToContent: m.replyToContent
-        });
-      });
-    }
-
-    refs.messagesEl.appendChild(wrapper);
-  });
-
-
-/* ---------- 🔔 Messages Listener (Final Optimized Version) ---------- */
-function attachMessagesListener() {
-  const q = query(collection(db, CHAT_COLLECTION), orderBy("timestamp", "asc"));
-
-  // 💾 Track shown gift alerts
-  const shownGiftAlerts = new Set(JSON.parse(localStorage.getItem("shownGiftAlerts") || "[]"));
-  function saveShownGift(id) {
-    shownGiftAlerts.add(id);
-    localStorage.setItem("shownGiftAlerts", JSON.stringify([...shownGiftAlerts]));
-  }
-
-  // 💾 Track local pending messages to prevent double rendering
-  let localPendingMsgs = JSON.parse(localStorage.getItem("localPendingMsgs") || "{}");
-
-  onSnapshot(q, snapshot => {
-    snapshot.docChanges().forEach(change => {
-      if (change.type !== "added") return;
-
-      const msg = change.doc.data();
-      const msgId = change.doc.id;
-
-      // 🛑 Skip messages that look like local temp echoes
-      if (msg.tempId && msg.tempId.startsWith("temp_")) return;
-
-      // 🛑 Skip already rendered messages
-      if (document.getElementById(msgId)) return;
-
-      // ✅ Match Firestore-confirmed message to a locally sent one
-      for (const [tempId, pending] of Object.entries(localPendingMsgs)) {
-        const sameUser = pending.uid === msg.uid;
-        const sameText = pending.content === msg.content;
-        const createdAt = pending.createdAt || 0;
-        const msgTime = msg.timestamp?.toMillis?.() || 0;
-        const timeDiff = Math.abs(msgTime - createdAt);
-
-        if (sameUser && sameText && timeDiff < 7000) {
-          // 🔥 Remove local temp bubble
-          const tempEl = document.getElementById(tempId);
-          if (tempEl) tempEl.remove();
-
-          // 🧹 Clean up memory + storage
-          delete localPendingMsgs[tempId];
-          localStorage.setItem("localPendingMsgs", JSON.stringify(localPendingMsgs));
-          break;
-        }
-      }
-
-      // ✅ Render message
-      renderMessagesFromArray([{ id: msgId, data: msg }]);
-
-      /* 💝 Gift Alert Logic */
-      if (msg.highlight && msg.content?.includes("gifted")) {
-        const myId = currentUser?.chatId?.toLowerCase();
-        if (!myId) return;
-
-        const parts = msg.content.split(" ");
-        const sender = parts[0];
-        const receiver = parts[2];
-        const amount = parts[3];
-        if (!sender || !receiver || !amount) return;
-
-        if (receiver.toLowerCase() === myId && !shownGiftAlerts.has(msgId)) {
-          showGiftAlert(`${sender} gifted you ${amount} stars ⭐️`);
-          saveShownGift(msgId);
-        }
-      }
-
-      // 🌀 Keep scroll locked for your messages
-      if (refs.messagesEl && msg.uid === currentUser?.uid) {
-        refs.messagesEl.scrollTop = refs.messagesEl.scrollHeight;
-      }
-    });
-  });
-}
-
-/* ===== Notifications Tab Lazy + Live Setup (Robust) ===== */
-let notificationsListenerAttached = false;
-
-async function attachNotificationsListener() {
-  // Wait for the notifications tab and list to exist
-  const waitForElement = (selector) => new Promise((resolve) => {
-    const el = document.querySelector(selector);
-    if (el) return resolve(el);
-    const observer = new MutationObserver(() => {
-      const elNow = document.querySelector(selector);
-      if (elNow) {
-        observer.disconnect();
-        resolve(elNow);
-      }
-    });
-    observer.observe(document.body, { childList: true, subtree: true });
-  });
-
-  const notificationsList = await waitForElement("#notificationsList");
-  const markAllBtn = await waitForElement("#markAllRead");
-
-  if (!currentUser?.uid) return console.warn("⚠️ No logged-in user");
-  const notifRef = collection(db, "users", currentUser.uid, "notifications");
-  const q = query(notifRef, orderBy("timestamp", "desc"));
-
-  // Live snapshot listener
-  onSnapshot(q, (snapshot) => {
-    console.log("📡 Notifications snapshot:", snapshot.docs.map(d => d.data()));
-
-    if (snapshot.empty) {
-      notificationsList.innerHTML = `<p style="opacity:0.7;">No new notifications yet.</p>`;
-      return;
-    }
-
-    const items = snapshot.docs.map(docSnap => {
-      const n = docSnap.data();
-      const time = n.timestamp?.seconds
-        ? new Date(n.timestamp.seconds * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-        : "--:--";
-      return `
-        <div class="notification-item ${n.read ? "" : "unread"}" data-id="${docSnap.id}">
-          <span>${n.message || "(no message)"}</span>
-          <span class="notification-time">${time}</span>
-        </div>
-      `;
-    });
-
-    notificationsList.innerHTML = items.join("");
-  });
-
-  // Mark all as read
-  if (markAllBtn) {
-    markAllBtn.onclick = async () => {
-      const snapshot = await getDocs(notifRef);
-      for (const docSnap of snapshot.docs) {
-        const ref = doc(db, "users", currentUser.uid, "notifications", docSnap.id);
-        await updateDoc(ref, { read: true });
-      }
-      showStarPopup("✅ All notifications marked as read.");
-    };
-  }
-
-  notificationsListenerAttached = true;
-}
-
-/* ===== Tab Switching (Lazy attach for notifications) ===== */
-document.querySelectorAll(".tab-btn").forEach(btn => {
-  btn.onclick = async () => {
-    // Switch tabs visually
-    document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
-    document.querySelectorAll(".tab-content").forEach(tab => tab.style.display = "none");
-
-    btn.classList.add("active");
-    const tabContent = document.getElementById(btn.dataset.tab);
-    if (tabContent) tabContent.style.display = "block";
-
-    // Attach notifications listener lazily
-    if (btn.dataset.tab === "notificationsTab" && !notificationsListenerAttached) {
-      await attachNotificationsListener();
-    }
-  };
-});
-
-/* ---------- 🆔 ChatID Modal ---------- */
+/* ========== CHATID PROMPT ========== */
 async function promptForChatID(userRef, userData) {
-  if (!refs.chatIDModal || !refs.chatIDInput || !refs.chatIDConfirmBtn)
-    return userData?.chatId || null;
-
-  // Skip if user already set chatId
-  if (userData?.chatId && !userData.chatId.startsWith("GUEST"))
-    return userData.chatId;
-
-  refs.chatIDInput.value = "";
-  refs.chatIDModal.style.display = "flex";
-  if (refs.sendAreaEl) refs.sendAreaEl.style.display = "none";
-
   return new Promise(resolve => {
-    refs.chatIDConfirmBtn.onclick = async () => {
-      const chosen = refs.chatIDInput.value.trim();
-      if (chosen.length < 3 || chosen.length > 12)
-        return alert("Chat ID must be 3–12 characters");
+    if (!refs.chatIDModal || userData?.chatId && !userData.chatId.startsWith("GUEST")) {
+      return resolve(userData?.chatId || generateGuestName());
+    }
 
-      const lower = chosen.toLowerCase();
+    refs.chatIDModal.style.display = "flex";
+    refs.sendAreaEl && (refs.sendAreaEl.style.display = "none");
+    refs.chatIDInput.value = "";
+    refs.chatIDInput.focus();
+
+    const submit = async () => {
+      let name = refs.chatIDInput.value.trim();
+      if (!name || name.length < 3 || name.length > 12) {
+        return alert("Chat ID: 3–12 characters");
+      }
+
+      const lower = name.toLowerCase();
       const q = query(collection(db, "users"), where("chatIdLower", "==", lower));
       const snap = await getDocs(q);
 
       let taken = false;
-      snap.forEach(docSnap => {
-        if (docSnap.id !== userRef.id) taken = true;
-      });
-      if (taken) return alert("This Chat ID is taken 💬");
+      snap.forEach(d => { if (d.id !== userRef.id) taken = true; });
+      if (taken) return alert("Name taken");
 
-      try {
-        await updateDoc(userRef, { chatId: chosen, chatIdLower: lower });
-        currentUser.chatId = chosen;
-        currentUser.chatIdLower = lower;
-        refs.chatIDModal.style.display = "none";
-        if (refs.sendAreaEl) refs.sendAreaEl.style.display = "flex";
-        showStarPopup(`Welcome ${chosen}! 🎉`);
-        resolve(chosen);
-      } catch (err) {
-        console.error(err);
-        alert("Failed to save Chat ID");
-      }
+      await updateDoc(userRef, { chatId: name, chatIdLower: lower });
+      currentUser.chatId = name;
+      refs.chatIDModal.style.display = "none";
+      refs.sendAreaEl && (refs.sendAreaEl.style.display = "flex");
+      showStarPopup(`Welcome ${name}!`);
+      resolve(name);
     };
+
+    refs.chatIDConfirmBtn.onclick = submit;
+    refs.chatIDInput.onkeydown = e => e.key === "Enter" && submit();
   });
 }
-
 
 /* ---------- VIP Login + Smooth Auto-login with Progress (FINAL 100% UID FIX) ---------- */
 async function loginWhitelist(email, password) {
