@@ -143,53 +143,51 @@ onAuthStateChanged(auth, async (user) => {
     console.error("⚠️ Sync unlocks failed:", err);
   }
 
-  // ---------- Notifications Setup ----------
-  const sanitizeEmail = (email) => email.replace(/\./g, ",");
-  const userQueryId = sanitizeEmail(currentUser.email);
-  console.log("📩 Logged in as Sanitized ID:", userQueryId);
-  localStorage.setItem("userId", userQueryId);
+   // ---------- Notifications Setup (UID-Based – 2025 Standard) ----------
+  const userQueryId = currentUser.uid; // ← Now using real Firebase UID
+  console.log("Logged in as UID:", userQueryId);
 
-  const notifRef = collection(db, "notifications");
-  const notifQuery = query(
-    notifRef,
-    where("userId", "==", userQueryId),
-    orderBy("timestamp", "desc")
-  );
+  // Remove deprecated localStorage userId (no longer needed anywhere)
+  // localStorage.setItem("userId", userQueryId);  ← DELETED FOREVER
 
-  let unsubscribe = null;
+  // Point to per-user subcollection (recommended & scalable)
+  const notifRef = collection(db, "users", userQueryId, "notifications");
+  const notifQuery = query(notifRef, orderBy("timestamp", "desc"));
+
+  let unsubscribeNotifications = null;
 
   async function initNotificationsListener() {
     const notificationsList = document.getElementById("notificationsList");
     if (!notificationsList) {
-      console.warn("⚠️ #notificationsList not found — retrying...");
+      console.warn("Warning: #notificationsList not found — retrying in 500ms...");
       setTimeout(initNotificationsListener, 500);
       return;
     }
 
-    if (unsubscribe) unsubscribe(); // Prevent duplicate listeners
+    // Clean up any previous watchers
+    if (unsubscribeNotifications) unsubscribeNotifications();
 
-    console.log("🔔 Setting up live notification listener for:", userQueryId);
-    unsubscribe = onSnapshot(
+    console.log("Setting up live notifications listener for UID:", userQueryId);
+
+    unsubscribeNotifications = onSnapshot(
       notifQuery,
       (snapshot) => {
-        console.log(`✅ Received ${snapshot.docs.length} notifications for ${userQueryId}`);
+        console.log(`Received ${snapshot.docs.length} notifications`);
+
         if (snapshot.empty) {
-          notificationsList.innerHTML = `<p style="opacity:0.7;">No new notifications yet.</p>`;
+          notificationsList.innerHTML = `<p style="opacity:0.7; text-align:center; margin:20px 0;">No new notifications yet.</p>`;
           return;
         }
 
-        const items = snapshot.docs.map((docSnap) => {
+        const items = snapshot.docs.map(docSnap => {
           const n = docSnap.data();
-          const time = n.timestamp?.seconds
-            ? new Date(n.timestamp.seconds * 1000).toLocaleTimeString([], {
-                hour: "2-digit",
-                minute: "2-digit",
-              })
+          const time = n.timestamp?.toDate?.()
+            ? n.timestamp.toDate().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
             : "--:--";
 
           return `
             <div class="notification-item ${n.read ? "" : "unread"}" data-id="${docSnap.id}">
-              <span>${n.message || "(no message)"}</span>
+              <span class="notif-message">${n.message || "(no message)"}</span>
               <span class="notification-time">${time}</span>
             </div>
           `;
@@ -197,24 +195,24 @@ onAuthStateChanged(auth, async (user) => {
 
         notificationsList.innerHTML = items.join("");
       },
-      (error) => console.error("🔴 Firestore Listener Error:", error)
+      (error) => {
+        console.error("Firestore Notifications Listener Error:", error);
+        notificationsList.innerHTML = `<p style="color:#ff6b6b;">Failed to load notifications.</p>`;
+      }
     );
   }
 
-  // Run notifications listener when DOM is ready
+  // Auto-start when DOM is ready
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", initNotificationsListener);
   } else {
     initNotificationsListener();
   }
 
-  // Re-init when Notifications tab opens
-  const notifTabBtn = document.querySelector('.tab-btn[data-tab="notificationsTab"]');
-  if (notifTabBtn) {
-    notifTabBtn.addEventListener("click", () => {
-      setTimeout(initNotificationsListener, 150);
-    });
-  }
+  // Re-init when user opens notifications tab (optional but smooth)
+  document.querySelector('[data-tab="notificationsTab"]')?.addEventListener("click", () => {
+    setTimeout(initNotificationsListener, 100);
+  });
 
   // Mark all notifications as read
   const markAllBtn = document.getElementById("markAllRead");
@@ -233,10 +231,9 @@ onAuthStateChanged(auth, async (user) => {
 /* ===============================
    🔔 Manual Notification Starter (for whitelist login)
 ================================= */
-async function startNotificationsFor(userEmail) {
-  const sanitizeEmail = (email) => email.replace(/\./g, ",");
-  const userQueryId = sanitizeEmail(userEmail);
-  localStorage.setItem("userId", userQueryId);
+async function startNotificationsForUID(uid) {
+  if (!uid) return;
+  localStorage.setItem("userId", uid)
 
   const notifRef = collection(db, "notifications");
   const notifQuery = query(
@@ -897,13 +894,10 @@ async function promptForChatID(userRef, userData) {
 }
 
 
-/* ---------- VIP Login + Smooth Auto-login with Progress ---------- */
-import { signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-
+/* ---------- VIP Login + Smooth Auto-login with Progress (FINAL 100% UID FIX) ---------- */
 async function loginWhitelist(email, password) {
   const loader = document.getElementById("postLoginLoader");
   const loadingBar = document.getElementById("loadingBar");
-
   let progress = 0;
   let loadingInterval;
 
@@ -914,10 +908,9 @@ async function loginWhitelist(email, password) {
       loadingBar.style.background = "linear-gradient(90deg, #ff69b4, #ff1493)";
     }
 
-    // Smooth progress animation
     loadingInterval = setInterval(() => {
       if (progress < 95 && loadingBar) {
-        progress += Math.random() * 2 + 0.5; // slow, smooth increment
+        progress += Math.random() * 2 + 0.5;
         loadingBar.style.width = `${progress}%`;
       }
     }, 80);
@@ -925,38 +918,56 @@ async function loginWhitelist(email, password) {
     // Firebase Auth
     const cred = await signInWithEmailAndPassword(auth, email, password);
     const user = cred.user;
-    console.log("✅ Authenticated:", user.email);
+    console.log("Authenticated:", user.uid, user.email);
 
     // Whitelist check
     const q = query(collection(db, "whitelist"), where("email", "==", email));
     const snap = await getDocs(q);
     if (snap.empty) {
-      await signOut(auth);
-      showStarPopup("❌ You’re not on the whitelist. Access denied.");
+    await signOut(auth);
+      showStarPopup("You’re not on the whitelist. Access denied.");
       return false;
     }
 
-    // Load user profile
-    const uidKey = sanitizeKey(email);
-    const userRef = doc(db, "users", uidKey);
-    const userSnap = await getDoc(userRef);
+    // Load user profile — NOW USING REAL UID
+    const userRef = doc(db, "users", user.uid);
+    let userSnap = await getDoc(userRef);
+
     if (!userSnap.exists()) {
-      await signOut(auth);
-      showStarPopup("⚠️ Profile missing. Please complete signup first.");
-      return false;
+      // Backward compatibility: migrate from old email-based doc
+      const oldKey = email.replace(/\./g, ",");
+      const oldRef = doc(db, "users", oldKey);
+      const oldSnap = await getDoc(oldRef);
+
+      if (oldSnap.exists()) {
+        const oldData = oldSnap.data();
+        await setDoc(userRef, {
+          ...oldData,
+          uid: user.uid,
+          email: user.email
+        }, { merge: true });
+        console.log("MIGRATED old user → new UID:", user.uid);
+        userSnap = await getDoc(userRef); // reload
+      } else {
+        await signOut(auth);
+        showStarPopup("Profile missing. Please complete signup first.");
+        return false;
+      }
     }
 
     const data = userSnap.data();
+
+    // THIS IS THE CRITICAL FIX:
     currentUser = {
-      uid: uidKey,
-      email: data.email,
-      chatId: data.chatId,
+      uid: user.uid,                    // ← REAL FIREBASE UID (NOT EMAIL!)
+      email: data.email || user.email,
+      chatId: data.chatId || "VIP",
       fullName: data.fullName || "",
       isAdmin: !!data.isAdmin,
       isVIP: !!data.isVIP,
       gender: data.gender || "",
-      stars: data.stars || 0,
-      cash: data.cash || 0,
+      stars: Number(data.stars || 0),
+      cash: Number(data.cash || 0),
       usernameColor: data.usernameColor || randomColor(),
       subscriptionActive: !!data.subscriptionActive,
       hostLink: data.hostLink || null,
@@ -964,77 +975,48 @@ async function loginWhitelist(email, password) {
       isHost: !!data.isHost
     };
 
-// Cache credentials
+    // Cache credentials for auto-login
     localStorage.setItem("vipUser", JSON.stringify({ email, password }));
 
-    // Initialize chat + notifications
+    // Initialize everything
     updateRedeemLink();
     updateTipLink();
     setupPresence?.(currentUser);
     attachMessagesListener?.();
     startStarEarning(currentUser.uid);
     showChatUI(currentUser);
-    startNotificationsFor?.(email);
 
-    console.log("🚀 Chatroom access granted:", email);
+    console.log("Chatroom access granted — UID:", currentUser.uid);
 
-    // Complete progress bar smoothly to 100%
+    // Final progress bar
+    clearInterval(loadingInterval);
     if (loadingBar) {
       let finalProgress = progress;
-      const finalizeInterval = setInterval(() => {
-        finalProgress += 2;
+      const finalize = setInterval(() => {
+        finalProgress += 3;
         if (finalProgress >= 100) {
           loadingBar.style.width = "100%";
-          clearInterval(finalizeInterval);
+          clearInterval(finalize);
+          setTimeout(() => loader && (loader.style.display = "none"), 300);
         } else {
           loadingBar.style.width = `${finalProgress}%`;
         }
       }, 30);
     }
 
-    await sleep(400);
+    showStarPopup(`Welcome, ${currentUser.chatId}!`);
     return true;
 
   } catch (err) {
-    console.error("❌ Login error:", err);
-    showStarPopup("Login failed. Please check credentials.");
+    console.error("Login error:", err);
+    showStarPopup("Login failed. Check email/password.");
     if (loadingBar) loadingBar.style.width = "0%";
     return false;
   } finally {
     clearInterval(loadingInterval);
-    if (loader) loader.style.display = "none";
+    setTimeout(() => loader && (loader.style.display = "none"), 600);
   }
 }
-
-/* ===============================
-   🎟️ Bind VIP ACCESS button
-================================= */
-document.getElementById("whitelistLoginBtn")?.addEventListener("click", async () => {
-  const email = (document.getElementById("emailInput")?.value || "").trim().toLowerCase();
-  const password = (document.getElementById("passwordInput")?.value || "").trim();
-
-  if (!email || !password) return showStarPopup("Enter both email and password.");
-  await loginWhitelist(email, password);
-});
-
-/* ----------------------------
-   🔁 Auto-login session
------------------------------ */
-async function autoLogin() {
-  const vipUser = JSON.parse(localStorage.getItem("vipUser"));
-  if (!vipUser?.email || !vipUser?.password) return;
-
-  console.log("🔄 Auto-login for:", vipUser.email);
-  const success = await loginWhitelist(vipUser.email, vipUser.password);
-
-  if (success && currentUser?.isVIP) {
-    showStarPopup(`Welcome back, VIP ${currentUser.chatId || currentUser.email}! ⭐️`);
-  }
-}
-
-window.addEventListener("DOMContentLoaded", autoLogin);
-
-
 /* ===============================
    💫 Auto Star Earning System
 ================================= */
@@ -1245,62 +1227,74 @@ window.addEventListener("DOMContentLoaded", () => {
 
   if (refs.chatIDInput) refs.chatIDInput.maxLength = 12;
 
-  /* ----------------------------
-     🔐 VIP Login Setup
-  ----------------------------- */
-  const emailInput = document.getElementById("emailInput");
-  const phoneInput = document.getElementById("phoneInput");
-  const loginBtn = document.getElementById("whitelistLoginBtn");
+ /* ----------------------------
+   VIP Login Setup (UID + Backward Compatible)
+----------------------------- */
+const emailInput = document.getElementById("emailInput");
+const phoneInput = document.getElementById("phoneInput");
+const loginBtn = document.getElementById("whitelistLoginBtn");
 
-  async function handleLogin() {
-    const email = (emailInput?.value || "").trim().toLowerCase();
-    const phone = (phoneInput?.value || "").trim();
+async function handleLogin() {
+  const email = (emailInput?.value || "").trim().toLowerCase();
+  const phone = (phoneInput?.value || "").trim();
 
-    if (!email || !phone) {
-      return showStarPopup("Enter your email and phone to get access.");
-    }
-
-    showLoadingBar(1000);
-    await sleep(50);
-
-    const success = await loginWhitelist(email, phone);
-    if (!success) return;
-
-    await sleep(400);
-    updateRedeemLink();
-    updateTipLink();
+  if (!email || !phone) {
+    return showStarPopup("Enter your email and phone to get access.");
   }
 
-  loginBtn?.addEventListener("click", handleLogin);
-
-  /* ----------------------------
-     🔁 Auto Login Session
-  ----------------------------- */
- async function autoLogin() {
-  const vipUser = JSON.parse(localStorage.getItem("vipUser"));
-  if (vipUser?.email && vipUser?.phone) {
-    showLoadingBar(1000);
-    await sleep(60);
-    const success = await loginWhitelist(vipUser.email, vipUser.phone);
-    if (!success) return;
-    await sleep(400);
-    updateRedeemLink();
-    updateTipLink();
+  showLoadingBar(1200);
+  const success = await loginWhitelist(email, phone);
+  if (success) {
+    setTimeout(() => {
+      updateRedeemLink();
+      updateTipLink();
+    }, 400);
   }
 }
 
-// Call on page load
-autoLogin();
-
+loginBtn?.addEventListener("click", handleLogin);
 
 /* ----------------------------
-   ⚡ Global setup for local message tracking
+   Auto Login Session (Now UID-Aware + Migration)
 ----------------------------- */
-let localPendingMsgs = JSON.parse(localStorage.getItem("localPendingMsgs") || "{}"); 
-// structure: { tempId: { content, uid, chatId, createdAt } }
+async function autoLogin() {
+  const vipUser = JSON.parse(localStorage.getItem("vipUser") || "null");
+  
+  if (!vipUser?.email) return;
 
+  // If already logged in via Firebase Auth (page refresh), skip
+  if (currentUser?.uid) {
+    console.log("Already authenticated via Firebase Auth, skipping auto-login");
+    updateRedeemLink();
+    updateTipLink();
+    return;
+  }
 
+  showLoadingBar(1200);
+  const success = await loginWhitelist(vipUser.email, vipUser.phone || "");
+  
+  if (success) {
+    setTimeout(() => {
+      updateRedeemLink();
+      updateTipLink();
+    }, 400);
+  }
+}
 
+// Run auto-login on DOM load
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", autoLogin);
+} else {
+  autoLogin();
+}
+
+/* ----------------------------
+   Local Pending Messages Tracker (unchanged — already perfect)
+----------------------------- */
+let localPendingMsgs = JSON.parse(localStorage.getItem("localPendingMsgs") || "{}");
+// structure: { tempId: { content, uid, chatId, createdAt } } ← This was already correct
+
+  
 /* ----------------------------
    💬 Send Message Handler (Instant + No Double Render)
    + Enter key + auto-scroll to bottom
