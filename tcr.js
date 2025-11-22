@@ -258,62 +258,6 @@ async function initNotificationsListener() {
   }
 });
 
-/* ===============================
-   🔔 Manual Notification Starter (for whitelist login)
-================================= */
-async function startNotificationsFor(userEmail) {
-  const sanitizeEmail = (email) => email.replace(/\./g, ",");
-  const userQueryId = sanitizeEmail(userEmail);
-  localStorage.setItem("userId", userQueryId);
-
-  const notifRef = collection(db, "notifications");
-  const notifQuery = query(
-    notifRef,
-    where("userId", "==", userQueryId),
-    orderBy("timestamp", "desc")
-  );
-
-  const notificationsList = document.getElementById("notificationsList");
-  if (!notificationsList) {
-    console.warn("⚠️ #notificationsList not found yet — retrying...");
-    setTimeout(() => startNotificationsFor(userEmail), 500);
-    return;
-  }
-
-  console.log("🔔 Listening for notifications for:", userQueryId);
-
-  onSnapshot(
-    notifQuery,
-    (snapshot) => {
-      if (snapshot.empty) {
-        notificationsList.innerHTML = `<p style="opacity:0.7;">No new notifications yet.</p>`;
-        return;
-      }
-
-      const html = snapshot.docs.map((docSnap) => {
-        const n = docSnap.data();
-        const time = n.timestamp?.seconds
-          ? new Date(n.timestamp.seconds * 1000).toLocaleTimeString([], {
-              hour: "2-digit",
-              minute: "2-digit",
-            })
-          : "--:--";
-        return `
-          <div class="notification-item ${n.read ? "" : "unread"}" data-id="${docSnap.id}">
-            <span>${n.message}</span>
-            <span class="notification-time">${time}</span>
-          </div>
-        `;
-      }).join("");
-
-      notificationsList.innerHTML = html;
-    },
-    (err) => console.error("🔴 Notification listener error:", err)
-  );
-}
-
-
-
 /* ---------- Helper: Get current user ID ---------- */
 export function getCurrentUserId() {
   return currentUser ? currentUser.uid : localStorage.getItem("userId");
