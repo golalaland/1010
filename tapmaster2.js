@@ -203,6 +203,7 @@ const SESSION_DURATION = 60;
 // ---------- STATE ----------
 let currentUser = null;
 const tapEvent = ('ontouchstart' in window) ? 'touchstart' : 'click';
+window.isInBid = false; // NEW: Flag for bid participation
 
 
 
@@ -292,10 +293,20 @@ async function loadCurrentUserForGame() {
     document.getElementById('playerName') && 
       (document.getElementById('playerName').textContent = currentUser.chatId);
 
+    await checkIfInBid(); // NEW: Check bid status on load
+
   } catch (err) {
     console.error("loadCurrentUserForGame failed:", err);
     currentUser = null;
   }
+}
+
+// NEW: Check if user is already in today's bid (for reloads)
+async function checkIfInBid() {
+  if (!currentUser?.uid) return;
+  const q = query(collection(db, "bids"), where("uid", "==", currentUser.uid), where("roundId", "==", window.CURRENT_ROUND_ID));
+  const snap = await getDocs(q);
+  window.isInBid = !snap.empty;
 }
 
 // ---------- DEDUCT ANIMATION ----------
@@ -690,7 +701,7 @@ async function endSessionRecord() {
     });
 
   // === 3. BID LEADERBOARD — ONLY IF IN ACTIVE BID ===
-if (window.CURRENT_ROUND_ID && sessionTaps > 0) {
+if (window.isInBid && sessionTaps > 0) { // FIXED: Use isInBid flag
   addDoc(collection(db, "taps"), {
     uid: currentUser.uid,
     username: currentUser.chatId || "Player",
@@ -924,7 +935,7 @@ async function fetchLeaderboard(period = "daily", top = 10) {
   try {
     // Try aggregate first (fast)
     const aggRef = doc(db, "leaderboards", `${period}_${key}`);
-    const aggSnap = await getDoc(aggRef);
+    let aggSnap = await getDoc(aggRef);
 
     let topScores = [];
     let myDailyTaps = 0;
@@ -941,8 +952,16 @@ async function fetchLeaderboard(period = "daily", top = 10) {
       // Aggregate missing → do one-time fallback + create it
       console.log(`%cCreating ${period} aggregate...`, "color:#0f9");
       await createLeaderboardAggregate(period, key);
-      // Don't reload — just use fallback data from creation
-      topScores = [];  // will be populated in createLeaderboardAggregate
+      // FIXED: Refetch after creation
+      aggSnap = await getDoc(aggRef);
+      if (aggSnap.exists()) {
+        const data = aggSnap.data();
+        topScores = data.top15 || [];
+        myDailyTaps = data.scores?.[currentUser?.uid] || 0;
+        if (currentUser && data.fullRanks?.[currentUser.uid]) {
+          myRank = data.fullRanks[currentUser.uid];
+        }
+      }
     }
 
     // Update my stats (always works)
@@ -1591,11 +1610,13 @@ document.getElementById('finalConfirmBtn')?.addEventListener('click', async () =
     // Join the bid — this is what allows their taps to count
     await addDoc(collection(db, "bids"), {
       uid: currentUser.uid,
-      username: currentUser.username || currentUser.displayName || "Warrior",
+      username: currentUser.chatId || "Player",
       roundId: CURRENT_ROUND_ID,
       status: "active",
       joinedAt: serverTimestamp()
     });
+
+    window.isInBid = true; // NEW: Set flag after successful join
 
     await showNiceAlert("You're IN!\nPrize pool +₦100\nStart tapping NOW!");
 
@@ -1683,20 +1704,20 @@ function startDailyBidEngine() {
 
     const roundRef = doc(db, "rounds", CURRENT_ROUND_ID);
 
-    unsubStats = onSnapshot(roundRef, (snap) => {
+    unsubStats = onSnapshot(roundRef, async (snap) => { // FIXED: Added async for await
+      if (!snap.exists()) {
+        await createMissingAggregate(); // FIXED: Await creation and return to refresh snapshot
+        return;
+      }
+
       let activePlayers = 0;
       let prizePool = 50000;
       let leaderboard = [];
 
-      if (snap.exists()) {
-        const d = snap.data();
-        activePlayers = d.activePlayers || 0;
-        prizePool = d.prizePool || 50000;
-        leaderboard = d.leaderboard || [];
-      } else {
-        createMissingAggregate();
-        return;
-      }
+      const d = snap.data();
+      activePlayers = d.activePlayers || 0;
+      prizePool = d.prizePool || 50000;
+      leaderboard = d.leaderboard || [];
 
       playersEl.textContent = activePlayers;
       prizeEl.textContent = "₦" + prizePool.toLocaleString();
