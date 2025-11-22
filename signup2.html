@@ -295,8 +295,13 @@ Replace yeah?
 </html>
 
 <script type="module">
+<script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, doc, setDoc, getDoc, updateDoc, query, collection, where, getDocs, arrayUnion, orderBy, limit, serverTimestamp, increment } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { 
+  getFirestore, doc, setDoc, updateDoc, getDoc, getDocs, 
+  collection, query, where, orderBy, limit, serverTimestamp, 
+  arrayUnion, increment 
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 const firebaseConfig = {
@@ -349,12 +354,13 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   async function isChatIdTaken(chatId) {
-    const q = query(collection(db, "users"), where("chatIdLower", "==", chatId.toLowerCase()));
-    const snapshot = await getDocs(q);
-    return !snapshot.empty;
+    try {
+      const q = query(collection(db, "users"), where("chatIdLower", "==", chatId.toLowerCase()));
+      const snap = await getDocs(q);
+      return !snap.empty;
+    } catch (e) { return false; }
   }
 
-  // Gender & VIP handlers (unchanged)
   femaleBtn.onclick = () => { gender = 'Female'; femaleBtn.classList.add('selected'); maleBtn.classList.remove('selected'); };
   maleBtn.onclick = () => { gender = 'Male'; maleBtn.classList.add('selected'); femaleBtn.classList.remove('selected'); };
   vipToggle.onclick = () => {
@@ -365,51 +371,47 @@ document.addEventListener('DOMContentLoaded', () => {
     if (isVIP) triggerSprayConfetti();
   };
 
-  // DOB max date
-  const today = new Date();
-  const maxDate = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate());
-  dobInput.max = maxDate.toISOString().split('T')[0];
+  dobInput.max = new Date(new Date().getFullYear() - 18, new Date().getMonth(), new Date().getDate()).toISOString().split('T')[0];
 
-  // FOMO popup (unchanged)
+  // FOMO
   async function showFOMO() {
-    const q = query(collection(db, "users"), orderBy("createdAt", "desc"), limit(10));
-    const snapshot = await getDocs(q);
-    const users = [];
-    snapshot.forEach(doc => {
-      const d = doc.data();
-      users.push({ chatId: d.chatId || 'someone', color: d.usernameColor || '#FFD700', vip: !!d.isVIP });
-    });
-    if (!users.length) return;
-    let i = 0;
-    setInterval(() => {
-      const u = users[i++ % users.length];
-      fomoPopup.innerHTML = `<span style="color:${u.color};font-weight:bold">${u.chatId}</span> just joined as ${u.vip ? 'VIP 🎉' : 'Host 🎈'}`;
-      fomoPopup.style.opacity = '1';
-      setTimeout(() => fomoPopup.style.opacity = '0', 3000);
-    }, 10000);
+    try {
+      const q = query(collection(db, "users"), orderBy("createdAt", "desc"), limit(10));
+      const snap = await getDocs(q);
+      const users = [];
+      snap.forEach(doc => {
+        const d = doc.data();
+        users.push({ chatId: d.chatId || 'someone', color: d.usernameColor || '#FFD700', vip: !!d.isVIP });
+      });
+      if (!users.length) return;
+      let i = 0;
+      setInterval(() => {
+        const u = users[i++ % users.length];
+        fomoPopup.innerHTML = `<span style="color:${u.color};font-weight:bold">${u.chatId}</span> just joined as ${u.vip ? 'VIP' : 'Host'} ${u.vip ? 'Party' : 'Flower'}`;
+        fomoPopup.style.opacity = '1';
+        setTimeout(() => fomoPopup.style.opacity = '0', 3000);
+      }, 10000);
+    } catch(e) {}
   }
   showFOMO();
 
-  // FIND INVITER (supports both old email-doc and new uid-doc)
   async function findInviter(ref) {
     if (!ref) return null;
-    // Try by chatId first
-    const byChat = query(collection(db, "users"), where("chatIdLower", "==", ref.toLowerCase()), limit(1));
-    const snap1 = await getDocs(byChat);
-    if (!snap1.empty) return { ref: snap1.docs[0].ref, data: snap1.docs[0].data() };
-    // Try by UID (if ref is a UID)
     try {
-      const docRef = doc(db, "users", ref);
-      const snap = await getDoc(docRef);
-      if (snap.exists()) return { ref: docRef, data: snap.data() };
+      const byChat = query(collection(db, "users"), where("chatIdLower", "==", ref.toLowerCase()), limit(1));
+      const snap = await getDocs(byChat);
+      if (!snap.empty) return { ref: snap.docs[0].ref, data: snap.docs[0].data() };
+      const byUid = doc(db, "users", ref);
+      const docSnap = await getDoc(byUid);
+      if (docSnap.exists()) return { ref: byUid, data: docSnap.data() };
     } catch(e) {}
     return null;
   }
 
-  // FINAL WORKING SIGNUP HANDLER
   submitBtn.addEventListener('click', async () => {
     const fullName = nameInput.value.trim();
-    const chatId = cleanChatId(chatIdInput.value.trim());
+    const chatIdRaw = chatIdInput.value.trim();
+    const chatId = cleanChatId(chatIdRaw);
     const phone = phoneInput.value.trim();
     const email = emailInput.value.trim().toLowerCase();
     const dob = dobInput.value;
@@ -419,7 +421,7 @@ document.addEventListener('DOMContentLoaded', () => {
       messageEl.textContent = 'Fill all fields'; return;
     }
     if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#^])[A-Za-z\d@$!%*?&#^]{8,}$/.test(password)) {
-      messageEl.textContent = 'Password: 8+ chars, A,a,1,!'; return;
+      messageEl.textContent = 'Password too weak'; return;
     }
     if (calculateAge(dob) < 18) { messageEl.textContent = 'Must be 18+'; return; }
     if (chatId.length < 5 || chatId.length > 15) { messageEl.textContent = 'Username 5–15 chars'; return; }
@@ -427,20 +429,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
     spinner.style.display = 'inline-block';
     btnText.style.display = 'none';
-    messageEl.textContent = 'Creating account...';
+    messageEl.textContent = 'Creating your profile...';
     submitBtn.disabled = true;
 
     try {
-      // 1. Check username
       if (await isChatIdTaken(chatId)) {
-        messageEl.textContent = 'Username taken'; return;
+        messageEl.textContent = 'Username taken'; 
+        spinner.style.display = 'none'; btnText.style.display = 'inline'; submitBtn.disabled = false;
+        return;
       }
 
-      // 2. Create Auth user
       const cred = await createUserWithEmailAndPassword(auth, email, password);
       const uid = cred.user.uid;
 
-      // 3. Get country
       let country = 'Unknown';
       try {
         const res = await fetch('https://ipapi.co/json/');
@@ -448,12 +449,12 @@ document.addEventListener('DOMContentLoaded', () => {
         country = data.country_name || 'Unknown';
       } catch(e) {}
 
-      // 4. Find inviter
       const inviter = referrer ? await findInviter(referrer) : null;
 
-      // 5. CREATE USER DOCUMENT USING UID AS ID — THIS IS THE KEY
+      const nowIso = new Date().toISOString();
       const userRef = doc(db, "users", uid);
-      const userData = {
+
+      await setDoc(userRef, {
         uid,
         fullName,
         chatId,
@@ -463,45 +464,75 @@ document.addEventListener('DOMContentLoaded', () => {
         dob,
         age: calculateAge(dob),
         gender,
+        phoneVerified: false,
+        emailVerified: false,
+        isAdmin: false,
         isVIP: !!isVIP,
         isHost: gender === 'Female' && !isVIP,
+        featuredHosts: false,
         invitedBy: inviter?.data?.uid || null,
         hostName: inviter?.data?.chatId || (referrer && !referrer.includes('@') ? referrer : null),
         referral: referrer || null,
         hostLink: (gender === 'Female' && !isVIP) ? `https://golalaland.github.io/chat/ref.html?ref=${chatId}` : null,
         vipName: isVIP ? chatId : null,
         country,
+        city: "", location: "", bankName: "", bankAccountNumber: "",
+        instagram: "", tiktok: "", whatsapp: "", telegram: "",
+        bioPick: "", naturePick: "", fruitPick: "", videoUrl: "",
         stars: 50,
+        starsToday: 0,
         starsGifted: 0,
-        cash: 0, points: 0, views: 0,
+        lastStarDate: nowIso.split("T")[0],
+        cash: 0, points: 0, gifts: 0,
+        views: 0,
+        inviteeGiftStars: 0,
         usernameColor: '#' + Math.floor(Math.random()*16777215).toString(16),
+        socialShare: gender === 'Female' && !isVIP,
+        subscriptionActive: false,
+        subscriptionCount: 0,
+        subscriptionStartTime: null,
+        subscriptionEndTime: null,
+        inviteeGiftShown: false,
+        hostFriends: [],
+        addedAt: Date.now(),
         createdAt: serverTimestamp(),
         lastUpdated: serverTimestamp()
-      };
+      });
 
-      await setDoc(userRef, userData);
-
-      // 6. Reward inviter
+      // INVITER BONUS — wrapped in try/catch so it NEVER breaks signup
       if (inviter?.ref) {
-        const bonus = isVIP ? 100 : 50;
-        await updateDoc(inviter.ref, {
-          hostFriends: arrayUnion({ chatId, email, uid, isVIP: !!isVIP, addedAt: serverTimestamp() }),
-          stars: increment(bonus),
-          starsGifted: increment(bonus)
-        });
+        try {
+          const bonus = isVIP ? 100 : 50;
+          await updateDoc(inviter.ref, {
+            hostFriends: arrayUnion({
+              chatId,
+              chatIdLower: chatId.toLowerCase(),
+              email,
+              uid,
+              giftShown: true,
+              hostLink: inviter.data.hostLink || null,
+              hostVIP: isVIP ? 1 : 0,
+              addedAt: serverTimestamp()
+            }),
+            stars: increment(bonus),
+            starsGifted: increment(bonus)
+          });
+        } catch (err) {
+          console.warn("Inviter bonus failed (non-critical):", err);
+          // We do NOT fail signup because of this
+        }
       }
 
-      // SUCCESS
-      messageEl.textContent = `Welcome ${fullName}! +50 ⭐`;
+      messageEl.textContent = `Welcome ${fullName}! +50 Stars`;
       localStorage.setItem("user", JSON.stringify({ uid, email, chatId, isVIP }));
       if (isVIP) triggerSprayConfetti();
       setTimeout(() => location.href = "nushop.html", 1800);
 
     } catch (err) {
-      console.error(err);
+      console.error("Signup error:", err);
       messageEl.textContent = err.code === 'auth/email-already-in-use'
         ? 'Email already registered'
-        : 'Signup failed — try again';
+        : 'Try again';
     } finally {
       spinner.style.display = 'none';
       btnText.style.display = 'inline';
