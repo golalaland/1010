@@ -1498,16 +1498,7 @@ async function sendMessage() {
     }, 220);
   }, 1500);
 
-  /* ----------------------------
-     🧩 Tiny Helpers
-  ----------------------------- */
-  const scrollToBottom = el => {
-    if (!el) return;
-    requestAnimationFrame(() => el.scrollTop = el.scrollHeight);
-  };
-  const sleep = ms => new Promise(res => setTimeout(res, ms));
-});
-
+  
 /* =====================================
    🎥 Video Navigation & UI Fade Logic
 ======================================= */
