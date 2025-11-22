@@ -7,6 +7,7 @@ import {
   getDoc,
   updateDoc,
   collection,
+  limit,
   addDoc,
   serverTimestamp,
   onSnapshot,
