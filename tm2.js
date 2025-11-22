@@ -8,7 +8,7 @@
     getFirestore,
     doc,
     getDoc,
-    setdoc,
+    setDoc,
     runTransaction,
     collection,
     addDoc,
