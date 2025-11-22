@@ -1577,7 +1577,6 @@ document.getElementById('finalConfirmBtn')?.addEventListener('click', async () =
 /* ====================== DAILY BID ENGINE — PERFECT TIMER + LIVE PRIZE + BID LEADERBOARD ====================== */
 let bidActive = false;
 let unsubStats = null;
-let unsubLeaderboard = null;
 
 function startDailyBidEngine() {
   const timerEl       = document.getElementById('countdownTimer');
@@ -1585,7 +1584,7 @@ function startDailyBidEngine() {
   const prizeEl       = document.getElementById('livePrize');
   const leaderboardEl = document.getElementById('bidLeaderboard');
 
-  if (!timerEl || !playersEl || !prizeEl) {
+  if (!timerEl || !playersEl || !prizeEl || !leaderboardEl) {
     setTimeout(startDailyBidEngine, 500);
     return;
   }
@@ -1614,7 +1613,6 @@ function startDailyBidEngine() {
     const bidEnd   = new Date(`${today}T23:59:00+01:00`).getTime();
     const current = now.getTime();
 
-    // BID IS ACTIVE FROM 00:33 → 23:59
     if (current >= bidStart && current < bidEnd + 60000) {
       bidActive = true;
 
@@ -1627,7 +1625,6 @@ function startDailyBidEngine() {
       timerEl.style.color = secondsLeft < 600 ? "#ff0066" : "#00ff88";
       timerEl.style.fontWeight = "900";
 
-      // End exactly once
       if (secondsLeft === 0 && !timerEl.dataset.ended) {
         timerEl.dataset.ended = "true";
         declareWinnersAndReset();
@@ -1646,10 +1643,8 @@ function startDailyBidEngine() {
       timerEl.style.color = "#666";
     }
 
-    // === NEW OPTIMIZED VERSION — 1 listener only (future-proof for Cloud Functions) ===
-        // OPTIMIZED: ONE LISTENER ONLY + AUTO-CREATES AGGREGATE (99% read reduction)
+    // ——— OPTIMIZED LEADERBOARD & PRIZE (1 listener only) ———
     if (unsubStats) unsubStats();
-    if (unsubLeaderboard) unsubLeaderboard();
 
     const roundRef = doc(db, "rounds", CURRENT_ROUND_ID);
 
@@ -1664,7 +1659,7 @@ function startDailyBidEngine() {
         prizePool = d.prizePool || 50000;
         leaderboard = d.leaderboard || [];
       } else {
-        createMissingAggregate(); // first visitor today creates it
+        createMissingAggregate();
         return;
       }
 
@@ -1687,7 +1682,6 @@ function startDailyBidEngine() {
       }
     });
 
-    // One-time creation of the aggregate doc (only runs when missing)
     async function createMissingAggregate() {
       try {
         const [bidsSnap, tapsSnap] = await Promise.all([
@@ -1717,24 +1711,26 @@ function startDailyBidEngine() {
         }, { merge: true });
 
       } catch (e) {
-        console.log("First aggregate failed — will retry next refresh");
+        console.log("First aggregate failed — retrying later");
       }
     }
-    
-// Keep your payout function
+  }
+
+  // Run timer every second
+  updateTimerAndStats();
+  setInterval(updateTimerAndStats, 1000);
+}
+
+// Payout function (keep yours)
 async function declareWinnersAndReset() {
   console.log("BID ENDED — PAYING TOP 5 FROM BID LEADERBOARD");
   // Your winner logic here
 }
+
+// Start engine once
 if (!window.bidEngineStarted) {
   window.bidEngineStarted = true;
-  
-  // Start the timer (clock)
-  updateTimerAndStats();
-  setInterval(updateTimerAndStats, 1000);
-  
-  // Start the optimized leaderboard + prize system
-  startDailyBidEngine();   // this is now the NEW optimized version
+  startDailyBidEngine();
 }
 
 // ---------- AUDIO UNLOCK (required for mobile) ----------
@@ -2016,10 +2012,12 @@ async function claimWeeklyStreak() {
   }
 }
 
+// ————————————————————————
 // AUTO CALL THIS AFTER USER LOADS
+// ————————————————————————
 document.addEventListener("DOMContentLoaded", async () => {
   await loadCurrentUserForGame();
-  await startWeeklyStreakSystem(); // THIS MAKES IT LIVE
+  await startWeeklyStreakSystem();
 });
 
 // Click to claim
