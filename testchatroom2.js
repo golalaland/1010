@@ -660,14 +660,16 @@ async function promptForChatID(userRef, userData) {
   });
 }
 
-/* ---------- VIP Login + Smooth Auto-login with Progress (FINAL 100% UID FIX) ---------- */
+/* ========== VIP LOGIN + SMOOTH AUTO-LOGIN (FINAL UID-SAFE VERSION) ========== */
 async function loginWhitelist(email, password) {
   const loader = document.getElementById("postLoginLoader");
   const loadingBar = document.getElementById("loadingBar");
+
   let progress = 0;
-  let loadingInterval;
+  let loadingInterval = null;
 
   try {
+    // Show loader
     if (loader) loader.style.display = "flex";
     if (loadingBar) {
       loadingBar.style.width = "0%";
@@ -675,158 +677,153 @@ async function loginWhitelist(email, password) {
     }
 
     loadingInterval = setInterval(() => {
-      if (progress < 95 && loadingBar) {
-        progress += Math.random() * 2 + 0.5;
+      if (progress < 92) {
+        progress += Math.random() * 3 + 0.8;
         loadingBar.style.width = `${progress}%`;
       }
     }, 80);
 
     // Firebase Auth
     const cred = await signInWithEmailAndPassword(auth, email, password);
-    const user = cred.user;
-    console.log("Authenticated:", user.uid, user.email);
+    const firebaseUser = cred.user;
+
+    log("Authenticated Firebase UID:", firebaseUser.uid);
 
     // Whitelist check
-    const q = query(collection(db, "whitelist"), where("email", "==", email));
-    const snap = await getDocs(q);
-    if (snap.empty) {
-    await signOut(auth);
-      showStarPopup("You’re not on the whitelist. Access denied.");
+    const whitelistQuery = query(collection(db, "whitelist"), where("email", "==", email));
+    const whitelistSnap = await getDocs(whitelistQuery);
+
+    if (whitelistSnap.empty) {
+      await signOut(auth);
+      showStarPopup("Not on whitelist. Access denied.");
       return false;
     }
 
-    // Load user profile — NOW USING REAL UID
-    const userRef = doc(db, "users", user.uid);
+    // Load or migrate user profile
+    const userRef = doc(db, "users", firebaseUser.uid);
     let userSnap = await getDoc(userRef);
 
     if (!userSnap.exists()) {
-      // Backward compatibility: migrate from old email-based doc
-      const oldKey = email.replace(/\./g, ",");
-      const oldRef = doc(db, "users", oldKey);
-      const oldSnap = await getDoc(oldRef);
+      // Backward compatibility: try old email-based doc
+      const legacyId = email.replace(/\./g, ",");
+      const legacyRef = doc(db, "users", legacyId);
+      const legacySnap = await getDoc(legacyRef);
 
-      if (oldSnap.exists()) {
-        const oldData = oldSnap.data();
+      if (legacySnap.exists()) {
+        const legacyData = legacySnap.data();
         await setDoc(userRef, {
-          ...oldData,
-          uid: user.uid,
-          email: user.email
+          ...legacyData,
+          uid: firebaseUser.uid,
+          email: firebaseUser.email
         }, { merge: true });
-        console.log("MIGRATED old user → new UID:", user.uid);
-        userSnap = await getDoc(userRef); // reload
+        log("Migrated legacy user to UID:", firebaseUser.uid);
+        userSnap = await getDoc(userRef);
       } else {
         await signOut(auth);
-        showStarPopup("Profile missing. Please complete signup first.");
+        showStarPopup("Profile not found. Contact support.");
         return false;
       }
     }
 
     const data = userSnap.data();
 
-    // THIS IS THE CRITICAL FIX:
+    // FINAL SAFE currentUser assignment
     currentUser = {
-      uid: user.uid,                    // ← REAL FIREBASE UID (NOT EMAIL!)
-      email: data.email || user.email,
+      uid: firebaseUser.uid,
+      email: data.email || firebaseUser.email,
       chatId: data.chatId || "VIP",
       fullName: data.fullName || "",
       isAdmin: !!data.isAdmin,
       isVIP: !!data.isVIP,
+      isHost: !!data.isHost,
       gender: data.gender || "",
       stars: Number(data.stars || 0),
       cash: Number(data.cash || 0),
       usernameColor: data.usernameColor || randomColor(),
       subscriptionActive: !!data.subscriptionActive,
       hostLink: data.hostLink || null,
-      invitedBy: data.invitedBy || null,
-      isHost: !!data.isHost
+      invitedBy: data.invitedBy || null
     };
 
-    // Cache credentials for auto-login
+    window.currentUser = currentUser;
+    localStorage.setItem("userId", currentUser.uid); // backup
     localStorage.setItem("vipUser", JSON.stringify({ email, password }));
 
-    // Initialize everything
+    // Init systems
     updateRedeemLink();
     updateTipLink();
-    setupPresence?.(currentUser);
-    attachMessagesListener?.();
+    setupPresence(currentUser);
+    attachMessagesListener();
     startStarEarning(currentUser.uid);
     showChatUI(currentUser);
 
-    console.log("Chatroom access granted — UID:", currentUser.uid);
-
-    // Final progress bar
+    // Final progress animation
     clearInterval(loadingInterval);
     if (loadingBar) {
-      let finalProgress = progress;
       const finalize = setInterval(() => {
-        finalProgress += 3;
-        if (finalProgress >= 100) {
+        progress += 4;
+        if (progress >= 100) {
           loadingBar.style.width = "100%";
           clearInterval(finalize);
           setTimeout(() => loader && (loader.style.display = "none"), 300);
         } else {
-          loadingBar.style.width = `${finalProgress}%`;
+          loadingBar.style.width = `${progress}%`;
         }
       }, 30);
     }
 
-    showStarPopup(`Welcome, ${currentUser.chatId}!`);
+    showStarPopup(`Welcome back, ${currentUser.chatId}!`);
     return true;
 
   } catch (err) {
-    console.error("Login error:", err);
-    showStarPopup("Login failed. Check email/password.");
+    error("Login failed:", err.message);
+    showStarPopup("Login failed. Check credentials.");
     if (loadingBar) loadingBar.style.width = "0%";
     return false;
   } finally {
     clearInterval(loadingInterval);
-    setTimeout(() => loader && (loader.style.display = "none"), 600);
+    setTimeout(() => loader && (loader.style.display = "none"), 800);
   }
 }
-/* ===============================
-   💫 Auto Star Earning System
-================================= */
+
+/* ========== AUTO STAR EARNING SYSTEM (SMOOTH + DAILY LIMIT) ========== */
 function startStarEarning(uid) {
-  if (!uid) return;
-  if (starInterval) clearInterval(starInterval);
+  if (!uid || starInterval) return;
 
   const userRef = doc(db, "users", uid);
   let displayedStars = currentUser.stars || 0;
-  let animationTimeout = null;
+  let animationFrame = null;
 
-  // ✨ Smooth UI update
-  const animateStarCount = target => {
+  const animateStars = (target) => {
     if (!refs.starCountEl) return;
-    const diff = target - displayedStars;
 
+    const diff = target - displayedStars;
     if (Math.abs(diff) < 1) {
       displayedStars = target;
-      refs.starCountEl.textContent = formatNumberWithCommas(displayedStars);
+      refs.starCountEl.textContent = formatNumber(displayedStars);
       return;
     }
 
-    displayedStars += diff * 0.25; // smoother easing
-    refs.starCountEl.textContent = formatNumberWithCommas(Math.floor(displayedStars));
-    animationTimeout = setTimeout(() => animateStarCount(target), 40);
+    displayedStars += diff * 0.2;
+    refs.starCountEl.textContent = formatNumber(Math.round(displayedStars));
+    animationFrame = requestAnimationFrame(() => animateStars(target));
   };
 
-  // 🔄 Real-time listener
-  onSnapshot(userRef, snap => {
+  // Real-time stars sync
+  onSnapshot(userRef, (snap) => {
     if (!snap.exists()) return;
-    const data = snap.data();
-    const targetStars = data.stars || 0;
-    currentUser.stars = targetStars;
+    const stars = snap.data().stars || 0;
+    currentUser.stars = stars;
 
-    if (animationTimeout) clearTimeout(animationTimeout);
-    animateStarCount(targetStars);
+    if (animationFrame) cancelAnimationFrame(animationFrame);
+    animateStars(stars);
 
-    // 🎉 Milestone popup
-    if (targetStars > 0 && targetStars % 1000 === 0) {
-      showStarPopup(`🔥 Congrats! You’ve reached ${formatNumberWithCommas(targetStars)} stars!`);
+    if (stars > 0 && stars % 1000 === 0) {
+      showStarPopup(`Congrats! ${formatNumber(stars)} stars!`);
     }
   });
 
-  // ⏱️ Increment loop
+  // Daily earning (10 stars/min, max 250/day)
   starInterval = setInterval(async () => {
     if (!navigator.onLine) return;
 
@@ -834,143 +831,95 @@ function startStarEarning(uid) {
     if (!snap.exists()) return;
 
     const data = snap.data();
-    const today = todayDate();
+    const today = new Date().toISOString().split("T")[0];
 
-    // Reset daily count
     if (data.lastStarDate !== today) {
       await updateDoc(userRef, { starsToday: 0, lastStarDate: today });
-      return;
     }
 
-    // Limit: 250/day
     if ((data.starsToday || 0) < 250) {
       await updateDoc(userRef, {
         stars: increment(10),
         starsToday: increment(10)
       });
     }
-  }, 60000);
+  }, CONFIG.STAR_EARNING_INTERVAL_MS);
 
-  // 🧹 Cleanup
-  window.addEventListener("beforeunload", () => clearInterval(starInterval));
+  // Cleanup
+  window.addEventListener("beforeunload", () => {
+    if (starInterval) clearInterval(starInterval);
+    if (animationFrame) cancelAnimationFrame(animationFrame);
+  });
 }
 
-/* ===============================
-   🧩 Helper Functions
-================================= */
+/* ========== HELPER FUNCTIONS ========== */
 const todayDate = () => new Date().toISOString().split("T")[0];
-const sleep = ms => new Promise(res => setTimeout(res, ms));
+const formatNumber = n => new Intl.NumberFormat("en-NG").format(n || 0);
 
-
-/* ===============================
-   🧠 UI Updates After Auth (Improved)
-================================= */
+/* ========== UI STATE MANAGEMENT ========== */
 function updateUIAfterAuth(user) {
-  const subtitle = document.getElementById("roomSubtitle");
-  const helloText = document.getElementById("helloText");
-  const roomDescText = document.querySelector(".room-desc .text");
-  const hostsBtn = document.getElementById("openHostsBtn");
-  const loginBar = document.getElementById("loginBar"); // adjust if different ID
-
-  // Keep Star Hosts button always visible
-  if (hostsBtn) hostsBtn.style.display = "block";
+  const elements = {
+    subtitle: document.getElementById("roomSubtitle"),
+    helloText: document.getElementById("helloText"),
+    roomDesc: document.querySelector(".room-desc .text"),
+    hostsBtn: document.getElementById("openHostsBtn"),
+    loginBar: document.getElementById("loginBar")
+  };
 
   if (user) {
-    // Hide intro texts only for logged-in users
-    if (subtitle) subtitle.style.display = "none";
-    if (helloText) helloText.style.display = "none";
-    if (roomDescText) roomDescText.style.display = "none";
-
-    if (loginBar) loginBar.style.display = "flex";
+    elements.subtitle && (elements.subtitle.style.display = "none");
+    elements.helloText && (elements.helloText.style.display = "none");
+    elements.roomDesc && (elements.roomDesc.style.display = "none");
   } else {
-    // Show intro texts for guests
-    if (subtitle) subtitle.style.display = "block";
-    if (helloText) helloText.style.display = "block";
-    if (roomDescText) roomDescText.style.display = "block";
-
-    if (loginBar) loginBar.style.display = "flex";
+    elements.subtitle && (elements.subtitle.style.display = "block");
+    elements.helloText && (elements.helloText.style.display = "block");
+    elements.roomDesc && (elements.roomDesc.style.display = "block");
   }
+
+  if (elements.hostsBtn) elements.hostsBtn.style.display = "block";
+  if (elements.loginBar) elements.loginBar.style.display = "flex";
 }
 
-/* ===============================
-   💬 Show Chat UI After Login
-================================= */
 function showChatUI(user) {
-  const { authBox, sendAreaEl, profileBoxEl, profileNameEl, starCountEl, cashCountEl, adminControlsEl } = refs;
+  document.getElementById("emailAuthWrapper")?.style.setProperty("display", "none");
+  document.getElementById("googleSignInBtn")?.style.setProperty("display", "none");
+  document.getElementById("vipAccessBtn")?.style.setProperty("display", "none");
 
-  // Hide login/auth elements
-  document.getElementById("emailAuthWrapper")?.style?.setProperty("display", "none");
-  document.getElementById("googleSignInBtn")?.style?.setProperty("display", "none");
-  document.getElementById("vipAccessBtn")?.style?.setProperty("display", "none");
+  const {
+    authBox, sendAreaEl, profileBoxEl, profileNameEl,
+    starCountEl, cashCountEl, adminControlsEl
+  } = refs;
 
-  // Show chat interface
   authBox && (authBox.style.display = "none");
   sendAreaEl && (sendAreaEl.style.display = "flex");
   profileBoxEl && (profileBoxEl.style.display = "block");
 
   if (profileNameEl) {
-    profileNameEl.innerText = user.chatId;
-    profileNameEl.style.color = user.usernameColor;
+    profileNameEl.textContent = user.chatId;
+    profileNameEl.style.color = user.usernameColor || "#fff";
   }
-
-  if (starCountEl) starCountEl.textContent = formatNumberWithCommas(user.stars);
-  if (cashCountEl) cashCountEl.textContent = formatNumberWithCommas(user.cash);
+  if (starCountEl) starCountEl.textContent = formatNumber(user.stars);
+  if (cashCountEl) cashCountEl.textContent = formatNumber(user.cash);
   if (adminControlsEl) adminControlsEl.style.display = user.isAdmin ? "flex" : "none";
 
-  // 🔹 Apply additional UI updates (hide intro, show hosts)
   updateUIAfterAuth(user);
 }
 
-/* ===============================
-   🚪 Hide Chat UI On Logout
-================================= */
 function hideChatUI() {
   const { authBox, sendAreaEl, profileBoxEl, adminControlsEl } = refs;
 
   authBox && (authBox.style.display = "block");
   sendAreaEl && (sendAreaEl.style.display = "none");
   profileBoxEl && (profileBoxEl.style.display = "none");
-  if (adminControlsEl) adminControlsEl.style.display = "none";
+  adminControlsEl && (adminControlsEl.style.display = "none");
 
-  // 🔹 Restore intro UI (subtitle, hello text, etc.)
   updateUIAfterAuth(null);
 }
 
-/* =======================================
-   🚀 DOMContentLoaded Bootstrap
-======================================= */
-window.addEventListener("DOMContentLoaded", () => {
-
-  /* ----------------------------
-     ⚡ Smooth Loading Bar Helper
-  ----------------------------- */
-  function showLoadingBar(duration = 1000) {
-    const postLoginLoader = document.getElementById("postLoginLoader");
-    const loadingBar = document.getElementById("loadingBar");
-    if (!postLoginLoader || !loadingBar) return;
-
-    postLoginLoader.style.display = "flex";
-    loadingBar.style.width = "0%";
-
-    let progress = 0;
-    const interval = 50;
-    const step = 100 / (duration / interval);
-
-    const loadingInterval = setInterval(() => {
-      progress += step + Math.random() * 4; // adds organic feel
-      loadingBar.style.width = `${Math.min(progress, 100)}%`;
-
-      if (progress >= 100) {
-        clearInterval(loadingInterval);
-        setTimeout(() => postLoginLoader.style.display = "none", 250);
-      }
-    }, interval);
-  }
-
-  /* ----------------------------
-     🧩 Cache DOM References
-  ----------------------------- */
-  refs = {
+/* ========== DOM READY + AUTO-LOGIN (PERFECT FLOW) ========== */
+document.addEventListener("DOMContentLoaded", async () => {
+  // Cache DOM refs
+  Object.assign(refs, {
     authBox: document.getElementById("authBox"),
     messagesEl: document.getElementById("messages"),
     sendAreaEl: document.getElementById("sendArea"),
@@ -985,74 +934,42 @@ window.addEventListener("DOMContentLoaded", () => {
     tipBtn: document.getElementById("tipBtn"),
     onlineCountEl: document.getElementById("onlineCount"),
     adminControlsEl: document.getElementById("adminControls"),
-    adminClearMessagesBtn: document.getElementById("adminClearMessagesBtn"),
     chatIDModal: document.getElementById("chatIDModal"),
     chatIDInput: document.getElementById("chatIDInput"),
     chatIDConfirmBtn: document.getElementById("chatIDConfirmBtn")
-  };
+  });
 
   if (refs.chatIDInput) refs.chatIDInput.maxLength = 12;
 
- /* ----------------------------
-   VIP Login Setup (UID + Backward Compatible)
------------------------------ */
-const emailInput = document.getElementById("emailInput");
-const phoneInput = document.getElementById("phoneInput");
-const loginBtn = document.getElementById("whitelistLoginBtn");
+  // Login button
+  const loginBtn = document.getElementById("whitelistLoginBtn");
+  const emailInput = document.getElementById("emailInput");
+  const phoneInput = document.getElementById("phoneInput");
 
-async function handleLogin() {
-  const email = (emailInput?.value || "").trim().toLowerCase();
-  const phone = (phoneInput?.value || "").trim();
+  loginBtn?.addEventListener("click", async () => {
+    const email = emailInput?.value.trim().toLowerCase();
+    const password = phoneInput?.value.trim(); // using phone as password field
 
-  if (!email || !phone) {
-    return showStarPopup("Enter your email and phone to get access.");
-  }
+    if (!email || !password) {
+      showStarPopup("Enter email and password");
+      return;
+    }
 
-  showLoadingBar(1200);
-  const success = await loginWhitelist(email, phone);
-  if (success) {
-    setTimeout(() => {
-      updateRedeemLink();
-      updateTipLink();
-    }, 400);
-  }
-}
+    await loginWhitelist(email, password);
+  });
 
-loginBtn?.addEventListener("click", handleLogin);
-
-/* ----------------------------
-   Auto Login Session (Now UID-Aware + Migration)
------------------------------ */
-async function autoLogin() {
-  const vipUser = JSON.parse(localStorage.getItem("vipUser") || "null");
-  
-  if (!vipUser?.email) return;
-
-  // If already logged in via Firebase Auth (page refresh), skip
-  if (currentUser?.uid) {
-    console.log("Already authenticated via Firebase Auth, skipping auto-login");
+  // AUTO-LOGIN (only if not already logged in)
+  const saved = JSON.parse(localStorage.getItem("vipUser") || "null");
+  if (saved?.email && !currentUser?.uid) {
+    log("Attempting auto-login...");
+    await loginWhitelist(saved.email, saved.password || saved.phone || "");
+  } else if (currentUser?.uid) {
+    log("Already logged in (persisted UID)");
+    showChatUI(currentUser);
     updateRedeemLink();
     updateTipLink();
-    return;
   }
-
-  showLoadingBar(1200);
-  const success = await loginWhitelist(vipUser.email, vipUser.phone || "");
-  
-  if (success) {
-    setTimeout(() => {
-      updateRedeemLink();
-      updateTipLink();
-    }, 400);
-  }
-}
-
-// Run auto-login on DOM load
-if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", autoLogin);
-} else {
-  autoLogin();
-}
+});
 
 /* ----------------------------
    Local Pending Messages Tracker (unchanged — already perfect)
