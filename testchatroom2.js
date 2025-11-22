@@ -854,7 +854,6 @@ function startStarEarning(uid) {
 
 /* ========== HELPER FUNCTIONS ========== */
 const todayDate = () => new Date().toISOString().split("T")[0];
-const formatNumber = n => new Intl.NumberFormat("en-NG").format(n || 0);
 
 /* ========== UI STATE MANAGEMENT ========== */
 function updateUIAfterAuth(user) {
