@@ -143,63 +143,89 @@ onAuthStateChanged(auth, async (user) => {
     console.error("⚠️ Sync unlocks failed:", err);
   }
 
-  // ---------- Notifications Setup ----------
-  const sanitizeEmail = (email) => email.replace(/\./g, ",");
-  const userQueryId = sanitizeEmail(currentUser.email);
-  console.log("📩 Logged in as Sanitized ID:", userQueryId);
-  localStorage.setItem("userId", userQueryId);
+ /* ============================================================= */
+/*               NOTIFICATIONS SYSTEM – UID-FIRST                */
+/*               Secure • Clean • Real-time • Beautiful          */
+/* ============================================================= */
+
+/**
+ * Initialize live notifications listener using UID only
+ * No email sanitization, no PII in queries — pure UID
+ */
+let notificationsUnsubscribe = null;
+
+async function initNotificationsListener() {
+  // Wait for DOM + currentUser
+  if (!currentUser?.uid) {
+    console.log("Waiting for login to init notifications...");
+    setTimeout(initNotificationsListener, 800);
+    return;
+  }
+
+  const notificationsList = document.getElementById("notificationsList");
+  if (!notificationsList) {
+    console.warn("#notificationsList not found — will retry");
+    setTimeout(initNotificationsListener, 1000);
+    return;
+  }
+
+  // Clean up any old listener
+  if (notificationsUnsubscribe) {
+    notificationsUnsubscribe();
+    notificationsUnsubscribe = null;
+  }
+
+  console.log("Setting up notifications for UID:", currentUser.uid);
 
   const notifRef = collection(db, "notifications");
-  const notifQuery = query(
+  const q = query(
     notifRef,
-    where("userId", "==", userQueryId),
-    orderBy("timestamp", "desc")
+    where("userId", "==", currentUser.uid),        // ← UID only! Safe & fast
+    orderBy("timestamp", "desc"),
+    limit(50)
   );
 
-  let unsubscribe = null;
+  notificationsUnsubscribe = onSnapshot(
+    q,
+    (snapshot) => {
+      if (snapshot.empty) {
+        notificationsList.innerHTML = `
+          <p style="opacity:0.6; text-align:center; padding:20px; font-size:0.95em;">
+            No new notifications yet
+          </p>`;
+        return;
+      }
 
-  async function initNotificationsListener() {
-    const notificationsList = document.getElementById("notificationsList");
-    if (!notificationsList) {
-      console.warn("⚠️ #notificationsList not found — retrying...");
-      setTimeout(initNotificationsListener, 500);
-      return;
+      const items = snapshot.docs.map(docSnap => {
+        const n = docSnap.data();
+        const time = n.timestamp?.toDate?.()
+          ? n.timestamp.toDate().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+          : "--:--";
+
+        const isUnread = !n.read;
+
+        return `
+          <div class="notification-item ${isUnread ? "unread" : ""}" data-id="${docSnap.id}">
+            <div class="notif-message">${n.message || "(no message)"}</div>
+            <div class="notif-time">${time}</div>
+            ${isUnread ? '<div class="unread-dot"></div>' : ''}
+          </div>
+        `;
+      });
+
+      notificationsList.innerHTML = items.join("");
+
+      // Optional: Play sound or vibrate on new unread
+      if (snapshot.docChanges().some(change => change.type === "added" && !change.doc.data().read)) {
+        // playNotificationSound(); // your sound function
+      }
+    },
+    (error) => {
+      console.error("Notifications listener error:", error);
+      notificationsList.innerHTML = `<p style="color:#ff5e5e; text-align:center;">Failed to load notifications</p>`;
     }
-
-    if (unsubscribe) unsubscribe(); // Prevent duplicate listeners
-
-    console.log("🔔 Setting up live notification listener for:", userQueryId);
-    unsubscribe = onSnapshot(
-      notifQuery,
-      (snapshot) => {
-        console.log(`✅ Received ${snapshot.docs.length} notifications for ${userQueryId}`);
-        if (snapshot.empty) {
-          notificationsList.innerHTML = `<p style="opacity:0.7;">No new notifications yet.</p>`;
-          return;
-        }
-
-        const items = snapshot.docs.map((docSnap) => {
-          const n = docSnap.data();
-          const time = n.timestamp?.seconds
-            ? new Date(n.timestamp.seconds * 1000).toLocaleTimeString([], {
-                hour: "2-digit",
-                minute: "2-digit",
-              })
-            : "--:--";
-
-          return `
-            <div class="notification-item ${n.read ? "" : "unread"}" data-id="${docSnap.id}">
-              <span>${n.message || "(no message)"}</span>
-              <span class="notification-time">${time}</span>
-            </div>
-          `;
-        });
-
-        notificationsList.innerHTML = items.join("");
-      },
-      (error) => console.error("🔴 Firestore Listener Error:", error)
-    );
-  }
+  );
+}
 
   // Run notifications listener when DOM is ready
   if (document.readyState === "loading") {
@@ -427,18 +453,56 @@ function updateTipLink() {
   refs.tipBtn.style.display = "inline-block";
 }
 
-/* ---------- Presence (Realtime) ---------- */
+/* ============================================================= */
+/*             REALTIME PRESENCE SYSTEM (UID-First)              */
+/*               Clean • Secure • Beautiful • Modern             */
+/* ============================================================= */
+
+/**
+ * Sets up realtime "online" status for the current user
+ * Uses UID as key → 100% safe & consistent
+ * Stores only display data (chatId) — never sensitive info
+ */
 function setupPresence(user) {
-  if (!rtdb) return;
-  const pRef = rtdbRef(rtdb, `presence/${ROOM_ID}/${sanitizeKey(user.uid)}`);
-  rtdbSet(pRef, { online: true, chatId: user.chatId, email: user.email }).catch(() => {});
-  onDisconnect(pRef).remove().catch(() => {});
+  if (!user?.uid || !rtdb || !ROOM_ID) return;
+
+  const uidKey = user.uid; // ← UID is already safe for RTDB keys
+  const presenceRef = rtdbRef(rtdb, `presence/${ROOM_ID}/${uidKey}`);
+
+  // Mark as online
+  rtdbSet(presenceRef, {
+    online: true,
+    chatId: user.chatId || "VIP",
+    username: user.username || user.chatId || "User",
+    lastSeen: serverTimestamp()
+  }).catch(err => console.warn("Presence set failed:", err));
+
+  // Auto-remove when user disconnects (tab close, crash, network loss)
+  onDisconnect(presenceRef)
+    .remove()
+    .catch(err => console.warn("onDisconnect failed:", err));
 }
 
-if (rtdb) {
-  onValue(rtdbRef(rtdb, `presence/${ROOM_ID}`), snap => {
-    const users = snap.val() || {};
-    if (refs.onlineCountEl) refs.onlineCountEl.innerText = `(${Object.keys(users).length} online)`;
+/**
+ * Listen to online user count in current room
+ * Updates live counter instantly
+ */
+function startPresenceListener() {
+  if (!rtdb || !ROOM_ID || !refs?.onlineCountEl) return;
+
+  const roomPresenceRef = rtdbRef(rtdb, `presence/${ROOM_ID}`);
+
+  onValue(roomPresenceRef, (snapshot) => {
+    const usersOnline = snapshot.val() || {};
+    const count = Object.keys(usersOnline).length;
+
+    refs.onlineCountEl.textContent = `(${count} online)`;
+
+    // Optional: Add a little pulse animation when count changes
+    refs.onlineCountEl.style.transition = "color 0.4s";
+    refs.onlineCountEl.style.color = count > 5 ? "#00ff9d" : "#ff9500";
+  }, (error) => {
+    console.error("Presence listener error:", error);
   });
 }
 
