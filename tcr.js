@@ -985,6 +985,9 @@ function updateUIAfterAuth(user) {
   }
 }
 
+showChatUI(currentUser);
+setGreeting(); // ← Add this
+
 /* ===============================
    💬 Show Chat UI After Login
 ================================= */
@@ -3268,65 +3271,91 @@ await addDoc(notifRef, {
 })();
 
 
-// 🌤️ Dynamic Host Panel Greeting
+/* =======================================
+   Dynamic Host Panel Greeting + Scroll Arrow
+========================================== */
 function capitalizeFirstLetter(str) {
-  if (!str) return "";
-  return str.charAt(0).toUpperCase() + str.slice(1);
+  if (!str) return "Guest";
+  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
 }
 
 function setGreeting() {
-  const chatId = currentUser?.chatId || "Guest";
-  const name = capitalizeFirstLetter(chatId);
-  const hour = new Date().getHours();
-
-  let greeting, emoji;
-  if (hour < 12) {
-    greeting = `Good Morning, ${name}! ☀️`;
-  } else if (hour < 18) {
-    greeting = `Good Afternoon, ${name}! ⛅️`;
-  } else {
-    greeting = `Good Evening, ${name}! 🌙`;
+  if (!currentUser?.chatId) {
+    document.getElementById("hostPanelTitle").textContent = "Host Panel";
+    return;
   }
 
-  document.getElementById("hostPanelTitle").textContent = greeting;
+  const name = capitalizeFirstLetter(currentUser.chatId.replace(/_/g, " "));
+  const hour = new Date().getHours();
+  let greeting;
+
+  if (hour < 12) {
+    greeting = `Good Morning, ${name}!`;
+  } else if (hour < 18) {
+    greeting = `Good Afternoon, ${name}!`;
+  } else {
+    greeting = `Good Evening, ${name}!`;
+  }
+
+  const titleEl = document.getElementById("hostPanelTitle");
+  if (titleEl) titleEl.textContent = greeting;
 }
 
-// Run whenever the modal opens
-hostSettingsBtn.addEventListener("click", () => {
+/* Run greeting when host panel opens */
+document.getElementById("hostSettingsBtn")?.addEventListener("click", () => {
   setGreeting();
 });
 
+/* =======================================
+   Scroll to Bottom Arrow (Smart & Smooth)
+========================================== */
+const scrollArrow = document.getElementById("scrollArrow");
+const chatContainer = document.getElementById("chatContainer") || document.getElementById("messages");
 
-const scrollArrow = document.getElementById('scrollArrow');
-  const chatContainer = document.querySelector('#chatContainer'); // your chat wrapper
-  let fadeTimeout;
+if (scrollArrow && chatContainer) {
+  let fadeTimeout = null;
 
   function showArrow() {
-    scrollArrow.classList.add('show');
+    scrollArrow.classList.add("show");
     if (fadeTimeout) clearTimeout(fadeTimeout);
     fadeTimeout = setTimeout(() => {
-      scrollArrow.classList.remove('show');
-    }, 2000); // disappears after 2 seconds
+      scrollArrow.classList.remove("show");
+    }, 3000);
   }
 
   function checkScroll() {
     const distanceFromBottom = chatContainer.scrollHeight - chatContainer.scrollTop - chatContainer.clientHeight;
-    if (distanceFromBottom > 200) { // threshold for showing arrow
+
+    if (distanceFromBottom > 300) {
       showArrow();
+    } else {
+      scrollArrow.classList.remove("show");
     }
   }
 
-  chatContainer.addEventListener('scroll', checkScroll);
+  // Listen to scroll
+  chatContainer.addEventListener("scroll", checkScroll);
 
-  scrollArrow.addEventListener('click', () => {
+  // Click to scroll down
+  scrollArrow.addEventListener("click", () => {
     chatContainer.scrollTo({
       top: chatContainer.scrollHeight,
-      behavior: 'smooth'
+      behavior: "smooth"
     });
   });
+
+  // Initial check
+  setTimeout(checkScroll, 1000);
+
+  // Re-check when new messages come in
+  const observer = new MutationObserver(checkScroll);
+  observer.observe(chatContainer, { childList: true, subtree: true });
+}
+
+// Add this line inside showChatUI() after currentUser is set
+setGreeting();
+
   
-checkScroll(); // initial check
-}); // ✅ closes DOMContentLoaded event listener
 
 
 /* ---------- Highlights Button ---------- */
