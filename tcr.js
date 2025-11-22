@@ -5,7 +5,7 @@ import {
   doc,
   setDoc,
   getDoc,
-  updateDoc,"'
+  updateDoc,
   collection,
   addDoc,
   serverTimestamp,
@@ -145,7 +145,7 @@ onAuthStateChanged(auth, async (user) => {
   }
 
   // ---------- Notifications Setup ----------
-  const sanitizeEmail = (email) => email.replace(/\./g, "_");
+  const sanitizeEmail = (email) => email.replace(/\./g, ",");
   const userQueryId = sanitizeEmail(currentUser.email);
   console.log("📩 Logged in as Sanitized ID:", userQueryId);
   localStorage.setItem("userId", userQueryId);
@@ -235,7 +235,7 @@ onAuthStateChanged(auth, async (user) => {
    🔔 Manual Notification Starter (for whitelist login)
 ================================= */
 async function startNotificationsFor(userEmail) {
-  const sanitizeEmail = (email) => email.replace(/\./g, "_");
+  const sanitizeEmail = (email) => email.replace(/\./g, ",");
   const userQueryId = sanitizeEmail(userEmail);
   localStorage.setItem("userId", userQueryId);
 
@@ -2514,7 +2514,7 @@ document.getElementById("uploadHighlightBtn").addEventListener("click", async ()
   }
   try {
     const userId = currentUser.uid;
-    const emailId = (currentUser.email || "").replace(/./g, "_");
+    const emailId = (currentUser.email || "").replace(/./g, ",");
     const chatId = currentUser.chatId || currentUser.displayName || "Anonymous";
     statusEl.textContent = "⏳ Uploading highlight...";
     // ✅ Direct upload without thumbnail generation
@@ -3441,33 +3441,23 @@ function showHighlightsModal(videos) {
     boxSizing: "border-box"
   });
 
-  // === STICKY INTRO – Text & Colors from Snippet 2, Glass Backdrop from Snippet 1 ===
+  // Sticky intro
   const intro = document.createElement("div");
   intro.innerHTML = `
     <div style="text-align:center;color:#ccc;max-width:640px;margin:0 auto;line-height:1.6;font-size:14px;
-      background:rgba(255,255,255,0.06);padding:14px 48px 14px 20px;border-radius:10px;
-      backdrop-filter:blur(5px);box-shadow:0 0 12px rgba(255,255,255,0.08);">
-      <p style="margin:0;">
-        <span style="background:linear-gradient(90deg,#ff006e,#ff8c00);-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-weight:700;">
-          Highlights
-        </span> 🎬 are exclusive creator moments.<br>
-        Unlock premium clips with ⭐ Stars to support your favorite creators.
-      </p>
+      background:rgba(255,255,255,0.06);padding:14px 20px;border-radius:10px;backdrop-filter:blur(5px);
+      box-shadow:0 0 12px rgba(255,255,255,0.08);">
+      <p style="margin:0;">🎬 <b>Highlights</b> are exclusive creator moments.<br>
+      Unlock premium clips with ⭐ Stars to support your favorite creators.</p>
     </div>`;
-  Object.assign(intro.style, {
-    position: "sticky",
-    top: "10px",
-    zIndex: "1001",
-    marginBottom: "12px",
-    transition: "opacity 0.3s ease"
-  });
+  Object.assign(intro.style, { position: "sticky", top: "10px", zIndex: "1001", marginBottom: "12px", transition: "opacity 0.3s ease" });
   modal.appendChild(intro);
 
   modal.addEventListener("scroll", () => {
     intro.style.opacity = modal.scrollTop > 50 ? "0.7" : "1";
   });
 
-  // === SEARCH + TOGGLE CONTAINER ===
+  // Search + toggle container (vertical stack)
   const searchWrap = document.createElement("div");
   Object.assign(searchWrap.style, {
     position: "sticky",
@@ -3480,7 +3470,7 @@ function showHighlightsModal(videos) {
     gap: "6px"
   });
 
-  // === SEARCH BAR – Exact design from Snippet 1 (clean glass) ===
+  // Search input
   const searchInputWrap = document.createElement("div");
   searchInputWrap.style.cssText = `
     display:flex;
@@ -3494,42 +3484,13 @@ function showHighlightsModal(videos) {
   `;
   searchInputWrap.innerHTML = `
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M15 15L21 21M10 17C6.13401 17 3 13.866 3 10C3 6.13401 6.13401 3 10 3C13.866 3 17 6.13401 17 10C17 13.866 13.866 17 10 17Z" 
-            stroke="#999999" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M15 15L21 21M10 17C6.13401 17 3 13.866 3 10C3 6.13401 6.13401 3 10 3C13.866 3 17 6.13401 17 10C17 13.866 13.866 17 10 17Z" stroke="#999999" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
     </svg>
-    <input id="highlightSearchInput" type="text" placeholder="Search by creator..." 
-           style="flex:1;background:transparent;border:none;outline:none;color:#fff;font-size:13px;letter-spacing:0.3px;"/>
+    <input id="highlightSearchInput" type="text" placeholder="Search by creator..." style="flex:1;background:transparent;border:none;outline:none;color:#fff;font-size:13px;letter-spacing:0.3px;"/>
   `;
   searchWrap.appendChild(searchInputWrap);
-
-  // === TOGGLE BUTTON – From Snippet 2 ===
-  const toggleBtn = document.createElement("button");
-  toggleBtn.id = "toggleLocked";
-  toggleBtn.textContent = "Show Unlocked";
-  Object.assign(toggleBtn.style, {
-    padding: "4px 10px",
-    borderRadius: "6px",
-    background: "linear-gradient(135deg, #333, #222)",
-    color: "#fff",
-    border: "1px solid rgba(255,0,110,0.3)",
-    fontSize: "12px",
-    cursor: "pointer",
-    fontWeight: "600",
-    transition: "all 0.2s",
-    boxShadow: "0 2px 8px rgba(0,0,0,0.3)"
-  });
-  toggleBtn.onmouseenter = () => {
-    toggleBtn.style.background = "linear-gradient(135deg, #ff006e, #ff8c00)";
-    toggleBtn.style.transform = "translateY(-1px)";
-  };
-  toggleBtn.onmouseleave = () => {
-    toggleBtn.style.background = "linear-gradient(135deg, #333, #222)";
-    toggleBtn.style.transform = "translateY(0)";
-  };
-  searchWrap.appendChild(toggleBtn);
-
-  modal.appendChild(searchWrap);
-
+  
+  
   // === DOPE X BUTTON — NO PAD, OG EFFECT, INSIDE PANEL ===
   const closeBtn = document.createElement("div");
   closeBtn.innerHTML = `
