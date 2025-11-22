@@ -1683,7 +1683,6 @@ function startDailyBidEngine() {
     });
 
       async function createMissingAggregate() {
-      // Only try to create if user is logged in — prevents permission error
       if (!currentUser?.uid) return;
 
       try {
@@ -1713,19 +1712,16 @@ function startDailyBidEngine() {
           updatedAt: serverTimestamp()
         }, { merge: true });
 
-        console.log("%cAggregate created successfully!", "color:#0f9;font-size:14px");
-
       } catch (e) {
-        // Silent — will be created by next logged-in user or Cloud Function later
         console.log("Aggregate creation skipped (normal on first load)");
       }
-    }
+    } // ←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←
 
-  // Run timer every second
-  updateTimerAndStats();
-  setInterval(updateTimerAndStats, 1000);
-}
-
+    // Run timer every second
+    updateTimerAndStats();
+    setInterval(updateTimerAndStats, 1000);
+  }
+  
 // Payout function (keep yours)
 async function declareWinnersAndReset() {
   console.log("BID ENDED — PAYING TOP 5 FROM BID LEADERBOARD");
