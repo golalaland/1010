@@ -240,7 +240,12 @@ async function loadCurrentUserForGame() {
       return;
     }
 
-    const uid = storedUser.email.replace(/\./g, ",").toLowerCase();
+   const uid = storedUser.email
+  .toLowerCase()
+  .replace(/[@.]/g, '_')           // @ and . → _
+  .replace(/[,\\/*[\]]/g, '_')      // kill any stray commas too
+  .replace(/_+/g, '_')
+  .replace(/^_|_$/g, '');
     const userRef = doc(db, "users", uid);
     const snap = await getDoc(userRef);
 
