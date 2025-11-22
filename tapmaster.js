@@ -892,64 +892,7 @@ function getWeek(date) {
 }
 
 
-/* ------------------------------
-   LEADERBOARD IMAGE SLIDER (FADE)
-------------------------------- */
-const sliderWrapper = document.getElementById("leaderboardImageSlider");
-const sliderTrack = sliderWrapper.querySelector(".slider-track");
-const slides = sliderWrapper.querySelectorAll(".leaderboard-slide");
 
-let currentSlide = 0;
-let slideInterval = null;
-const slideCount = slides.length;
-
-// Move slider to a given index
-function showSlide(index) {
-  currentSlide = index;
-  sliderTrack.style.transform = `translateX(-${index * 100}%)`;
-}
-
-// Auto-slide every 3 seconds
-function startSlider() {
-  slideInterval = setInterval(() => {
-    let next = (currentSlide + 1) % slideCount;
-    showSlide(next);
-  }, 21000);
-}
-
-function stopSlider() {
-  clearInterval(slideInterval);
-}
-
-// Mobile swipe support
-let startX = 0;
-
-sliderWrapper.addEventListener("touchstart", e => {
-  startX = e.touches[0].clientX;
-  stopSlider();
-});
-
-sliderWrapper.addEventListener("touchend", e => {
-  let endX = e.changedTouches[0].clientX;
-  if (endX - startX > 50) {
-    // swipe right
-    let prev = (currentSlide - 1 + slideCount) % slideCount;
-    showSlide(prev);
-  }
-  if (startX - endX > 50) {
-    // swipe left
-    let next = (currentSlide + 1) % slideCount;
-    showSlide(next);
-  }
-  startSlider();
-});
-
-// Init
-showSlide(0);
-startSlider();
-
-// Optional: stop when closing leaderboard modal
-closeLeaderboard?.addEventListener("click", () => stopSlider());
 
 /* -------------------------------------------
    FETCH LEADERBOARD
