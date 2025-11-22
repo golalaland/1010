@@ -1121,12 +1121,13 @@ async function loginWhitelist(email, password) {
     } else if (typeof startNotifications === "function") {
       startNotifications();
     }
+    console.log("VIP Access Granted:", currentUser.chatId);
+    localStorage.setItem("vipCredentials", JSON.stringify({ email, password }));
 
-    console.log("VIP Access Granted:", currentUser.chatId || email);
-    showStarPopup(`Welcome back, ${currentUser.chatId || "VIP"}!`);
+    showChatUI(currentUser);
+    showStarPopup(`Welcome, ${currentUser.chatId || "VIP"}!`);
 
     return true;
-    
 
 /* ===============================
    BIND LOGIN BUTTON
@@ -1159,171 +1160,118 @@ async function autoLogin() {
 
   if (!saved.email || !saved.password) return;
 
-  console.log("Auto-login attempt...", saved.email);
-  const success = await loginWhitelist(saved.email, saved.password);
-
-  if (success && currentUser?.isVIP) {
-    showStarPopup(`Welcome back, ${currentUser.chatId || "VIP"}!`);
-  }
+  console.log("Auto-login attempt for:", saved.email);
+  await loginWhitelist(saved.email, saved.password);
 }
 
-// Run on load
+// Run after DOM is ready
 window.addEventListener("DOMContentLoaded", () => {
-  setTimeout(autoLogin, 300); // Tiny delay for DOM
+  setTimeout(autoLogin, 400);
 });
 
-
 /* ===============================
-   💫 Auto Star Earning System
+   Star Earning System (Safe & Clean)
 ================================= */
+let starInterval = null;
+
 function startStarEarning(uid) {
-  if (!uid) return;
-  if (starInterval) clearInterval(starInterval);
+  if (!uid || starInterval) return;
 
   const userRef = doc(db, "users", uid);
-  let displayedStars = currentUser.stars || 0;
-  let animationTimeout = null;
 
-  // ✨ Smooth UI update
-  const animateStarCount = target => {
-    if (!refs.starCountEl) return;
-    const diff = target - displayedStars;
-
-    if (Math.abs(diff) < 1) {
-      displayedStars = target;
-      refs.starCountEl.textContent = formatNumberWithCommas(displayedStars);
-      return;
-    }
-
-    displayedStars += diff * 0.25; // smoother easing
-    refs.starCountEl.textContent = formatNumberWithCommas(Math.floor(displayedStars));
-    animationTimeout = setTimeout(() => animateStarCount(target), 40);
-  };
-
-  // 🔄 Real-time listener
+  // Real-time star listener with smooth animation
   onSnapshot(userRef, snap => {
     if (!snap.exists()) return;
     const data = snap.data();
-    const targetStars = data.stars || 0;
-    currentUser.stars = targetStars;
+    const newStars = data.stars || 0;
 
-    if (animationTimeout) clearTimeout(animationTimeout);
-    animateStarCount(targetStars);
-
-    // 🎉 Milestone popup
-    if (targetStars > 0 && targetStars % 1000 === 0) {
-      showStarPopup(`🔥 Congrats! You’ve reached ${formatNumberWithCommas(targetStars)} stars!`);
+    if (currentUser) {
+      currentUser.stars = newStars;
+      if (refs.starCountEl) {
+        refs.starCountEl.textContent = formatNumberWithCommas(newStars);
+      }
     }
   });
 
-  // ⏱️ Increment loop
+  // Earn 10 stars every minute (max 250/day)
   starInterval = setInterval(async () => {
-    if (!navigator.onLine) return;
+    if (!navigator.onLine || !currentUser?.uid) return;
 
-    const snap = await getDoc(userRef);
-    if (!snap.exists()) return;
+    try {
+      const snap = await getDoc(userRef);
+      if (!snap.exists()) return;
 
-    const data = snap.data();
-    const today = todayDate();
+      const data = snap.data();
+      const today = new Date().toISOString().split("T")[0];
 
-    // Reset daily count
-    if (data.lastStarDate !== today) {
-      await updateDoc(userRef, { starsToday: 0, lastStarDate: today });
-      return;
-    }
+      if (data.lastStarDate !== today) {
+        await updateDoc(userRef, { starsToday: 0, lastStarDate: today });
+      }
 
-    // Limit: 250/day
-    if ((data.starsToday || 0) < 250) {
-      await updateDoc(userRef, {
-        stars: increment(10),
-        starsToday: increment(10)
-      });
+      if ((data.starsToday || 0) < 250) {
+        await updateDoc(userRef, {
+          stars: increment(10),
+          starsToday: increment(10)
+        });
+      }
+    } catch (err) {
+      console.log("Star earning paused (offline or error)");
     }
   }, 60000);
-
-  // 🧹 Cleanup
-  window.addEventListener("beforeunload", () => clearInterval(starInterval));
 }
 
 /* ===============================
-   🧩 Helper Functions
-================================= */
-const todayDate = () => new Date().toISOString().split("T")[0];
-const sleep = ms => new Promise(res => setTimeout(res, ms));
-
-
-/* ===============================
-   🧠 UI Updates After Auth (Improved)
-================================= */
-function updateUIAfterAuth(user) {
-  const subtitle = document.getElementById("roomSubtitle");
-  const helloText = document.getElementById("helloText");
-  const roomDescText = document.querySelector(".room-desc .text");
-  const hostsBtn = document.getElementById("openHostsBtn");
-  const loginBar = document.getElementById("loginBar"); // adjust if different ID
-
-  // Keep Star Hosts button always visible
-  if (hostsBtn) hostsBtn.style.display = "block";
-
-  if (user) {
-    // Hide intro texts only for logged-in users
-    if (subtitle) subtitle.style.display = "none";
-    if (helloText) helloText.style.display = "none";
-    if (roomDescText) roomDescText.style.display = "none";
-
-    if (loginBar) loginBar.style.display = "flex";
-  } else {
-    // Show intro texts for guests
-    if (subtitle) subtitle.style.display = "block";
-    if (helloText) helloText.style.display = "block";
-    if (roomDescText) roomDescText.style.display = "block";
-
-    if (loginBar) loginBar.style.display = "flex";
-  }
-}
-
-/* ===============================
-   💬 Show Chat UI After Login
+   Show Chat UI After Successful Login
 ================================= */
 function showChatUI(user) {
-  const { authBox, sendAreaEl, profileBoxEl, profileNameEl, starCountEl, cashCountEl, adminControlsEl } = refs;
+  if (!user?.uid) return;
 
-  // Hide login/auth elements
-  document.getElementById("emailAuthWrapper")?.style?.setProperty("display", "none");
-  document.getElementById("googleSignInBtn")?.style?.setProperty("display", "none");
-  document.getElementById("vipAccessBtn")?.style?.setProperty("display", "none");
+  // Hide login screen
+  document.getElementById("emailAuthWrapper")?.style.setProperty("display", "none", "important");
+  document.getElementById("vipAccessBtn")?.style.setProperty("display", "none");
 
-  // Show chat interface
-  authBox && (authBox.style.display = "none");
+  // Show chat UI
+  const { sendAreaEl, profileBoxEl, profileNameEl, starCountEl, cashCountEl, adminControlsEl } = refs;
+
   sendAreaEl && (sendAreaEl.style.display = "flex");
   profileBoxEl && (profileBoxEl.style.display = "block");
 
   if (profileNameEl) {
-    profileNameEl.innerText = user.chatId;
-    profileNameEl.style.color = user.usernameColor;
+    profileNameEl.textContent = user.chatId || "VIP";
+    profileNameEl.style.color = user.usernameColor || "#ff69b4";
   }
-
-  if (starCountEl) starCountEl.textContent = formatNumberWithCommas(user.stars);
-  if (cashCountEl) cashCountEl.textContent = formatNumberWithCommas(user.cash);
+  if (starCountEl) starCountEl.textContent = formatNumberWithCommas(user.stars || 0);
+  if (cashCountEl) cashCountEl.textContent = formatNumberWithCommas(user.cash || 0);
   if (adminControlsEl) adminControlsEl.style.display = user.isAdmin ? "flex" : "none";
 
-  // 🔹 Apply additional UI updates (hide intro, show hosts)
-  updateUIAfterAuth(user);
+  // Hide intro text, show full chat
+  document.getElementById("roomSubtitle")?.style.setProperty("display", "none");
+  document.getElementById("helloText")?.style.setProperty("display", "none");
+  document.querySelector(".room-desc .text")?.style.setProperty("display", "none");
+
+  // Start systems
+  setupPresence?.(user);
+  attachMessagesListener?.();
+  startStarEarning(user.uid);
+
+  // Safe notification start
+  if (typeof initNotificationsListener === "function") initNotificationsListener();
+  else if (typeof startNotifications === "function") startNotifications();
 }
 
 /* ===============================
-   🚪 Hide Chat UI On Logout
+   Hide Chat UI (Logout)
 ================================= */
 function hideChatUI() {
-  const { authBox, sendAreaEl, profileBoxEl, adminControlsEl } = refs;
+  currentUser = null;
+  if (starInterval) clearInterval(starInterval);
+  starInterval = null;
 
-  authBox && (authBox.style.display = "block");
-  sendAreaEl && (sendAreaEl.style.display = "none");
-  profileBoxEl && (profileBoxEl.style.display = "none");
-  if (adminControlsEl) adminControlsEl.style.display = "none";
+  refs.sendAreaEl && (refs.sendAreaEl.style.display = "none");
+  refs.profileBoxEl && (refs.profileBoxEl.style.display = "none");
 
-  // 🔹 Restore intro UI (subtitle, hello text, etc.)
-  updateUIAfterAuth(null);
+  document.getElementById("emailAuthWrapper")?.style.setProperty("display", "flex");
+  document.getElementById("vipAccessBtn")?.style.setProperty("display", "block");
 }
 
 /* =======================================
