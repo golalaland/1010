@@ -1544,12 +1544,8 @@ let localPendingMsgs = JSON.parse(localStorage.getItem("localPendingMsgs") || "{
 ----------------------------- */
 autoLogin();
 
-/* ============================================================= */
-/*                  SEND MESSAGE + BUZZ (FINAL)                  */
-/*            Fixed: currentUser check + UID-first + Clean       */
-/* ============================================================= */
-
-/* Helper: Clear reply UI after sending */
+  
+/* SEND MESSAGE + BUZZ — FINAL FIXED VERSION */
 function clearReplyAfterSend() {
   if (typeof cancelReply === "function") cancelReply();
   currentReplyTarget = null;
@@ -1559,28 +1555,18 @@ function clearReplyAfterSend() {
 /* SEND REGULAR MESSAGE */
 refs.sendBtn?.addEventListener("click", async () => {
   try {
-    // FIXED: Proper currentUser check
-    if (!currentUser?.uid) {
-      return showStarPopup("Sign in to chat.");
-    }
+    if (!currentUser?.uid) return showStarPopup("Sign in to chat.");
 
     const txt = refs.messageInputEl?.value.trim();
     if (!txt) return showStarPopup("Type a message first.");
+    if ((currentUser.stars || 0) < SEND_COST) return showStarPopup("Not enough stars to send message.");
 
-    if ((currentUser.stars || 0) < SEND_COST) {
-      return showStarPopup("Not enough stars to send message.");
-    }
-
-    // Deduct stars locally
+    // Deduct stars
     currentUser.stars -= SEND_COST;
     refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
+    await updateDoc(doc(db, "users", currentUser.uid), { stars: increment(-SEND_COST) });
 
-    // Deduct in Firestore
-    await updateDoc(doc(db, "users", currentUser.uid), {
-      stars: increment(-SEND_COST)
-    });
-
-    // Local echo (instant feedback)
+    // Local echo
     const tempId = "temp_" + Date.now();
     const tempMsg = {
       content: txt,
@@ -1594,12 +1580,11 @@ refs.sendBtn?.addEventListener("click", async () => {
       tempId
     };
 
-    // Save pending message locally (for reconnect recovery)
+    // Save locally
     const pending = JSON.parse(localStorage.getItem("localPendingMsgs") || "{}");
     pending[tempId] = { ...tempMsg, createdAt: Date.now() };
     localStorage.setItem("localPendingMsgs", JSON.stringify(pending));
 
-    // Clear input + scroll
     refs.messageInputEl.value = "";
     scrollToBottom(refs.messagesEl);
 
@@ -1615,42 +1600,34 @@ refs.sendBtn?.addEventListener("click", async () => {
       replyToContent: currentReplyTarget?.content || null
     });
 
-    // Clear reply UI
     clearReplyAfterSend();
-
-    console.log("Message sent successfully");
+    console.log("Message sent");
 
   } catch (err) {
-    console.error("Message send failed:", err);
-    showStarPopup("Failed to send message. Try again.");
-    // Optional: revert stars if failed
+    console.error("Send failed:", err);
+    showStarPopup("Failed to send message.");
   }
 });
 
-/* BUZZ MESSAGE (HIGHLIGHTED) */
+/* BUZZ MESSAGE */
 refs.buzzBtn?.addEventListener("click", async () => {
   try {
-    if (!currentUser?.uid) {
-      return showStarPopup("Sign in to BUZZ.");
-    }
+    if (!currentUser?.uid) return showStarPopup("Sign in to BUZZ.");
 
-    const txt = refs763.messageInputEl?.value.trim();
+    const txt = refs.messageInputEl?.value.trim();
     if (!txt) return showStarPopup("Type a message to BUZZ");
 
     const userRef = doc(db, "users", currentUser.uid);
     const snap = await getDoc(userRef);
     const stars = snap.data()?.stars || 0;
 
-    if (stars < BUZZ_COST) {
-      return showStarPopup("Not enough stars for BUZZ.");
-    }
+    if (stars < BUZZ_COST) return showStarPopup("Not enough stars for BUZZ.");
 
-    // Deduct stars
     await updateDoc(userRef, { stars: increment(-BUZZ_COST) });
     currentUser.stars = stars - BUZZ_COST;
     refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
 
-    as const buzzColor = randomColor();
+    const buzzColor = randomColor();
 
     const buzzMsg = {
       content: txt,
@@ -1663,29 +1640,24 @@ refs.buzzBtn?.addEventListener("click", async () => {
 
     const docRef = await addDoc(collection(db, CHAT_COLLECTION), buzzMsg);
 
-    // Clear input
     refs.messageInputEl.value = "";
     showStarPopup("BUZZ sent!");
 
-    // Instant local render
     renderMessagesFromArray([{ id: docRef.id, data: buzzMsg }]);
     scrollToBottom(refs.messagesEl);
 
-    // Apply visual buzz effect
     setTimeout(() => {
       const el = document.getElementById(docRef.id);
       if (!el) return;
       const content = el.querySelector(".content") || el;
       content.style.setProperty("--buzz-color", buzzColor);
       content.classList.add("buzz-highlight");
-      setTimeout(() => {
-        content.classList.remove("buzz-highlight");
-      }, 12000);
+      setTimeout(() => content.classList.remove("buzz-highlight"), 12000);
     }, 100);
 
   } catch (err) {
     console.error("BUZZ failed:", err);
-    showStarPopup("BUZZ failed. Try again.");
+    showStarPopup("BUZZ failed.");
   }
 });
   
