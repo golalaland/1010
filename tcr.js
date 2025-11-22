@@ -18,18 +18,16 @@ import {
   runTransaction,
   arrayUnion
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-import { 
-  getDatabase, 
-  ref as rtdbRef, 
-  set as rtdbSet, 
-  onDisconnect, 
-  onValue 
+import {
+  getDatabase,
+  ref as rtdbRef,
+  set as rtdbSet,
+  onDisconnect,
+  onValue
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
-
-import { 
-  getAuth, 
-  onAuthStateChanged 
+import {
+  getAuth,
+  onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 /* ---------- Firebase Config ---------- */
@@ -49,56 +47,49 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const rtdb = getDatabase(app);
 const auth = getAuth(app);
-
 // Make Firebase objects available globally (for debugging or reuse)
 window.app = app;
 window.db = db;
 window.auth = auth;
 window.rtdb = rtdb;
 
-
 /* ---------- Globals ---------- */
 let currentUser = null;
 
-// 🔁 Sync unlocked videos between localStorage and Firestore
+// Sync unlocked videos between localStorage and Firestore
 async function syncUserUnlocks() {
   if (!currentUser?.uid) return [];
-
   try {
     const userRef = doc(db, "users", currentUser.uid);
     const snap = await getDoc(userRef);
-
     const firestoreUnlocks = snap.exists() ? (snap.data().unlockedVideos || []) : [];
     const localUnlocks = JSON.parse(localStorage.getItem("userUnlockedVideos") || "[]");
-
     // Merge + deduplicate
     const allUnlocks = [...new Set([...firestoreUnlocks, ...localUnlocks])];
-
     // Update Firestore with any new ones
     const newUnlocks = allUnlocks.filter(id => !firestoreUnlocks.includes(id));
     if (newUnlocks.length > 0) {
       await updateDoc(userRef, { unlockedVideos: arrayUnion(...newUnlocks) });
     }
-
     // Sync local copy
     localStorage.setItem("userUnlockedVideos", JSON.stringify(allUnlocks));
-    console.log("✅ Unlocks synced:", allUnlocks);
+    console.log("Unlocks synced:", allUnlocks);
     return allUnlocks;
   } catch (err) {
-    console.error("❌ Unlock sync failed:", err);
+    console.error("Unlock sync failed:", err);
     return JSON.parse(localStorage.getItem("userUnlockedVideos") || "[]");
   }
 }
 
 /* ===============================
-   🔔 Notification Helpers
+   Notification Helpers
 ================================= */
 async function pushNotification(userId, message) {
-  if (!userId) return console.warn("⚠️ No userId provided for pushNotification");
-  
+  if (!userId) return console.warn("No userId provided for pushNotification");
+ 
   const notifRef = doc(collection(db, "notifications"));
   await setDoc(notifRef, {
-    userId,
+    userId,                                  // Now expects UID
     message,
     timestamp: serverTimestamp(),
     read: false,
@@ -108,7 +99,7 @@ async function pushNotification(userId, message) {
 function pushNotificationTx(tx, userId, message) {
   const notifRef = doc(collection(db, "notifications"));
   tx.set(notifRef, {
-    userId,
+    userId,                                  // Now expects UID
     message,
     timestamp: serverTimestamp(),
     read: false,
@@ -119,41 +110,37 @@ function pushNotificationTx(tx, userId, message) {
 onAuthStateChanged(auth, async (user) => {
   currentUser = user;
 
-  // 🔒 Hide modals until login completes
+  // Hide modals until login completes
   const allModals = document.querySelectorAll(".featured-modal, #giftModal, #sessionModal");
   allModals.forEach(m => (m.style.display = "none"));
 
   if (!user) {
-    console.warn("⚠️ No logged-in user found");
+    console.warn("No logged-in user found");
     localStorage.removeItem("userId");
-
-    // Hide protected sections
     document.querySelectorAll(".after-login-only").forEach(el => (el.style.display = "none"));
     return;
   }
 
-  // ✅ Logged in user
-  console.log("✅ User authenticated:", user.email || user.uid);
+  // Logged in user
+  console.log("User authenticated:", user.email || user.uid);
   document.querySelectorAll(".after-login-only").forEach(el => (el.style.display = ""));
 
-  // ---------- Sync unlocked videos across devices ----------
+  // Sync unlocked videos across devices
   try {
-    await syncUserUnlocks(); // 🔁 Keeps unlocks consistent across browsers
-    console.log("🔄 Unlocked videos synced successfully.");
+    await syncUserUnlocks();
+    console.log("Unlocked videos synced successfully.");
   } catch (err) {
-    console.error("⚠️ Sync unlocks failed:", err);
+    console.error("Sync unlocks failed:", err);
   }
 
-  // ---------- Notifications Setup ----------
-  const sanitizeEmail = (email) => email.replace(/\./g, ",");
-  const userQueryId = sanitizeEmail(currentUser.email);
-  console.log("📩 Logged in as Sanitized ID:", userQueryId);
-  localStorage.setItem("userId", userQueryId);
+  // FIXED: Use UID everywhere instead of sanitized email
+  const userId = user.uid;  // This is now the single source of truth
+  localStorage.setItem("userId", userId);  // Stores real UID
 
   const notifRef = collection(db, "notifications");
   const notifQuery = query(
     notifRef,
-    where("userId", "==", userQueryId),
+    where("userId", "==", userId),
     orderBy("timestamp", "desc")
   );
 
@@ -162,23 +149,21 @@ onAuthStateChanged(auth, async (user) => {
   async function initNotificationsListener() {
     const notificationsList = document.getElementById("notificationsList");
     if (!notificationsList) {
-      console.warn("⚠️ #notificationsList not found — retrying...");
+      console.warn("#notificationsList not found — retrying...");
       setTimeout(initNotificationsListener, 500);
       return;
     }
+    if (unsubscribe) unsubscribe();
 
-    if (unsubscribe) unsubscribe(); // Prevent duplicate listeners
-
-    console.log("🔔 Setting up live notification listener for:", userQueryId);
+    console.log("Setting up live notification listener for UID:", userId);
     unsubscribe = onSnapshot(
       notifQuery,
       (snapshot) => {
-        console.log(`✅ Received ${snapshot.docs.length} notifications for ${userQueryId}`);
+        console.log(`Received ${snapshot.docs.length} notifications`);
         if (snapshot.empty) {
           notificationsList.innerHTML = `<p style="opacity:0.7;">No new notifications yet.</p>`;
           return;
         }
-
         const items = snapshot.docs.map((docSnap) => {
           const n = docSnap.data();
           const time = n.timestamp?.seconds
@@ -187,7 +172,6 @@ onAuthStateChanged(auth, async (user) => {
                 minute: "2-digit",
               })
             : "--:--";
-
           return `
             <div class="notification-item ${n.read ? "" : "unread"}" data-id="${docSnap.id}">
               <span>${n.message || "(no message)"}</span>
@@ -195,10 +179,9 @@ onAuthStateChanged(auth, async (user) => {
             </div>
           `;
         });
-
         notificationsList.innerHTML = items.join("");
       },
-      (error) => console.error("🔴 Firestore Listener Error:", error)
+      (error) => console.error("Firestore Listener Error:", error)
     );
   }
 
@@ -221,40 +204,45 @@ onAuthStateChanged(auth, async (user) => {
   const markAllBtn = document.getElementById("markAllRead");
   if (markAllBtn) {
     markAllBtn.addEventListener("click", async () => {
-      console.log("🟡 Marking all notifications as read...");
-      const snapshot = await getDocs(query(notifRef, where("userId", "==", userQueryId)));
+      console.log("Marking all notifications as read...");
+      const snapshot = await getDocs(query(notifRef, where("userId", "==", userId)));
       for (const docSnap of snapshot.docs) {
         await updateDoc(doc(db, "notifications", docSnap.id), { read: true });
       }
-      alert("✅ All notifications marked as read.");
+      alert("All notifications marked as read.");
     });
   }
 });
 
 /* ===============================
-   🔔 Manual Notification Starter (for whitelist login)
+   Manual Notification Starter (for whitelist login)
 ================================= */
-async function startNotificationsFor(userEmail) {
-  const sanitizeEmail = (email) => email.replace(/\./g, ",");
-  const userQueryId = sanitizeEmail(userEmail);
-  localStorage.setItem("userId", userQueryId);
+// REMOVED: This function relied on sanitized email and is no longer needed.
+// If you still use whitelist login, you must now pass the UID directly.
+// We'll keep a safe fallback version that works with UID only.
+async function startNotificationsFor(userUid) {
+  if (!userUid) {
+    console.warn("startNotificationsFor called without UID");
+    return;
+  }
+
+  localStorage.setItem("userId", userUid);  // Now stores real UID
 
   const notifRef = collection(db, "notifications");
   const notifQuery = query(
     notifRef,
-    where("userId", "==", userQueryId),
+    where("userId", "==", userUid),
     orderBy("timestamp", "desc")
   );
 
   const notificationsList = document.getElementById("notificationsList");
   if (!notificationsList) {
-    console.warn("⚠️ #notificationsList not found yet — retrying...");
-    setTimeout(() => startNotificationsFor(userEmail), 500);
+    console.warn("#notificationsList not found yet — retrying...");
+    setTimeout(() => startNotificationsFor(userUid), 500);
     return;
   }
 
-  console.log("🔔 Listening for notifications for:", userQueryId);
-
+  console.log("Listening for notifications for UID:", userUid);
   onSnapshot(
     notifQuery,
     (snapshot) => {
@@ -262,7 +250,6 @@ async function startNotificationsFor(userEmail) {
         notificationsList.innerHTML = `<p style="opacity:0.7;">No new notifications yet.</p>`;
         return;
       }
-
       const html = snapshot.docs.map((docSnap) => {
         const n = docSnap.data();
         const time = n.timestamp?.seconds
@@ -278,18 +265,15 @@ async function startNotificationsFor(userEmail) {
           </div>
         `;
       }).join("");
-
       notificationsList.innerHTML = html;
     },
-    (err) => console.error("🔴 Notification listener error:", err)
+    (err) => console.error("Notification listener error:", err)
   );
 }
 
-
-
 /* ---------- Helper: Get current user ID ---------- */
 export function getCurrentUserId() {
-  return currentUser ? currentUser.uid : localStorage.getItem("userId");
+  return currentUser?.uid || localStorage.getItem("userId") || null;
 }
 window.currentUser = currentUser;
 
@@ -301,7 +285,6 @@ const ROOM_ID = "room5";
 const CHAT_COLLECTION = "messages_room5";
 const BUZZ_COST = 50;
 const SEND_COST = 1;
-
 let lastMessagesArray = [];
 let starInterval = null;
 let refs = {};
@@ -309,8 +292,8 @@ let refs = {};
 /* ---------- Helpers ---------- */
 const generateGuestName = () => `GUEST ${Math.floor(1000 + Math.random() * 9000)}`;
 const formatNumberWithCommas = n => new Intl.NumberFormat('en-NG').format(n || 0);
-const sanitizeKey = key => key.replace(/[.#$[\]]/g, ',');
 
+// REMOVED sanitizeKey() — no longer needed (UIDs are safe Firestore doc IDs)
 function randomColor() {
   const palette = ["#FFD700","#FF69B4","#87CEEB","#90EE90","#FFB6C1","#FFA07A","#8A2BE2","#00BFA6","#F4A460"];
   return palette[Math.floor(Math.random() * palette.length)];
@@ -325,62 +308,39 @@ function showStarPopup(text) {
   setTimeout(() => popup.style.display = "none", 1700);
 }
 
-
 /* ----------------------------
-   ⭐ GIFT MODAL / CHAT BANNER ALERT
+   GIFT MODAL / CHAT BANNER ALERT
 ----------------------------- */
 async function showGiftModal(targetUid, targetData) {
-  // Stop if required info is missing
-  if (!targetUid || !targetData) return;
-
   const modal = document.getElementById("giftModal");
   const titleEl = document.getElementById("giftModalTitle");
   const amountInput = document.getElementById("giftAmountInput");
   const confirmBtn = document.getElementById("giftConfirmBtn");
   const closeBtn = document.getElementById("giftModalClose");
+  if (!modal || !titleEl || !amountInput || !confirmBtn) return;
 
-  // Make sure modal exists before doing anything
-  if (!modal || !titleEl || !amountInput || !confirmBtn || !closeBtn) {
-    console.warn("❌ Gift modal elements not found — skipping open");
-    return;
-  }
-
-  // 🧩 Reset state before showing
-  titleEl.textContent = "Gift ⭐️";
+  titleEl.textContent = `Gift Stars`;
   amountInput.value = "";
+  modal.style.display = "flex";
 
-  // 🚫 Don't auto-show unless called intentionally
-  // So we only show the modal *after* all required info is ready
-  requestAnimationFrame(() => {
-    modal.style.display = "flex";
-  });
-
-  // Close modal behavior
-  const close = () => {
-    modal.style.display = "none";
-  };
-
+  const close = () => (modal.style.display = "none");
   closeBtn.onclick = close;
-  modal.onclick = (e) => {
-    if (e.target === modal) close();
-  };
+  modal.onclick = (e) => { if (e.target === modal) close(); };
 
-  // Remove any old listeners on confirm button
   const newConfirmBtn = confirmBtn.cloneNode(true);
   confirmBtn.replaceWith(newConfirmBtn);
 
-  // ✅ Confirm send action
   newConfirmBtn.addEventListener("click", async () => {
     const amt = parseInt(amountInput.value) || 0;
-    if (amt < 100) return showStarPopup("🔥 Minimum gift is 100 ⭐️");
-    if ((currentUser?.stars || 0) < amt) return showStarPopup("Not enough stars 💫");
+    if (amt < 100) return showStarPopup("Minimum gift is 100 Stars");
+    if ((currentUser?.stars || 0) < amt) return showStarPopup("Not enough stars");
 
     const fromRef = doc(db, "users", currentUser.uid);
-    const toRef = doc(db, "users", targetUid);
-    const glowColor = randomColor();
+    const toRef = doc(db, "users", targetUid);  // Already UID — perfect
 
+    const glowColor = randomColor();
     const messageData = {
-      content: `💫 ${currentUser.chatId} gifted ${amt} stars ⭐️ to ${targetData.chatId}!`,
+      content: `${currentUser.chatId} gifted ${amt} stars to ${targetData.chatId}!`,
       uid: currentUser.uid,
       timestamp: serverTimestamp(),
       highlight: true,
@@ -396,21 +356,18 @@ async function showGiftModal(targetUid, targetData) {
       updateDoc(toRef, { stars: increment(amt) })
     ]);
 
-    showStarPopup(`You sent ${amt} stars ⭐️ to ${targetData.chatId}!`);
+    showStarPopup(`You sent ${amt} stars to ${targetData.chatId}!`);
     close();
-
     renderMessagesFromArray([{ id: docRef.id, data: messageData }]);
   });
 }
+
 /* ---------- Gift Alert (Optional Popup) ---------- */
 function showGiftAlert(text) {
   const alertEl = document.getElementById("giftAlert");
   if (!alertEl) return;
-
-  alertEl.textContent = text; // just text
-  alertEl.classList.add("show", "glow"); // banner glow
-
-  // ✅ Floating stars removed
+  alertEl.textContent = text;
+  alertEl.classList.add("show", "glow");
   setTimeout(() => alertEl.classList.remove("show", "glow"), 4000);
 }
 
@@ -424,15 +381,22 @@ function updateRedeemLink() {
 /* ---------- Tip Link ---------- */
 function updateTipLink() {
   if (!refs.tipBtn || !currentUser) return;
-  refs.tipBtn.href = `https://golalaland.github.io/crdb/tapmaster.html?uid=${encodeURIComponent(currentUser.uid)}`;
+  refs.tipBtn.href = `https://golalaland.github.io/crdb/moneytrain.html?uid=${encodeURIComponent(currentUser.uid)}`;
   refs.tipBtn.style.display = "inline-block";
 }
 
 /* ---------- Presence (Realtime) ---------- */
 function setupPresence(user) {
-  if (!rtdb) return;
-  const pRef = rtdbRef(rtdb, `presence/${ROOM_ID}/${sanitizeKey(user.uid)}`);
-  rtdbSet(pRef, { online: true, chatId: user.chatId, email: user.email }).catch(() => {});
+  if (!rtdb || !user?.uid) return;
+
+  // UID is safe as RTDB key — no sanitization needed
+  const pRef = rtdbRef(rtdb, `presence/${ROOM_ID}/${user.uid}`);
+  rtdbSet(pRef, { 
+    online: true, 
+    chatId: user.chatId || "Guest", 
+    email: user.email || null 
+  }).catch(() => {});
+
   onDisconnect(pRef).remove().catch(() => {});
 }
 
@@ -473,7 +437,7 @@ function cancelReply() {
 function showReplyCancelButton() {
   if (!refs.cancelReplyBtn) {
     const btn = document.createElement("button");
-    btn.textContent = "✖";
+    btn.textContent = "X";
     btn.style.marginLeft = "6px";
     btn.style.fontSize = "12px";
     btn.onclick = cancelReply;
@@ -493,7 +457,7 @@ async function reportMessage(msgData) {
     if (reportSnap.exists()) {
       const data = reportSnap.data();
       if ((data.reportedBy || []).includes(reporterChatId)) {
-        return showStarPopup("You’ve already reported this message.", { type: "info" });
+        return alert("You’ve already reported this message.");
       }
       await updateDoc(reportRef, {
         reportCount: increment(1),
@@ -514,14 +478,10 @@ async function reportMessage(msgData) {
         status: "pending"
       });
     }
-
-    // ✅ Success popup
-    showStarPopup("✅ Report submitted!", { type: "success" });
-
+    alert("Report submitted!");
   } catch (err) {
     console.error(err);
-    // ❌ Error popup
-    showStarPopup("❌ Error reporting message.", { type: "error" });
+    alert("Error reporting message.");
   }
 }
 
