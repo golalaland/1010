@@ -1,24 +1,22 @@
 /* ---------- Imports (Firebase v10) ---------- */
-import { 
-  initializeApp 
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-
-import { 
-  getFirestore, 
-  doc, 
-  setDoc, 
-  getDoc, 
-  updateDoc, 
-  collection, 
-  addDoc, 
-  serverTimestamp, 
-  onSnapshot, 
-  query, 
-  orderBy, 
-  increment, 
-  getDocs, 
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+  getFirestore,
+  doc,
+  setDoc,
+  getDoc,
+  updateDoc,
+  collection,
+  addDoc,
+  serverTimestamp,
+  onSnapshot,
+  query,
+  orderBy,
+  increment,
+  getDocs,
   where,
-  runTransaction
+  runTransaction,
+  arrayUnion
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 import { 
@@ -62,6 +60,36 @@ window.rtdb = rtdb;
 /* ---------- Globals ---------- */
 let currentUser = null;
 
+// 🔁 Sync unlocked videos between localStorage and Firestore
+async function syncUserUnlocks() {
+  if (!currentUser?.uid) return [];
+
+  try {
+    const userRef = doc(db, "users", currentUser.uid);
+    const snap = await getDoc(userRef);
+
+    const firestoreUnlocks = snap.exists() ? (snap.data().unlockedVideos || []) : [];
+    const localUnlocks = JSON.parse(localStorage.getItem("userUnlockedVideos") || "[]");
+
+    // Merge + deduplicate
+    const allUnlocks = [...new Set([...firestoreUnlocks, ...localUnlocks])];
+
+    // Update Firestore with any new ones
+    const newUnlocks = allUnlocks.filter(id => !firestoreUnlocks.includes(id));
+    if (newUnlocks.length > 0) {
+      await updateDoc(userRef, { unlockedVideos: arrayUnion(...newUnlocks) });
+    }
+
+    // Sync local copy
+    localStorage.setItem("userUnlockedVideos", JSON.stringify(allUnlocks));
+    console.log("✅ Unlocks synced:", allUnlocks);
+    return allUnlocks;
+  } catch (err) {
+    console.error("❌ Unlock sync failed:", err);
+    return JSON.parse(localStorage.getItem("userUnlockedVideos") || "[]");
+  }
+}
+
 /* ===============================
    🔔 Notification Helpers
 ================================= */
@@ -87,28 +115,42 @@ function pushNotificationTx(tx, userId, message) {
   });
 }
 
-/* ---------- Auth State Watcher (Stable + Lazy Notifications) ---------- */
+/* ---------- Auth State Watcher (with Unlocked Sync + Notifications) ---------- */
 onAuthStateChanged(auth, async (user) => {
   currentUser = user;
+
+  // 🔒 Hide modals until login completes
+  const allModals = document.querySelectorAll(".featured-modal, #giftModal, #sessionModal");
+  allModals.forEach(m => (m.style.display = "none"));
 
   if (!user) {
     console.warn("⚠️ No logged-in user found");
     localStorage.removeItem("userId");
+
+    // Hide protected sections
+    document.querySelectorAll(".after-login-only").forEach(el => (el.style.display = "none"));
     return;
   }
 
-  // ✅ 1. Define the sanitization helper
-  const sanitizeEmail = (email) => email.replace(/\./g, ",");
+  // ✅ Logged in user
+  console.log("✅ User authenticated:", user.email || user.uid);
+  document.querySelectorAll(".after-login-only").forEach(el => (el.style.display = ""));
 
-  // ✅ 2. Generate and store the ID used for querying
+  // ---------- Sync unlocked videos across devices ----------
+  try {
+    await syncUserUnlocks(); // 🔁 Keeps unlocks consistent across browsers
+    console.log("🔄 Unlocked videos synced successfully.");
+  } catch (err) {
+    console.error("⚠️ Sync unlocks failed:", err);
+  }
+
+  // ---------- Notifications Setup ----------
+  const sanitizeEmail = (email) => email.replace(/\./g, ",");
   const userQueryId = sanitizeEmail(currentUser.email);
-  console.log("✅ Logged in as Sanitized ID:", userQueryId);
+  console.log("📩 Logged in as Sanitized ID:", userQueryId);
   localStorage.setItem("userId", userQueryId);
 
-  // ✅ 3. Reference the top-level 'notifications' collection
   const notifRef = collection(db, "notifications");
-
-  // ✅ 4. Define the query using the sanitized email ID
   const notifQuery = query(
     notifRef,
     where("userId", "==", userQueryId),
@@ -117,18 +159,17 @@ onAuthStateChanged(auth, async (user) => {
 
   let unsubscribe = null;
 
-  // ✅ 5. Initialize Notifications Listener
   async function initNotificationsListener() {
     const notificationsList = document.getElementById("notificationsList");
     if (!notificationsList) {
-      console.warn("⚠️ #notificationsList not found yet — retrying...");
+      console.warn("⚠️ #notificationsList not found — retrying...");
       setTimeout(initNotificationsListener, 500);
       return;
     }
 
     if (unsubscribe) unsubscribe(); // Prevent duplicate listeners
 
-    console.log("🔔 Setting up live notification listener for ID:", userQueryId);
+    console.log("🔔 Setting up live notification listener for:", userQueryId);
     unsubscribe = onSnapshot(
       notifQuery,
       (snapshot) => {
@@ -157,20 +198,18 @@ onAuthStateChanged(auth, async (user) => {
 
         notificationsList.innerHTML = items.join("");
       },
-      (error) => {
-        console.error("🔴 Firestore Listener Error:", error);
-      }
+      (error) => console.error("🔴 Firestore Listener Error:", error)
     );
   }
 
-  // ✅ 6. Initialize based on DOM state
+  // Run notifications listener when DOM is ready
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", initNotificationsListener);
   } else {
     initNotificationsListener();
   }
 
-  // ✅ 7. Re-run listener when user opens Notifications tab
+  // Re-init when Notifications tab opens
   const notifTabBtn = document.querySelector('.tab-btn[data-tab="notificationsTab"]');
   if (notifTabBtn) {
     notifTabBtn.addEventListener("click", () => {
@@ -178,15 +217,14 @@ onAuthStateChanged(auth, async (user) => {
     });
   }
 
-  // ✅ 8. Mark All As Read
+  // Mark all notifications as read
   const markAllBtn = document.getElementById("markAllRead");
   if (markAllBtn) {
     markAllBtn.addEventListener("click", async () => {
       console.log("🟡 Marking all notifications as read...");
       const snapshot = await getDocs(query(notifRef, where("userId", "==", userQueryId)));
       for (const docSnap of snapshot.docs) {
-        const ref = doc(db, "notifications", docSnap.id);
-        await updateDoc(ref, { read: true });
+        await updateDoc(doc(db, "notifications", docSnap.id), { read: true });
       }
       alert("✅ All notifications marked as read.");
     });
@@ -292,26 +330,46 @@ function showStarPopup(text) {
    ⭐ GIFT MODAL / CHAT BANNER ALERT
 ----------------------------- */
 async function showGiftModal(targetUid, targetData) {
+  // Stop if required info is missing
+  if (!targetUid || !targetData) return;
+
   const modal = document.getElementById("giftModal");
   const titleEl = document.getElementById("giftModalTitle");
   const amountInput = document.getElementById("giftAmountInput");
   const confirmBtn = document.getElementById("giftConfirmBtn");
   const closeBtn = document.getElementById("giftModalClose");
 
-  if (!modal || !titleEl || !amountInput || !confirmBtn) return;
+  // Make sure modal exists before doing anything
+  if (!modal || !titleEl || !amountInput || !confirmBtn || !closeBtn) {
+    console.warn("❌ Gift modal elements not found — skipping open");
+    return;
+  }
 
-  titleEl.textContent = `Gift ⭐️`;
+  // 🧩 Reset state before showing
+  titleEl.textContent = "Gift ⭐️";
   amountInput.value = "";
-  modal.style.display = "flex";
 
-  const close = () => (modal.style.display = "none");
+  // 🚫 Don't auto-show unless called intentionally
+  // So we only show the modal *after* all required info is ready
+  requestAnimationFrame(() => {
+    modal.style.display = "flex";
+  });
+
+  // Close modal behavior
+  const close = () => {
+    modal.style.display = "none";
+  };
+
   closeBtn.onclick = close;
-  modal.onclick = (e) => { if (e.target === modal) close(); };
+  modal.onclick = (e) => {
+    if (e.target === modal) close();
+  };
 
-  // Remove previous click listeners
+  // Remove any old listeners on confirm button
   const newConfirmBtn = confirmBtn.cloneNode(true);
   confirmBtn.replaceWith(newConfirmBtn);
 
+  // ✅ Confirm send action
   newConfirmBtn.addEventListener("click", async () => {
     const amt = parseInt(amountInput.value) || 0;
     if (amt < 100) return showStarPopup("🔥 Minimum gift is 100 ⭐️");
@@ -341,7 +399,6 @@ async function showGiftModal(targetUid, targetData) {
     showStarPopup(`You sent ${amt} stars ⭐️ to ${targetData.chatId}!`);
     close();
 
-    // Render banner; confetti/glow handled only once in renderer
     renderMessagesFromArray([{ id: docRef.id, data: messageData }]);
   });
 }
@@ -367,7 +424,7 @@ function updateRedeemLink() {
 /* ---------- Tip Link ---------- */
 function updateTipLink() {
   if (!refs.tipBtn || !currentUser) return;
-  refs.tipBtn.href = `https://golalaland.github.io/crdb/moneytrain.html?uid=${encodeURIComponent(currentUser.uid)}`;
+  refs.tipBtn.href = `https://golalaland.github.io/crdb/tapmaster.html?uid=${encodeURIComponent(currentUser.uid)}`;
   refs.tipBtn.style.display = "inline-block";
 }
 
@@ -436,7 +493,7 @@ async function reportMessage(msgData) {
     if (reportSnap.exists()) {
       const data = reportSnap.data();
       if ((data.reportedBy || []).includes(reporterChatId)) {
-        return alert("You’ve already reported this message.");
+        return showStarPopup("You’ve already reported this message.", { type: "info" });
       }
       await updateDoc(reportRef, {
         reportCount: increment(1),
@@ -457,10 +514,14 @@ async function reportMessage(msgData) {
         status: "pending"
       });
     }
-    alert("✅ Report submitted!");
+
+    // ✅ Success popup
+    showStarPopup("✅ Report submitted!", { type: "success" });
+
   } catch (err) {
     console.error(err);
-    alert("❌ Error reporting message.");
+    // ❌ Error popup
+    showStarPopup("❌ Error reporting message.", { type: "error" });
   }
 }
 
@@ -511,21 +572,24 @@ function showTapModal(targetEl, msgData) {
 }
 
 // Confetti / glow for banners
+// Banner glow only (no confetti)
 function triggerBannerEffect(bannerEl) {
   bannerEl.style.animation = "bannerGlow 1s ease-in-out infinite alternate";
-  // Optional: simple confetti particles
-  const confetti = document.createElement("div");
-  confetti.className = "confetti";
-  confetti.style.position = "absolute";
-  confetti.style.top = "-4px";
-  confetti.style.left = "50%";
-  confetti.style.width = "6px";
-  confetti.style.height = "6px";
-  confetti.style.background = "#fff";
-  confetti.style.borderRadius = "50%";
-  bannerEl.appendChild(confetti);
-  setTimeout(() => confetti.remove(), 1500);
+
+  // ✅ Confetti removed
+  // const confetti = document.createElement("div");
+  // confetti.className = "confetti";
+  // confetti.style.position = "absolute";
+  // confetti.style.top = "-4px";
+  // confetti.style.left = "50%";
+  // confetti.style.width = "6px";
+  // confetti.style.height = "6px";
+  // confetti.style.background = "#fff";
+  // confetti.style.borderRadius = "50%";
+  // bannerEl.appendChild(confetti);
+  // setTimeout(() => confetti.remove(), 1500);
 }
+
 
 // Render messages
 function renderMessagesFromArray(messages) {
@@ -883,146 +947,142 @@ async function promptForChatID(userRef, userData) {
 }
 
 
-/* ===============================
-   🔐 VIP Login (Whitelist Check)
-================================= */
-async function loginWhitelist(email, phone) {
+/* ---------- VIP Login + Smooth Auto-login with Progress ---------- */
+import { signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+async function loginWhitelist(email, password) {
   const loader = document.getElementById("postLoginLoader");
+  const loadingBar = document.getElementById("loadingBar");
+
+  let progress = 0;
+  let loadingInterval;
+
   try {
     if (loader) loader.style.display = "flex";
-    await sleep(50);
-
-    // 🔍 Query whitelist
-    const whitelistQuery = query(
-      collection(db, "whitelist"),
-      where("email", "==", email),
-      where("phone", "==", phone)
-    );
-    const whitelistSnap = await getDocs(whitelistQuery);
-    console.log("📋 Whitelist result:", whitelistSnap.docs.map(d => d.data()));
-
-    if (whitelistSnap.empty) {
-      return showStarPopup("You’re not on the whitelist. Please check your email and phone format.");
+    if (loadingBar) {
+      loadingBar.style.width = "0%";
+      loadingBar.style.background = "linear-gradient(90deg, #ff69b4, #ff1493)";
     }
 
+    // Smooth progress animation
+    loadingInterval = setInterval(() => {
+      if (progress < 95 && loadingBar) {
+        progress += Math.random() * 2 + 0.5; // slow, smooth increment
+        loadingBar.style.width = `${progress}%`;
+      }
+    }, 80);
+
+    // Firebase Auth
+    const cred = await signInWithEmailAndPassword(auth, email, password);
+    const user = cred.user;
+    console.log("✅ Authenticated:", user.email);
+
+    // Whitelist check
+    const q = query(collection(db, "whitelist"), where("email", "==", email));
+    const snap = await getDocs(q);
+    if (snap.empty) {
+      await signOut(auth);
+      showStarPopup("❌ You’re not on the whitelist. Access denied.");
+      return false;
+    }
+
+    // Load user profile
     const uidKey = sanitizeKey(email);
     const userRef = doc(db, "users", uidKey);
     const userSnap = await getDoc(userRef);
-
     if (!userSnap.exists()) {
-      return showStarPopup("User not found. Please sign up on the main page first.");
+      await signOut(auth);
+      showStarPopup("⚠️ Profile missing. Please complete signup first.");
+      return false;
     }
 
-    const data = userSnap.data() || {};
-
-    // 🧍🏽 Set current user details
+    const data = userSnap.data();
     currentUser = {
       uid: uidKey,
       email: data.email,
-      phone: data.phone,
       chatId: data.chatId,
-      chatIdLower: data.chatIdLower,
+      fullName: data.fullName || "",
+      isAdmin: !!data.isAdmin,
+      isVIP: !!data.isVIP,
+      gender: data.gender || "",
       stars: data.stars || 0,
       cash: data.cash || 0,
       usernameColor: data.usernameColor || randomColor(),
-      isAdmin: !!data.isAdmin,
-      isVIP: !!data.isVIP,
-      fullName: data.fullName || "",
-      gender: data.gender || "",
       subscriptionActive: !!data.subscriptionActive,
-      subscriptionCount: data.subscriptionCount || 0,
-      lastStarDate: data.lastStarDate || todayDate(),
-      starsGifted: data.starsGifted || 0,
-      starsToday: data.starsToday || 0,
       hostLink: data.hostLink || null,
       invitedBy: data.invitedBy || null,
-      inviteeGiftShown: !!data.inviteeGiftShown,
       isHost: !!data.isHost
     };
 
-    // ✅ Store user ID for notifications system
-    const userId = currentUser.chatId || currentUser.email || currentUser.phone;
-    localStorage.setItem("userId", userId);
-    console.log("✅ Stored userId for notifications:", userId);
+// Cache credentials
+    localStorage.setItem("vipUser", JSON.stringify({ email, password }));
 
-    // 🧠 Setup post-login systems
+    // Initialize chat + notifications
     updateRedeemLink();
     updateTipLink();
-    setupPresence(currentUser);
-    attachMessagesListener();
+    setupPresence?.(currentUser);
+    attachMessagesListener?.();
     startStarEarning(currentUser.uid);
+    showChatUI(currentUser);
+    startNotificationsFor?.(email);
 
-    // Store VIP user in local storage (existing)
-    localStorage.setItem("vipUser", JSON.stringify({ email, phone }));
+    console.log("🚀 Chatroom access granted:", email);
 
-    // Prompt guests for a permanent chatID
-    if (currentUser.chatId?.startsWith("GUEST")) {
-      await promptForChatID(userRef, data);
+    // Complete progress bar smoothly to 100%
+    if (loadingBar) {
+      let finalProgress = progress;
+      const finalizeInterval = setInterval(() => {
+        finalProgress += 2;
+        if (finalProgress >= 100) {
+          loadingBar.style.width = "100%";
+          clearInterval(finalizeInterval);
+        } else {
+          loadingBar.style.width = `${finalProgress}%`;
+        }
+      }, 30);
     }
 
-    // 🎨 Update UI
-  showChatUI(currentUser);
-console.log("🚀 Starting notifications for:", email);
-startNotificationsFor(email);
-
-
+    await sleep(400);
     return true;
 
   } catch (err) {
     console.error("❌ Login error:", err);
-    showStarPopup("Login failed. Try again!");
+    showStarPopup("Login failed. Please check credentials.");
+    if (loadingBar) loadingBar.style.width = "0%";
     return false;
   } finally {
+    clearInterval(loadingInterval);
     if (loader) loader.style.display = "none";
   }
 }
 
+/* ===============================
+   🎟️ Bind VIP ACCESS button
+================================= */
+document.getElementById("whitelistLoginBtn")?.addEventListener("click", async () => {
+  const email = (document.getElementById("emailInput")?.value || "").trim().toLowerCase();
+  const password = (document.getElementById("passwordInput")?.value || "").trim();
+
+  if (!email || !password) return showStarPopup("Enter both email and password.");
+  await loginWhitelist(email, password);
+});
 
 /* ----------------------------
-   🔁 Auto Login Session
+   🔁 Auto-login session
 ----------------------------- */
-window.addEventListener("DOMContentLoaded", async () => {
+async function autoLogin() {
   const vipUser = JSON.parse(localStorage.getItem("vipUser"));
-  if (vipUser?.email && vipUser?.phone) {
-    const loader = document.getElementById("postLoginLoader");
-    const loadingBar = document.getElementById("loadingBar");
+  if (!vipUser?.email || !vipUser?.password) return;
 
-    try {
-      // ✅ Make sure loader and bar are visible
-      if (loader) loader.style.display = "flex";
-      if (loadingBar) loadingBar.style.width = "0%";
+  console.log("🔄 Auto-login for:", vipUser.email);
+  const success = await loginWhitelist(vipUser.email, vipUser.password);
 
-      // 🩷 Animate bar while logging in
-      let progress = 0;
-      const interval = 80;
-      const loadingInterval = setInterval(() => {
-        if (progress < 90) { // don’t fill completely until login ends
-          progress += Math.random() * 5;
-          loadingBar.style.width = `${Math.min(progress, 90)}%`;
-        }
-      }, interval);
-
-      // 🧠 Run the login
-      const success = await loginWhitelist(vipUser.email, vipUser.phone);
-
-      // Finish bar smoothly
-      clearInterval(loadingInterval);
-      loadingBar.style.width = "100%";
-
-      if (success) {
-        await sleep(400);
-        updateRedeemLink();
-        updateTipLink();
-      }
-
-    } catch (err) {
-      console.error("❌ Auto-login error:", err);
-    } finally {
-      await sleep(300);
-      if (loader) loader.style.display = "none";
-    }
+  if (success && currentUser?.isVIP) {
+    showStarPopup(`Welcome back, VIP ${currentUser.chatId || currentUser.email}! ⭐️`);
   }
-});
+}
+
+window.addEventListener("DOMContentLoaded", autoLogin);
 
 
 /* ===============================
@@ -1103,27 +1163,34 @@ function startStarEarning(uid) {
 const todayDate = () => new Date().toISOString().split("T")[0];
 const sleep = ms => new Promise(res => setTimeout(res, ms));
 
+
 /* ===============================
-   🧠 UI Updates After Auth
+   🧠 UI Updates After Auth (Improved)
 ================================= */
 function updateUIAfterAuth(user) {
   const subtitle = document.getElementById("roomSubtitle");
   const helloText = document.getElementById("helloText");
   const roomDescText = document.querySelector(".room-desc .text");
   const hostsBtn = document.getElementById("openHostsBtn");
+  const loginBar = document.getElementById("loginBar"); // adjust if different ID
+
+  // Keep Star Hosts button always visible
+  if (hostsBtn) hostsBtn.style.display = "block";
 
   if (user) {
-    // Hide intro texts and show host button
+    // Hide intro texts only for logged-in users
     if (subtitle) subtitle.style.display = "none";
     if (helloText) helloText.style.display = "none";
     if (roomDescText) roomDescText.style.display = "none";
-    if (hostsBtn) hostsBtn.style.display = "block";
+
+    if (loginBar) loginBar.style.display = "flex";
   } else {
-    // Restore intro texts and hide host button
+    // Show intro texts for guests
     if (subtitle) subtitle.style.display = "block";
     if (helloText) helloText.style.display = "block";
     if (roomDescText) roomDescText.style.display = "block";
-    if (hostsBtn) hostsBtn.style.display = "none";
+
+    if (loginBar) loginBar.style.display = "flex";
   }
 }
 
@@ -1546,8 +1613,8 @@ refs.sendBtn?.addEventListener("click", async () => {
 })();
 
 
-// URL of your custom star SVG hosted on Shopify
-const customStarURL = "https://cdn.shopify.com/s/files/1/0962/6648/6067/files/starssvg.svg?v=1761770774";
+// URL of your new custom star SVG hosted on Shopify
+const customStarURL = "https://cdn.shopify.com/s/files/1/0962/6648/6067/files/128_x_128_px.svg?v=1763183432";
 
 // Replace stars in text nodes with SVG + floating stars (invisible)
 function replaceStarsWithSVG(root = document.body) {
@@ -1640,6 +1707,7 @@ replaceStarsWithSVG();
 
 
 
+
 /* ---------- DOM Elements ---------- */
 const openBtn = document.getElementById("openHostsBtn");
 const modal = document.getElementById("featuredHostsModal");
@@ -1657,7 +1725,7 @@ const nextBtn = document.getElementById("nextHost");
 let hosts = [];
 let currentIndex = 0;
 
-/* ---------- Fetch + Listen to featuredHosts ---------- */
+
 /* ---------- Fetch + Listen to featuredHosts + users merge ---------- */
 async function fetchFeaturedHosts() {
   try {
@@ -2055,7 +2123,10 @@ giftSlider.addEventListener("input", () => {
   giftSlider.style.background = randomFieryGradient(); // change fiery color as it slides
 });
 
-/* ---------- Modal open (new color each popup) ---------- */
+/*
+=========================================
+🚫 COMMENTED OUT: Duplicate modal opener
+=========================================
 openBtn.addEventListener("click", () => {
   modal.style.display = "flex";
   modal.style.justifyContent = "center";
@@ -2065,6 +2136,8 @@ openBtn.addEventListener("click", () => {
   giftSlider.style.background = randomFieryGradient();
   console.log("📺 Modal opened");
 });
+*/
+
 
 /* ===============================
    🎁 Send Gift + Dual Notification
@@ -2153,25 +2226,43 @@ nextBtn.addEventListener("click", e => {
   loadHost((currentIndex + 1) % hosts.length);
 });
 
-/* ---------- Modal control ---------- */
+/* ---------- Safe Star Hosts Modal Open ---------- */
 openBtn.addEventListener("click", () => {
+  if (!hosts.length) {
+    showGiftAlert("⚠️ No featured hosts available yet!");
+    return;
+  }
+
+  // Load the current host safely
+  loadHost(currentIndex);
+
+  // Show modal centered
   modal.style.display = "flex";
   modal.style.justifyContent = "center";
   modal.style.alignItems = "center";
+
+  // Optional: fiery gradient for gift slider
+  if (giftSlider) {
+    giftSlider.style.background = randomFieryGradient();
+  }
+
   console.log("📺 Modal opened");
 });
 
+/* ---------- Close modal logic ---------- */
 closeModal.addEventListener("click", () => {
   modal.style.display = "none";
   console.log("❎ Modal closed");
 });
 
-window.addEventListener("click", e => {
+// Click outside modal closes it
+window.addEventListener("click", (e) => {
   if (e.target === modal) {
     modal.style.display = "none";
     console.log("🪟 Modal dismissed");
   }
 });
+
 /* ---------- Init ---------- */
 fetchFeaturedHosts();
 
@@ -3011,237 +3102,282 @@ await addDoc(notifRef, {
 })(); // ✅ closes IIFE
 
 
-// ========== 🟣 HOST SETTINGS LOGIC ==========
-const isHost = true; // <-- later dynamic
-const hostSettingsWrapper = document.getElementById("hostSettingsWrapper");
-const hostModal = document.getElementById("hostModal");
-const hostSettingsBtn = document.getElementById("hostSettingsBtn");
-const closeModal = hostModal?.querySelector(".close");
 
-if (isHost && hostSettingsWrapper) hostSettingsWrapper.style.display = "block";
+// ---------- DEBUGGABLE HOST INIT (drop-in) ----------
+(function () {
+  // Toggle this dynamically in your app
+  const isHost = true; // <-- make sure this equals true at runtime for hosts
 
-if (hostSettingsBtn && hostModal && closeModal) {
-  hostSettingsBtn.onclick = async () => {
-    hostModal.style.display = "block";
-
-    if (!currentUser?.uid) return showStarPopup("⚠️ Please log in first.");
-
-    // Populate fields from Firestore (kept blank until user edits)
-    const userRef = doc(db, "users", currentUser.uid);
-    const snap = await getDoc(userRef);
-    if (!snap.exists()) return showStarPopup("⚠️ User data not found.");
-
-    const data = snap.data();
-    document.getElementById("fullName").value = data.fullName || "";
-    document.getElementById("city").value = data.city || "";
-    document.getElementById("location").value = data.location || "";
-    document.getElementById("bio").value = data.bioPick || "";
-    document.getElementById("bankAccountNumber").value = data.bankAccountNumber || "";
-    document.getElementById("bankName").value = data.bankName || "";
-    document.getElementById("telegram").value = data.telegram || "";
-    document.getElementById("tiktok").value = data.tiktok || "";
-    document.getElementById("whatsapp").value = data.whatsapp || "";
-    document.getElementById("instagram").value = data.instagram || "";
-
-    // Update photo preview if exists
-    if (data.popupPhoto) {
-      const photoPreview = document.getElementById("photoPreview");
-      const photoPlaceholder = document.getElementById("photoPlaceholder");
-      photoPreview.src = data.popupPhoto;
-      photoPreview.style.display = "block";
-      photoPlaceholder.style.display = "none";
-    }
-  };
-
-  closeModal.onclick = () => (hostModal.style.display = "none");
-  window.onclick = (e) => {
-    if (e.target === hostModal) hostModal.style.display = "none";
-  };
-}
-
-// ========== 🟠 TAB LOGIC ==========
-document.querySelectorAll(".tab-btn").forEach((btn) => {
-  btn.onclick = () => {
-    document.querySelectorAll(".tab-btn").forEach((b) => b.classList.remove("active"));
-    document.querySelectorAll(".tab-content").forEach((tab) => (tab.style.display = "none"));
-    btn.classList.add("active");
-    document.getElementById(btn.dataset.tab).style.display = "block";
-  };
-});
-
-// ========== 🖼️ PHOTO PREVIEW ==========
-document.addEventListener("change", (e) => {
-  if (e.target.id === "popupPhoto") {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      const photoPreview = document.getElementById("photoPreview");
-      const photoPlaceholder = document.getElementById("photoPlaceholder");
-      if (photoPreview && photoPlaceholder) {
-        photoPreview.src = reader.result;
-        photoPreview.style.display = "block";
-        photoPlaceholder.style.display = "none";
-      }
-    };
-    reader.readAsDataURL(file);
+  // Small helper: wait for a set of elements to exist (polling)
+  function waitForElements(selectors = [], { timeout = 5000, interval = 80 } = {}) {
+    const start = Date.now();
+    return new Promise((resolve, reject) => {
+      (function poll() {
+        const found = selectors.map(s => document.querySelector(s));
+        if (found.every(el => el)) return resolve(found);
+        if (Date.now() - start > timeout) return reject(new Error("waitForElements timeout: " + selectors.join(", ")));
+        setTimeout(poll, interval);
+      })();
+    });
   }
-});
 
-// ========== 📝 SAVE INFO & MEDIA HANDLER ==========
-const saveInfoBtn = document.getElementById("saveInfo");
-const saveMediaBtn = document.getElementById("saveMedia");
+  // Safe getter w/ default
+  const $ = (sel) => document.querySelector(sel);
 
-
-// -------- Firestore update helper --------
-async function updateFirestoreDoc(userId, data) {
-  const userRef = doc(db, "users", userId);
-
-  // Only filter undefined (allow clearing fields to "")
-  const filteredData = Object.fromEntries(
-    Object.entries(data).filter(([_, value]) => value !== undefined)
-  );
-
-  await updateDoc(userRef, { ...filteredData, lastUpdated: serverTimestamp() });
-
-  // Sync to featuredHosts if doc exists
-  const hostRef = doc(db, "featuredHosts", userId);
-  const hostSnap = await getDoc(hostRef);
-  if (hostSnap.exists()) {
-    await updateDoc(hostRef, { ...filteredData, lastUpdated: serverTimestamp() });
+  // run everything after DOM ready (and still robust if DOM already loaded)
+  function ready(fn) {
+    if (document.readyState === "complete" || document.readyState === "interactive") {
+      setTimeout(fn, 0);
+    } else {
+      document.addEventListener("DOMContentLoaded", fn);
+    }
   }
-}
 
-// -------- Save Info --------
-if (saveInfoBtn) {
-  saveInfoBtn.onclick = async () => {
-    if (!currentUser?.uid) return showStarPopup("⚠️ Please log in first.");
+  ready(async () => {
+    console.log("[host-init] DOM ready. isHost =", isHost);
 
-    const fullName = document.getElementById("fullName")?.value || "";
-    const city = document.getElementById("city")?.value || "";
-    const location = document.getElementById("location")?.value || "";
-    const bio = document.getElementById("bio")?.value || "";
-    const bankAccountNumber = document.getElementById("bankAccountNumber")?.value || "";
-    const bankName = document.getElementById("bankName")?.value || "";
-    const telegram = document.getElementById("telegram")?.value || "";
-    const tiktok = document.getElementById("tiktok")?.value || "";
-    const whatsapp = document.getElementById("whatsapp")?.value || "";
-    const instagram = document.getElementById("instagram")?.value || "";
-    const naturePickEl = document.getElementById("naturePick");
-    const fruitPickEl = document.getElementById("fruitPick");
-    const naturePick = naturePickEl?.value || "";
-    const fruitPick = fruitPickEl?.value || "";
-
-    if (bankAccountNumber && !/^\d{1,11}$/.test(bankAccountNumber)) {
-      return showStarPopup("⚠️ Bank account number must be digits only (max 11).");
-    }
-    if (whatsapp && !/^\d+$/.test(whatsapp)) {
-      return showStarPopup("⚠️ WhatsApp number must be numbers only.");
+    if (!isHost) {
+      console.log("[host-init] not a host. exiting host init.");
+      return;
     }
 
-    const dataToUpdate = {
-      fullName: fullName ? fullName.replace(/\b\w/g, l => l.toUpperCase()) : "",
-      city,
-      location,
-      bioPick: bio,
-      bankAccountNumber,
-      bankName,
-      telegram,
-      tiktok,
-      whatsapp,
-      instagram,
-      naturePick,
-      fruitPick
-    };
-
-    // ---------- Tiny centered spinner ----------
-    const originalHTML = saveInfoBtn.innerHTML;
-    saveInfoBtn.innerHTML = `
-      <div class="spinner" style="
-        width:12px;
-        height:12px;
-        border:2px solid #fff;
-        border-top-color:transparent;
-        border-radius:50%;
-        animation: spin 0.6s linear infinite;
-        margin:auto;
-      "></div>
-    `;
-    saveInfoBtn.disabled = true;
-    saveInfoBtn.style.display = "flex";
-    saveInfoBtn.style.alignItems = "center";
-    saveInfoBtn.style.justifyContent = "center";
-
+    // 1) Wait for the most important elements that must exist for host flow.
     try {
-      await updateFirestoreDoc(currentUser.uid, dataToUpdate);
-      showStarPopup("✅ Profile updated successfully!");
+      const [
+        hostSettingsWrapperEl,
+        hostModalEl,
+        hostSettingsBtnEl,
+      ] = await waitForElements(
+        ["#hostSettingsWrapper", "#hostModal", "#hostSettingsBtn"],
+        { timeout: 7000 }
+      );
 
-      // Keep dropdown selections visible
-      if (naturePickEl) naturePickEl.value = naturePick;
-      if (fruitPickEl) fruitPickEl.value = fruitPick;
-
-      document.querySelectorAll("#mediaTab input, #mediaTab textarea, #mediaTab select")
-              .forEach(input => input.blur());
-    } catch (err) {
-      console.error("❌ Error updating Firestore:", err);
-      showStarPopup("⚠️ Failed to update info. Please try again.");
-    } finally {
-      saveInfoBtn.innerHTML = originalHTML;
-      saveInfoBtn.disabled = false;
-      saveInfoBtn.style.display = "";
-      saveInfoBtn.style.alignItems = "";
-      saveInfoBtn.style.justifyContent = "";
-    }
-  };
-}
-
-// -------- Save Media --------
-if (saveMediaBtn) {
-  saveMediaBtn.onclick = async () => {
-    if (!currentUser?.uid) return showStarPopup("⚠️ Please log in first.");
-
-    const popupPhotoFile = document.getElementById("popupPhoto")?.files[0];
-    const uploadVideoFile = document.getElementById("uploadVideo")?.files[0];
-
-    if (!popupPhotoFile && !uploadVideoFile) {
-      return showStarPopup("⚠️ Please select a photo or video to upload.");
-    }
-
-    try {
-      showStarPopup("⏳ Uploading media...");
-
-      const formData = new FormData();
-      if (popupPhotoFile) formData.append("photo", popupPhotoFile);
-      if (uploadVideoFile) formData.append("video", uploadVideoFile);
-
-      const res = await fetch("/api/uploadShopify", { method: "POST", body: formData });
-      if (!res.ok) throw new Error("Upload failed. Check your network.");
-
-      const data = await res.json(); // { photoUrl: "...", videoUrl: "..." }
-
-      await updateFirestoreDoc(currentUser.uid, {
-        ...(data.photoUrl && { popupPhoto: data.photoUrl }),
-        ...(data.videoUrl && { videoUrl: data.videoUrl }),
+      console.log("[host-init] Found host elements:", {
+        hostSettingsWrapper: !!hostSettingsWrapperEl,
+        hostModal: !!hostModalEl,
+        hostSettingsBtn: !!hostSettingsBtnEl,
       });
 
-      // Update preview if photo exists
-      if (data.photoUrl) {
-        const photoPreview = document.getElementById("photoPreview");
-        const photoPlaceholder = document.getElementById("photoPlaceholder");
-        photoPreview.src = data.photoUrl;
-        photoPreview.style.display = "block";
-        photoPlaceholder.style.display = "none";
+      // Show wrapper/button
+      hostSettingsWrapperEl.style.display = "block";
+
+      // close button - optional but preferred
+      const closeModalEl = hostModalEl.querySelector(".close");
+      if (!closeModalEl) {
+        console.warn("[host-init] close button (.close) not found inside #hostModal.");
       }
 
-      showStarPopup("✅ Media uploaded successfully!");
-      hostModal.style.display = "none";
+      // --- attach tab init (shared across modals)
+      function initTabsForModal(modalEl) {
+        modalEl.querySelectorAll(".tab-btn").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            modalEl.querySelectorAll(".tab-btn").forEach((b) => b.classList.remove("active"));
+            // Hide only tab-content referenced by dataset or global shared notifications
+            document.querySelectorAll(".tab-content").forEach((tab) => (tab.style.display = "none"));
+            btn.classList.add("active");
+            const target = document.getElementById(btn.dataset.tab);
+            if (target) target.style.display = "block";
+            else console.warn("[host-init] tab target not found:", btn.dataset.tab);
+          });
+        });
+      }
+      initTabsForModal(hostModalEl);
 
+      // --- host button click: show modal + populate
+      hostSettingsBtnEl.addEventListener("click", async () => {
+        try {
+          hostModalEl.style.display = "block";
+
+          if (!currentUser?.uid) {
+            console.warn("[host-init] currentUser.uid missing");
+            return showStarPopup("⚠️ Please log in first.");
+          }
+
+          const userRef = doc(db, "users", currentUser.uid);
+          const snap = await getDoc(userRef);
+          if (!snap.exists()) {
+            console.warn("[host-init] user doc not found for uid:", currentUser.uid);
+            return showStarPopup("⚠️ User data not found.");
+          }
+          const data = snap.data() || {};
+          // populate safely (guard each element)
+          const safeSet = (id, value) => {
+            const el = document.getElementById(id);
+            if (el) el.value = value ?? "";
+          };
+
+          safeSet("fullName", data.fullName || "");
+          safeSet("city", data.city || "");
+          safeSet("location", data.location || "");
+          safeSet("bio", data.bioPick || "");
+          safeSet("bankAccountNumber", data.bankAccountNumber || "");
+          safeSet("bankName", data.bankName || "");
+          safeSet("telegram", data.telegram || "");
+          safeSet("tiktok", data.tiktok || "");
+          safeSet("whatsapp", data.whatsapp || "");
+          safeSet("instagram", data.instagram || "");
+          // picks
+          const natureEl = document.getElementById("naturePick");
+          if (natureEl) natureEl.value = data.naturePick || "";
+          const fruitEl = document.getElementById("fruitPick");
+          if (fruitEl) fruitEl.value = data.fruitPick || "";
+
+          // preview photo
+          if (data.popupPhoto) {
+            const photoPreview = document.getElementById("photoPreview");
+            const photoPlaceholder = document.getElementById("photoPlaceholder");
+            if (photoPreview) {
+              photoPreview.src = data.popupPhoto;
+              photoPreview.style.display = "block";
+            }
+            if (photoPlaceholder) photoPlaceholder.style.display = "none";
+          } else {
+            // ensure preview hidden if no photo
+            const photoPreview = document.getElementById("photoPreview");
+            const photoPlaceholder = document.getElementById("photoPlaceholder");
+            if (photoPreview) photoPreview.style.display = "none";
+            if (photoPlaceholder) photoPlaceholder.style.display = "inline-block";
+          }
+
+        } catch (err) {
+          console.error("[host-init] error in hostSettingsBtn click:", err);
+          showStarPopup("⚠️ Failed to open settings. Check console.");
+        }
+      });
+
+      // --- close handlers
+      if (closeModalEl) {
+        closeModalEl.addEventListener("click", () => (hostModalEl.style.display = "none"));
+      }
+      window.addEventListener("click", (e) => {
+        if (e.target === hostModalEl) hostModalEl.style.display = "none";
+      });
+
+      // --- photo preview handler (delegated)
+      document.addEventListener("change", (e) => {
+        if (e.target && e.target.id === "popupPhoto") {
+          const file = e.target.files?.[0];
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = () => {
+            const photoPreview = document.getElementById("photoPreview");
+            const photoPlaceholder = document.getElementById("photoPlaceholder");
+            if (photoPreview) {
+              photoPreview.src = reader.result;
+              photoPreview.style.display = "block";
+            }
+            if (photoPlaceholder) photoPlaceholder.style.display = "none";
+          };
+          reader.readAsDataURL(file);
+        }
+      });
+
+      // --- save info button (safe)
+      const maybeSaveInfo = document.getElementById("saveInfo");
+      if (maybeSaveInfo) {
+        maybeSaveInfo.addEventListener("click", async () => {
+          if (!currentUser?.uid) return showStarPopup("⚠️ Please log in first.");
+          const getVal = id => document.getElementById(id)?.value ?? "";
+
+          const dataToUpdate = {
+            fullName: (getVal("fullName") || "").replace(/\b\w/g, l => l.toUpperCase()),
+            city: getVal("city"),
+            location: getVal("location"),
+            bioPick: getVal("bio"),
+            bankAccountNumber: getVal("bankAccountNumber"),
+            bankName: getVal("bankName"),
+            telegram: getVal("telegram"),
+            tiktok: getVal("tiktok"),
+            whatsapp: getVal("whatsapp"),
+            instagram: getVal("instagram"),
+            naturePick: getVal("naturePick"),
+            fruitPick: getVal("fruitPick"),
+          };
+
+          if (dataToUpdate.bankAccountNumber && !/^\d{1,11}$/.test(dataToUpdate.bankAccountNumber))
+            return showStarPopup("⚠️ Bank account number must be digits only (max 11).");
+          if (dataToUpdate.whatsapp && dataToUpdate.whatsapp && !/^\d+$/.test(dataToUpdate.whatsapp))
+            return showStarPopup("⚠️ WhatsApp number must be numbers only.");
+
+          const originalHTML = maybeSaveInfo.innerHTML;
+          maybeSaveInfo.innerHTML = `<div class="spinner" style="width:12px;height:12px;border:2px solid #fff;border-top-color:transparent;border-radius:50%;animation: spin 0.6s linear infinite;margin:auto;"></div>`;
+          maybeSaveInfo.disabled = true;
+
+          try {
+            const userRef = doc(db, "users", currentUser.uid);
+            const filteredData = Object.fromEntries(Object.entries(dataToUpdate).filter(([_, v]) => v !== undefined));
+            await updateDoc(userRef, { ...filteredData, lastUpdated: serverTimestamp() });
+            // mirror to featuredHosts if exists
+            const hostRef = doc(db, "featuredHosts", currentUser.uid);
+            const hostSnap = await getDoc(hostRef);
+            if (hostSnap.exists()) await updateDoc(hostRef, { ...filteredData, lastUpdated: serverTimestamp() });
+
+            showStarPopup("✅ Profile updated successfully!");
+            // blur inputs for UX
+            document.querySelectorAll("#mediaTab input, #mediaTab textarea, #mediaTab select").forEach(i => i.blur());
+          } catch (err) {
+            console.error("[host-init] saveInfo error:", err);
+            showStarPopup("⚠️ Failed to update info. Please try again.");
+          } finally {
+            maybeSaveInfo.innerHTML = originalHTML;
+            maybeSaveInfo.disabled = false;
+          }
+        });
+      } else {
+        console.warn("[host-init] saveInfo button not found.");
+      }
+
+      // --- save media button (optional)
+      const maybeSaveMedia = document.getElementById("saveMedia");
+      if (maybeSaveMedia) {
+        maybeSaveMedia.addEventListener("click", async () => {
+          if (!currentUser?.uid) return showStarPopup("⚠️ Please log in first.");
+          const popupPhotoFile = document.getElementById("popupPhoto")?.files?.[0];
+          const uploadVideoFile = document.getElementById("uploadVideo")?.files?.[0];
+          if (!popupPhotoFile && !uploadVideoFile) return showStarPopup("⚠️ Please select a photo or video to upload.");
+          try {
+            showStarPopup("⏳ Uploading media...");
+            const formData = new FormData();
+            if (popupPhotoFile) formData.append("photo", popupPhotoFile);
+            if (uploadVideoFile) formData.append("video", uploadVideoFile);
+            const res = await fetch("/api/uploadShopify", { method: "POST", body: formData });
+            if (!res.ok) throw new Error("Upload failed.");
+            const data = await res.json();
+            const userRef = doc(db, "users", currentUser.uid);
+            await updateDoc(userRef, {
+              ...(data.photoUrl && { popupPhoto: data.photoUrl }),
+              ...(data.videoUrl && { videoUrl: data.videoUrl }),
+              lastUpdated: serverTimestamp()
+            });
+            if (data.photoUrl) {
+              const photoPreview = document.getElementById("photoPreview");
+              const photoPlaceholder = document.getElementById("photoPlaceholder");
+              if (photoPreview) {
+                photoPreview.src = data.photoUrl;
+                photoPreview.style.display = "block";
+              }
+              if (photoPlaceholder) photoPlaceholder.style.display = "none";
+            }
+            showStarPopup("✅ Media uploaded successfully!");
+            hostModalEl.style.display = "none";
+          } catch (err) {
+            console.error("[host-init] media upload error:", err);
+            showStarPopup(`⚠️ Failed to upload media: ${err.message}`);
+          }
+        });
+      } else {
+        console.info("[host-init] saveMedia button not present (ok if VIP-only UI).");
+      }
+
+      console.log("[host-init] Host logic initialized successfully.");
     } catch (err) {
-      console.error("❌ Media upload error:", err);
-      showStarPopup(`⚠️ Failed to upload media: ${err.message}`);
+      console.error("[host-init] Could not find required host elements:", err);
+      // helpful message for debugging during development:
+      showStarPopup("⚠️ Host UI failed to initialize. Check console for details.");
     }
-  };
-}
+  }); // ready
+})();
+
 
 // 🌤️ Dynamic Host Panel Greeting
 function capitalizeFirstLetter(str) {
@@ -3304,10 +3440,10 @@ checkScroll(); // initial check
 }); // ✅ closes DOMContentLoaded event listener
 
 
-// ---------- Highlights Button ----------
+/* ---------- Highlights Button ---------- */
 highlightsBtn.onclick = async () => {
   try {
-    if (!currentUser || !currentUser.uid) {
+    if (!currentUser?.uid) {
       showGoldAlert("Please log in to view highlights 🔒");
       return;
     }
@@ -3321,30 +3457,25 @@ highlightsBtn.onclick = async () => {
       return;
     }
 
-const videos = snapshot.docs.map(docSnap => {
-  const d = docSnap.data();
+    const videos = snapshot.docs.map(docSnap => {
+      const d = docSnap.data();
+      const uploaderName = d.uploaderName || d.chatId || d.displayName || d.username || "Anonymous";
+      return {
+        id: docSnap.id,
+        highlightVideo: d.highlightVideo,
+        highlightVideoPrice: d.highlightVideoPrice || 0,
+        title: d.title || "Untitled",
+        uploaderName,
+        uploaderId: d.uploaderId || "",
+        uploaderEmail: d.uploaderEmail || "unknown",
+        description: d.description || "",
+        thumbnail: d.thumbnail || "",
+        createdAt: d.createdAt || null,
+        unlockedBy: d.unlockedBy || [],
+        previewClip: d.previewClip || ""
+      };
+    });
 
-  // 💎 Make sure uploaderName is resolved from multiple possible fields
-  const uploaderName =
-    d.uploaderName ||
-    d.chatId ||
-    d.displayName ||
-    d.username ||
-    "Anonymous";
-
-  return {
-    id: docSnap.id,
-    highlightVideo: d.highlightVideo,
-    highlightVideoPrice: d.highlightVideoPrice || 0,
-    title: d.title || "Untitled",
-    uploaderName, // ✅ keep consistent key used in renderCards()
-    uploaderId: d.uploaderId || "",
-    uploaderEmail: d.uploaderEmail || "unknown",
-    description: d.description || "",
-    thumbnail: d.thumbnail || "",
-    createdAt: d.createdAt || null,
-  };
-});
     showHighlightsModal(videos);
   } catch (err) {
     console.error("🔥 Error fetching highlights:", err);
@@ -3352,12 +3483,10 @@ const videos = snapshot.docs.map(docSnap => {
   }
 };
 
-// ---------- Highlights Modal ----------
+/* ---------- Highlights Modal ---------- */
 function showHighlightsModal(videos) {
-  // Remove any existing modal
   document.getElementById("highlightsModal")?.remove();
 
-  // 🪩 Main modal wrapper
   const modal = document.createElement("div");
   modal.id = "highlightsModal";
   Object.assign(modal.style, {
@@ -3374,58 +3503,41 @@ function showHighlightsModal(videos) {
     zIndex: "999999",
     overflowY: "auto",
     padding: "20px",
-    boxSizing: "border-box",
+    boxSizing: "border-box"
   });
 
-  // 🪄 Sticky Intro Message
+  // Sticky intro
   const intro = document.createElement("div");
   intro.innerHTML = `
-    <div style="
-      text-align:center;
-      color:#ccc;
-      max-width:640px;
-      margin:0 auto;
-      line-height:1.6;
-      font-size:14px;
-      background:rgba(255,255,255,0.06);
-      padding:14px 20px;
-      border-radius:10px;
-      backdrop-filter:blur(5px);
-      box-shadow:0 0 12px rgba(255,255,255,0.08);
-    ">
-      <p style="margin:0;">
-        🎬 <b>Highlights</b> are exclusive creator moments.<br>
-        Unlock premium clips with ⭐ Stars to support your favorite creators.
-      </p>
-    </div>
-  `;
-  Object.assign(intro.style, {
-    position: "sticky",
-    top: "10px",
-    zIndex: "1001",
-    marginBottom: "12px",
-    transition: "opacity 0.3s ease",
-  });
+    <div style="text-align:center;color:#ccc;max-width:640px;margin:0 auto;line-height:1.6;font-size:14px;
+      background:rgba(255,255,255,0.06);padding:14px 20px;border-radius:10px;backdrop-filter:blur(5px);
+      box-shadow:0 0 12px rgba(255,255,255,0.08);">
+      <p style="margin:0;">🎬 <b>Highlights</b> are exclusive creator moments.<br>
+      Unlock premium clips with ⭐ Stars to support your favorite creators.</p>
+    </div>`;
+  Object.assign(intro.style, { position: "sticky", top: "10px", zIndex: "1001", marginBottom: "12px", transition: "opacity 0.3s ease" });
   modal.appendChild(intro);
 
-  // 🧠 Fade intro slightly when scrolling
   modal.addEventListener("scroll", () => {
     intro.style.opacity = modal.scrollTop > 50 ? "0.7" : "1";
   });
 
-  // 🩵 Search Bar (Sticky + Functional)
-const searchWrap = document.createElement("div");
-Object.assign(searchWrap.style, {
-  position: "sticky",
-  top: "84px",
-  zIndex: "1001",
-  marginBottom: "20px",
-  display: "flex",
-  justifyContent: "center",
-});
+  // Search + toggle container (vertical stack)
+  const searchWrap = document.createElement("div");
+  Object.assign(searchWrap.style, {
+    position: "sticky",
+    top: "84px",
+    zIndex: "1001",
+    marginBottom: "20px",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    gap: "6px"
+  });
 
-searchWrap.innerHTML = `
-  <div style="
+  // Search input
+  const searchInputWrap = document.createElement("div");
+  searchInputWrap.style.cssText = `
     display:flex;
     align-items:center;
     background:rgba(255,255,255,0.08);
@@ -3434,116 +3546,86 @@ searchWrap.innerHTML = `
     width:280px;
     backdrop-filter:blur(6px);
     box-shadow:0 0 10px rgba(0,0,0,0.25);
-  ">
+  `;
+  searchInputWrap.innerHTML = `
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
       <path d="M15 15L21 21M10 17C6.13401 17 3 13.866 3 10C3 6.13401 6.13401 3 10 3C13.866 3 17 6.13401 17 10C17 13.866 13.866 17 10 17Z" stroke="#999999" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
     </svg>
-    <input 
-      id="highlightSearchInput"
-      type="text"
-      placeholder="Search by creator..."
-      style="
-        flex:1;
-        background:transparent;
-        border:none;
-        outline:none;
-        color:#fff;
-        font-size:13px;
-        letter-spacing:0.3px;
-      "
-    />
-  </div>
-`;
-modal.appendChild(searchWrap);
+    <input id="highlightSearchInput" type="text" placeholder="Search by creator..." style="flex:1;background:transparent;border:none;outline:none;color:#fff;font-size:13px;letter-spacing:0.3px;"/>
+  `;
+  searchWrap.appendChild(searchInputWrap);
 
-  // 🧱 Inner container (horizontal scroll)
+  // Tiny toggle button below
+  const toggleBtn = document.createElement("button");
+  toggleBtn.id = "toggleLocked";
+  toggleBtn.textContent = "Show Unlocked";
+  Object.assign(toggleBtn.style, {
+    padding: "4px 10px",
+    borderRadius: "6px",
+    background: "#444",
+    color: "#fff",
+    border: "none",
+    fontSize: "12px",
+    cursor: "pointer"
+  });
+  searchWrap.appendChild(toggleBtn);
+  modal.appendChild(searchWrap);
+
+  // Content container
   const content = document.createElement("div");
   Object.assign(content.style, {
-    display: "flex",
-    gap: "16px",
-    flexWrap: "nowrap",
-    overflowX: "auto",
-    paddingBottom: "40px",
-    scrollBehavior: "smooth",
-    width: "100%",
-    justifyContent: "flex-start",
+    display:"flex",
+    gap:"16px",
+    flexWrap:"nowrap",
+    overflowX:"auto",
+    paddingBottom:"40px",
+    scrollBehavior:"smooth",
+    width:"100%",
+    justifyContent:"flex-start"
   });
+  modal.appendChild(content);
 
-  // 🎥 Function to render cards dynamically
-  function renderCards(filteredVideos) {
-    content.innerHTML = ""; // clear previous
-    filteredVideos.forEach(video => {
+  let unlockedVideos = JSON.parse(localStorage.getItem("userUnlockedVideos") || "[]");
+  let showUnlockedOnly = false;
+
+  function renderCards(videosToRender) {
+    content.innerHTML = "";
+    const filtered = videosToRender.filter(v => !showUnlockedOnly || unlockedVideos.includes(v.id));
+
+    filtered.forEach(video => {
       const card = document.createElement("div");
       Object.assign(card.style, {
-        minWidth: "230px",
-        maxWidth: "230px",
-        background: "#1b1b1b",
-        borderRadius: "12px",
-        overflow: "hidden",
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "space-between",
-        cursor: "pointer",
-        flexShrink: 0,
-        boxShadow: "0 2px 12px rgba(0,0,0,0.5)",
-        transition: "transform 0.2s ease",
+        minWidth: "230px", maxWidth: "230px", background: "#1b1b1b", borderRadius: "12px",
+        overflow: "hidden", display: "flex", flexDirection: "column", justifyContent: "space-between",
+        cursor: "pointer", flexShrink: 0, boxShadow: "0 2px 12px rgba(0,0,0,0.5)", transition: "transform 0.2s ease"
       });
-      card.onmouseenter = () => (card.style.transform = "scale(1.03)");
-      card.onmouseleave = () => (card.style.transform = "scale(1)");
-// 🏷️ Add searchable attributes
-card.classList.add("videoCard");
-card.setAttribute("data-uploader", video.uploaderName || "Anonymous");
-card.setAttribute("data-title", video.title || "");
+      card.onmouseenter = () => card.style.transform = "scale(1.03)";
+      card.onmouseleave = () => card.style.transform = "scale(1)";
+      card.classList.add("videoCard");
+      card.setAttribute("data-uploader", video.uploaderName || "Anonymous");
+      card.setAttribute("data-title", video.title || "");
 
       const videoContainer = document.createElement("div");
-      Object.assign(videoContainer.style, {
-        height: "320px",
-        overflow: "hidden",
-        position: "relative",
-      });
+      Object.assign(videoContainer.style, { height: "320px", overflow: "hidden", position: "relative" });
 
       const videoEl = document.createElement("video");
       videoEl.src = video.previewClip || video.highlightVideo;
-      videoEl.muted = true;
-      videoEl.controls = false;
-      videoEl.loop = true;
-      videoEl.preload = "metadata";
-      videoEl.poster =
-        video.thumbnail ||
-        `https://image-thumbnails-service/?video=${encodeURIComponent(video.highlightVideo)}&blur=10`;
-      Object.assign(videoEl.style, {
-        width: "100%",
-        height: "100%",
-        objectFit: "cover",
-      });
-
+      videoEl.muted = true; videoEl.controls = false; videoEl.loop = true; videoEl.preload = "metadata";
+      videoEl.poster = video.thumbnail || `https://image-thumbnails-service/?video=${encodeURIComponent(video.highlightVideo)}&blur=10`;
+      Object.assign(videoEl.style, { width: "100%", height: "100%", objectFit: "cover" });
       videoContainer.appendChild(videoEl);
 
-      videoContainer.onmouseenter = () => {
-        const unlocked = localStorage.getItem(`unlocked_${video.id}`) === "true";
-        if (!unlocked) videoEl.play();
-      };
-      videoContainer.onmouseleave = () => {
-        videoEl.pause();
-        videoEl.currentTime = 0;
-      };
+      videoContainer.onmouseenter = () => { if(!unlockedVideos.includes(video.id)) videoEl.play(); };
+      videoContainer.onmouseleave = () => { videoEl.pause(); videoEl.currentTime = 0; };
 
       videoContainer.onclick = (e) => {
         e.stopPropagation();
-        const unlocked = localStorage.getItem(`unlocked_${video.id}`) === "true";
-        if (unlocked) playFullVideo(video);
-        else showUnlockConfirm(video);
+        if (unlockedVideos.includes(video.id)) playFullVideo(video);
+        else showUnlockConfirm(video, () => renderCards(videos));
       };
 
       const infoPanel = document.createElement("div");
-      Object.assign(infoPanel.style, {
-        background: "#111",
-        padding: "10px",
-        display: "flex",
-        flexDirection: "column",
-        textAlign: "left",
-        gap: "4px",
-      });
+      Object.assign(infoPanel.style, { background: "#111", padding: "10px", display: "flex", flexDirection: "column", textAlign: "left", gap: "4px" });
 
       const vidTitle = document.createElement("div");
       vidTitle.textContent = video.title || "Untitled";
@@ -3554,105 +3636,96 @@ card.setAttribute("data-title", video.title || "");
       Object.assign(uploader.style, { fontSize: "12px", color: "#bbb" });
 
       const unlockBtn = document.createElement("button");
-      const isUnlocked = localStorage.getItem(`unlocked_${video.id}`) === "true";
-      unlockBtn.textContent = isUnlocked ? "Unlocked ✅" : `Unlock ${video.highlightVideoPrice || 100} ⭐`;
+      const unlocked = unlockedVideos.includes(video.id);
+      unlockBtn.textContent = unlocked ? "Unlocked ✅" : `Unlock ${video.highlightVideoPrice || 100} ⭐`;
       Object.assign(unlockBtn.style, {
-        background: isUnlocked ? "#444" : "#ff006e",
+        background: unlocked ? "#444" : "#ff006e",
         border: "none",
         borderRadius: "6px",
         padding: "8px 0",
         fontWeight: "600",
         color: "#fff",
-        cursor: isUnlocked ? "default" : "pointer",
-        transition: "background 0.2s",
+        cursor: unlocked ? "default" : "pointer",
+        transition: "background 0.2s"
       });
 
-      if (!isUnlocked) {
-        unlockBtn.onmouseenter = () => (unlockBtn.style.background = "#ff3385");
-        unlockBtn.onmouseleave = () => (unlockBtn.style.background = "#ff006e");
-        unlockBtn.onclick = (e) => {
+      if (!unlocked) {
+        unlockBtn.addEventListener("mouseenter", () => unlockBtn.style.background = "#ff3385");
+        unlockBtn.addEventListener("mouseleave", () => unlockBtn.style.background = "#ff006e");
+        unlockBtn.addEventListener("click", (e) => {
           e.stopPropagation();
-          if (!currentUser || !currentUser.uid)
-            return showGoldAlert("Please log in to unlock content 🔒");
-          showUnlockConfirm(video);
-        };
+          if (!currentUser?.uid) return showGoldAlert("Please log in to unlock content 🔒");
+          showUnlockConfirm(video, () => {
+            unlockedVideos = JSON.parse(localStorage.getItem("userUnlockedVideos") || "[]");
+            renderCards(videos);
+          });
+        });
       } else unlockBtn.disabled = true;
 
-      infoPanel.appendChild(vidTitle);
-      infoPanel.appendChild(uploader);
-      infoPanel.appendChild(unlockBtn);
-
-      card.appendChild(videoContainer);
-      card.appendChild(infoPanel);
+      infoPanel.append(vidTitle, uploader, unlockBtn);
+      card.append(videoContainer, infoPanel);
       content.appendChild(card);
     });
   }
 
-  // Initial render
   renderCards(videos);
 
-// 🔎 Live Search Filter (No re-render — hides/shows instantly)
-const searchInput = searchWrap.querySelector("#highlightSearchInput");
-
-searchInput.addEventListener("input", (e) => {
-  const term = e.target.value.trim().toLowerCase();
-
-  // Loop through all visible video cards
-  content.querySelectorAll(".videoCard").forEach(card => {
-    const uploader = card.getAttribute("data-uploader")?.toLowerCase() || "";
-    const title = card.getAttribute("data-title")?.toLowerCase() || "";
-
-    card.style.display =
-      uploader.includes(term) || title.includes(term) ? "flex" : "none";
+  // Search filter
+  searchInputWrap.querySelector("#highlightSearchInput").addEventListener("input", e => {
+    const term = e.target.value.trim().toLowerCase();
+    content.querySelectorAll(".videoCard").forEach(card => {
+      const uploader = card.getAttribute("data-uploader")?.toLowerCase() || "";
+      const title = card.getAttribute("data-title")?.toLowerCase() || "";
+      card.style.display = (uploader.includes(term) || title.includes(term)) ? "flex" : "none";
+    });
   });
-});
 
-  // ❌ Close button
+  // Toggle button
+  toggleBtn.addEventListener("click", () => {
+    showUnlockedOnly = !showUnlockedOnly;
+    toggleBtn.textContent = showUnlockedOnly ? "Show All" : "Show Unlocked";
+    renderCards(videos);
+  });
+
+  // Close button
   const closeBtn = document.createElement("div");
   closeBtn.innerHTML = "&times;";
-  Object.assign(closeBtn.style, {
-    position: "fixed",
-    top: "20px",
-    right: "28px",
-    fontSize: "32px",
-    color: "#fff",
-    fontWeight: "700",
-    cursor: "pointer",
-    zIndex: "1000000",
-  });
+  Object.assign(closeBtn.style, { position: "fixed", top: "20px", right: "28px", fontSize: "32px", color: "#fff", fontWeight: "700", cursor: "pointer", zIndex: "1000000" });
   closeBtn.onclick = () => modal.remove();
-
-  // Add everything
-  modal.appendChild(content);
   modal.appendChild(closeBtn);
+
   document.body.appendChild(modal);
 }
 
-// ---------- Unlock Confirmation ----------
-function showUnlockConfirm(video) {
-  // 🛑 Stop any video that might be playing behind
-  document.querySelectorAll("video").forEach(v => v.pause());
+/* ---------- Sorting helper ---------- */
+function sortVideos(videos, mode="all"){
+  const unlockedIds = JSON.parse(localStorage.getItem("userUnlockedVideos")||"[]");
+  if(mode==="unlocked") return videos.filter(v=>unlockedIds.includes(v.id));
+  if(mode==="locked") return videos.filter(v=>!unlockedIds.includes(v.id));
+  return videos;
+}
 
-  // Remove any existing unlock modal
+/* ---------- Unlock Confirm Modal ---------- */
+function showUnlockConfirm(video, onUnlockCallback) {
+  document.querySelectorAll("video").forEach(v => v.pause());
   document.getElementById("unlockConfirmModal")?.remove();
 
   const modal = document.createElement("div");
- modal.id = "unlockConfirmModal";
-Object.assign(modal.style, {
-  position: "fixed",
-  top: 0,
-  left: 0,
-  width: "100vw",
-  height: "100vh",
-  background: "rgba(0,0,0,0.93)", // darker and more opaque
-  backdropFilter: "blur(8px)",    // thicker blur = more glassy
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  zIndex: "1000001",
-  transition: "opacity 0.3s ease",
-  opacity: "1",
-});
+  modal.id = "unlockConfirmModal";
+  Object.assign(modal.style, {
+    position: "fixed",
+    top: 0,
+    left: 0,
+    width: "100vw",
+    height: "100vh",
+    background: "rgba(0,0,0,0.93)",
+    backdropFilter: "blur(8px)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: "1000001",
+    opacity: "1",
+  });
 
   modal.innerHTML = `
     <div style="background:#111;padding:20px;border-radius:12px;text-align:center;color:#fff;max-width:320px;box-shadow:0 0 20px rgba(0,0,0,0.5);">
@@ -3666,29 +3739,36 @@ Object.assign(modal.style, {
   `;
 
   document.body.appendChild(modal);
+
   modal.querySelector("#cancelUnlock").onclick = () => modal.remove();
   modal.querySelector("#confirmUnlock").onclick = async () => {
     modal.remove();
     await handleUnlockVideo(video);
+    if (onUnlockCallback) onUnlockCallback();
   };
 }
 
-// ---------- Deduct Stars + Credit Uploader ----------
+/* ---------- Unlock Logic ---------- */
 async function handleUnlockVideo(video) {
   try {
     const senderId = currentUser.uid;
     const receiverId = video.uploaderId;
     const starsToDeduct = parseInt(video.highlightVideoPrice, 10) || 0;
 
-    if (!starsToDeduct || starsToDeduct <= 0) return showGoldAlert("Invalid unlock price ❌");
-    if (senderId === receiverId) return showGoldAlert("You can’t unlock your own video 😅");
+    if (!starsToDeduct || starsToDeduct <= 0)
+      return showGoldAlert("Invalid unlock price ❌");
+    if (senderId === receiverId)
+      return showGoldAlert("You can’t unlock your own video 😅");
 
     const senderRef = doc(db, "users", senderId);
     const receiverRef = doc(db, "users", receiverId);
+    const videoRef = doc(db, "highlightVideos", video.id);
 
     await runTransaction(db, async (tx) => {
       const senderSnap = await tx.get(senderRef);
       const receiverSnap = await tx.get(receiverRef);
+      const videoSnap = await tx.get(videoRef);
+
       if (!senderSnap.exists()) throw new Error("User record not found.");
       if (!receiverSnap.exists()) tx.set(receiverRef, { stars: 0 }, { merge: true });
 
@@ -3696,23 +3776,38 @@ async function handleUnlockVideo(video) {
       if ((senderData.stars || 0) < starsToDeduct)
         throw new Error("Insufficient stars ⭐");
 
+      // Deduct and add stars
       tx.update(senderRef, { stars: increment(-starsToDeduct) });
       tx.update(receiverRef, { stars: increment(starsToDeduct) });
+
+      // Add sender info to video unlockedBy using client timestamp
+      tx.update(videoRef, {
+        unlockedBy: arrayUnion({
+          userId: senderId,
+          chatId: currentUser.chatId || "unknown",
+          unlockedAt: new Date() // <-- replace serverTimestamp()
+        })
+      });
+
+      // Add video to user unlockedVideos
+      tx.update(senderRef, { unlockedVideos: arrayUnion(video.id) });
     });
 
-    // ✅ Remember unlock
+    // Update localStorage for UI
+    const unlockedIds = JSON.parse(localStorage.getItem("userUnlockedVideos") || "[]");
+    if (!unlockedIds.includes(video.id)) unlockedIds.push(video.id);
+    localStorage.setItem("userUnlockedVideos", JSON.stringify(unlockedIds));
     localStorage.setItem(`unlocked_${video.id}`, "true");
-    showGoldAlert(`✅ You unlocked ${video.uploader}'s video for ${starsToDeduct} ⭐`);
 
-    // ✅ Refresh modal to show unlock state
+    showGoldAlert(`✅ You unlocked ${video.uploaderName}'s video for ${starsToDeduct} ⭐`);
     document.getElementById("highlightsModal")?.remove();
     showHighlightsModal([video]);
+
   } catch (err) {
     console.error("❌ Unlock failed:", err);
     showGoldAlert(`⚠️ ${err.message}`);
   }
 }
-
 // ---------- Play Full Video Modal ----------
 function playFullVideo(video) {
   const modal = document.createElement("div");
