@@ -18,16 +18,18 @@ import {
   runTransaction,
   arrayUnion
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import {
-  getDatabase,
-  ref as rtdbRef,
-  set as rtdbSet,
-  onDisconnect,
-  onValue
+
+import { 
+  getDatabase, 
+  ref as rtdbRef, 
+  set as rtdbSet, 
+  onDisconnect, 
+  onValue 
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
-import {
-  getAuth,
-  onAuthStateChanged
+
+import { 
+  getAuth, 
+  onAuthStateChanged 
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 /* ---------- Firebase Config ---------- */
@@ -47,49 +49,56 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const rtdb = getDatabase(app);
 const auth = getAuth(app);
+
 // Make Firebase objects available globally (for debugging or reuse)
 window.app = app;
 window.db = db;
 window.auth = auth;
 window.rtdb = rtdb;
 
+
 /* ---------- Globals ---------- */
 let currentUser = null;
 
-// Sync unlocked videos between localStorage and Firestore
+// 🔁 Sync unlocked videos between localStorage and Firestore
 async function syncUserUnlocks() {
   if (!currentUser?.uid) return [];
+
   try {
     const userRef = doc(db, "users", currentUser.uid);
     const snap = await getDoc(userRef);
+
     const firestoreUnlocks = snap.exists() ? (snap.data().unlockedVideos || []) : [];
     const localUnlocks = JSON.parse(localStorage.getItem("userUnlockedVideos") || "[]");
+
     // Merge + deduplicate
     const allUnlocks = [...new Set([...firestoreUnlocks, ...localUnlocks])];
+
     // Update Firestore with any new ones
     const newUnlocks = allUnlocks.filter(id => !firestoreUnlocks.includes(id));
     if (newUnlocks.length > 0) {
       await updateDoc(userRef, { unlockedVideos: arrayUnion(...newUnlocks) });
     }
+
     // Sync local copy
     localStorage.setItem("userUnlockedVideos", JSON.stringify(allUnlocks));
-    console.log("Unlocks synced:", allUnlocks);
+    console.log("✅ Unlocks synced:", allUnlocks);
     return allUnlocks;
   } catch (err) {
-    console.error("Unlock sync failed:", err);
+    console.error("❌ Unlock sync failed:", err);
     return JSON.parse(localStorage.getItem("userUnlockedVideos") || "[]");
   }
 }
 
 /* ===============================
-   Notification Helpers
+   🔔 Notification Helpers
 ================================= */
 async function pushNotification(userId, message) {
-  if (!userId) return console.warn("No userId provided for pushNotification");
- 
+  if (!userId) return console.warn("⚠️ No userId provided for pushNotification");
+  
   const notifRef = doc(collection(db, "notifications"));
   await setDoc(notifRef, {
-    userId,                                  // Now expects UID
+    userId,
     message,
     timestamp: serverTimestamp(),
     read: false,
@@ -99,7 +108,7 @@ async function pushNotification(userId, message) {
 function pushNotificationTx(tx, userId, message) {
   const notifRef = doc(collection(db, "notifications"));
   tx.set(notifRef, {
-    userId,                                  // Now expects UID
+    userId,
     message,
     timestamp: serverTimestamp(),
     read: false,
@@ -110,37 +119,41 @@ function pushNotificationTx(tx, userId, message) {
 onAuthStateChanged(auth, async (user) => {
   currentUser = user;
 
-  // Hide modals until login completes
+  // 🔒 Hide modals until login completes
   const allModals = document.querySelectorAll(".featured-modal, #giftModal, #sessionModal");
   allModals.forEach(m => (m.style.display = "none"));
 
   if (!user) {
-    console.warn("No logged-in user found");
+    console.warn("⚠️ No logged-in user found");
     localStorage.removeItem("userId");
+
+    // Hide protected sections
     document.querySelectorAll(".after-login-only").forEach(el => (el.style.display = "none"));
     return;
   }
 
-  // Logged in user
-  console.log("User authenticated:", user.email || user.uid);
+  // ✅ Logged in user
+  console.log("✅ User authenticated:", user.email || user.uid);
   document.querySelectorAll(".after-login-only").forEach(el => (el.style.display = ""));
 
-  // Sync unlocked videos across devices
+  // ---------- Sync unlocked videos across devices ----------
   try {
-    await syncUserUnlocks();
-    console.log("Unlocked videos synced successfully.");
+    await syncUserUnlocks(); // 🔁 Keeps unlocks consistent across browsers
+    console.log("🔄 Unlocked videos synced successfully.");
   } catch (err) {
-    console.error("Sync unlocks failed:", err);
+    console.error("⚠️ Sync unlocks failed:", err);
   }
 
-  // FIXED: Use UID everywhere instead of sanitized email
-  const userId = user.uid;  // This is now the single source of truth
-  localStorage.setItem("userId", userId);  // Stores real UID
+  // ---------- Notifications Setup ----------
+  const sanitizeEmail = (email) => email.replace(/\./g, ",");
+  const userQueryId = sanitizeEmail(currentUser.email);
+  console.log("📩 Logged in as Sanitized ID:", userQueryId);
+  localStorage.setItem("userId", userQueryId);
 
   const notifRef = collection(db, "notifications");
   const notifQuery = query(
     notifRef,
-    where("userId", "==", userId),
+    where("userId", "==", userQueryId),
     orderBy("timestamp", "desc")
   );
 
@@ -149,21 +162,23 @@ onAuthStateChanged(auth, async (user) => {
   async function initNotificationsListener() {
     const notificationsList = document.getElementById("notificationsList");
     if (!notificationsList) {
-      console.warn("#notificationsList not found — retrying...");
+      console.warn("⚠️ #notificationsList not found — retrying...");
       setTimeout(initNotificationsListener, 500);
       return;
     }
-    if (unsubscribe) unsubscribe();
 
-    console.log("Setting up live notification listener for UID:", userId);
+    if (unsubscribe) unsubscribe(); // Prevent duplicate listeners
+
+    console.log("🔔 Setting up live notification listener for:", userQueryId);
     unsubscribe = onSnapshot(
       notifQuery,
       (snapshot) => {
-        console.log(`Received ${snapshot.docs.length} notifications`);
+        console.log(`✅ Received ${snapshot.docs.length} notifications for ${userQueryId}`);
         if (snapshot.empty) {
           notificationsList.innerHTML = `<p style="opacity:0.7;">No new notifications yet.</p>`;
           return;
         }
+
         const items = snapshot.docs.map((docSnap) => {
           const n = docSnap.data();
           const time = n.timestamp?.seconds
@@ -172,6 +187,7 @@ onAuthStateChanged(auth, async (user) => {
                 minute: "2-digit",
               })
             : "--:--";
+
           return `
             <div class="notification-item ${n.read ? "" : "unread"}" data-id="${docSnap.id}">
               <span>${n.message || "(no message)"}</span>
@@ -179,9 +195,10 @@ onAuthStateChanged(auth, async (user) => {
             </div>
           `;
         });
+
         notificationsList.innerHTML = items.join("");
       },
-      (error) => console.error("Firestore Listener Error:", error)
+      (error) => console.error("🔴 Firestore Listener Error:", error)
     );
   }
 
@@ -204,45 +221,40 @@ onAuthStateChanged(auth, async (user) => {
   const markAllBtn = document.getElementById("markAllRead");
   if (markAllBtn) {
     markAllBtn.addEventListener("click", async () => {
-      console.log("Marking all notifications as read...");
-      const snapshot = await getDocs(query(notifRef, where("userId", "==", userId)));
+      console.log("🟡 Marking all notifications as read...");
+      const snapshot = await getDocs(query(notifRef, where("userId", "==", userQueryId)));
       for (const docSnap of snapshot.docs) {
         await updateDoc(doc(db, "notifications", docSnap.id), { read: true });
       }
-      alert("All notifications marked as read.");
+      alert("✅ All notifications marked as read.");
     });
   }
 });
 
 /* ===============================
-   Manual Notification Starter (for whitelist login)
+   🔔 Manual Notification Starter (for whitelist login)
 ================================= */
-// REMOVED: This function relied on sanitized email and is no longer needed.
-// If you still use whitelist login, you must now pass the UID directly.
-// We'll keep a safe fallback version that works with UID only.
-async function startNotificationsFor(userUid) {
-  if (!userUid) {
-    console.warn("startNotificationsFor called without UID");
-    return;
-  }
-
-  localStorage.setItem("userId", userUid);  // Now stores real UID
+async function startNotificationsFor(userEmail) {
+  const sanitizeEmail = (email) => email.replace(/\./g, ",");
+  const userQueryId = sanitizeEmail(userEmail);
+  localStorage.setItem("userId", userQueryId);
 
   const notifRef = collection(db, "notifications");
   const notifQuery = query(
     notifRef,
-    where("userId", "==", userUid),
+    where("userId", "==", userQueryId),
     orderBy("timestamp", "desc")
   );
 
   const notificationsList = document.getElementById("notificationsList");
   if (!notificationsList) {
-    console.warn("#notificationsList not found yet — retrying...");
-    setTimeout(() => startNotificationsFor(userUid), 500);
+    console.warn("⚠️ #notificationsList not found yet — retrying...");
+    setTimeout(() => startNotificationsFor(userEmail), 500);
     return;
   }
 
-  console.log("Listening for notifications for UID:", userUid);
+  console.log("🔔 Listening for notifications for:", userQueryId);
+
   onSnapshot(
     notifQuery,
     (snapshot) => {
@@ -250,6 +262,7 @@ async function startNotificationsFor(userUid) {
         notificationsList.innerHTML = `<p style="opacity:0.7;">No new notifications yet.</p>`;
         return;
       }
+
       const html = snapshot.docs.map((docSnap) => {
         const n = docSnap.data();
         const time = n.timestamp?.seconds
@@ -265,15 +278,18 @@ async function startNotificationsFor(userUid) {
           </div>
         `;
       }).join("");
+
       notificationsList.innerHTML = html;
     },
-    (err) => console.error("Notification listener error:", err)
+    (err) => console.error("🔴 Notification listener error:", err)
   );
 }
 
+
+
 /* ---------- Helper: Get current user ID ---------- */
 export function getCurrentUserId() {
-  return currentUser?.uid || localStorage.getItem("userId") || null;
+  return currentUser ? currentUser.uid : localStorage.getItem("userId");
 }
 window.currentUser = currentUser;
 
@@ -285,6 +301,7 @@ const ROOM_ID = "room5";
 const CHAT_COLLECTION = "messages_room5";
 const BUZZ_COST = 50;
 const SEND_COST = 1;
+
 let lastMessagesArray = [];
 let starInterval = null;
 let refs = {};
@@ -292,8 +309,8 @@ let refs = {};
 /* ---------- Helpers ---------- */
 const generateGuestName = () => `GUEST ${Math.floor(1000 + Math.random() * 9000)}`;
 const formatNumberWithCommas = n => new Intl.NumberFormat('en-NG').format(n || 0);
+const sanitizeKey = key => key.replace(/[.#$[\]]/g, ',');
 
-// REMOVED sanitizeKey() — no longer needed (UIDs are safe Firestore doc IDs)
 function randomColor() {
   const palette = ["#FFD700","#FF69B4","#87CEEB","#90EE90","#FFB6C1","#FFA07A","#8A2BE2","#00BFA6","#F4A460"];
   return palette[Math.floor(Math.random() * palette.length)];
@@ -308,39 +325,62 @@ function showStarPopup(text) {
   setTimeout(() => popup.style.display = "none", 1700);
 }
 
+
 /* ----------------------------
-   GIFT MODAL / CHAT BANNER ALERT
+   ⭐ GIFT MODAL / CHAT BANNER ALERT
 ----------------------------- */
 async function showGiftModal(targetUid, targetData) {
+  // Stop if required info is missing
+  if (!targetUid || !targetData) return;
+
   const modal = document.getElementById("giftModal");
   const titleEl = document.getElementById("giftModalTitle");
   const amountInput = document.getElementById("giftAmountInput");
   const confirmBtn = document.getElementById("giftConfirmBtn");
   const closeBtn = document.getElementById("giftModalClose");
-  if (!modal || !titleEl || !amountInput || !confirmBtn) return;
 
-  titleEl.textContent = `Gift Stars`;
+  // Make sure modal exists before doing anything
+  if (!modal || !titleEl || !amountInput || !confirmBtn || !closeBtn) {
+    console.warn("❌ Gift modal elements not found — skipping open");
+    return;
+  }
+
+  // 🧩 Reset state before showing
+  titleEl.textContent = "Gift ⭐️";
   amountInput.value = "";
-  modal.style.display = "flex";
 
-  const close = () => (modal.style.display = "none");
+  // 🚫 Don't auto-show unless called intentionally
+  // So we only show the modal *after* all required info is ready
+  requestAnimationFrame(() => {
+    modal.style.display = "flex";
+  });
+
+  // Close modal behavior
+  const close = () => {
+    modal.style.display = "none";
+  };
+
   closeBtn.onclick = close;
-  modal.onclick = (e) => { if (e.target === modal) close(); };
+  modal.onclick = (e) => {
+    if (e.target === modal) close();
+  };
 
+  // Remove any old listeners on confirm button
   const newConfirmBtn = confirmBtn.cloneNode(true);
   confirmBtn.replaceWith(newConfirmBtn);
 
+  // ✅ Confirm send action
   newConfirmBtn.addEventListener("click", async () => {
     const amt = parseInt(amountInput.value) || 0;
-    if (amt < 100) return showStarPopup("Minimum gift is 100 Stars");
-    if ((currentUser?.stars || 0) < amt) return showStarPopup("Not enough stars");
+    if (amt < 100) return showStarPopup("🔥 Minimum gift is 100 ⭐️");
+    if ((currentUser?.stars || 0) < amt) return showStarPopup("Not enough stars 💫");
 
     const fromRef = doc(db, "users", currentUser.uid);
-    const toRef = doc(db, "users", targetUid);  // Already UID — perfect
-
+    const toRef = doc(db, "users", targetUid);
     const glowColor = randomColor();
+
     const messageData = {
-      content: `${currentUser.chatId} gifted ${amt} stars to ${targetData.chatId}!`,
+      content: `💫 ${currentUser.chatId} gifted ${amt} stars ⭐️ to ${targetData.chatId}!`,
       uid: currentUser.uid,
       timestamp: serverTimestamp(),
       highlight: true,
@@ -356,18 +396,21 @@ async function showGiftModal(targetUid, targetData) {
       updateDoc(toRef, { stars: increment(amt) })
     ]);
 
-    showStarPopup(`You sent ${amt} stars to ${targetData.chatId}!`);
+    showStarPopup(`You sent ${amt} stars ⭐️ to ${targetData.chatId}!`);
     close();
+
     renderMessagesFromArray([{ id: docRef.id, data: messageData }]);
   });
 }
-
 /* ---------- Gift Alert (Optional Popup) ---------- */
 function showGiftAlert(text) {
   const alertEl = document.getElementById("giftAlert");
   if (!alertEl) return;
-  alertEl.textContent = text;
-  alertEl.classList.add("show", "glow");
+
+  alertEl.textContent = text; // just text
+  alertEl.classList.add("show", "glow"); // banner glow
+
+  // ✅ Floating stars removed
   setTimeout(() => alertEl.classList.remove("show", "glow"), 4000);
 }
 
@@ -381,22 +424,15 @@ function updateRedeemLink() {
 /* ---------- Tip Link ---------- */
 function updateTipLink() {
   if (!refs.tipBtn || !currentUser) return;
-  refs.tipBtn.href = `https://golalaland.github.io/crdb/moneytrain.html?uid=${encodeURIComponent(currentUser.uid)}`;
+  refs.tipBtn.href = `https://golalaland.github.io/crdb/tapmaster.html?uid=${encodeURIComponent(currentUser.uid)}`;
   refs.tipBtn.style.display = "inline-block";
 }
 
 /* ---------- Presence (Realtime) ---------- */
 function setupPresence(user) {
-  if (!rtdb || !user?.uid) return;
-
-  // UID is safe as RTDB key — no sanitization needed
-  const pRef = rtdbRef(rtdb, `presence/${ROOM_ID}/${user.uid}`);
-  rtdbSet(pRef, { 
-    online: true, 
-    chatId: user.chatId || "Guest", 
-    email: user.email || null 
-  }).catch(() => {});
-
+  if (!rtdb) return;
+  const pRef = rtdbRef(rtdb, `presence/${ROOM_ID}/${sanitizeKey(user.uid)}`);
+  rtdbSet(pRef, { online: true, chatId: user.chatId, email: user.email }).catch(() => {});
   onDisconnect(pRef).remove().catch(() => {});
 }
 
@@ -437,7 +473,7 @@ function cancelReply() {
 function showReplyCancelButton() {
   if (!refs.cancelReplyBtn) {
     const btn = document.createElement("button");
-    btn.textContent = "X";
+    btn.textContent = "✖";
     btn.style.marginLeft = "6px";
     btn.style.fontSize = "12px";
     btn.onclick = cancelReply;
@@ -457,7 +493,7 @@ async function reportMessage(msgData) {
     if (reportSnap.exists()) {
       const data = reportSnap.data();
       if ((data.reportedBy || []).includes(reporterChatId)) {
-        return alert("You’ve already reported this message.");
+        return showStarPopup("You’ve already reported this message.", { type: "info" });
       }
       await updateDoc(reportRef, {
         reportCount: increment(1),
@@ -478,10 +514,14 @@ async function reportMessage(msgData) {
         status: "pending"
       });
     }
-    alert("Report submitted!");
+
+    // ✅ Success popup
+    showStarPopup("✅ Report submitted!", { type: "success" });
+
   } catch (err) {
     console.error(err);
-    alert("Error reporting message.");
+    // ❌ Error popup
+    showStarPopup("❌ Error reporting message.", { type: "error" });
   }
 }
 
@@ -1255,127 +1295,93 @@ window.addEventListener("DOMContentLoaded", () => {
 
   if (refs.chatIDInput) refs.chatIDInput.maxLength = 12;
 
-/* ----------------------------
-   VIP Login Setup (UID-Based)
------------------------------ */
-const emailInput = document.getElementById("emailInput");
-const phoneInput = document.getElementById("phoneInput");
-const loginBtn = document.getElementById("whitelistLoginBtn");
+  /* ----------------------------
+     🔐 VIP Login Setup
+  ----------------------------- */
+  const emailInput = document.getElementById("emailInput");
+  const phoneInput = document.getElementById("phoneInput");
+  const loginBtn = document.getElementById("whitelistLoginBtn");
 
-async function handleLogin() {
-  const email = (emailInput?.value || "").trim().toLowerCase();
-  const phone = (phoneInput?.value || "").trim();
+  async function handleLogin() {
+    const email = (emailInput?.value || "").trim().toLowerCase();
+    const phone = (phoneInput?.value || "").trim();
 
-  if (!email || !phone) {
-    return showStarPopup("Enter your email and phone to get access.");
-  }
-
-  showLoadingBar(1000);
-  await sleep(50);
-
-  const userData = await loginWhitelist(email, phone); // ← Make sure this returns full user object with UID
-  if (!userData) return;
-
-  // Save full user object (with UID) to localStorage
-  localStorage.setItem("vipUser", JSON.stringify(userData));
-
-  // Set global currentUser (critical for sending messages)
-  currentUser = {
-    uid: userData.uid,
-    email: userData.email,
-    phone: userData.phone,
-    stars: userData.stars || 0,
-    chatId: userData.chatId || "vip",
-    // ...any other fields
-  };
-
-  await sleep(400);
-  updateRedeemLink();
-  updateTipLink();
-  refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
-}
-
-loginBtn?.addEventListener("click", handleLogin);
-
-/* ----------------------------
-   Auto Login Session (UID-Based)
------------------------------ */
-async function autoLogin() {
-  const vipUser = JSON.parse(localStorage.getItem("vipUser") || "null");
-  if (!vipUser?.uid) return; // Must have UID now
-
-  showLoadingBar(1000);
-  await sleep(60);
-
-  // Re-validate + refresh user data from Firestore using UID
-  try {
-    const userDoc = await getDoc(doc(db, "users", vipUser.uid));
-    if (!userDoc.exists()) {
-      localStorage.removeItem("vipUser");
-      return showStarPopup("Session expired. Please log in again.");
+    if (!email || !phone) {
+      return showStarPopup("Enter your email and phone to get access.");
     }
 
-    const freshData = { ...vipUser, ...userDoc.data(), uid: vipUser.uid };
-    localStorage.setItem("vipUser", JSON.stringify(freshData));
+    showLoadingBar(1000);
+    await sleep(50);
 
-    currentUser = {
-      uid: freshData.uid,
-      email: freshData.email,
-      phone: freshData.phone,
-      stars: freshData.stars || 0,
-      chatId: freshData.chatId || "vip"
-    };
+    const success = await loginWhitelist(email, phone);
+    if (!success) return;
 
-    refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
     await sleep(400);
     updateRedeemLink();
     updateTipLink();
-  } catch (err) {
-    console.error("Auto login failed:", err);
-    localStorage.removeItem("vipUser");
-    showStarPopup("Session invalid. Please log in again.");
+  }
+
+  loginBtn?.addEventListener("click", handleLogin);
+
+  /* ----------------------------
+     🔁 Auto Login Session
+  ----------------------------- */
+ async function autoLogin() {
+  const vipUser = JSON.parse(localStorage.getItem("vipUser"));
+  if (vipUser?.email && vipUser?.phone) {
+    showLoadingBar(1000);
+    await sleep(60);
+    const success = await loginWhitelist(vipUser.email, vipUser.phone);
+    if (!success) return;
+    await sleep(400);
+    updateRedeemLink();
+    updateTipLink();
   }
 }
 
-// Run on page load
+// Call on page load
 autoLogin();
 
-/* ----------------------------
-   Global local message tracking
------------------------------ */
-let localPendingMsgs = JSON.parse(localStorage.getItem("localPendingMsgs") || "{}");
 
 /* ----------------------------
-   Send Message Handler (Now 100% UID Safe)
+   ⚡ Global setup for local message tracking
 ----------------------------- */
+let localPendingMsgs = JSON.parse(localStorage.getItem("localPendingMsgs") || "{}"); 
+// structure: { tempId: { content, uid, chatId, createdAt } }
+
+/* ----------------------------
+   💬 Send Message Handler (Instant + No Double Render)
+----------------------------- */
+
+// ✅ Helper: Fully clear reply UI after message send
+function clearReplyAfterSend() {
+  if (typeof cancelReply === "function") cancelReply(); // hides reply UI if exists
+  currentReplyTarget = null;
+  refs.messageInputEl.placeholder = "Type a message...";
+}
+
 refs.sendBtn?.addEventListener("click", async () => {
   try {
-    if (!currentUser?.uid) {
-      return showStarPopup("Sign in to chat.");
-    }
-
+    if (!currentUser) return showStarPopup("Sign in to chat.");
     const txt = refs.messageInputEl?.value.trim();
     if (!txt) return showStarPopup("Type a message first.");
-
-    if ((currentUser.stars || 0) < SEND_COST) {
+    if ((currentUser.stars || 0) < SEND_COST)
       return showStarPopup("Not enough stars to send message.");
-    }
 
-    // Deduct stars locally
+    // 💫 Deduct stars locally + in Firestore
     currentUser.stars -= SEND_COST;
     refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
+    await updateDoc(doc(db, "users", currentUser.uid), {
+      stars: increment(-SEND_COST)
+    });
 
-    // Update Firestore: deduct stars using UID
-    const userRef = doc(db, "users", currentUser.uid);
-    await updateDoc(userRef, { stars: increment(-SEND_COST) });
-
-    // Local echo
+    // 🕓 Create temp message (local echo)
     const tempId = "temp_" + Date.now();
     const newMsg = {
       content: txt,
-      uid: currentUser.uid,
-      chatId: currentUser.chatId || "vip",
-      timestamp: { toMillis: () => Date.now() },
+      uid: currentUser.uid || "unknown",
+      chatId: currentUser.chatId || "anon",
+      timestamp: { toMillis: () => Date.now() }, // fake for local display
       highlight: false,
       buzzColor: null,
       replyTo: currentReplyTarget?.id || null,
@@ -1383,69 +1389,57 @@ refs.sendBtn?.addEventListener("click", async () => {
       tempId
     };
 
-    // Save pending message locally
+    // 💾 Store temp message reference locally
+    let localPendingMsgs = JSON.parse(localStorage.getItem("localPendingMsgs") || "{}");
     localPendingMsgs[tempId] = { ...newMsg, createdAt: Date.now() };
     localStorage.setItem("localPendingMsgs", JSON.stringify(localPendingMsgs));
 
-    // Clear input + UI
+    // 🧹 Reset input instantly
     refs.messageInputEl.value = "";
-    clearReplyAfterSend();
+
     scrollToBottom(refs.messagesEl);
 
-    // Send to Firestore
+    // 🚀 Send to Firestore
     const msgRef = await addDoc(collection(db, CHAT_COLLECTION), {
-      content: txt,
-      uid: currentUser.uid,
-      chatId: currentUser.chatId || "vip",
-      timestamp: serverTimestamp(),
-      highlight: false,
-      buzzColor: null,
-      replyTo: currentReplyTarget?.id || null,
-      replyToContent: currentReplyTarget?.content || null
+      ...newMsg,
+      tempId: null, // remove temp flag for actual Firestore entry
+      timestamp: serverTimestamp()
     });
 
-    console.log("Message sent:", msgRef.id);
+    // ✅ Clear reply UI + placeholder after successful send
+    clearReplyAfterSend();
 
-    // Optional: remove from pending after success
-    delete localPendingMsgs[tempId];
-    localStorage.setItem("localPendingMsgs", JSON.stringify(localPendingMsgs));
-
+    console.log("✅ Message sent:", msgRef.id);
   } catch (err) {
-    console.error("Message send error:", err);
-    showStarPopup("Message failed: " + (err.message || "Network error"));
-    // Optionally restore stars on failure
+    console.error("❌ Message send error:", err);
+    showStarPopup("Message failed: " + (err.message || err));
   }
 });
 
-/* ----------------------------
-   BUZZ Message Handler (UID Safe)
------------------------------ */
-refs.buzzBtn?.addEventListener("click", async () => {
-  if (!currentUser?.uid) return showStarPopup("Sign in to BUZZ.");
-
+  /* ----------------------------
+     🚨 BUZZ Message Handler
+  ----------------------------- */
+  refs.buzzBtn?.addEventListener("click", async () => {
+  if (!currentUser) return showStarPopup("Sign in to BUZZ.");
   const txt = refs.messageInputEl?.value.trim();
-  if (!txt) return showStarPopup("Type a message to BUZZ");
+  if (!txt) return showStarPopup("Type a message to BUZZ 🚨");
 
   const userRef = doc(db, "users", currentUser.uid);
   const snap = await getDoc(userRef);
   const stars = snap.data()?.stars || 0;
-
   if (stars < BUZZ_COST) return showStarPopup("Not enough stars for BUZZ.");
 
   await updateDoc(userRef, { stars: increment(-BUZZ_COST) });
-  currentUser.stars = stars - BUZZ_COST;
-  refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
-
   const buzzColor = randomColor();
+
   const newBuzz = {
     content: txt,
     uid: currentUser.uid,
-    chatId: currentUser.chatId || "vip",
+    chatId: currentUser.chatId,
     timestamp: serverTimestamp(),
     highlight: true,
     buzzColor
   };
-
   const docRef = await addDoc(collection(db, CHAT_COLLECTION), newBuzz);
 
   refs.messageInputEl.value = "";
@@ -1453,18 +1447,19 @@ refs.buzzBtn?.addEventListener("click", async () => {
   renderMessagesFromArray([{ id: docRef.id, data: newBuzz }]);
   scrollToBottom(refs.messagesEl);
 
-  // Visual buzz effect
+  // Apply BUZZ glow
   const msgEl = document.getElementById(docRef.id);
-  if (msgEl) {
-    const contentEl = msgEl.querySelector(".content") || msgEl;
-    contentEl.style.setProperty("--buzz-color", buzzColor);
-    contentEl.classList.add("buzz-highlight");
-    setTimeout(() => {
-      contentElPatch.classList.remove("buzz-highlight");
-    }, 12000);
-  }
+  if (!msgEl) return;
+  const contentEl = msgEl.querySelector(".content") || msgEl;
+
+  contentEl.style.setProperty("--buzz-color", buzzColor);
+  contentEl.classList.add("buzz-highlight");
+  setTimeout(() => {
+    contentEl.classList.remove("buzz-highlight");
+    contentEl.style.boxShadow = "none";
+  }, 12000); // same as CSS animation
 });
-  
+
   /* ----------------------------
      👋 Rotating Hello Text
   ----------------------------- */
@@ -1714,6 +1709,7 @@ replaceStarsWithSVG();
 
 
 /* ---------- DOM Elements ---------- */
+const openBtn = document.getElementById("openHostsBtn");
 const modal = document.getElementById("featuredHostsModal");
 const closeModal = document.querySelector(".featured-close");
 const videoFrame = document.getElementById("featuredHostVideo");
@@ -1730,610 +1726,679 @@ let hosts = [];
 let currentIndex = 0;
 
 
-// ──────────────────────────────────────────────────────────────────
-// 1. Listen to featuredHosts + merge with real user doc (UID-based)
-// ──────────────────────────────────────────────────────────────────
-function initFeaturedHosts() {
-  const q = collection(db, "featuredHosts");
+/* ---------- Fetch + Listen to featuredHosts + users merge ---------- */
+async function fetchFeaturedHosts() {
+  try {
+    const q = collection(db, "featuredHosts");
+    onSnapshot(q, async snapshot => {
+      const tempHosts = [];
 
-  onSnapshot(q, async (snapshot) => {
-    if (snapshot.empty) {
-      console.warn("No featured hosts found.");
-      hosts = [];
-      renderHostAvatars();
-      return;
-    }
+      for (const docSnap of snapshot.docs) {
+        const hostData = { id: docSnap.id, ...docSnap.data() };
+        let merged = { ...hostData };
 
-    // Parallel fetch user data for speed
-    const hostPromises = snapshot.docs.map(async (docSnap) => {
-      const data = docSnap.data();
-      const hostId = docSnap.id;
-
-      // Base featured host data
-      let host = {
-        featuredId: hostId,
-        ...data,
-      };
-
-      // Only fetch real user if userId (UID) exists
-      if (data.userId) {
-        try {
-          const userSnap = await getDoc(doc(db, "users", data.userId));
-          if (userSnap.exists()) {
-            const userData = userSnap.data();
-            host = {
-              ...host,
-              ...userData,
-              uid: data.userId, // ← Critical: real UID
-            };
+        if (hostData.userId || hostData.chatId) {
+          try {
+            const userRef = doc(db, "users", hostData.userId || hostData.chatId);
+            const userSnap = await getDoc(userRef);
+            if (userSnap.exists()) {
+              merged = { ...merged, ...userSnap.data() };
+            }
+          } catch (err) {
+            console.warn("⚠️ Could not fetch user for host:", hostData.userId || hostData.chatId, err);
           }
-        } catch (err) {
-          console.warn(`Failed to load user ${data.userId} for host ${hostId}`, err);
         }
+
+        tempHosts.push(merged);
       }
 
-      return host;
+      hosts = tempHosts;
+
+      if (!hosts.length) {
+        console.warn("⚠️ No featured hosts found.");
+        return;
+      }
+
+      console.log("✅ Loaded hosts:", hosts.length);
+      renderHostAvatars();
+      loadHost(currentIndex >= hosts.length ? 0 : currentIndex);
     });
-
-    hosts = await Promise.all(hostPromises);
-    console.log(`Loaded ${hosts.length} featured host(s)`);
-
-    renderHostAvatars();
-    loadHost(currentIndex);
-  }, (error) => {
-    console.error("Featured hosts listener failed:", error);
-  });
+  } catch (err) {
+    console.error("❌ Error fetching hosts:", err);
+  }
 }
 
-// ──────────────────────────────────────────────────────────────────
-// 2. Render Avatar Carousel
-// ──────────────────────────────────────────────────────────────────
+/* ---------- Render Avatars ---------- */
 function renderHostAvatars() {
-  if (!hostListEl) return;
   hostListEl.innerHTML = "";
-
-  hosts.forEach((host, i) => {
+  hosts.forEach((host, idx) => {
     const img = document.createElement("img");
-    img.src = host.popupPhoto || "https://via.placeholder.com/80?text=Host";
+    img.src = host.popupPhoto || "";
     img.alt = host.chatId || "Host";
-    img.loading = "lazy";
-    img.className = "featured-avatar";
-    if (i === currentIndex) img.classList.add("active");
+    img.classList.add("featured-avatar");
+    if (idx === currentIndex) img.classList.add("active");
 
-    img.onclick = () => loadHost(i);
+    img.addEventListener("click", () => {
+      loadHost(idx);
+    });
+
     hostListEl.appendChild(img);
   });
 }
 
-// ──────────────────────────────────────────────────────────────────
-// 3. Load Selected Host (Video + Info + Meet Button)
-// ──────────────────────────────────────────────────────────────────
-async function loadHost(index) {
-  const host = hosts[index];
+/* ---------- Load Host (Faster Video Loading) ---------- */
+async function loadHost(idx) {
+  const host = hosts[idx];
   if (!host) return;
+  currentIndex = idx;
 
-  currentIndex = index;
-  updateActiveAvatar();
+  const videoContainer = document.getElementById("featuredHostVideo");
+  if (!videoContainer) return;
+  videoContainer.innerHTML = "";
+  videoContainer.style.position = "relative";
+  videoContainer.style.touchAction = "manipulation";
 
-  const container = document.getElementById("featuredHostVideo");
-  if (!container) return;
+  // Shimmer loader
+  const shimmer = document.createElement("div");
+  shimmer.className = "video-shimmer";
+  videoContainer.appendChild(shimmer);
 
-  // Clear & setup
-  container.innerHTML = "";
-  container.style.position = "relative";
-
-  // Shimmer
-  const shimmer = Object.assign(document.createElement("div"), { className: "video-shimmer" });
-  container.appendChild(shimmer);
-
-  // Video
-  const video = document.createElement("video");
-  Object.assign(video, {
+  // Video element
+  const videoEl = document.createElement("video");
+  Object.assign(videoEl, {
     src: host.videoUrl || "",
+    autoplay: true,
     muted: true,
     loop: true,
     playsInline: true,
-    preload: "metadata",
-    autoplay: true,
+    preload: "auto", // preload more data
+    style: "width:100%;height:100%;object-fit:cover;border-radius:8px;display:none;cursor:pointer;"
   });
-  video.style.cssText = `
-    width:100%; height:100%; object-fit:cover; border-radius:8px;
-    background:#000; display:none; cursor:pointer;
-  `;
-  video.setAttribute("webkit-playsinline", "true");
-  container.appendChild(video);
-  video.load();
+  videoEl.setAttribute("webkit-playsinline", "true");
+  videoContainer.appendChild(videoEl);
 
+  // Force video to start loading immediately
+  videoEl.load();
 
-  // ────────────────────── Host Info ──────────────────────
-  const name = (host.chatId || host.displayName || "Host")
-    .toLowerCase()
-    .replace(/\b\w/g, c => c.toUpperCase());
+  // Hint overlay
+  const hint = document.createElement("div");
+  hint.className = "video-hint";
+  hint.textContent = "Tap to unmute";
+  videoContainer.appendChild(hint);
 
-  usernameEl.textContent = name;
-
-  const gender = (host.gender || "female").toLowerCase();
-  const pronoun = gender === "male" ? "his" : "her";
-  const ageGroup = host.age >= 30 ? "30s" : "20s";
-  const flair = gender === "male" ? "Cool" : "Kiss";
-  const fruit = host.fruitPick || "Grape";
-  const nature = host.naturePick || "cool";
-  const city = host.location || "Lagos";
-  const country = host.country || "Nigeria";
-
-  detailsEl.innerHTML = `
-    A ${fruit} ${nature} ${gender} in ${pronoun} ${ageGroup}, 
-    currently in ${city}, ${country}. ${flair}
-  `;
-
-  // Typewriter Bio
-  if (host.bioPick) {
-    const bioText = host.bioPick.length > 160 
-      ? host.bioPick.slice(0, 160) + "…" 
-      : host.bioPick;
-
-    const bioEl = document.createElement("div");
-    bioEl.style.cssText = `
-      margin-top: 8px; font-weight: 600; font-size: 0.95em; 
-      white-space: pre-wrap; color: ${randomBrightColor()};
-    `;
-    detailsEl.appendChild(bioEl);
-
-    let i = 0;
-    const type = () => {
-      if (i < bioText.length) {
-        bioEl.textContent += bioText[i++];
-        setTimeout(type, 38);
-      }
-    };
-    type();
+  function showHint(msg, timeout = 1400) {
+    hint.textContent = msg;
+    hint.classList.add("show");
+    clearTimeout(hint._t);
+    hint._t = setTimeout(() => hint.classList.remove("show"), timeout);
   }
 
-  // Meet Button
-  let meetBtn = document.getElementById("meetBtn");
-  if (!meetBtn) {
-    meetBtn = Object.assign(document.createElement("button"), {
-      id: "meetBtn",
-      textContent: "Meet",
-      style: `
-        margin-top: 10px; padding: 11px 22px; border: none; border-radius: 8px;
-        background: linear-gradient(90deg, #ff0099, #ff6600); color: white;
-        font-weight: bold; font-size: 1em; cursor: pointer; box-shadow: 0 4px 12px rgba(255,0,153,0.3);
-      `
-    });
-    detailsEl.insertAdjacentElement("afterend", meetBtn);
-  }
-  meetBtn.onclick = () => showMeetModal(host);
-
-  // Reset gift slider
-  if (giftSlider) giftSlider.value = 1;
-  if (giftAmountEl) giftAmountEl.textContent = "1";
-}
-
-// Helper: update active avatar highlight
-function updateActiveAvatar() {
-  document.querySelectorAll("#hostListEl img").forEach((img, i) => {
-    img.classList.toggle("active", i === currentIndex);
-  });
-}
-
-// Random bright color for bio
-function randomBrightColor() {
-  const colors = ["#FF3B3B", "#FF9500", "#FFEA00", "#00FFAB", "#00D1FF", "#FF00FF", "#FF69B4"];
-  return colors[Math.floor(Math.random() * colors.length)];
-}
-
-// ──────────────────────────────────────────────────────────────────
-// 4. Meet Modal – Playful WhatsApp Flow (UID-Safe)
-// ──────────────────────────────────────────────────────────────────
-function showMeetModal(host) {
-  if (!currentUser?.uid) return showGiftAlert("Please log in first");
-
-  const modal = createModal();
-
-  modal.innerHTML = `
-    <div class="meet-modal-content">
-      <h3>Meet ${host.chatId || "this host"}?</h3>
-      <p>Costs <strong>21 stars</strong> to send request</p>
-      <div class="meet-buttons">
-        <button id="cancelBtn">Cancel</button>
-        <button id="confirmBtn">Yes, Send</button>
-      </div>
-    </div>
-  `;
-
-  document.body.appendChild(modal);
-
-  modal.querySelector("#cancelBtn").onclick = () => modal.remove();
-  modal.querySelector("#confirmBtn").onclick = () => confirmMeetRequest(modal, host);
-}
-
-async function confirmMeetRequest(modal, host) {
-  if (currentUser.stars < 21) {
-    showGiftAlert("Not enough stars");
-    modal.remove();
-    return;
-  }
-
-  const content = modal.querySelector(".meet-modal-content");
-  const btn = modal.querySelector("#confirmBtn");
-  btn.disabled = true;
-  btn.textContent = "Sending...";
-
-  try {
-    // Deduct stars (UID-based)
-    currentUser.stars -= 21;
-    refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
-    await updateDoc(doc(db, "users", currentUser.uid), {
-      stars: increment(-21)
-    });
-
-    if (host.whatsapp) {
-      await runPlayfulWhatsAppFlow(content, host);
+  let lastTap = 0;
+  function onTapEvent() {
+    const now = Date.now();
+    if (now - lastTap < 300) {
+      document.fullscreenElement ? document.exitFullscreen?.() : videoEl.requestFullscreen?.();
     } else {
-      showSocialFallback(content, host);
+      videoEl.muted = !videoEl.muted;
+      showHint(videoEl.muted ? "Tap to unmute" : "Sound on", 1200);
     }
-  } catch (err) {
-    console.error("Meet request failed:", err);
-    showGiftAlert("Failed. Try again.");
-    modal.remove();
+    lastTap = now;
   }
-}
+  videoEl.addEventListener("click", onTapEvent);
+  videoEl.addEventListener("touchend", (ev) => {
+    if (ev.changedTouches.length < 2) {
+      ev.preventDefault?.();
+      onTapEvent();
+    }
+  }, { passive: false });
 
-// Playful staged messages
-async function runPlayfulWhatsAppFlow(container, host) {
-  const stages = [
-    "Handling your meet request…",
-    "Verifying host identity…",
-    "She’s super cute tonight… Kiss",
-    "Careful, she might steal your heart… Heart",
-    "She’s excited to hear from you… Sparkles",
-    "Generating secure link…"
-  ];
+  // Show video as soon as it can play
+  videoEl.addEventListener("canplay", () => {
+    shimmer.style.display = "none";
+    videoEl.style.display = "block";
+    showHint("Tap to unmute", 1400);
+    videoEl.play().catch(() => {});
+  });
 
-  container.innerHTML = `<p class="stage-text"></p>`;
-  const el = container.querySelector(".stage-text");
+/* ---------- Host Info ---------- */
+usernameEl.textContent = (host.chatId || "Unknown Host")
+  .toLowerCase()
+  .replace(/\b\w/g, char => char.toUpperCase());
 
-  let delay = 0;
-  for (const msg of stages) {
-    delay += 1400 + Math.random() * 900;
-    setTimeout(() => el.textContent = msg, delay);
+const gender = (host.gender || "person").toLowerCase();
+const pronoun = gender === "male" ? "his" : "her";
+const ageGroup = !host.age ? "20s" : host.age >= 30 ? "30s" : "20s";
+const flair = gender === "male" ? "😎" : "💋";
+const fruit = host.fruitPick || "🍇";
+const nature = host.naturePick || "cool";
+const city = host.location || "Lagos";
+const country = host.country || "Nigeria";
+
+detailsEl.innerHTML = `A ${fruit} ${nature} ${gender} in ${pronoun} ${ageGroup}, currently in ${city}, ${country}. ${flair}`;
+
+// Typewriter bio
+if (host.bioPick) {
+  const bioText = host.bioPick.length > 160 ? host.bioPick.slice(0, 160) + "…" : host.bioPick;
+
+  // Create a container for bio
+  const bioEl = document.createElement("div");
+  bioEl.style.marginTop = "6px";
+  bioEl.style.fontWeight = "600";  // little bold
+  bioEl.style.fontSize = "0.95em";
+  bioEl.style.whiteSpace = "pre-wrap"; // keep formatting
+
+  // Pick a random bright color
+  const brightColors = ["#FF3B3B", "#FF9500", "#FFEA00", "#00FFAB", "#00D1FF", "#FF00FF", "#FF69B4"];
+  bioEl.style.color = brightColors[Math.floor(Math.random() * brightColors.length)];
+
+  detailsEl.appendChild(bioEl);
+
+  // Typewriter effect
+  let index = 0;
+  function typeWriter() {
+    if (index < bioText.length) {
+      bioEl.textContent += bioText[index];
+      index++;
+      setTimeout(typeWriter, 40); // typing speed (ms)
+    }
   }
+  typeWriter();
+}
+/* ---------- Meet Button ---------- */
+let meetBtn = document.getElementById("meetBtn");
+if (!meetBtn) {
+  meetBtn = document.createElement("button");
+  meetBtn.id = "meetBtn";
+  meetBtn.textContent = "Meet";
+  Object.assign(meetBtn.style, {
+    marginTop: "6px",
+    padding: "8px 16px",
+    borderRadius: "6px",
+    background: "linear-gradient(90deg,#ff0099,#ff6600)",
+    color: "#fff",
+    border: "none",
+    fontWeight: "bold",
+    cursor: "pointer"
+  });
+  detailsEl.insertAdjacentElement("afterend", meetBtn);
+}
+meetBtn.onclick = () => showMeetModal(host);
 
-  setTimeout(() => {
-    container.innerHTML = `
-      <h3>Meet Request Sent!</h3>
-      <p>Your request to <strong>${host.chatId}</strong> was approved!</p>
-      <button id="waBtn" class="gradient-btn">Message on WhatsApp</button>
-    `;
+/* ---------- Avatar Highlight ---------- */
+hostListEl.querySelectorAll("img").forEach((img, i) => {
+  img.classList.toggle("active", i === idx);
+});
 
-    container.querySelector("#waBtn").onclick = () => {
-      const codes = { Nigeria: "+234", Ghana: "+233", US: "+1", UK: "+44", "South Africa": "+27" };
-      let num = host.whatsapp.trim().replace(/^0/, "");
-      num = (codes[host.country || "Nigeria"] || "+234") + num;
-
-      const name = (currentUser.fullName || "VIP").split(" ")[0];
-      const text = `Hey ${host.chatId}! I'm ${name} (VIP on xixi live) and I'd love to meet you.`;
-
-      window.open(`https://wa.me/${num}?text=${encodeURIComponent(text)}`, "_blank");
-      setTimeout(() => document.getElementById("meetModal")?.remove(), 600);
-    };
-
-    setTimeout(() => document.getElementById("meetModal")?.remove(), 9000);
-  }, delay + 600);
+giftSlider.value = 1;
+giftAmountEl.textContent = "1";
 }
 
-function showSocialFallback(container, host) {
-  container.innerHTML = `
-    <h3>No WhatsApp?</h3>
-    <p>Connect via socials below:</p>
-    ${host.instagram ? `<button onclick="window.open('${host.instagram}', '_blank')">Instagram</button>` : ""}
-    ${host.twitter ? `<button onclick="window.open('${host.twitter}', '_blank')">X / Twitter</button>` : ""}
-    <p style="margin-top:16px;font-size:0.9em;">Host will be notified!</p>
-  `;
-}
+/* ---------- Meet Modal with WhatsApp / Social / No-Meet Flow ---------- */
+function showMeetModal(host) {
+  let modal = document.getElementById("meetModal");
+  if (modal) modal.remove();
 
-// Simple modal creator
-function createModal() {
-  const existing = document.getElementById("meetModal");
-  if (existing) existing.remove();
-
-  const modal = document.createElement("div");
+  modal = document.createElement("div");
   modal.id = "meetModal";
   Object.assign(modal.style, {
-    position: "fixed", top: 0, left: 0, width: "100%", height: "100%",
-    background: "rgba(0,0,0,0.85)", display: "flex", alignItems: "center",
-    justifyContent: "center", zIndex: 999999, backdropFilter: "blur(8px)"
+    position: "fixed",
+    top: 0,
+    left: 0,
+    width: "100vw",
+    height: "100vh",
+    background: "rgba(0,0,0,0.75)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: "999999",
+    backdropFilter: "blur(3px)",
+    WebkitBackdropFilter: "blur(3px)"
   });
 
-  return modal;
-}
-
-// ──────────────────────────────────────────────────────────────────
-// Initialize on load
-// ──────────────────────────────────────────────────────────────────
-document.addEventListener("DOMContentLoaded", () => {
-  initFeaturedHosts();
-});
-
-
-/* ============================================================= */
-/*              GIFTING + SOCIAL FALLBACK + VERIFICATION         */
-/*                  FULLY UID-SAFE & MODERNIZED                  */
-/* ============================================================= */
-
-/* ---------- Social / No-Meet Fallback Modal (UID-Safe) ---------- */
-function showSocialRedirectModal(container, host) {
-  const socialUrl = host.tiktok || host.instagram || host.twitter || "";
-  const platform = host.tiktok ? "TikTok" : host.instagram ? "Instagram" : host.twitter ? "X (Twitter)" : "";
-  const hostName = host.chatId || host.displayName || "This host";
-
-  if (socialUrl && platform) {
-    container.innerHTML = `
-      <h3 style="margin:0 0 12px;font-weight:600;">Meet ${hostName}?</h3>
-      <p style="margin:0 0 16px;font-size:0.95em;">
-        ${hostName} isn't doing private meets right now.
-      </p>
-      <p style="margin:0 0 20px;font-size:0.95em;">
-        Follow her on <strong>${platform}</strong> instead
-      </p>
-      <div style="display:flex;gap:12px;justify-content:center;">
-        <button id="goSocial" class="gradient-btn">Go to ${platform}</button>
-        <button id="closeSocial" style="background:#333;padding:10px 20px;border:none;border-radius:8px;color:#fff;">Close</button>
-      </div>
-    `;
-
-    container.querySelector("#goSocial").onclick = () => {
-      window.open(socialUrl, "_blank");
-      container.closest("#meetModal")?.remove();
-    };
-  } else {
-    container.innerHTML = `
-      <h3 style="margin:0 0 16px;font-weight:600;">Not Available</h3>
-      <p style="margin:0 0 20px;font-size:0.95em;">
-        ${hostName} isn't meeting new people right now.<br>
-        Please check back later!
-      </p>
-      <button id="closeSocial" class="gradient-btn" style="width:160px;">Okay</button>
-    `;
-  }
-
-  container.querySelector("#closeSocial")?.addEventListener("click", () => {
-    container.closest("#meetModal")?.remove();
-  });
-}
-
-/* ---------- Fiery Gift Slider Gradient ---------- */
-const fieryGradients = [
-  "linear-gradient(90deg, #ff0000, #ff8c00)",
-  "linear-gradient(90deg, #ff4500, #ffd700)",
-  "linear-gradient(90deg, #ff1493, #ff6347)",
-  "linear-gradient(90deg, #ff0055, #ff7a00)",
-  "linear-gradient(90deg, #ff3300, #ff0066)",
-  "linear-gradient(90deg, #ff5500, #ffcc00)"
-];
-
-function randomFieryGradient() {
-  return fieryGradients[Math.floor(Math.random() * fieryGradients.length)];
-}
-
-giftSlider?.addEventListener("input", () => {
-  giftAmountEl.textContent = giftSlider.value;
-  giftSlider.style.background = randomFieryGradient();
-});
-
-/* ===============================
-   SEND GIFT – FULLY FIXED & UID-SAFE
-================================= */
-async function sendGift() {
-  const host = hosts[currentIndex];
-  if (!host) return showGiftAlert("No host selected");
-
-  if (!currentUser?.uid) return showGiftAlert("Please log in to send gifts");
-
-  const starsToSend = parseInt(giftSlider.value, 10);
-  if (!starsToSend || starsToSend <= 0) return showGiftAlert("Choose a valid amount");
-
-  const originalText = giftBtn.innerHTML;
-  giftBtn.disabled = true;
-  giftBtn.innerHTML = `<span class="gift-spinner"></span> Sending...`;
-
-  try {
-    const senderRef = doc(db, "users", currentUser.uid);
-
-    // Critical Fix: Use host.uid (real UID), not host.id (featured doc ID)
-    if (!host.uid) throw new Error("Host UID missing – cannot gift");
-
-    const receiverRef = doc(db, "users", host.uid);
-    const featuredRef = doc(db, "featuredHosts", host.featuredId || host.id);
-
-    await runTransaction(db, async (transaction) => {
-      const [senderSnap, receiverSnap] = await Promise.all([
-        transaction.get(senderRef),
-        transaction.get(receiverRef)
-      ]);
-
-      if (!senderSnap.exists()) throw new Error("Your account not found");
-      const senderData = senderSnap.data();
-      if ((senderData.stars || 0) < starsToSend) throw new Error("Not enough stars");
-
-      // Deduct from sender
-      transaction.update(senderRef, {
-        stars: increment(-starsToSend),
-        starsGifted: increment(starsToSend)
-      });
-
-      // Credit receiver
-      if (receiverSnap.exists()) {
-        transaction.update(receiverRef, {
-          stars: increment(starsToSend),
-          [`lastGiftSeen.${currentUser.username || "VIP"}`]: starsToSend
-        });
-      } else {
-        transaction.set(receiverRef, {
-          stars: starsToSend,
-          starsGifted: 0,
-          lastGiftSeen: { [currentUser.username || "VIP"]: starsToSend }
-        }, { merge: true });
-      }
-
-      // Update featured counter
-      transaction.set(featuredRef, { stars: increment(starsToSend) }, { merge: true });
-    });
-
-    // Update local UI
-    currentUser.stars -= starsToSend;
-    refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
-
-    // Notifications
-    const senderName = currentUser.username || "Someone";
-    const hostName = host.chatId || "Host";
-
-    await Promise.all([
-      pushNotification(host.uid, `${senderName} sent you ${starsToSend} stars`),
-      pushNotification(currentUser.uid, `You gifted ${starsToSend} stars to ${hostName}`)
-    ]);
-
-    showGiftAlert(`You sent ${starsToSend} stars to ${hostName}!`);
-
-  } catch (err) {
-    console.error("Gift failed:", err);
-    showGiftAlert(err.message || "Gift failed – try again");
-  } finally {
-    giftBtn.innerHTML = originalText;
-    giftBtn.disabled = false;
-  }
-}
-
-giftBtn.onclick = sendGift;
-
-/* ---------- Navigation ---------- */
-prevBtn?.addEventListener("click", () => {
-  loadHost((currentIndex - 1 + hosts.length) % hosts.length);
-});
-
-nextBtn?.addEventListener("click", () => {
-  loadHost((currentIndex + 1) % hosts.length);
-});
-
-/* ---------- Open Modal Safely ---------- */
-openBtn?.addEventListener("click", () => {
-  if (!hosts.length) {
-    showGiftAlert("No hosts available yet!");
-    return;
-  }
-  loadHost(currentIndex);
-  modal.style.display = "flex";
-  modal.style.justifyContent = "center";
-  modal.style.alignItems = "center";
-  giftSlider.style.background = randomFieryGradient();
-});
-
-/* ---------- Close Modal ---------- */
-closeModal?.addEventListener("click", () => {
-  modal.style.display = "none";
-});
-
-window.addEventListener("click", (e) => {
-  if (e.target === modal) modal.style.display = "none";
-});
-
-/* ---------- Global Gold Alert (Improved) ---------- */
-window.showGoldAlert = function (message, duration = 3200) {
-  const id = "goldAlert";
-  document.getElementById(id)?.remove();
-
-  const alert = document.createElement("div");
-  alert.id = id;
-  alert.innerHTML = message;
-  Object.assign(alert.style, {
-    position: "fixed", top: "50%", left: "50%", transform: "translate(-50%, -50%)",
-    background: "linear-gradient(90deg, #ffcc00, #ff9900)", color: "#111",
-    padding: "14px 32px", borderRadius: "12px", fontWeight: "700", fontSize: "15px",
-    zIndex: "999999", boxShadow: "0 0 20px rgba(255,200,0,0.6)", whiteSpace: "nowrap",
-    animation: "popIn 0.4s ease-out"
-  });
-
-  const style = document.createElement("style");
-  style.textContent = `@keyframes popIn { from {opacity:0; transform:translate(-50%,-70%) scale(0.8)} to {opacity:1; transform:translate(-50%,-50%) scale(1)} }`;
-  document.head.appendChild(style);
-  document.body.appendChild(alert);
-
-  setTimeout(() => alert.remove(), duration);
-};
-
-/* ---------- Phone Verification Flow ---------- */
-function normalizePhone(num) {
-  return num.replace(/\D/g, "").slice(-10);
-}
-
-document.addEventListener("click", async (e) => {
-  if (e.target.id !== "verifyNumberBtn") return;
-
-  const input = document.getElementById("verifyNumberInput")?.value.trim();
-  if (!input) return showGoldAlert("Enter a phone number");
-  if (!currentUser?.uid) return showGoldAlert("Please log in");
-
-  showConfirmModal(input, 21);
-});
-
-window.showConfirmModal = function (number, cost = 21) {
-  const modal = createModal();
   modal.innerHTML = `
-    <div style="background:#111;padding:20px;border-radius:12px;text-align:center;color:#fff;max-width:300px;">
-      <h3 style="margin:0 0 12px;">Verify Number</h3>
-      <p style="margin:0 0 20px;font-size:0.95em;">
-        Scan <strong>${number}</strong> for <strong>${cost} stars</strong>?
-      </p>
-      <div style="display:flex;gap:12px;justify-content:center;">
-        <button id="cancelVerify" style="padding:10px 20px;background:#333;border:none;border-radius:8px;color:#fff;">Cancel</button>
-        <button id="confirmVerify" class="gradient-btn">Yes, Verify</button>
+    <div id="meetModalContent" style="background:#111;padding:20px 22px;border-radius:12px;text-align:center;color:#fff;max-width:340px;box-shadow:0 0 20px rgba(0,0,0,0.5);">
+      <h3 style="margin-bottom:10px;font-weight:600;">Meet ${host.chatId || "this host"}?</h3>
+      <p style="margin-bottom:16px;">Request meet with <b>21 stars ⭐</b>?</p>
+      <div style="display:flex;gap:10px;justify-content:center;">
+        <button id="cancelMeet" style="padding:8px 16px;background:#333;border:none;color:#fff;border-radius:8px;font-weight:500;">Cancel</button>
+        <button id="confirmMeet" style="padding:8px 16px;background:linear-gradient(90deg,#ff0099,#ff6600);border:none;color:#fff;border-radius:8px;font-weight:600;">Yes</button>
       </div>
     </div>
   `;
+
   document.body.appendChild(modal);
 
-  modal.querySelector("#cancelVerify").onclick = () => modal.remove();
-  modal.querySelector("#confirmVerify").onclick = async () => {
-    if (currentUser.stars < cost) return showGoldAlert("Not enough stars");
+  const cancelBtn = modal.querySelector("#cancelMeet");
+  const confirmBtn = modal.querySelector("#confirmMeet");
+  const modalContent = modal.querySelector("#meetModalContent");
 
-    const btn = modal.querySelector("#confirmVerify");
-    btn.disabled = true;
-    btn.textContent = "Verifying...";
+  cancelBtn.onclick = () => modal.remove();
+
+  confirmBtn.onclick = async () => {
+    const COST = 21;
+
+      if (!currentUser?.uid) {
+    showGiftAlert("⚠️ Please log in to request meets");
+    modal.remove();
+    return;
+  }
+
+  if ((currentUser.stars || 0) < COST) {
+    showGiftAlert("⚠️ Uh oh, not enough stars ⭐");
+    modal.remove();
+    return;
+  }
+
+
+    confirmBtn.disabled = true;
+    confirmBtn.style.opacity = 0.6;
+    confirmBtn.style.cursor = "not-allowed";
 
     try {
-      await updateDoc(doc(db, "users", currentUser.uid), { stars: increment(-cost) });
-      currentUser.stars -= cost;
-      refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
+      currentUser.stars -= COST;
+      if (refs?.starCountEl) refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
+      updateDoc(doc(db, "users", currentUser.uid), { stars: increment(-COST) }).catch(console.error);
 
-      await runNumberVerification(number);
-      showGoldAlert("Verification complete!");
-      modal.remove();
+      if (host.whatsapp) {
+        // WhatsApp meet flow with staged messages
+        const fixedStages = ["Handling your meet request…", "Collecting host’s identity…"];
+        const playfulMessages = [
+          "Oh, she’s hella cute…💋", "Careful, she may be naughty..😏",
+          "Be generous with her, she’ll like you..", "Ohh, she’s a real star.. 🤩",
+          "Be a real gentleman, when she texts u..", "She’s ready to dazzle you tonight.. ✨",
+          "Watch out, she might steal your heart.. ❤️", "Look sharp, she’s got a sparkle.. ✨",
+          "Don’t blink, or you’ll miss her charm.. 😉", "Get ready for some fun surprises.. 😏",
+          "She knows how to keep it exciting.. 🎉", "Better behave, she’s watching.. 👀",
+          "She might just blow your mind.. 💥", "Keep calm, she’s worth it.. 😘",
+          "She’s got a twinkle in her eyes.. ✨", "Brace yourself for some charm.. 😎",
+          "She’s not just cute, she’s 🔥", "Careful, her smile is contagious.. 😁",
+          "She might make you blush.. 😳", "She’s a star in every way.. 🌟",
+          "Don’t miss this chance.. ⏳"
+        ];
+
+        const randomPlayful = [];
+        while (randomPlayful.length < 3) {
+          const choice = playfulMessages[Math.floor(Math.random() * playfulMessages.length)];
+          if (!randomPlayful.includes(choice)) randomPlayful.push(choice);
+        }
+
+        const stages = [...fixedStages, ...randomPlayful, "Generating secure token…"];
+        modalContent.innerHTML = `<p id="stageMsg" style="margin-top:20px;font-weight:500;"></p>`;
+        const stageMsgEl = modalContent.querySelector("#stageMsg");
+
+        let totalTime = 0;
+        stages.forEach((stage, index) => {
+          let duration = (index < 2) ? 1500 + Math.random() * 1000
+                        : (index < stages.length - 1) ? 1700 + Math.random() * 600
+                        : 2000 + Math.random() * 500;
+          totalTime += duration;
+
+          setTimeout(() => {
+            stageMsgEl.textContent = stage;
+            if (index === stages.length - 1) {
+              setTimeout(() => {
+                modalContent.innerHTML = `
+                  <h3 style="margin-bottom:10px;font-weight:600;">Meet Request Sent!</h3>
+                  <p style="margin-bottom:16px;">Your request to meet <b>${host.chatId}</b> is approved.</p>
+                  <button id="letsGoBtn" style="margin-top:6px;padding:10px 18px;border:none;border-radius:8px;font-weight:600;background:linear-gradient(90deg,#ff0099,#ff6600);color:#fff;cursor:pointer;">Send Message</button>
+                `;
+                const letsGoBtn = modalContent.querySelector("#letsGoBtn");
+                letsGoBtn.onclick = () => {
+                  const countryCodes = { Nigeria: "+234", Ghana: "+233", "United States": "+1", "United Kingdom": "+44", "South Africa": "+27" };
+                  const hostCountry = host.country || "Nigeria";
+                  let waNumber = host.whatsapp.trim();
+                  if (waNumber.startsWith("0")) waNumber = waNumber.slice(1);
+                  waNumber = countryCodes[hostCountry] + waNumber;
+                  const firstName = currentUser.fullName.split(" ")[0];
+                  const msg = `Hey! ${host.chatId}, my name’s ${firstName} (VIP on xixi live) & I’d like to meet you.`;
+                  window.open(`https://wa.me/${waNumber}?text=${encodeURIComponent(msg)}`, "_blank");
+                  modal.remove();
+                };
+                setTimeout(() => modal.remove(), 7000 + Math.random() * 500);
+              }, 500);
+            }
+          }, totalTime);
+        });
+      } else {
+        // No WhatsApp → check social links or fallback
+        showSocialRedirectModal(modalContent, host);
+      }
+
     } catch (err) {
-      showGoldAlert("Verification failed");
-      console.error(err);
+      console.error("Meet deduction failed:", err);
+      alert("Something went wrong. Please try again later.");
       modal.remove();
     }
   };
-};
-
-/* ---------- Reusable Modal Creator ---------- */
-  document.getElementById("meetModal")?.remove();
-  document.getElementById("verifyConfirmModal")?.remove();
-
-  const modal = document.createElement("div");
-  modal.id = "dynamicModal";
-  Object.assign(modal.style, {
-    position: "fixed", top: 0, left: 0, width: "100%", height: "100%",
-    background: "rgba(0,0,0,0.85)", zIndex: 999999,
-    display: "flex", alignItems: "center", justifyContent: "center",
-    backdropFilter: "blur(8px)"
-  });
-  return modal;
 }
 
-/* ========== FINAL INITIALIZATION ========== */
-fetchFeaturedHosts(); // From previous rewrite
+/* ---------- Social / No-Meet Fallback Modal ---------- */
+function showSocialRedirectModal(modalContent, host) {
+  const socialUrl = host.tiktok || host.instagram || "";
+  const socialName = host.tiktok ? "TikTok" : host.instagram ? "Instagram" : "";
+  const hostName = host.chatId || "This host";
+
+  if (socialUrl) {
+    modalContent.innerHTML = `
+      <h3 style="margin-bottom:10px;font-weight:600;">Meet ${hostName}?</h3>
+      <p style="margin-bottom:16px;">${hostName} isn’t meeting new people via WhatsApp yet.</p>
+      <p style="margin-bottom:16px;">Check her out on <b>${socialName}</b> instead?</p>
+      <button id="goSocialBtn" style="padding:8px 16px;background:linear-gradient(90deg,#ff0099,#ff6600);border:none;color:#fff;border-radius:8px;font-weight:600;">Go</button>
+      <button id="cancelMeet" style="margin-top:10px;padding:8px 16px;background:#333;border:none;color:#fff;border-radius:8px;font-weight:500;">Close</button>
+    `;
+    modalContent.querySelector("#goSocialBtn").onclick = () => { 
+      window.open(socialUrl, "_blank"); 
+      modalContent.parentElement.remove(); 
+    };
+    modalContent.querySelector("#cancelMeet").onclick = () => modalContent.parentElement.remove();
+  } else {
+    modalContent.innerHTML = `
+      <h3 style="margin-bottom:10px;font-weight:600;">Meet ${hostName}?</h3>
+      <p style="margin-bottom:16px;">${hostName} isn’t meeting new people yet. Please check back later!</p>
+      <button id="cancelMeet" style="padding:8px 16px;background:#333;border:none;color:#fff;border-radius:8px;font-weight:500;">Close</button>
+    `;
+    modalContent.querySelector("#cancelMeet").onclick = () => modalContent.parentElement.remove();
+  }
+}
+
+/* ---------- Gift Slider ---------- */
+const fieryColors = [
+  ["#ff0000", "#ff8c00"], // red to orange
+  ["#ff4500", "#ffd700"], // orange to gold
+  ["#ff1493", "#ff6347"], // pinkish red
+  ["#ff0055", "#ff7a00"], // magenta to orange
+  ["#ff5500", "#ffcc00"], // deep orange to yellow
+  ["#ff3300", "#ff0066"], // neon red to hot pink
+];
+
+// Generate a random fiery gradient
+function randomFieryGradient() {
+  const [c1, c2] = fieryColors[Math.floor(Math.random() * fieryColors.length)];
+  return `linear-gradient(90deg, ${c1}, ${c2})`;
+}
+
+/* ---------- Gift Slider ---------- */
+giftSlider.addEventListener("input", () => {
+  giftAmountEl.textContent = giftSlider.value;
+  giftSlider.style.background = randomFieryGradient(); // change fiery color as it slides
+});
+
+/*
+=========================================
+🚫 COMMENTED OUT: Duplicate modal opener
+=========================================
+openBtn.addEventListener("click", () => {
+  modal.style.display = "flex";
+  modal.style.justifyContent = "center";
+  modal.style.alignItems = "center";
+
+  // Give it a fiery flash on open
+  giftSlider.style.background = randomFieryGradient();
+  console.log("📺 Modal opened");
+});
+*/
+
+
+/* ===============================
+   🎁 Send Gift + Dual Notification
+================================= */
+
+async function sendGift() {
+  const receiver = hosts[currentIndex];
+  if (!receiver?.id) return showGiftAlert("⚠️ No host selected.");
+  if (!currentUser?.uid) return showGiftAlert("Please log in to send stars ⭐");
+
+  const giftStars = parseInt(giftSlider.value, 10);
+  if (isNaN(giftStars) || giftStars <= 0)
+    return showGiftAlert("Invalid star amount ❌");
+
+  const originalText = giftBtn.textContent;
+  const buttonWidth = giftBtn.offsetWidth + "px";
+  giftBtn.style.width = buttonWidth;
+  giftBtn.disabled = true;
+  giftBtn.innerHTML = `<span class="gift-spinner"></span>`;
+
+  try {
+    const senderRef = doc(db, "users", currentUser.uid);
+    const receiverRef = doc(db, "users", receiver.id);
+    const featuredReceiverRef = doc(db, "featuredHosts", receiver.id);
+
+    await runTransaction(db, async (tx) => {
+      const senderSnap = await tx.get(senderRef);
+      const receiverSnap = await tx.get(receiverRef);
+
+      if (!senderSnap.exists()) throw new Error("Your user record not found.");
+      if (!receiverSnap.exists())
+        tx.set(receiverRef, { stars: 0, starsGifted: 0, lastGiftSeen: {} }, { merge: true });
+
+      const senderData = senderSnap.data();
+      if ((senderData.stars || 0) < giftStars)
+        throw new Error("Insufficient stars");
+
+      tx.update(senderRef, { stars: increment(-giftStars), starsGifted: increment(giftStars) });
+      tx.update(receiverRef, { stars: increment(giftStars) });
+      tx.set(featuredReceiverRef, { stars: increment(giftStars) }, { merge: true });
+
+      tx.update(receiverRef, {
+        [`lastGiftSeen.${currentUser.username || "Someone"}`]: giftStars
+      });
+    });
+
+    // ✅ Notify both sender and receiver
+    const senderName = currentUser.username || "Someone";
+    const receiverName = receiver.chatId || "User";
+
+    await Promise.all([
+      pushNotification(receiver.id, `🎁 ${senderName} sent you ${giftStars} stars ⭐`),
+      pushNotification(currentUser.uid, `💫 You sent ${giftStars} stars ⭐ to ${receiverName}`)
+    ]);
+
+    showGiftAlert(`✅ You sent ${giftStars} stars ⭐ to ${receiverName}!`);
+
+    if (currentUser.uid === receiver.id) {
+      setTimeout(() => {
+        showGiftAlert(`🎁 ${senderName} sent you ${giftStars} stars ⭐`);
+      }, 1000);
+    }
+
+    console.log(`✅ Sent ${giftStars} stars ⭐ to ${receiverName}`);
+  } catch (err) {
+    console.error("❌ Gift sending failed:", err);
+    showGiftAlert(`⚠️ Something went wrong: ${err.message}`);
+  } finally {
+    giftBtn.innerHTML = originalText;
+    giftBtn.disabled = false;
+    giftBtn.style.width = "auto";
+  }
+}
+
+/* ---------- Assign gift button click ---------- */
+giftBtn.onclick = sendGift;
+
+/* ---------- Navigation ---------- */
+prevBtn.addEventListener("click", e => {
+  e.preventDefault();
+  loadHost((currentIndex - 1 + hosts.length) % hosts.length);
+});
+
+nextBtn.addEventListener("click", e => {
+  e.preventDefault();
+  loadHost((currentIndex + 1) % hosts.length);
+});
+
+/* ---------- Safe Star Hosts Modal Open ---------- */
+openBtn.addEventListener("click", () => {
+  if (!hosts.length) {
+    showGiftAlert("⚠️ No featured hosts available yet!");
+    return;
+  }
+
+  // Load the current host safely
+  loadHost(currentIndex);
+
+  // Show modal centered
+  modal.style.display = "flex";
+  modal.style.justifyContent = "center";
+  modal.style.alignItems = "center";
+
+  // Optional: fiery gradient for gift slider
+  if (giftSlider) {
+    giftSlider.style.background = randomFieryGradient();
+  }
+
+  console.log("📺 Modal opened");
+});
+
+/* ---------- Close modal logic ---------- */
+closeModal.addEventListener("click", () => {
+  modal.style.display = "none";
+  console.log("❎ Modal closed");
+});
+
+// Click outside modal closes it
+window.addEventListener("click", (e) => {
+  if (e.target === modal) {
+    modal.style.display = "none";
+    console.log("🪟 Modal dismissed");
+  }
+});
+
+/* ---------- Init ---------- */
+fetchFeaturedHosts();
+
+
+// --- ✅ Prevent redeclaration across reloads ---
+if (!window.verifyHandlersInitialized) {
+  window.verifyHandlersInitialized = true;
+
+  // ---------- ✨ SIMPLE GOLD MODAL ALERT ----------
+  window.showGoldAlert = function (message, duration = 3000) {
+    const existing = document.getElementById("goldAlert");
+    if (existing) existing.remove();
+
+    const alertEl = document.createElement("div");
+    alertEl.id = "goldAlert";
+    Object.assign(alertEl.style, {
+      position: "fixed",
+      top: "50%",
+      left: "50%",
+      transform: "translate(-50%, -50%)",
+      background: "linear-gradient(90deg, #ffcc00, #ff9900)",
+      color: "#111",
+      padding: "12px 30px", // increased padding for one-liner
+      borderRadius: "10px",
+      fontWeight: "600",
+      fontSize: "14px",
+      zIndex: "999999",
+      boxShadow: "0 0 12px rgba(255, 215, 0, 0.5)",
+      whiteSpace: "nowrap",
+      animation: "slideFade 0.4s ease-out",
+    });
+    alertEl.innerHTML = message;
+
+    const style = document.createElement("style");
+    style.textContent = `
+      @keyframes slideFade {
+        from {opacity: 0; transform: translate(-50%, -60%);}
+        to {opacity: 1; transform: translate(-50%, -50%);}
+      }
+    `;
+    document.head.appendChild(style);
+    document.body.appendChild(alertEl);
+    setTimeout(() => alertEl.remove(), duration);
+  };
+
+  // ---------- PHONE NORMALIZER (for backend matching) ----------
+  function normalizePhone(number) {
+    return number.replace(/\D/g, "").slice(-10); // last 10 digits
+  }
+
+  // ---------- CLICK HANDLER ----------
+  document.addEventListener("click", (e) => {
+    if (e.target.id === "verifyNumberBtn") {
+      const input = document.getElementById("verifyNumberInput");
+      const numberRaw = input?.value.trim();
+      const COST = 21;
+
+      if (!currentUser?.uid) return showGoldAlert("⚠️ Please log in first.");
+      if (!numberRaw) return showGoldAlert("⚠️ Please enter a phone number.");
+
+      showConfirmModal(numberRaw, COST);
+    }
+  });
+
+  // ---------- CONFIRM MODAL ----------
+  window.showConfirmModal = function (number, cost = 21) {
+    let modal = document.getElementById("verifyConfirmModal");
+    if (modal) modal.remove();
+
+    modal = document.createElement("div");
+    modal.id = "verifyConfirmModal";
+    Object.assign(modal.style, {
+      position: "fixed",
+      top: 0,
+      left: 0,
+      width: "100vw",
+      height: "100vh",
+      background: "rgba(0,0,0,0.7)",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      zIndex: "999999",
+      backdropFilter: "blur(2px)",
+    });
+
+    modal.innerHTML = `
+      <div style="background:#111;padding:16px 18px;border-radius:10px;text-align:center;color:#fff;max-width:280px;box-shadow:0 0 12px rgba(0,0,0,0.5);">
+        <h3 style="margin-bottom:10px;font-weight:600;">Verification</h3>
+        <p>Scan phone number <b>${number}</b> for <b>${cost} stars ⭐</b>?</p>
+        <div style="display:flex;justify-content:center;gap:10px;margin-top:12px;">
+          <button id="cancelVerify" style="padding:6px 12px;border:none;border-radius:6px;background:#333;color:#fff;font-weight:600;cursor:pointer;">Cancel</button>
+          <button id="confirmVerify" style="padding:6px 12px;border:none;border-radius:6px;background:linear-gradient(90deg,#ff0099,#ff6600);color:#fff;font-weight:600;cursor:pointer;">Yes</button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    const cancelBtn = modal.querySelector("#cancelVerify");
+    const confirmBtn = modal.querySelector("#confirmVerify");
+
+    cancelBtn.onclick = () => modal.remove();
+
+confirmBtn.onclick = async () => {
+  if (!currentUser?.uid) {
+    showGoldAlert("⚠️ Please log in first");
+    modal.remove();
+    return;
+  }
+
+  if ((currentUser.stars || 0) < cost) {
+    showGoldAlert("⚠️ Not enough stars ⭐");
+    modal.remove();
+    return;
+  }
+
+      confirmBtn.disabled = true;
+      confirmBtn.style.opacity = 0.6;
+      confirmBtn.style.cursor = "not-allowed";
+
+      try {
+        // Deduct stars
+        await updateDoc(doc(db, "users", currentUser.uid), { stars: increment(-cost) });
+        currentUser.stars -= cost;
+        if (refs?.starCountEl) refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
+
+        // Run verification
+        await runNumberVerification(number);
+        modal.remove();
+      } catch (err) {
+        console.error(err);
+        showGoldAlert("❌ Verification failed, please retry!");
+        modal.remove();
+      }
+    };
+  };
 
   // ---------- RUN VERIFICATION ----------
   async function runNumberVerification(number) {
