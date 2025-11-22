@@ -542,6 +542,25 @@ bar + footer */
 .streak-dot.active {background:#00ff88;box-shadow:0 0 20px #00ff88,0 0 30px #00ff88;transform:scale(1.4);animation:pulse 1.5s infinite alternate;}
 .streak-day-mini.active {opacity:1;transform:translateY(-3px);}
 @keyframes pulse {from{box-shadow:0 0 20px #00ff88;}to{box-shadow:0 0 40px #00ff88;}}
+/* Slider container */
+.slider-wrapper {
+  overflow: hidden;
+  width: 100%;
+  position: relative;
+}
+
+/* Track that moves */
+.slider-track {
+  display: flex;
+  transition: transform 0.6s ease; /* smooth sliding */
+  width: 100%;
+}
+
+/* Each slide */
+.leaderboard-slide {
+  width: 100%;
+  flex-shrink: 0;
+}
 </style>
 </head>
 </body>
