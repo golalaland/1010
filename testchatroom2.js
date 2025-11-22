@@ -504,7 +504,6 @@ function setupUsersListener() {
 }
 setupUsersListener();
 
-let scrollPending = false;
 let tapModalEl = null;
 let currentReplyTarget = null;
 
