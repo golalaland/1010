@@ -1294,59 +1294,157 @@ window.addEventListener("DOMContentLoaded", () => {
 
   if (refs.chatIDInput) refs.chatIDInput.maxLength = 12;
 
-  /* ----------------------------
-     🔐 VIP Login Setup
-  ----------------------------- */
-  const emailInput = document.getElementById("emailInput");
-  const phoneInput = document.getElementById("phoneInput");
-  const loginBtn = document.getElementById("whitelistLoginBtn");
+ /* ============================================================= */
+/*                  VIP LOGIN + AUTO-LOGIN (UID-FIRST)           */
+/*               Secure • Modern • Future-Proof • Clean          */
+/* ============================================================= */
 
-  async function handleLogin() {
-    const email = (emailInput?.value || "").trim().toLowerCase();
-    const phone = (phoneInput?.value || "").trim();
+const emailInput = document.getElementById("emailInput");
+const phoneInput = document.getElementById("phoneInput");
+const loginBtn = document.getElementById("whitelistLoginBtn");
 
-    if (!email || !phone) {
-      return showStarPopup("Enter your email and phone to get access.");
-    }
+// Global current user (will be populated with real UID)
+let currentUser = null;
 
-    showLoadingBar(1000);
-    await sleep(50);
+/* ----------------------------
+   VIP Login – Now Returns Full User + UID
+----------------------------- */
+async function handleLogin() {
+  const email = (emailInput?.value || "").trim().toLowerCase();
+  const phone = (phoneInput?.value || "").trim();
 
-    const success = await loginWhitelist(email, phone);
-    if (!success) return;
-
-    await sleep(400);
-    updateRedeemLink();
-    updateTipLink();
+  if (!email || !phone) {
+    return showStarPopup("Please enter both email and phone.");
   }
 
-  loginBtn?.addEventListener("click", handleLogin);
+  showLoadingBar(1200);
 
-  /* ----------------------------
-     🔁 Auto Login Session
-  ----------------------------- */
- async function autoLogin() {
-  const vipUser = JSON.parse(localStorage.getItem("vipUser"));
-  if (vipUser?.email && vipUser?.phone) {
-    showLoadingBar(1000);
-    await sleep(60);
-    const success = await loginWhitelist(vipUser.email, vipUser.phone);
-    if (!success) return;
+  try {
+    // This function MUST return full user object with UID
+    const userData = await loginWhitelist(email, phone);
+
+    if (!userData || !userData.uid) {
+      showStarPopup("Access denied. Not on VIP list.");
+      return;
+    }
+
+    // Save full user to localStorage
+    localStorage.setItem("vipUser", JSON.stringify(userData));
+
+    // Set global currentUser (used everywhere: chat, gifts, meet, etc.)
+    currentUser = {
+      uid: userData.uid,
+      email: userData.email,
+      phone: userData.phone,
+      chatId: userData.chatId || email.split("@")[0],
+      username: userData.chatId || userData.username || "VIP",
+      fullName: userData.fullName || "",
+      stars: userData.stars || 0,
+      isVIP: true
+    };
+
+    // Update star display
+    if (refs?.starCountEl) {
+      refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
+    }
+
     await sleep(400);
     updateRedeemLink();
     updateTipLink();
+
+    showStarPopup(`Welcome back, ${currentUser.chatId || "VIP"}!`);
+
+  } catch (err) {
+    console.error("Login error:", err);
+    showStarPopup("Login failed. Try again.");
   }
 }
 
-// Call on page load
-autoLogin();
-
+loginBtn?.addEventListener("click", handleLogin);
 
 /* ----------------------------
-   ⚡ Global setup for local message tracking
+   Auto-Login – Validates UID & Refreshes Data
 ----------------------------- */
-let localPendingMsgs = JSON.parse(localStorage.getItem("localPendingMsgs") || "{}"); 
-// structure: { tempId: { content, uid, chatId, createdAt } }
+async function autoLogin() {
+  const stored = localStorage.getItem("vipUser");
+  if (!stored) return;
+
+  let savedUser;
+  try {
+    savedUser = JSON.parse(stored);
+  } catch {
+    localStorage.removeItem("vipUser");
+    return;
+  }
+
+  // Must have UID to be valid
+  if (!savedUser?.uid) {
+    localStorage.removeItem("vipUser");
+    returnlectual
+  }
+
+  showLoadingBar(1000);
+
+  try {
+    // Re-fetch fresh data using UID (most secure method)
+    const userDoc = await getDoc(doc(db, "users", savedUser.uid));
+
+    if (!userDoc.exists()) {
+      throw new Error("User no longer exists");
+    }
+
+    const freshData = userDoc.data();
+
+    // Merge and save latest
+    const updatedUser = {
+      ...savedUser,
+      ...freshData,
+      uid: savedUser.uid  // preserve UID
+    };
+
+    localStorage.setItem("vipUser", JSON.stringify(updatedUser));
+
+    // Update global currentUser
+    currentUser = {
+      uid: updatedUser.uid,
+      email: updatedUser.email || savedUser.email,
+      phone: updatedUser.phone || savedUser.phone,
+      chatId: updatedUser.chatId || updatedUser.username || "VIP",
+      username: updatedUser.chatId || updatedUser.username || "VIP",
+      fullName: updatedUser.fullName || "",
+      stars: freshData.stars || 0,
+      isVIP: true
+    };
+
+    // Update UI
+    if (refs?.starCountEl) {
+      refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
+    }
+
+    await sleep(400);
+    updateRedeemLink();
+    updateTipLink();
+
+    console.log("Auto-login success:", currentUser.chatId);
+
+  } catch (err) {
+    console.warn("Auto-login failed:", err.message);
+    localStorage.removeItem("vipUser");
+    currentUser = null;
+    showStarPopup("Session expired. Please log in again.");
+  }
+}
+
+/* ----------------------------
+   Local Pending Messages (unchanged)
+----------------------------- */
+let localPendingMsgs = JSON.parse(localStorage.getItem("localPendingMsgs") || "{}");
+// { tempId: { content, uid, chatId, createdAt } }
+
+/* ----------------------------
+   Initialize on Page Load
+----------------------------- */
+autoLogin();
 
 /* ----------------------------
    💬 Send Message Handler (Instant + No Double Render)
