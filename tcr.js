@@ -1131,150 +1131,163 @@ async function loginWhitelist(email, password) {
   }
 }
 /* ===============================
-   BIND LOGIN BUTTON
+   BIND LOGIN BUTTON
 ================================= */
 document.getElementById("whitelistLoginBtn")?.addEventListener("click", async () => {
-  const email = document.getElementById("emailInput")?.value.trim().toLowerCase();
-  const password = document.getElementById("passwordInput")?.value.trim();
-
-  if (!email || !password) {
-    return showStarPopup("Please enter email and password.");
-  }
-
-  await loginWhitelist(email, password);
+  const email = document.getElementById("emailInput")?.value.trim().toLowerCase();
+  const password = document.getElementById("passwordInput")?.value.trim();
+  if (!email || !password) {
+    return showStarPopup("Please enter email and password.");
+  }
+  await loginWhitelist(email, password);
 });
-
 /* ===============================
-   AUTO-LOGIN ON PAGE LOAD
+   AUTO-LOGIN ON PAGE LOAD
 ================================= */
 async function autoLogin() {
-  const creds = localStorage.getItem("vipCredentials");
-  if (!creds) return;
-
-  let saved;
-  try {
-    saved = JSON.parse(creds);
-  } catch {
-    localStorage.removeItem("vipCredentials");
-    return;
-  }
-
-  if (!saved.email || !saved.password) return;
-
-  console.log("Auto-login attempt for:", saved.email);
-  await loginWhitelist(saved.email, saved.password);
+  const creds = localStorage.getItem("vipCredentials");
+  if (!creds) return;
+  let saved;
+  try {
+    saved = JSON.parse(creds);
+  } catch {
+    localStorage.removeItem("vipCredentials");
+    return;
+  }
+  if (!saved.email || !saved.password) return;
+  console.log("Auto-login attempt...", saved.email);
+  const success = await loginWhitelist(saved.email, saved.password);
+  if (success && currentUser?.isVIP) {
+    showStarPopup(Welcome back, ${currentUser.chatId || "VIP"}!);
+  }
 }
-
-// Run after DOM is ready
+// Run on load
 window.addEventListener("DOMContentLoaded", () => {
-  setTimeout(autoLogin, 400);
+  setTimeout(autoLogin, 300); // Tiny delay for DOM
 });
-
 /* ===============================
-   Star Earning System (Safe & Clean)
+   💫 Auto Star Earning System
 ================================= */
-let starInterval = null;
-
 function startStarEarning(uid) {
-  if (!uid || starInterval) return;
-
-  const userRef = doc(db, "users", uid);
-
-  // Real-time star listener with smooth animation
-  onSnapshot(userRef, snap => {
-    if (!snap.exists()) return;
-    const data = snap.data();
-    const newStars = data.stars || 0;
-
-    if (currentUser) {
-      currentUser.stars = newStars;
-      if (refs.starCountEl) {
-        refs.starCountEl.textContent = formatNumberWithCommas(newStars);
-      }
-    }
-  });
-
-  // Earn 10 stars every minute (max 250/day)
-  starInterval = setInterval(async () => {
-    if (!navigator.onLine || !currentUser?.uid) return;
-
-    try {
-      const snap = await getDoc(userRef);
-      if (!snap.exists()) return;
-
-      const data = snap.data();
-      const today = new Date().toISOString().split("T")[0];
-
-      if (data.lastStarDate !== today) {
-        await updateDoc(userRef, { starsToday: 0, lastStarDate: today });
-      }
-
-      if ((data.starsToday || 0) < 250) {
-        await updateDoc(userRef, {
-          stars: increment(10),
-          starsToday: increment(10)
-        });
-      }
-    } catch (err) {
-      console.log("Star earning paused (offline or error)");
-    }
-  }, 60000);
+  if (!uid) return;
+  if (starInterval) clearInterval(starInterval);
+  const userRef = doc(db, "users", uid);
+  let displayedStars = currentUser.stars || 0;
+  let animationTimeout = null;
+  // ✨ Smooth UI update
+  const animateStarCount = target => {
+    if (!refs.starCountEl) return;
+    const diff = target - displayedStars;
+    if (Math.abs(diff) < 1) {
+      displayedStars = target;
+      refs.starCountEl.textContent = formatNumberWithCommas(displayedStars);
+      return;
+    }
+    displayedStars += diff * 0.25; // smoother easing
+    refs.starCountEl.textContent = formatNumberWithCommas(Math.floor(displayedStars));
+    animationTimeout = setTimeout(() => animateStarCount(target), 40);
+  };
+  // 🔄 Real-time listener
+  onSnapshot(userRef, snap => {
+    if (!snap.exists()) return;
+    const data = snap.data();
+    const targetStars = data.stars || 0;
+    currentUser.stars = targetStars;
+    if (animationTimeout) clearTimeout(animationTimeout);
+    animateStarCount(targetStars);
+    // 🎉 Milestone popup
+    if (targetStars > 0 && targetStars % 1000 === 0) {
+      showStarPopup(🔥 Congrats! You’ve reached ${formatNumberWithCommas(targetStars)} stars!);
+    }
+  });
+  // ⏱️ Increment loop
+  starInterval = setInterval(async () => {
+    if (!navigator.onLine) return;
+    const snap = await getDoc(userRef);
+    if (!snap.exists()) return;
+    const data = snap.data();
+    const today = todayDate();
+    // Reset daily count
+    if (data.lastStarDate !== today) {
+      await updateDoc(userRef, { starsToday: 0, lastStarDate: today });
+      return;
+    }
+    // Limit: 250/day
+    if ((data.starsToday || 0) < 250) {
+      await updateDoc(userRef, {
+        stars: increment(10),
+        starsToday: increment(10)
+      });
+    }
+  }, 60000);
+  // 🧹 Cleanup
+  window.addEventListener("beforeunload", () => clearInterval(starInterval));
 }
-
 /* ===============================
-   Show Chat UI After Successful Login
+   🧩 Helper Functions
+================================= */
+const todayDate = () => new Date().toISOString().split("T")[0];
+const sleep = ms => new Promise(res => setTimeout(res, ms));
+/* ===============================
+   🧠 UI Updates After Auth (Improved)
+================================= */
+function updateUIAfterAuth(user) {
+  const subtitle = document.getElementById("roomSubtitle");
+  const helloText = document.getElementById("helloText");
+  const roomDescText = document.querySelector(".room-desc .text");
+  const hostsBtn = document.getElementById("openHostsBtn");
+  const loginBar = document.getElementById("loginBar"); // adjust if different ID
+  // Keep Star Hosts button always visible
+  if (hostsBtn) hostsBtn.style.display = "block";
+  if (user) {
+    // Hide intro texts only for logged-in users
+    if (subtitle) subtitle.style.display = "none";
+    if (helloText) helloText.style.display = "none";
+    if (roomDescText) roomDescText.style.display = "none";
+    if (loginBar) loginBar.style.display = "flex";
+  } else {
+    // Show intro texts for guests
+    if (subtitle) subtitle.style.display = "block";
+    if (helloText) helloText.style.display = "block";
+    if (roomDescText) roomDescText.style.display = "block";
+    if (loginBar) loginBar.style.display = "flex";
+  }
+}
+/* ===============================
+   💬 Show Chat UI After Login
 ================================= */
 function showChatUI(user) {
-  if (!user?.uid) return;
-
-  // Hide login screen
-  document.getElementById("emailAuthWrapper")?.style.setProperty("display", "none", "important");
-  document.getElementById("vipAccessBtn")?.style.setProperty("display", "none");
-
-  // Show chat UI
-  const { sendAreaEl, profileBoxEl, profileNameEl, starCountEl, cashCountEl, adminControlsEl } = refs;
-
-  sendAreaEl && (sendAreaEl.style.display = "flex");
-  profileBoxEl && (profileBoxEl.style.display = "block");
-
-  if (profileNameEl) {
-    profileNameEl.textContent = user.chatId || "VIP";
-    profileNameEl.style.color = user.usernameColor || "#ff69b4";
-  }
-  if (starCountEl) starCountEl.textContent = formatNumberWithCommas(user.stars || 0);
-  if (cashCountEl) cashCountEl.textContent = formatNumberWithCommas(user.cash || 0);
-  if (adminControlsEl) adminControlsEl.style.display = user.isAdmin ? "flex" : "none";
-
-  // Hide intro text, show full chat
-  document.getElementById("roomSubtitle")?.style.setProperty("display", "none");
-  document.getElementById("helloText")?.style.setProperty("display", "none");
-  document.querySelector(".room-desc .text")?.style.setProperty("display", "none");
-
-  // Start systems
-  setupPresence?.(user);
-  attachMessagesListener?.();
-  startStarEarning(user.uid);
-
-  // Safe notification start
-  if (typeof initNotificationsListener === "function") initNotificationsListener();
-  else if (typeof startNotifications === "function") startNotifications();
+  const { authBox, sendAreaEl, profileBoxEl, profileNameEl, starCountEl, cashCountEl, adminControlsEl } = refs;
+  // Hide login/auth elements
+  document.getElementById("emailAuthWrapper")?.style?.setProperty("display", "none");
+  document.getElementById("googleSignInBtn")?.style?.setProperty("display", "none");
+  document.getElementById("vipAccessBtn")?.style?.setProperty("display", "none");
+  // Show chat interface
+  authBox && (authBox.style.display = "none");
+  sendAreaEl && (sendAreaEl.style.display = "flex");
+  profileBoxEl && (profileBoxEl.style.display = "block");
+  if (profileNameEl) {
+    profileNameEl.innerText = user.chatId;
+    profileNameEl.style.color = user.usernameColor;
+  }
+  if (starCountEl) starCountEl.textContent = formatNumberWithCommas(user.stars);
+  if (cashCountEl) cashCountEl.textContent = formatNumberWithCommas(user.cash);
+  if (adminControlsEl) adminControlsEl.style.display = user.isAdmin ? "flex" : "none";
+  // 🔹 Apply additional UI updates (hide intro, show hosts)
+  updateUIAfterAuth(user);
 }
-
 /* ===============================
-   Hide Chat UI (Logout)
+   🚪 Hide Chat UI On Logout
 ================================= */
 function hideChatUI() {
-  currentUser = null;
-  if (starInterval) clearInterval(starInterval);
-  starInterval = null;
-
-  refs.sendAreaEl && (refs.sendAreaEl.style.display = "none");
-  refs.profileBoxEl && (refs.profileBoxEl.style.display = "none");
-
-  document.getElementById("emailAuthWrapper")?.style.setProperty("display", "flex");
-  document.getElementById("vipAccessBtn")?.style.setProperty("display", "block");
+  const { authBox, sendAreaEl, profileBoxEl, adminControlsEl } = refs;
+  authBox && (authBox.style.display = "block");
+  sendAreaEl && (sendAreaEl.style.display = "none");
+  profileBoxEl && (profileBoxEl.style.display = "none");
+  if (adminControlsEl) adminControlsEl.style.display = "none";
+  // 🔹 Restore intro UI (subtitle, hello text, etc.)
+  updateUIAfterAuth(null);
 }
-
 /* =======================================
    🚀 DOMContentLoaded Bootstrap
 ======================================= */
@@ -3946,4 +3959,27 @@ async function handleUnlockVideo(video) {
     console.error("❌ Unlock failed:", err);
     showGoldAlert(`⚠️ ${err.message}`);
   }
+}
+// 7. Initialize everything
+    updateRedeemLink();
+    updateTipLink();
+    setupPresence?.(currentUser);
+    attachMessagesListener?.();
+    startStarEarning?.(currentUser.uid);
+    showChatUI(currentUser);
+    startNotifications?.(); // now uses currentUser.uid internally
+    console.log("VIP Access Granted:", currentUser.chatId || email);
+    showStarPopup(Welcome, ${currentUser.chatId || "VIP"}!);
+    return true;
+  } catch (err) {
+    console.error("Login failed:", err);
+    showStarPopup("Wrong email or password.");
+    if (loadingBar) loadingBar.style.width = "0%";
+    return false;
+  } finally {
+    if (loadingInterval) clearInterval(loadingInterval);
+    setTimeout(() => {
+      if (loader) loader.style.display = "none";
+    }, 1000);
+  }
 }
