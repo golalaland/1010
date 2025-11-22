@@ -292,15 +292,68 @@ window.currentUser = currentUser;
 /* ---------- Exports for other scripts ---------- */
 export { app, db, rtdb, auth };
 
-/* ---------- Global State ---------- */
-const ROOM_ID = "room5";
-const CHAT_COLLECTION = "messages_room5";
-const BUZZ_COST = 50;
-const SEND_COST = 1;
+const CONFIG = {
+  ROOM_ID: "room5",
+  CHAT_COLLECTION: "messages_room5",   // ← auto-derived below (cleaner)
+  HIGHLIGHTS_COLLECTION: "highlightVideos",
+  NOTIFICATIONS_COLLECTION: "notifications",
+  WHITELIST_COLLECTION: "whitelist",
+  FEATURED_HOSTS_COLLECTION: "featuredHosts",
+  
+  // Costs (easy to tweak globally)
+  BUZZ_COST: 50,
+  SEND_COST: 1,
+  MIN_GIFT_STARS: 100,
+  HIGHLIGHT_BASE_PRICE: 100,
 
-let lastMessagesArray = [];
-let starInterval = null;
-let refs = {};
+  // Timing
+  STAR_EARNING_INTERVAL_MS: 60_000,  // 1 minute
+  AUTO_SCROLL_THRESHOLD: 150,
+  NEW_MESSAGE_SHOW_ARROW_AT: 400,
+
+  // Visual
+  GLOW_COLORS: ["#ff006e", "#ff4500", "#ffd700", "#00ffff", "#ff00ff"],
+  FIERY_GRADIENTS: [
+    ["#ff0000", "#ff8c00"],
+    ["#ff4500", "#ffd700"],
+    ["#ff1493", "#ff6347"],
+    ["#ff3300", "#ff0066"]
+  ]
+};
+
+// Auto-derive collection names (no duplicate strings!)
+const CHAT_COLLECTION = `messages_${CONFIG.ROOM_ID}`;
+
+/* ---------- Runtime State ---------- */
+let currentUser = null;                    // ← populated after login (real UID)
+let lastMessagesArray = [];                // for render optimization
+let starInterval = null;                   // star earning timer
+let messageListenerUnsubscribe = null;    // Firestore listener cleanup
+let presenceInterval = null;               // online status heartbeat
+let typingTimeout = null;                  // debounce typing indicator
+
+
+// DOM References (cached once)
+const refs = {
+  messagesContainer: null,
+  inputField: null,
+  sendBtn: null,
+  buzzBtn: null,
+  starsDisplay: null,
+  notificationsList: null,
+  scrollToBottomBtn: null,
+  centerScrollArrow: null,
+};
+
+// User cache (for social card + fast lookup)
+const usersByChatId = {};
+const allUsersCache = [];
+
+// Unlocked videos (synced with localStorage + Firestore)
+let unlockedVideos = JSON.parse(localStorage.getItem("userUnlockedVideos") || "[]");
+
+// Debug flag (toggle in console: DEBUG = true)
+window.DEBUG = false;
 
 /* ---------- Helpers ---------- */
 const generateGuestName = () => `GUEST ${Math.floor(1000 + Math.random() * 9000)}`;
@@ -321,6 +374,10 @@ function showStarPopup(text) {
   setTimeout(() => popup.style.display = "none", 1700);
 }
 
+/* ---------- Helper: Safe Log (only in debug) ---------- */
+const log = (...args) => window.DEBUG && console.log("%c$STRZ", "color:#ff006e;font-weight:bold;", ...args);
+const warn = (...args) => console.warn("%c$STRZ WARN", "color:#ff8c00;font-weight:bold;", ...args);
+const error = (...args) => console.error("%c$STRZ ERROR", "color:#ff006e;background:#000;padding:4px 8px;", ...args);
 
 /* ----------------------------
    ⭐ GIFT MODAL / CHAT BANNER ALERT
@@ -2960,33 +3017,67 @@ Object.assign(giftBtnLocal.style, {
     }, speed);
   }
   
-  // --- USERNAME TAP DETECTOR ---
-  document.addEventListener('pointerdown', (e) => {
-    const target = e.target;
-    if (!target || !target.textContent) return;
+ // --- USERNAME TAP DETECTOR (2025 GOD-TIER EDITION) ---
+document.addEventListener('pointerdown', (e) => {
+  const target = e.target.closest('span, div, p, h1, h2, h3, .username, .chatId'); // broader hit area
+  if (!target?.textContent) return;
 
-    const txt = target.textContent.trim();
-    if (!txt || txt.includes(':')) return; // avoid chat line clicks
-    const chatId = txt.split(' ')[0].trim();
-    if (!chatId) return;
+  const text = target.textContent.trim();
+  
+  // Ignore full chat lines (they contain ":") and empty strings
+  if (!text || text.includes(':') || text.length < 2) return;
 
-    const user = usersByChatId[chatId.toLowerCase()] ||
-      allUsers.find(u => (u.chatId || '').toLowerCase() === chatId.toLowerCase());
-    if (!user || user._docId === currentUser?.uid) return;
+  // Extract first word/phrase as potential chatId (handles emojis, spaces, special chars)
+  const potentialChatId = text.split(/\s+/)[0].replace(/[^a-zA-Z0-9_@]/g, ''); // strip emojis/symbols
+  if (!potentialChatId) return;
 
-    // Blink effect
-    const originalColor = target.style.backgroundColor;
-    target.style.backgroundColor = '#ffcc00';
-    setTimeout(() => target.style.backgroundColor = originalColor, 180);
+  // Normalize lookup key (case-insensitive, no spaces/emojis)
+  const lookupKey = potentialChatId.toLowerCase();
 
-    showSocialCard(user);
-  });
+  // Find user — PRIORITIZE exact chatId match, fallback to search
+  let user = usersByChatId[lookupKey];
 
+  if (!user) {
+    user = allUsers.find(u => {
+      const id = (u.chatId || "").toString().toLowerCase();
+      return id === lookupKey || id.includes(lookupKey) || lookupKey.includes(id);
+    });
+  }
+
+  // Final guards
+  if (!user) return;
+  if (getUserId(user) === currentUser?.uid) return; // don't show card for self
+
+  // Visual feedback — sexy blink
+  const originalBg = target.style.backgroundColor || '';
+  const originalColor = target.style.color || '';
+  
+  target.style.backgroundColor = '#ffcc00';
+  target.style.color = '#000';
+  target.style.transition = 'all 0.15s ease';
+
+  setTimeout(() => {
+    target.style.backgroundColor = originalBg;
+    target.style.color = originalColor;
+  }, 200);
+
+  // Show the card
+  showSocialCard(user);
+
+  // Optional: haptic feedback on mobile
+  if (navigator.vibrate) navigator.vibrate(30);
+});
+
+// Helper (add once at the top of your file)
+function getUserId(user) {
+  return user.uid || user._docId || user.id;
+}
+  
 // --- SEND STARS FUNCTION (Ephemeral Banner + Dual showGiftAlert + Receiver Sync + Notification) ---
 async function sendStarsToUser(targetUser, amt) {
   try {
     const fromRef = doc(db, "users", currentUser.uid);
-    const toRef = doc(db, "users", targetUser._docId);
+   const targetUserId = targetUser.uid || targetUser._docId || user._docId;
     const glowColor = randomColor();
 
     // --- 1️⃣ Update Firestore balances ---
@@ -3039,14 +3130,17 @@ await updateDoc(toRef, {
 });
 
 // --- 6.5️⃣ Create notification for receiver ---
-const notifRef = collection(db, "notifications");
 await addDoc(notifRef, {
-  userId: targetUser._docId, // 🔥 link the notification to the receiver
+  userId: targetUserId,
   message: `💫 ${currentUser.chatId} gifted you ${amt} ⭐!`,
   read: false,
   timestamp: serverTimestamp(),
   type: "starGift",
   fromUserId: currentUser.uid,
+  fromChatId: currentUser.chatId,
+  amount: amt,
+  // Optional: auto-action when tapped
+  action: "viewProfile"
 });
 
     // --- 7️⃣ Mark banner as shown ---
