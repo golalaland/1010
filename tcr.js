@@ -2318,7 +2318,6 @@ window.showConfirmModal = function (number, cost = 21) {
 };
 
 /* ---------- Reusable Modal Creator ---------- */
-function createModal() {
   document.getElementById("meetModal")?.remove();
   document.getElementById("verifyConfirmModal")?.remove();
 
