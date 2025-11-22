@@ -1844,47 +1844,6 @@ async function loadHost(index) {
   container.appendChild(video);
   video.load();
 
-  // Hint
-  const hint = Object.assign(document.createElement("div"), {
-    className: "video-hint",
-    text
-```Content: "Tap to unmute"
-  });
-  container.appendChild(hint);
-
-  const showHint = (text, duration = 1400) => {
-    hint.textContent = text;
-    hint.classList.add("show");
-    clearTimeout(hint._t);
-    hint._t = setTimeout(() => hint.classList.remove("show"), duration);
-  };
-
-  let lastTap = 0;
-  const handleTap = () => {
-    const now = Date.now();
-    if (now - lastTap < 300) {
-      document.fullscreenElement ? document.exitFullscreen() : video.requestFullscreen?.();
-    } else {
-      video.muted = !video.muted;
-      showHint(video.muted ? "Tap to unmute" : "Sound on", 1200);
-    }
-    lastTap = now;
-  };
-
-  video.onclick = handleTap;
-  video.addEventListener("touchend", (e) => {
-    if (e.touches.length < 2) {
-      e.preventDefault();
-      handleTap();
-    }
-  }, { passive: false });
-
-  video.oncanplay = () => {
-    shimmer.remove();
-    video.style.display = "block";
-    showHint("Tap to unmute", 1600);
-    video.play().catch(() => {});
-  };
 
   // ────────────────────── Host Info ──────────────────────
   const name = (host.chatId || host.displayName || "Host")
