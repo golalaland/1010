@@ -3771,5 +3771,3 @@ document.addEventListener("DOMContentLoaded", () => {
   }, 2000);
 
   console.log("Chat scroll system LOADED @doctortantra");
-  
-}); // ← THIS IS THE FINAL CLOSING — NEVER FORGET AGAIN
