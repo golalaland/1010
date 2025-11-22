@@ -3417,7 +3417,6 @@ document.getElementById("hostSettingsBtn")?.addEventListener("click", () => {
 /* =======================================
    Scroll to Bottom Arrow (Smart & Smooth)
 ========================================== */
-const scrollArrow = document.getElementById("scrollArrow");
 const chatContainer = document.getElementById("chatContainer") || document.getElementById("messages");
 
 if (scrollArrow && chatContainer) {
