@@ -55,10 +55,6 @@ window.db = db;
 window.auth = auth;
 window.rtdb = rtdb;
 
-
-/* ---------- Globals ---------- */
-let currentUser = null;
-
 // 🔁 Sync unlocked videos between localStorage and Firestore
 async function syncUserUnlocks() {
   if (!currentUser?.uid) return [];
