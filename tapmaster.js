@@ -1682,7 +1682,10 @@ function startDailyBidEngine() {
       }
     });
 
-    async function createMissingAggregate() {
+      async function createMissingAggregate() {
+      // Only try to create if user is logged in — prevents permission error
+      if (!currentUser?.uid) return;
+
       try {
         const [bidsSnap, tapsSnap] = await Promise.all([
           getDocs(query(collection(db, "bids"), where("roundId", "==", CURRENT_ROUND_ID), where("status", "==", "active"))),
@@ -1700,8 +1703,8 @@ function startDailyBidEngine() {
         });
 
         const leaderboard = Object.values(scores)
-          .sort((a,b) => b.taps - a.taps)
-          .slice(0,15);
+          .sort((a, b) => b.taps - a.taps)
+          .slice(0, 15);
 
         await setDoc(doc(db, "rounds", CURRENT_ROUND_ID), {
           activePlayers,
@@ -1710,11 +1713,13 @@ function startDailyBidEngine() {
           updatedAt: serverTimestamp()
         }, { merge: true });
 
+        console.log("%cAggregate created successfully!", "color:#0f9;font-size:14px");
+
       } catch (e) {
-        console.log("First aggregate failed — retrying later");
+        // Silent — will be created by next logged-in user or Cloud Function later
+        console.log("Aggregate creation skipped (normal on first load)");
       }
     }
-  }
 
   // Run timer every second
   updateTimerAndStats();
