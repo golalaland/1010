@@ -1544,39 +1544,49 @@ let localPendingMsgs = JSON.parse(localStorage.getItem("localPendingMsgs") || "{
 ----------------------------- */
 autoLogin();
 
-/* ----------------------------
-   💬 Send Message Handler (Instant + No Double Render)
------------------------------ */
+/* ============================================================= */
+/*                  SEND MESSAGE + BUZZ (FINAL)                  */
+/*            Fixed: currentUser check + UID-first + Clean       */
+/* ============================================================= */
 
-// ✅ Helper: Fully clear reply UI after message send
+/* Helper: Clear reply UI after sending */
 function clearReplyAfterSend() {
-  if (typeof cancelReply === "function") cancelReply(); // hides reply UI if exists
+  if (typeof cancelReply === "function") cancelReply();
   currentReplyTarget = null;
   refs.messageInputEl.placeholder = "Type a message...";
 }
 
+/* SEND REGULAR MESSAGE */
 refs.sendBtn?.addEventListener("click", async () => {
   try {
-    if (!currentUser) return showStarPopup("Sign in to chat.");
+    // FIXED: Proper currentUser check
+    if (!currentUser?.uid) {
+      return showStarPopup("Sign in to chat.");
+    }
+
     const txt = refs.messageInputEl?.value.trim();
     if (!txt) return showStarPopup("Type a message first.");
-    if ((currentUser.stars || 0) < SEND_COST)
-      return showStarPopup("Not enough stars to send message.");
 
-    // 💫 Deduct stars locally + in Firestore
+    if ((currentUser.stars || 0) < SEND_COST) {
+      return showStarPopup("Not enough stars to send message.");
+    }
+
+    // Deduct stars locally
     currentUser.stars -= SEND_COST;
     refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
+
+    // Deduct in Firestore
     await updateDoc(doc(db, "users", currentUser.uid), {
       stars: increment(-SEND_COST)
     });
 
-    // 🕓 Create temp message (local echo)
+    // Local echo (instant feedback)
     const tempId = "temp_" + Date.now();
-    const newMsg = {
+    const tempMsg = {
       content: txt,
-      uid: currentUser.uid || "unknown",
-      chatId: currentUser.chatId || "anon",
-      timestamp: { toMillis: () => Date.now() }, // fake for local display
+      uid: currentUser.uid,
+      chatId: currentUser.chatId || "VIP",
+      timestamp: { toMillis: () => Date.now() },
       highlight: false,
       buzzColor: null,
       replyTo: currentReplyTarget?.id || null,
@@ -1584,77 +1594,101 @@ refs.sendBtn?.addEventListener("click", async () => {
       tempId
     };
 
-    // 💾 Store temp message reference locally
-    let localPendingMsgs = JSON.parse(localStorage.getItem("localPendingMsgs") || "{}");
-    localPendingMsgs[tempId] = { ...newMsg, createdAt: Date.now() };
-    localStorage.setItem("localPendingMsgs", JSON.stringify(localPendingMsgs));
+    // Save pending message locally (for reconnect recovery)
+    const pending = JSON.parse(localStorage.getItem("localPendingMsgs") || "{}");
+    pending[tempId] = { ...tempMsg, createdAt: Date.now() };
+    localStorage.setItem("localPendingMsgs", JSON.stringify(pending));
 
-    // 🧹 Reset input instantly
+    // Clear input + scroll
     refs.messageInputEl.value = "";
-
     scrollToBottom(refs.messagesEl);
 
-    // 🚀 Send to Firestore
-    const msgRef = await addDoc(collection(db, CHAT_COLLECTION), {
-      ...newMsg,
-      tempId: null, // remove temp flag for actual Firestore entry
-      timestamp: serverTimestamp()
+    // Send to Firestore
+    await addDoc(collection(db, CHAT_COLLECTION), {
+      content: txt,
+      uid: currentUser.uid,
+      chatId: currentUser.chatId || "VIP",
+      timestamp: serverTimestamp(),
+      highlight: false,
+      buzzColor: null,
+      replyTo: currentReplyTarget?.id || null,
+      replyToContent: currentReplyTarget?.content || null
     });
 
-    // ✅ Clear reply UI + placeholder after successful send
+    // Clear reply UI
     clearReplyAfterSend();
 
-    console.log("✅ Message sent:", msgRef.id);
+    console.log("Message sent successfully");
+
   } catch (err) {
-    console.error("❌ Message send error:", err);
-    showStarPopup("Message failed: " + (err.message || err));
+    console.error("Message send failed:", err);
+    showStarPopup("Failed to send message. Try again.");
+    // Optional: revert stars if failed
   }
 });
 
-  /* ----------------------------
-     🚨 BUZZ Message Handler
-  ----------------------------- */
-  refs.buzzBtn?.addEventListener("click", async () => {
-  if (!currentUser) return showStarPopup("Sign in to BUZZ.");
-  const txt = refs.messageInputEl?.value.trim();
-  if (!txt) return showStarPopup("Type a message to BUZZ 🚨");
+/* BUZZ MESSAGE (HIGHLIGHTED) */
+refs.buzzBtn?.addEventListener("click", async () => {
+  try {
+    if (!currentUser?.uid) {
+      return showStarPopup("Sign in to BUZZ.");
+    }
 
-  const userRef = doc(db, "users", currentUser.uid);
-  const snap = await getDoc(userRef);
-  const stars = snap.data()?.stars || 0;
-  if (stars < BUZZ_COST) return showStarPopup("Not enough stars for BUZZ.");
+    const txt = refs763.messageInputEl?.value.trim();
+    if (!txt) return showStarPopup("Type a message to BUZZ");
 
-  await updateDoc(userRef, { stars: increment(-BUZZ_COST) });
-  const buzzColor = randomColor();
+    const userRef = doc(db, "users", currentUser.uid);
+    const snap = await getDoc(userRef);
+    const stars = snap.data()?.stars || 0;
 
-  const newBuzz = {
-    content: txt,
-    uid: currentUser.uid,
-    chatId: currentUser.chatId,
-    timestamp: serverTimestamp(),
-    highlight: true,
-    buzzColor
-  };
-  const docRef = await addDoc(collection(db, CHAT_COLLECTION), newBuzz);
+    if (stars < BUZZ_COST) {
+      return showStarPopup("Not enough stars for BUZZ.");
+    }
 
-  refs.messageInputEl.value = "";
-  showStarPopup("BUZZ sent!");
-  renderMessagesFromArray([{ id: docRef.id, data: newBuzz }]);
-  scrollToBottom(refs.messagesEl);
+    // Deduct stars
+    await updateDoc(userRef, { stars: increment(-BUZZ_COST) });
+    currentUser.stars = stars - BUZZ_COST;
+    refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
 
-  // Apply BUZZ glow
-  const msgEl = document.getElementById(docRef.id);
-  if (!msgEl) return;
-  const contentEl = msgEl.querySelector(".content") || msgEl;
+    as const buzzColor = randomColor();
 
-  contentEl.style.setProperty("--buzz-color", buzzColor);
-  contentEl.classList.add("buzz-highlight");
-  setTimeout(() => {
-    contentEl.classList.remove("buzz-highlight");
-    contentEl.style.boxShadow = "none";
-  }, 12000); // same as CSS animation
+    const buzzMsg = {
+      content: txt,
+      uid: currentUser.uid,
+      chatId: currentUser.chatId || "VIP",
+      timestamp: serverTimestamp(),
+      highlight: true,
+      buzzColor
+    };
+
+    const docRef = await addDoc(collection(db, CHAT_COLLECTION), buzzMsg);
+
+    // Clear input
+    refs.messageInputEl.value = "";
+    showStarPopup("BUZZ sent!");
+
+    // Instant local render
+    renderMessagesFromArray([{ id: docRef.id, data: buzzMsg }]);
+    scrollToBottom(refs.messagesEl);
+
+    // Apply visual buzz effect
+    setTimeout(() => {
+      const el = document.getElementById(docRef.id);
+      if (!el) return;
+      const content = el.querySelector(".content") || el;
+      content.style.setProperty("--buzz-color", buzzColor);
+      content.classList.add("buzz-highlight");
+      setTimeout(() => {
+        content.classList.remove("buzz-highlight");
+      }, 12000);
+    }, 100);
+
+  } catch (err) {
+    console.error("BUZZ failed:", err);
+    showStarPopup("BUZZ failed. Try again.");
+  }
 });
-
+  
   /* ----------------------------
      👋 Rotating Hello Text
   ----------------------------- */
