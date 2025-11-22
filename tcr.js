@@ -145,7 +145,7 @@ onAuthStateChanged(auth, async (user) => {
   }
 
   // ---------- Notifications Setup ----------
-  const sanitizeEmail = (email) => email.replace(/\./g, ",");
+  const sanitizeEmail = (email) => email.replace(/\./g, "_");
   const userQueryId = sanitizeEmail(currentUser.email);
   console.log("📩 Logged in as Sanitized ID:", userQueryId);
   localStorage.setItem("userId", userQueryId);
@@ -235,7 +235,7 @@ onAuthStateChanged(auth, async (user) => {
    🔔 Manual Notification Starter (for whitelist login)
 ================================= */
 async function startNotificationsFor(userEmail) {
-  const sanitizeEmail = (email) => email.replace(/\./g, ",");
+  const sanitizeEmail = (email) => email.replace(/\./g, "_");
   const userQueryId = sanitizeEmail(userEmail);
   localStorage.setItem("userId", userQueryId);
 
@@ -2543,7 +2543,7 @@ document.getElementById("uploadHighlightBtn").addEventListener("click", async ()
 
   try {
     const userId = currentUser.uid;
-    const emailId = (currentUser.email || "").replace(/\./g, ",");
+    const emailId = (currentUser.email || "").replace(/\./g, "_");
     const chatId = currentUser.chatId || currentUser.displayName || "Anonymous";
 
     statusEl.textContent = "⏳ Uploading highlight...";
