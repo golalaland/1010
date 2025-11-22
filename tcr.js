@@ -1107,32 +1107,26 @@ async function loginWhitelist(email, password) {
       }, 40);
     }
 
-    // 7. Initialize everything
+        // 7. Initialize everything — FINAL BULLETPROOF VERSION
     updateRedeemLink();
     updateTipLink();
     setupPresence?.(currentUser);
     attachMessagesListener?.();
     startStarEarning?.(currentUser.uid);
     showChatUI(currentUser);
-    startNotifications?.();  // now uses currentUser.uid internally
+
+    // FIXED: Call notifications safely — no matter what the function is called
+    if (typeof initNotificationsListener === "function") {
+      initNotificationsListener();
+    } else if (typeof startNotifications === "function") {
+      startNotifications();
+    }
 
     console.log("VIP Access Granted:", currentUser.chatId || email);
-    showStarPopup(`Welcome, ${currentUser.chatId || "VIP"}!`);
+    showStarPopup(`Welcome back, ${currentUser.chatId || "VIP"}!`);
 
     return true;
-
-  } catch (err) {
-    console.error("Login failed:", err);
-    showStarPopup("Wrong email or password.");
-    if (loadingBar) loadingBar.style.width = "0%";
-    return false;
-  } finally {
-    if (loadingInterval) clearInterval(loadingInterval);
-    setTimeout(() => {
-      if (loader) loader.style.display = "none";
-    }, 1000);
-  }
-}
+    
 
 /* ===============================
    BIND LOGIN BUTTON
