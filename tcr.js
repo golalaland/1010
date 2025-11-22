@@ -3461,7 +3461,6 @@ if (scrollArrow && chatContainer) {
 
 
 const scrollArrow = document.getElementById('scrollArrow');
-  const chatContainer = document.querySelector('#chatContainer'); // your chat wrapper
   let fadeTimeout;
 
   function showArrow() {
