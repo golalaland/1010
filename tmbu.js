@@ -129,7 +129,7 @@ function showEndGameModal() {
   // REAL NAME — NEVER "Tapper" AGAIN
   const realName = currentUser?.chatId || 
                    currentUser?.username || 
-                   currentUser?.email?.replace(/,/g, '.').split('@')[0] || 
+                   currentUser?.email?.replace(/_/g, '.').split('@')[0] || 
                    "Legend";
 
   document.getElementById('playerName').textContent = realName;
@@ -174,7 +174,7 @@ setTimeout(() => {
  document.getElementById('shareBtn')?.addEventListener('click', () => {
   const realName = currentUser?.chatId || 
                    currentUser?.username || 
-                   currentUser?.email?.replace(/,/g, '.').split('@')[0] || 
+                   currentUser?.email?.replace(/_/g, '.').split('@')[0] || 
                    "A Warrior";
 
   const text = `${realName} just smashed ${taps.toLocaleString()} taps and earned ₦${earnings.toLocaleString()}! Can you beat that?`;
@@ -239,7 +239,7 @@ async function loadCurrentUserForGame() {
       return;
     }
 
-    const uid = storedUser.email.replace(/\./g, ",").toLowerCase();
+    const uid = storedUser.email.replace(/\./g, "_").toLowerCase();
     const userRef = doc(db, "users", uid);
     const snap = await getDoc(userRef);
 
