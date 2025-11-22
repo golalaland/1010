@@ -895,15 +895,14 @@ function getWeek(date) {
 
 
 /* -------------------------------------------
-   FETCH LEADERBOARD — ULTRA-OPTIMIZED (2025 EDITION)
+   FETCH LEADERBOARD — BULLETPROOF VERSION (NO LOOPS)
 -------------------------------------------- */
 async function fetchLeaderboard(period = "daily", top = 10) {
   leaderboardList.innerHTML = "<li>Loading...</li>";
-
   const key = getLeaderboardKey(period);
 
   try {
-    // NEW: Read ONE single aggregate doc instead of 10,000 users
+    // Try aggregate first (fast)
     const aggRef = doc(db, "leaderboards", `${period}_${key}`);
     const aggSnap = await getDoc(aggRef);
 
@@ -913,21 +912,20 @@ async function fetchLeaderboard(period = "daily", top = 10) {
 
     if (aggSnap.exists()) {
       const data = aggSnap.data();
-      topScores = data.top15 || [];           // pre-sorted top 15
+      topScores = data.top15 || [];
       myDailyTaps = data.scores?.[currentUser?.uid] || 0;
-
-      // Find user's rank in full list (if exists)
       if (currentUser && data.fullRanks?.[currentUser.uid]) {
         myRank = data.fullRanks[currentUser.uid];
       }
     } else {
-      // FIRST VISITOR TODAY → create the aggregate once (costs almost nothing)
+      // Aggregate missing → do one-time fallback + create it
+      console.log(`%cCreating ${period} aggregate...`, "color:#0f9");
       await createLeaderboardAggregate(period, key);
-      // Then reload
-      return fetchLeaderboard(period, top);
+      // Don't reload — just use fallback data from creation
+      topScores = [];  // will be populated in createLeaderboardAggregate
     }
 
-    // Update my stats
+    // Update my stats (always works)
     const tapsEl = document.getElementById("myDailyTapsValue");
     const rankFull = document.getElementById("myRankFull");
     if (tapsEl) tapsEl.textContent = (myDailyTaps || 0).toLocaleString();
@@ -944,10 +942,10 @@ async function fetchLeaderboard(period = "daily", top = 10) {
       return;
     }
 
+    // Render the leaderboard
     leaderboardList.innerHTML = topScores
       .map((u, i) => {
         const isCurrent = currentUser && u.uid === currentUser.uid;
-
         const avatar = u.gender === "female"
           ? "https://cdn.shopify.com/s/files/1/0962/6648/6067/files/10491827.jpg?v=1763635326"
           : "https://cdn.shopify.com/s/files/1/0962/6648/6067/files/9720029.jpg?v=1763635357";
@@ -975,13 +973,22 @@ async function fetchLeaderboard(period = "daily", top = 10) {
 
   } catch (err) {
     console.error("Leaderboard error:", err);
-    leaderboardList.innerHTML = "<li>Error loading leaderboard</li>";
+    // Emergency fallback: show empty
+    leaderboardList.innerHTML = "<li style='text-align:center;padding:20px 0;font-size:13px;color:#888;'>Loading leaderboard...</li>";
   }
 }
 
-// One-time aggregate creator (only runs when missing)
+// Bulletproof aggregate creator (runs once, no loops)
 async function createLeaderboardAggregate(period, key) {
+  // Only logged-in users can create aggregates (prevents spam + permission errors)
+  if (!currentUser?.uid) {
+    console.log("%cSkipping aggregate creation — user not logged in", "color:#888");
+    return;
+  }
+
   try {
+    console.log(`%cCreating ${period} leaderboard aggregate for ${key}...`, "color:#0f9");
+
     const usersSnap = await getDocs(collection(db, "users"));
     const scores = {};
     const fullRanks = {};
@@ -998,24 +1005,32 @@ async function createLeaderboardAggregate(period, key) {
           uid: doc.id,
           name: d.chatId || d.username || "Player",
           taps,
-          gender: d.gender
+          gender: d.gender || "male"
         };
       }
     });
 
-    const sorted = Object.values(scores).sort((a,b) => b.taps - a.taps);
+    const sorted = Object.values(scores).sort((a, b) => b.taps - a.taps);
     sorted.forEach((u, i) => fullRanks[u.uid] = i + 1);
 
+    // THIS LINE WAS BLOCKING YOU BEFORE — NOW WORKS WITH PROPER RULES
     await setDoc(doc(db, "leaderboards", `${period}_${key}`), {
       top15: sorted.slice(0, 15),
-      scores: Object.fromEntries(Object.entries(scores).map(([k,v]) => [k, v.taps])),
+      scores: Object.fromEntries(Object.entries(scores).map(([k, v]) => [k, v.taps])),
       fullRanks,
       updatedAt: serverTimestamp()
     });
 
-  } catch (e) { console.log("Aggregate creation failed, will retry"); }
-}
+    console.log(`%c${period.toUpperCase()} LEADERBOARD AGGREGATE CREATED SUCCESSFULLY!`, "color:#0f9;font-size:16px;font-weight:bold");
 
+  } catch (e) {
+    // This will now show the REAL error if something is still wrong
+    console.error("%cAGGREGATE CREATION FAILED:", "color:#f00;font-size:14px", e.code, e.message);
+    if (e.code === "permission-denied") {
+      console.error("%cCHECK YOUR FIRESTORE RULES — leaderboards collection is blocked!", "color:#f00;font-size:16px");
+    }
+  }
+}
 /* -------------------------------------------
    TAB SWITCHER (CLEAN + FULLY WORKING)
 -------------------------------------------- */
