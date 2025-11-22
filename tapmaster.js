@@ -1716,13 +1716,14 @@ function startDailyBidEngine() {
         console.log("Aggregate creation skipped (normal on first load)");
       }
     } // ←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←
-
     // Run timer every second
     updateTimerAndStats();
     setInterval(updateTimerAndStats, 1000);
   }
-  
+} // ←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←
+  // THIS IS THE MISSING ONE — CLOSES updateTimerAndStats()
 // Payout function (keep yours)
+
 async function declareWinnersAndReset() {
   console.log("BID ENDED — PAYING TOP 5 FROM BID LEADERBOARD");
   // Your winner logic here
