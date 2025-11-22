@@ -1,16 +1,40 @@
-/* ========== FIREBASE v10 + MODERN ES MODULES ========== */
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import {
-  getFirestore, doc, setDoc, getDoc, updateDoc, collection, addDoc,
-  serverTimestamp, onSnapshot, query, orderBy, increment, getDocs, where,
-  arrayUnion, deleteDoc
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import {
-  getDatabase, ref as rtdbRef, set as rtdbSet, onDisconnect, onValue
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
-import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+/* ---------- Imports (Firebase v10) ---------- */
+import { 
+  initializeApp 
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 
-/* ========== CONFIG ========== */
+import { 
+  getFirestore, 
+  doc, 
+  setDoc, 
+  getDoc, 
+  updateDoc, 
+  collection, 
+  addDoc, 
+  serverTimestamp, 
+  onSnapshot, 
+  query, 
+  orderBy, 
+  increment, 
+  getDocs, 
+  where,
+  runTransaction
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+import { 
+  getDatabase, 
+  ref as rtdbRef, 
+  set as rtdbSet, 
+  onDisconnect, 
+  onValue 
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+import { 
+  getAuth, 
+  onAuthStateChanged 
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+/* ---------- Firebase Config ---------- */
 const firebaseConfig = {
   apiKey: "AIzaSyDbKz4ef_eUDlCukjmnK38sOwueYuzqoao",
   authDomain: "metaverse-1010.firebaseapp.com",
@@ -22,552 +46,1242 @@ const firebaseConfig = {
   databaseURL: "https://metaverse-1010-default-rtdb.firebaseio.com/"
 };
 
+/* ---------- Firebase Setup ---------- */
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const rtdb = getDatabase(app);
 const auth = getAuth(app);
 
+// Make Firebase objects available globally (for debugging or reuse)
 window.app = app;
 window.db = db;
 window.auth = auth;
 window.rtdb = rtdb;
 
-/* ========== CONSTANTS ========== */
+
+/* ---------- Globals ---------- */
+let currentUser = null;
+
+/* ===============================
+   🔔 Notification Helpers
+================================= */
+async function pushNotification(userId, message) {
+  if (!userId) return console.warn("⚠️ No userId provided for pushNotification");
+  
+  const notifRef = doc(collection(db, "notifications"));
+  await setDoc(notifRef, {
+    userId,
+    message,
+    timestamp: serverTimestamp(),
+    read: false,
+  });
+}
+
+function pushNotificationTx(tx, userId, message) {
+  const notifRef = doc(collection(db, "notifications"));
+  tx.set(notifRef, {
+    userId,
+    message,
+    timestamp: serverTimestamp(),
+    read: false,
+  });
+}
+
+/* ---------- Auth State Watcher (Stable + Lazy Notifications) ---------- */
+onAuthStateChanged(auth, async (user) => {
+  currentUser = user;
+
+  if (!user) {
+    console.warn("⚠️ No logged-in user found");
+    localStorage.removeItem("userId");
+    return;
+  }
+
+  // ✅ 1. Define the sanitization helper
+  const sanitizeEmail = (email) => email.replace(/\./g, ",");
+
+  // ✅ 2. Generate and store the ID used for querying
+  const userQueryId = sanitizeEmail(currentUser.email);
+  console.log("✅ Logged in as Sanitized ID:", userQueryId);
+  localStorage.setItem("userId", userQueryId);
+
+  // ✅ 3. Reference the top-level 'notifications' collection
+  const notifRef = collection(db, "notifications");
+
+  // ✅ 4. Define the query using the sanitized email ID
+  const notifQuery = query(
+    notifRef,
+    where("userId", "==", userQueryId),
+    orderBy("timestamp", "desc")
+  );
+
+  let unsubscribe = null;
+
+  // ✅ 5. Initialize Notifications Listener
+  async function initNotificationsListener() {
+    const notificationsList = document.getElementById("notificationsList");
+    if (!notificationsList) {
+      console.warn("⚠️ #notificationsList not found yet — retrying...");
+      setTimeout(initNotificationsListener, 500);
+      return;
+    }
+
+    if (unsubscribe) unsubscribe(); // Prevent duplicate listeners
+
+    console.log("🔔 Setting up live notification listener for ID:", userQueryId);
+    unsubscribe = onSnapshot(
+      notifQuery,
+      (snapshot) => {
+        console.log(`✅ Received ${snapshot.docs.length} notifications for ${userQueryId}`);
+        if (snapshot.empty) {
+          notificationsList.innerHTML = `<p style="opacity:0.7;">No new notifications yet.</p>`;
+          return;
+        }
+
+        const items = snapshot.docs.map((docSnap) => {
+          const n = docSnap.data();
+          const time = n.timestamp?.seconds
+            ? new Date(n.timestamp.seconds * 1000).toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit",
+              })
+            : "--:--";
+
+          return `
+            <div class="notification-item ${n.read ? "" : "unread"}" data-id="${docSnap.id}">
+              <span>${n.message || "(no message)"}</span>
+              <span class="notification-time">${time}</span>
+            </div>
+          `;
+        });
+
+        notificationsList.innerHTML = items.join("");
+      },
+      (error) => {
+        console.error("🔴 Firestore Listener Error:", error);
+      }
+    );
+  }
+
+  // ✅ 6. Initialize based on DOM state
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initNotificationsListener);
+  } else {
+    initNotificationsListener();
+  }
+
+  // ✅ 7. Re-run listener when user opens Notifications tab
+  const notifTabBtn = document.querySelector('.tab-btn[data-tab="notificationsTab"]');
+  if (notifTabBtn) {
+    notifTabBtn.addEventListener("click", () => {
+      setTimeout(initNotificationsListener, 150);
+    });
+  }
+
+  // ✅ 8. Mark All As Read
+  const markAllBtn = document.getElementById("markAllRead");
+  if (markAllBtn) {
+    markAllBtn.addEventListener("click", async () => {
+      console.log("🟡 Marking all notifications as read...");
+      const snapshot = await getDocs(query(notifRef, where("userId", "==", userQueryId)));
+      for (const docSnap of snapshot.docs) {
+        const ref = doc(db, "notifications", docSnap.id);
+        await updateDoc(ref, { read: true });
+      }
+      alert("✅ All notifications marked as read.");
+    });
+  }
+});
+
+/* ===============================
+   🔔 Manual Notification Starter (for whitelist login)
+================================= */
+async function startNotificationsFor(userEmail) {
+  const sanitizeEmail = (email) => email.replace(/\./g, ",");
+  const userQueryId = sanitizeEmail(userEmail);
+  localStorage.setItem("userId", userQueryId);
+
+  const notifRef = collection(db, "notifications");
+  const notifQuery = query(
+    notifRef,
+    where("userId", "==", userQueryId),
+    orderBy("timestamp", "desc")
+  );
+
+  const notificationsList = document.getElementById("notificationsList");
+  if (!notificationsList) {
+    console.warn("⚠️ #notificationsList not found yet — retrying...");
+    setTimeout(() => startNotificationsFor(userEmail), 500);
+    return;
+  }
+
+  console.log("🔔 Listening for notifications for:", userQueryId);
+
+  onSnapshot(
+    notifQuery,
+    (snapshot) => {
+      if (snapshot.empty) {
+        notificationsList.innerHTML = `<p style="opacity:0.7;">No new notifications yet.</p>`;
+        return;
+      }
+
+      const html = snapshot.docs.map((docSnap) => {
+        const n = docSnap.data();
+        const time = n.timestamp?.seconds
+          ? new Date(n.timestamp.seconds * 1000).toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            })
+          : "--:--";
+        return `
+          <div class="notification-item ${n.read ? "" : "unread"}" data-id="${docSnap.id}">
+            <span>${n.message}</span>
+            <span class="notification-time">${time}</span>
+          </div>
+        `;
+      }).join("");
+
+      notificationsList.innerHTML = html;
+    },
+    (err) => console.error("🔴 Notification listener error:", err)
+  );
+}
+
+
+
+/* ---------- Helper: Get current user ID ---------- */
+export function getCurrentUserId() {
+  return currentUser ? currentUser.uid : localStorage.getItem("userId");
+}
+window.currentUser = currentUser;
+
+/* ---------- Exports for other scripts ---------- */
+export { app, db, rtdb, auth };
+
+/* ---------- Global State ---------- */
 const ROOM_ID = "room5";
-const CHAT_COLLECTION = `messages_${ROOM_ID}`;
+const CHAT_COLLECTION = "messages_room5";
 const BUZZ_COST = 50;
 const SEND_COST = 1;
-const MIN_GIFT_STARS = 100;
-const STAR_EARNING_INTERVAL = 60_000; // 1 minute
-const MAX_DAILY_STARS = 250;
 
-/* ========== GLOBAL STATE ========== */
-let currentUser = null;
-let starInterval = null;
-let messageUnsubscribe = null;
-let notificationUnsubscribe = null;
 let lastMessagesArray = [];
-let localPendingMsgs = JSON.parse(localStorage.getItem("localPendingMsgs") || "{}");
-let shownGiftAlerts = new Set(JSON.parse(localStorage.getItem("shownGiftAlerts") || "[]"));
+let starInterval = null;
+let refs = {};
 
-const refs = {
-  messagesEl: null,
-  messageInputEl: null,
-  sendBtn: null,
-  buzzBtn: null,
-  starCountEl: null,
-  cashCountEl: null,
-  profileNameEl: null,
-  profileBoxEl: null,
-  sendAreaEl: null,
-  authBox: null,
-  onlineCountEl: null,
-  redeemBtn: null,
-  tipBtn: null,
-  adminControlsEl: null,
-  chatIDModal: null,
-  chatIDInput: null,
-  chatIDConfirmBtn: null,
-  userColors: {}
-};
+/* ---------- Helpers ---------- */
+const generateGuestName = () => `GUEST ${Math.floor(1000 + Math.random() * 9000)}`;
+const formatNumberWithCommas = n => new Intl.NumberFormat('en-NG').format(n || 0);
+const sanitizeKey = key => key.replace(/[.#$[\]]/g, ',');
 
-/* ========== UTILS ========== */
-const log = (...args) => console.log("%c$METAVERSE", "color:#ff1493;font-weight:bold", ...args);
-const sanitizeKey = k => k.replace(/[.#$[\]]/g, ',');
-const randomColor = () => ["#FFD700","#FF69B4","#87CEEB","#90EE90","#FFB6C1","#FFA07A","#8A2BE2","#00BFA6","#F4A460"][Math.floor(Math.random()*9)];
-const formatNumber = n => new Intl.NumberFormat('en-NG').format(n || 0);
-const todayDate = () => new Date().toISOString().split("T")[0];
-const sleep = ms => new Promise(r => setTimeout(r, ms));
-
-function showStarPopup(text, duration = 2000) {
-  const el = document.getElementById("starPopup");
-  const txt = document.getElementById("starText");
-  if (!el || !txt) return;
-  txt.textContent = text;
-  el.style.display = "block";
-  el.style.opacity = "1";
-  clearTimeout(el._hide);
-  el._hide = setTimeout(() => {
-    el.style.opacity = "0";
-    setTimeout(() => el.style.display = "none", 400);
-  }, duration);
+function randomColor() {
+  const palette = ["#FFD700","#FF69B4","#87CEEB","#90EE90","#FFB6C1","#FFA07A","#8A2BE2","#00BFA6","#F4A460"];
+  return palette[Math.floor(Math.random() * palette.length)];
 }
 
+function showStarPopup(text) {
+  const popup = document.getElementById("starPopup");
+  const starText = document.getElementById("starText");
+  if (!popup || !starText) return;
+  starText.innerText = text;
+  popup.style.display = "block";
+  setTimeout(() => popup.style.display = "none", 1700);
+}
+
+
+/* ----------------------------
+   ⭐ GIFT MODAL / CHAT BANNER ALERT
+----------------------------- */
+async function showGiftModal(targetUid, targetData) {
+  const modal = document.getElementById("giftModal");
+  const titleEl = document.getElementById("giftModalTitle");
+  const amountInput = document.getElementById("giftAmountInput");
+  const confirmBtn = document.getElementById("giftConfirmBtn");
+  const closeBtn = document.getElementById("giftModalClose");
+
+  if (!modal || !titleEl || !amountInput || !confirmBtn) return;
+
+  titleEl.textContent = `Gift ⭐️`;
+  amountInput.value = "";
+  modal.style.display = "flex";
+
+  const close = () => (modal.style.display = "none");
+  closeBtn.onclick = close;
+  modal.onclick = (e) => { if (e.target === modal) close(); };
+
+  // Remove previous click listeners
+  const newConfirmBtn = confirmBtn.cloneNode(true);
+  confirmBtn.replaceWith(newConfirmBtn);
+
+  newConfirmBtn.addEventListener("click", async () => {
+    const amt = parseInt(amountInput.value) || 0;
+    if (amt < 100) return showStarPopup("🔥 Minimum gift is 100 ⭐️");
+    if ((currentUser?.stars || 0) < amt) return showStarPopup("Not enough stars 💫");
+
+    const fromRef = doc(db, "users", currentUser.uid);
+    const toRef = doc(db, "users", targetUid);
+    const glowColor = randomColor();
+
+    const messageData = {
+      content: `💫 ${currentUser.chatId} gifted ${amt} stars ⭐️ to ${targetData.chatId}!`,
+      uid: currentUser.uid,
+      timestamp: serverTimestamp(),
+      highlight: true,
+      buzzColor: glowColor,
+      systemBanner: true,
+      _confettiPlayed: false
+    };
+
+    const docRef = await addDoc(collection(db, CHAT_COLLECTION), messageData);
+
+    await Promise.all([
+      updateDoc(fromRef, { stars: increment(-amt), starsGifted: increment(amt) }),
+      updateDoc(toRef, { stars: increment(amt) })
+    ]);
+
+    showStarPopup(`You sent ${amt} stars ⭐️ to ${targetData.chatId}!`);
+    close();
+
+    // Render banner; confetti/glow handled only once in renderer
+    renderMessagesFromArray([{ id: docRef.id, data: messageData }]);
+  });
+}
+/* ---------- Gift Alert (Optional Popup) ---------- */
 function showGiftAlert(text) {
-  const el = document.getElementById("giftAlert");
-  if (!el) return;
-  el.textContent = text;
-  el.classList.add("show");
-  setTimeout(() => el.classList.remove("show"), 5000);
+  const alertEl = document.getElementById("giftAlert");
+  if (!alertEl) return;
+
+  alertEl.textContent = text; // just text
+  alertEl.classList.add("show", "glow"); // banner glow
+
+  // ✅ Floating stars removed
+  setTimeout(() => alertEl.classList.remove("show", "glow"), 4000);
 }
 
-/* ========== PRESENCE SYSTEM ========== */
+/* ---------- Redeem Link ---------- */
+function updateRedeemLink() {
+  if (!refs.redeemBtn || !currentUser) return;
+  refs.redeemBtn.href = `https://golalaland.github.io/crdb/shop.html?uid=${encodeURIComponent(currentUser.uid)}`;
+  refs.redeemBtn.style.display = "inline-block";
+}
+
+/* ---------- Tip Link ---------- */
+function updateTipLink() {
+  if (!refs.tipBtn || !currentUser) return;
+  refs.tipBtn.href = `https://golalaland.github.io/crdb/moneytrain.html?uid=${encodeURIComponent(currentUser.uid)}`;
+  refs.tipBtn.style.display = "inline-block";
+}
+
+/* ---------- Presence (Realtime) ---------- */
 function setupPresence(user) {
-  if (!rtdb || !user?.uid) return;
-  const path = `presence/${ROOM_ID}/${sanitizeKey(user.uid)}`;
-  const ref = rtdbRef(rtdb, path);
-  rtdbSet(ref, { online: true, chatId: user.chatId || "Guest" });
-  onDisconnect(ref).remove();
+  if (!rtdb) return;
+  const pRef = rtdbRef(rtdb, `presence/${ROOM_ID}/${sanitizeKey(user.uid)}`);
+  rtdbSet(pRef, { online: true, chatId: user.chatId, email: user.email }).catch(() => {});
+  onDisconnect(pRef).remove().catch(() => {});
 }
 
 if (rtdb) {
   onValue(rtdbRef(rtdb, `presence/${ROOM_ID}`), snap => {
-    const count = Object.keys(snap.val() || {}).length;
-    if (refs.onlineCountEl) refs.onlineCountEl.textContent = `(${count} online)`;
+    const users = snap.val() || {};
+    if (refs.onlineCountEl) refs.onlineCountEl.innerText = `(${Object.keys(users).length} online)`;
   });
 }
 
-/* ========== USER COLORS ========== */
-function setupUserColors() {
+/* ---------- User Colors ---------- */
+function setupUsersListener() {
   onSnapshot(collection(db, "users"), snap => {
-    refs.userColors = {};
-    snap.forEach(d => {
-      if (d.data().usernameColor) refs.userColors[d.id] = d.data().usernameColor;
+    refs.userColors = refs.userColors || {};
+    snap.forEach(docSnap => {
+      refs.userColors[docSnap.id] = docSnap.data()?.usernameColor || "#ffffff";
     });
     if (lastMessagesArray.length) renderMessagesFromArray(lastMessagesArray);
   });
 }
-setupUserColors();
+setupUsersListener();
 
-/* ========== NOTIFICATIONS (PER-USER SUBCOLLECTION - BEST PRACTICE) ========== */
-function attachNotificationsListener() {
-  if (!currentUser?.uid || notificationUnsubscribe) return;
-  const col = collection(db, "users", currentUser.uid, "notifications");
-  const q = query(col, orderBy("timestamp", "desc"));
-
-  notificationUnsubscribe = onSnapshot(q, snap => {
-    const list = document.getElementById("notificationsList");
-    if (!list) return;
-
-    if (snap.empty) {
-      list.innerHTML = `<p style="opacity:0.7;text-align:center;">No notifications yet.</p>`;
-      return;
-    }
-
-    list.innerHTML = snap.docs.map(d => {
-      const n = d.data();
-      const time = n.timestamp?.toDate?.().toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'}) || "--:--";
-      return `<div class="notification-item ${n.read ? '' : 'unread'}" data-id="${d.id}">
-        <span>${n.message}</span>
-        <span class="notification-time">${time}</span>
-      </div>`;
-    }).join("");
-  });
-}
-
-document.querySelector('[data-tab="notificationsTab"]')?.addEventListener("click", () => {
-  setTimeout(attachNotificationsListener, 100);
-});
-
-/* ========== MESSAGE RENDERER ========== */
-function renderMessagesFromArray(arr) {
-  if (!refs.messagesEl) return;
-  lastMessagesArray = arr;
-
-  arr.forEach(({id, data: m}) => {
-    if (!id || document.getElementById(id)) return;
-
-    const div = document.createElement("div");
-    div.id = id;
-    div.className = "msg";
-
-    if (m.systemBanner || m.highlight) {
-      div.className += " chat-banner";
-      div.innerHTML = `<div class="banner-text" style="background:${m.buzzColor || 'linear-gradient(90deg,#ff1493,#ffd700)'}">${m.content}</div>`;
-    } else {
-      const name = `<span class="chat-username" style="color:${refs.userColors[m.uid] || '#fff'}">${m.chatId || 'Guest'}</span>`;
-      const content = `<span class="content">${m.content}</span>`;
-      div.innerHTML = `${name}: ${content}`;
-      if (m.replyTo) {
-        div.innerHTML = `<div class="reply-preview">↳ ${m.replyToContent || 'message'}</div>` + div.innerHTML;
-      }
-    }
-
-    div.addEventListener("click", () => showTapModal(div, m));
-    refs.messagesEl.appendChild(div);
-  });
-
-  requestAnimationFrame(() => refs.messagesEl.scrollTop = refs.messagesEl.scrollHeight);
-}
-
-/* ========== TAP MODAL (Reply + Report) ========== */
+let scrollPending = false;
+let tapModalEl = null;
 let currentReplyTarget = null;
-let tapModal = null;
 
-function showTapModal(el, msg) {
-  tapModal?.remove();
-  tapModal = document.createElement("div");
-  tapModal.className = "tap-modal";
-  tapModal.innerHTML = `
-    <button onclick="replyTo('${msg.id}','${msg.chatId}')">Reply</button>
-    <button onclick="report('${msg.id}','${msg.chatId}','${msg.uid}')">Report</button>
-    <button onclick="this.parentElement.remove()">✕</button>
-  `;
-  document.body.appendChild(tapModal);
-
-  const r = el.getBoundingClientRect();
-  tapModal.style.top = (r.top + window.scrollY - 40) + "px";
-  tapModal.style.left = (r.left + window.scrollX) + "px";
-
-  setTimeout(() => tapModal?.remove(), 4000);
+// Cancel reply
+function cancelReply() {
+  currentReplyTarget = null;
+  refs.messageInputEl.placeholder = "Type a message...";
+  if (refs.cancelReplyBtn) {
+    refs.cancelReplyBtn.remove();
+    refs.cancelReplyBtn = null;
+  }
 }
 
-window.replyTo = (id, chatId) => {
-  currentReplyTarget = { id, chatId };
-  refs.messageInputEl.placeholder = `Replying to ${chatId}...`;
-  refs.messageInputEl.focus();
-  showReplyCancelButton();
-  tapModal?.remove();
-};
+// Show the little cancel reply button
+function showReplyCancelButton() {
+  if (!refs.cancelReplyBtn) {
+    const btn = document.createElement("button");
+    btn.textContent = "✖";
+    btn.style.marginLeft = "6px";
+    btn.style.fontSize = "12px";
+    btn.onclick = cancelReply;
+    refs.cancelReplyBtn = btn;
+    refs.messageInputEl.parentElement.appendChild(btn);
+  }
+}
 
-async function report(id, chatId, uid) {
-  if (!currentUser) return showStarPopup("Login required");
+// Report a message
+async function reportMessage(msgData) {
   try {
-    const ref = doc(db, "reportedmsgs", id);
-    const snap = await getDoc(ref);
-    if (snap.exists() && snap.data().reportedBy?.includes(currentUser.chatId)) {
-      return showStarPopup("Already reported");
-    }
-    if (snap.exists()) {
-      await updateDoc(ref, { reportCount: increment(1), reportedBy: arrayUnion(currentUser.chatId) });
+    const reportRef = doc(db, "reportedmsgs", msgData.id);
+    const reportSnap = await getDoc(reportRef);
+    const reporterChatId = currentUser?.chatId || "unknown";
+    const reporterUid = currentUser?.uid || null;
+
+    if (reportSnap.exists()) {
+      const data = reportSnap.data();
+      if ((data.reportedBy || []).includes(reporterChatId)) {
+        return alert("You’ve already reported this message.");
+      }
+      await updateDoc(reportRef, {
+        reportCount: increment(1),
+        reportedBy: arrayUnion(reporterChatId),
+        reporterUids: arrayUnion(reporterUid),
+        lastReportedAt: serverTimestamp()
+      });
     } else {
-      await setDoc(ref, {
-        messageId: id,
-        offenderChatId: chatId,
-        offenderUid: uid,
-        reportedBy: [currentUser.chatId],
+      await setDoc(reportRef, {
+        messageId: msgData.id,
+        messageText: msgData.content,
+        offenderChatId: msgData.chatId,
+        offenderUid: msgData.uid || null,
+        reportedBy: [reporterChatId],
+        reporterUids: [reporterUid],
         reportCount: 1,
-        createdAt: serverTimestamp()
+        createdAt: serverTimestamp(),
+        status: "pending"
       });
     }
-    showStarPopup("Report sent!");
-  } catch (e) {
-    showStarPopup("Report failed");
+    alert("✅ Report submitted!");
+  } catch (err) {
+    console.error(err);
+    alert("❌ Error reporting message.");
   }
-  tapModal?.remove();
 }
 
-function showReplyCancelButton() {
-  if (refs.cancelReplyBtn) return;
-  const btn = document.createElement("button");
-  btn.textContent = "✕";
-  btn.style.cssText = "margin-left:8px;background:none;border:none;color:#ff1493;font-size:14px;cursor:pointer;";
-  btn.onclick = () => {
-    currentReplyTarget = null;
-    refs.messageInputEl.placeholder = "Type a message...";
-    btn.remove();
-    refs.cancelReplyBtn = null;
+// Tap modal for Reply / Report
+function showTapModal(targetEl, msgData) {
+  tapModalEl?.remove();
+  tapModalEl = document.createElement("div");
+  tapModalEl.className = "tap-modal";
+
+  const replyBtn = document.createElement("button");
+  replyBtn.textContent = "⏎ Reply";
+  replyBtn.onclick = () => {
+    currentReplyTarget = { id: msgData.id, chatId: msgData.chatId, content: msgData.content };
+    refs.messageInputEl.placeholder = `Replying to ${msgData.chatId}: ${msgData.content.substring(0, 30)}...`;
+    refs.messageInputEl.focus();
+    showReplyCancelButton();
+    tapModalEl.remove();
   };
-  refs.cancelReplyBtn = btn;
-  refs.messageInputEl.parentNode.appendChild(btn);
+
+  const reportBtn = document.createElement("button");
+  reportBtn.textContent = "⚠ Report";
+  reportBtn.onclick = async () => {
+    await reportMessage(msgData);
+    tapModalEl.remove();
+  };
+
+  const cancelBtn = document.createElement("button");
+  cancelBtn.textContent = "✕";
+  cancelBtn.onclick = () => tapModalEl.remove();
+
+  tapModalEl.append(replyBtn, reportBtn, cancelBtn);
+  document.body.appendChild(tapModalEl);
+
+  const rect = targetEl.getBoundingClientRect();
+  tapModalEl.style.position = "absolute";
+  tapModalEl.style.top = rect.top - 40 + window.scrollY + "px";
+  tapModalEl.style.left = rect.left + "px";
+  tapModalEl.style.background = "rgba(0,0,0,0.85)";
+  tapModalEl.style.color = "#fff";
+  tapModalEl.style.padding = "6px 10px";
+  tapModalEl.style.borderRadius = "8px";
+  tapModalEl.style.fontSize = "12px";
+  tapModalEl.style.display = "flex";
+  tapModalEl.style.gap = "6px";
+  tapModalEl.style.zIndex = 9999;
+
+  setTimeout(() => tapModalEl?.remove(), 3000);
 }
 
-/* ========== MESSAGES LISTENER (OPTIMIZED) ========== */
+// Confetti / glow for banners
+function triggerBannerEffect(bannerEl) {
+  bannerEl.style.animation = "bannerGlow 1s ease-in-out infinite alternate";
+  // Optional: simple confetti particles
+  const confetti = document.createElement("div");
+  confetti.className = "confetti";
+  confetti.style.position = "absolute";
+  confetti.style.top = "-4px";
+  confetti.style.left = "50%";
+  confetti.style.width = "6px";
+  confetti.style.height = "6px";
+  confetti.style.background = "#fff";
+  confetti.style.borderRadius = "50%";
+  bannerEl.appendChild(confetti);
+  setTimeout(() => confetti.remove(), 1500);
+}
+
+// Render messages
+function renderMessagesFromArray(messages) {
+  if (!refs.messagesEl) return;
+  messages.forEach(item => {
+    if (!item.id) return;
+    if (document.getElementById(item.id)) return;
+
+    const m = item.data || item;
+    const wrapper = document.createElement("div");
+    wrapper.className = "msg";
+    wrapper.id = item.id;
+
+    // Banner
+    if (m.systemBanner || m.isBanner || m.type === "banner") {
+      wrapper.classList.add("chat-banner");
+      wrapper.style.textAlign = "center";
+      wrapper.style.padding = "4px 0";
+      wrapper.style.margin = "4px 0";
+      wrapper.style.borderRadius = "8px";
+      wrapper.style.background = m.buzzColor || "linear-gradient(90deg,#ffcc00,#ff33cc)";
+      wrapper.style.boxShadow = "0 0 16px rgba(255,255,255,0.3)";
+
+      const innerPanel = document.createElement("div");
+      innerPanel.style.display = "inline-block";
+      innerPanel.style.padding = "6px 14px";
+      innerPanel.style.borderRadius = "6px";
+      innerPanel.style.background = "rgba(255,255,255,0.35)";
+      innerPanel.style.backdropFilter = "blur(6px)";
+      innerPanel.style.color = "#000";
+      innerPanel.style.fontWeight = "700";
+      innerPanel.textContent = m.content || "";
+      wrapper.appendChild(innerPanel);
+
+      triggerBannerEffect(wrapper);
+
+      if (window.currentUser?.isAdmin) {
+        const delBtn = document.createElement("button");
+        delBtn.textContent = "🗑";
+        delBtn.title = "Delete Banner";
+        delBtn.style.position = "absolute";
+        delBtn.style.right = "6px";
+        delBtn.style.top = "3px";
+        delBtn.style.cursor = "pointer";
+        delBtn.onclick = async () => {
+          await deleteDoc(doc(db, "messages", item.id));
+          wrapper.remove();
+        };
+        wrapper.appendChild(delBtn);
+      }
+    } else {
+      // Regular message
+      const usernameEl = document.createElement("span");
+      usernameEl.className = "meta";
+      usernameEl.innerHTML = `<span class="chat-username" data-username="${m.uid}">${m.chatId || "Guest"}</span>:`;
+      usernameEl.style.color = (m.uid && refs.userColors?.[m.uid]) ? refs.userColors[m.uid] : "#fff";
+      usernameEl.style.marginRight = "4px";
+      wrapper.appendChild(usernameEl);
+
+      // Reply preview
+      if (m.replyTo) {
+        const replyPreview = document.createElement("div");
+        replyPreview.className = "reply-preview";
+        replyPreview.textContent = m.replyToContent || "Original message";
+        replyPreview.style.cursor = "pointer";
+        replyPreview.onclick = () => {
+          const originalMsg = document.getElementById(m.replyTo);
+          if (originalMsg) {
+            originalMsg.scrollIntoView({ behavior: "smooth", block: "center" });
+            originalMsg.style.outline = "2px solid #FFD700";
+            setTimeout(() => originalMsg.style.outline = "", 1000);
+          }
+        };
+        wrapper.appendChild(replyPreview);
+      }
+
+      const contentEl = document.createElement("span");
+      contentEl.className = "content";
+      contentEl.textContent = " " + (m.content || "");
+      wrapper.appendChild(contentEl);
+
+      wrapper.addEventListener("click", (e) => {
+        e.stopPropagation();
+        showTapModal(wrapper, {
+          id: item.id,
+          chatId: m.chatId,
+          uid: m.uid,
+          content: m.content,
+          replyTo: m.replyTo,
+          replyToContent: m.replyToContent
+        });
+      });
+    }
+
+    refs.messagesEl.appendChild(wrapper);
+  });
+
+  // Auto-scroll
+  if (!scrollPending) {
+    scrollPending = true;
+    requestAnimationFrame(() => {
+      refs.messagesEl.scrollTop = refs.messagesEl.scrollHeight;
+      scrollPending = false;
+    });
+  }
+}
+
+// Auto-scroll + scroll-to-bottom button
+function handleChatAutoScroll() {
+  if (!refs.messagesEl) return;
+
+  let scrollBtn = document.getElementById("scrollToBottomBtn");
+  if (!scrollBtn) {
+    scrollBtn = document.createElement("div");
+    scrollBtn.id = "scrollToBottomBtn";
+    scrollBtn.textContent = "↓";
+    scrollBtn.style.cssText = `
+      position: fixed;
+      bottom: 90px;
+      right: 20px;
+      padding: 6px 12px;
+      background: rgba(255,20,147,0.9);
+      color: #fff;
+      border-radius: 14px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      opacity: 1;
+      pointer-events: none;
+      transition: all 0.3s ease;
+      z-index: 9999;
+    `;
+    document.body.appendChild(scrollBtn);
+    scrollBtn.addEventListener("click", () => {
+      refs.messagesEl.scrollTo({ top: refs.messagesEl.scrollHeight, behavior: "smooth" });
+      scrollBtn.style.opacity = 0;
+      scrollBtn.style.pointerEvents = "none";
+    });
+  }
+
+  refs.messagesEl.addEventListener("scroll", () => {
+    const distance = refs.messagesEl.scrollHeight - refs.messagesEl.scrollTop - refs.messagesEl.clientHeight;
+    if (distance > 150) {
+      scrollBtn.style.opacity = 1;
+      scrollBtn.style.pointerEvents = "auto";
+    } else {
+      scrollBtn.style.opacity = 1;
+      scrollBtn.style.pointerEvents = "none";
+    }
+  });
+}
+
+
+/* ---------- 🔔 Messages Listener (Final Optimized Version) ---------- */
 function attachMessagesListener() {
-  if (messageUnsubscribe) messageUnsubscribe();
   const q = query(collection(db, CHAT_COLLECTION), orderBy("timestamp", "asc"));
 
-  messageUnsubscribe = onSnapshot(q, snap => {
-    snap.docChanges().forEach(change => {
+  // 💾 Track shown gift alerts
+  const shownGiftAlerts = new Set(JSON.parse(localStorage.getItem("shownGiftAlerts") || "[]"));
+  function saveShownGift(id) {
+    shownGiftAlerts.add(id);
+    localStorage.setItem("shownGiftAlerts", JSON.stringify([...shownGiftAlerts]));
+  }
+
+  // 💾 Track local pending messages to prevent double rendering
+  let localPendingMsgs = JSON.parse(localStorage.getItem("localPendingMsgs") || "{}");
+
+  onSnapshot(q, snapshot => {
+    snapshot.docChanges().forEach(change => {
       if (change.type !== "added") return;
-      const data = change.doc.data();
-      const id = change.doc.id;
 
-      // Skip temp messages
-      if (data.tempId) return;
+      const msg = change.doc.data();
+      const msgId = change.doc.id;
 
-      // Clean up local pending match
+      // 🛑 Skip messages that look like local temp echoes
+      if (msg.tempId && msg.tempId.startsWith("temp_")) return;
+
+      // 🛑 Skip already rendered messages
+      if (document.getElementById(msgId)) return;
+
+      // ✅ Match Firestore-confirmed message to a locally sent one
       for (const [tempId, pending] of Object.entries(localPendingMsgs)) {
-        if (pending.uid === data.uid && pending.content === data.content) {
-          document.getElementById(tempId)?.remove();
+        const sameUser = pending.uid === msg.uid;
+        const sameText = pending.content === msg.content;
+        const createdAt = pending.createdAt || 0;
+        const msgTime = msg.timestamp?.toMillis?.() || 0;
+        const timeDiff = Math.abs(msgTime - createdAt);
+
+        if (sameUser && sameText && timeDiff < 7000) {
+          // 🔥 Remove local temp bubble
+          const tempEl = document.getElementById(tempId);
+          if (tempEl) tempEl.remove();
+
+          // 🧹 Clean up memory + storage
           delete localPendingMsgs[tempId];
           localStorage.setItem("localPendingMsgs", JSON.stringify(localPendingMsgs));
+          break;
         }
       }
 
-      renderMessagesFromArray([{ id, data }]);
+      // ✅ Render message
+      renderMessagesFromArray([{ id: msgId, data: msg }]);
 
-      // Gift alert
-      if (data.highlight && data.content?.includes("gifted")) {
-        const lower = currentUser?.chatId?.toLowerCase();
-        if (data.content.toLowerCase().includes(lower) && !shownGiftAlerts.has(id)) {
-          showGiftAlert(data.content);
-          shownGiftAlerts.add(id);
-          localStorage.setItem("shownGiftAlerts", JSON.stringify([...shownGiftAlerts]));
+      /* 💝 Gift Alert Logic */
+      if (msg.highlight && msg.content?.includes("gifted")) {
+        const myId = currentUser?.chatId?.toLowerCase();
+        if (!myId) return;
+
+        const parts = msg.content.split(" ");
+        const sender = parts[0];
+        const receiver = parts[2];
+        const amount = parts[3];
+        if (!sender || !receiver || !amount) return;
+
+        if (receiver.toLowerCase() === myId && !shownGiftAlerts.has(msgId)) {
+          showGiftAlert(`${sender} gifted you ${amount} stars ⭐️`);
+          saveShownGift(msgId);
         }
+      }
+
+      // 🌀 Keep scroll locked for your messages
+      if (refs.messagesEl && msg.uid === currentUser?.uid) {
+        refs.messagesEl.scrollTop = refs.messagesEl.scrollHeight;
       }
     });
   });
 }
 
-/* ========== SEND MESSAGE (INSTANT ECHO + OFFLINE SAFE) ========== */
-async function sendMessage() {
-  if (!currentUser?.uid) return showStarPopup("Login required");
-  const input = refs.messageInputEl;
-  const text = input.value.trim();
-  if (!text) return;
+/* ===== Notifications Tab Lazy + Live Setup (Robust) ===== */
+let notificationsListenerAttached = false;
 
-  if (currentUser.stars < SEND_COST) return showStarPopup(`Need ${SEND_COST} stars`);
+async function attachNotificationsListener() {
+  // Wait for the notifications tab and list to exist
+  const waitForElement = (selector) => new Promise((resolve) => {
+    const el = document.querySelector(selector);
+    if (el) return resolve(el);
+    const observer = new MutationObserver(() => {
+      const elNow = document.querySelector(selector);
+      if (elNow) {
+        observer.disconnect();
+        resolve(elNow);
+      }
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+  });
 
+  const notificationsList = await waitForElement("#notificationsList");
+  const markAllBtn = await waitForElement("#markAllRead");
+
+  if (!currentUser?.uid) return console.warn("⚠️ No logged-in user");
+  const notifRef = collection(db, "users", currentUser.uid, "notifications");
+  const q = query(notifRef, orderBy("timestamp", "desc"));
+
+  // Live snapshot listener
+  onSnapshot(q, (snapshot) => {
+    console.log("📡 Notifications snapshot:", snapshot.docs.map(d => d.data()));
+
+    if (snapshot.empty) {
+      notificationsList.innerHTML = `<p style="opacity:0.7;">No new notifications yet.</p>`;
+      return;
+    }
+
+    const items = snapshot.docs.map(docSnap => {
+      const n = docSnap.data();
+      const time = n.timestamp?.seconds
+        ? new Date(n.timestamp.seconds * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+        : "--:--";
+      return `
+        <div class="notification-item ${n.read ? "" : "unread"}" data-id="${docSnap.id}">
+          <span>${n.message || "(no message)"}</span>
+          <span class="notification-time">${time}</span>
+        </div>
+      `;
+    });
+
+    notificationsList.innerHTML = items.join("");
+  });
+
+  // Mark all as read
+  if (markAllBtn) {
+    markAllBtn.onclick = async () => {
+      const snapshot = await getDocs(notifRef);
+      for (const docSnap of snapshot.docs) {
+        const ref = doc(db, "users", currentUser.uid, "notifications", docSnap.id);
+        await updateDoc(ref, { read: true });
+      }
+      showStarPopup("✅ All notifications marked as read.");
+    };
+  }
+
+  notificationsListenerAttached = true;
+}
+
+/* ===== Tab Switching (Lazy attach for notifications) ===== */
+document.querySelectorAll(".tab-btn").forEach(btn => {
+  btn.onclick = async () => {
+    // Switch tabs visually
+    document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+    document.querySelectorAll(".tab-content").forEach(tab => tab.style.display = "none");
+
+    btn.classList.add("active");
+    const tabContent = document.getElementById(btn.dataset.tab);
+    if (tabContent) tabContent.style.display = "block";
+
+    // Attach notifications listener lazily
+    if (btn.dataset.tab === "notificationsTab" && !notificationsListenerAttached) {
+      await attachNotificationsListener();
+    }
+  };
+});
+
+/* ---------- 🆔 ChatID Modal ---------- */
+async function promptForChatID(userRef, userData) {
+  if (!refs.chatIDModal || !refs.chatIDInput || !refs.chatIDConfirmBtn)
+    return userData?.chatId || null;
+
+  // Skip if user already set chatId
+  if (userData?.chatId && !userData.chatId.startsWith("GUEST"))
+    return userData.chatId;
+
+  refs.chatIDInput.value = "";
+  refs.chatIDModal.style.display = "flex";
+  if (refs.sendAreaEl) refs.sendAreaEl.style.display = "none";
+
+  return new Promise(resolve => {
+    refs.chatIDConfirmBtn.onclick = async () => {
+      const chosen = refs.chatIDInput.value.trim();
+      if (chosen.length < 3 || chosen.length > 12)
+        return alert("Chat ID must be 3–12 characters");
+
+      const lower = chosen.toLowerCase();
+      const q = query(collection(db, "users"), where("chatIdLower", "==", lower));
+      const snap = await getDocs(q);
+
+      let taken = false;
+      snap.forEach(docSnap => {
+        if (docSnap.id !== userRef.id) taken = true;
+      });
+      if (taken) return alert("This Chat ID is taken 💬");
+
+      try {
+        await updateDoc(userRef, { chatId: chosen, chatIdLower: lower });
+        currentUser.chatId = chosen;
+        currentUser.chatIdLower = lower;
+        refs.chatIDModal.style.display = "none";
+        if (refs.sendAreaEl) refs.sendAreaEl.style.display = "flex";
+        showStarPopup(`Welcome ${chosen}! 🎉`);
+        resolve(chosen);
+      } catch (err) {
+        console.error(err);
+        alert("Failed to save Chat ID");
+      }
+    };
+  });
+}
+
+
+/* ===============================
+   🔐 VIP Login (Whitelist Check)
+================================= */
+async function loginWhitelist(email, phone) {
+  const loader = document.getElementById("postLoginLoader");
   try {
-    currentUser.stars -= SEND_COST;
-    refs.starCountEl && (refs.starCountEl.textContent = formatNumber(currentUser.stars));
-    await updateDoc(doc(db, "users", currentUser.uid), { stars: increment(-SEND_COST) });
+    if (loader) loader.style.display = "flex";
+    await sleep(50);
 
-    const tempId = "temp_" + Date.now();
-    const tempMsg = {
-      content: text,
-      uid: currentUser.uid,
-      chatId: currentUser.chatId,
-      timestamp: { toMillis: () => Date.now() },
-      replyTo: currentReplyTarget?.id || null,
-      tempId
+    // 🔍 Query whitelist
+    const whitelistQuery = query(
+      collection(db, "whitelist"),
+      where("email", "==", email),
+      where("phone", "==", phone)
+    );
+    const whitelistSnap = await getDocs(whitelistQuery);
+    console.log("📋 Whitelist result:", whitelistSnap.docs.map(d => d.data()));
+
+    if (whitelistSnap.empty) {
+      return showStarPopup("You’re not on the whitelist. Please check your email and phone format.");
+    }
+
+    const uidKey = sanitizeKey(email);
+    const userRef = doc(db, "users", uidKey);
+    const userSnap = await getDoc(userRef);
+
+    if (!userSnap.exists()) {
+      return showStarPopup("User not found. Please sign up on the main page first.");
+    }
+
+    const data = userSnap.data() || {};
+
+    // 🧍🏽 Set current user details
+    currentUser = {
+      uid: uidKey,
+      email: data.email,
+      phone: data.phone,
+      chatId: data.chatId,
+      chatIdLower: data.chatIdLower,
+      stars: data.stars || 0,
+      cash: data.cash || 0,
+      usernameColor: data.usernameColor || randomColor(),
+      isAdmin: !!data.isAdmin,
+      isVIP: !!data.isVIP,
+      fullName: data.fullName || "",
+      gender: data.gender || "",
+      subscriptionActive: !!data.subscriptionActive,
+      subscriptionCount: data.subscriptionCount || 0,
+      lastStarDate: data.lastStarDate || todayDate(),
+      starsGifted: data.starsGifted || 0,
+      starsToday: data.starsToday || 0,
+      hostLink: data.hostLink || null,
+      invitedBy: data.invitedBy || null,
+      inviteeGiftShown: !!data.inviteeGiftShown,
+      isHost: !!data.isHost
     };
 
-    localPendingMsgs[tempId] = { ...tempMsg, createdAt: Date.now() };
-    localStorage.setItem("localPendingMsgs", JSON.stringify(localPendingMsgs));
+    // ✅ Store user ID for notifications system
+    const userId = currentUser.chatId || currentUser.email || currentUser.phone;
+    localStorage.setItem("userId", userId);
+    console.log("✅ Stored userId for notifications:", userId);
 
-    renderMessagesFromArray([{ id: tempId, data: tempMsg }]);
-    input.value = "";
-    currentReplyTarget = null;
-    refs.cancelReplyBtn?.remove();
-    refs.cancelReplyBtn = null;
-    input.placeholder = "Type a message...";
+    // 🧠 Setup post-login systems
+    updateRedeemLink();
+    updateTipLink();
+    setupPresence(currentUser);
+    attachMessagesListener();
+    startStarEarning(currentUser.uid);
 
-    const realMsg = { ...tempMsg, tempId: null, timestamp: serverTimestamp() };
-    delete realMsg.toMillis;
-    await addDoc(collection(db, CHAT_COLLECTION), realMsg);
+    // Store VIP user in local storage (existing)
+    localStorage.setItem("vipUser", JSON.stringify({ email, phone }));
 
-  } catch (e) {
-    showStarPopup("Send failed");
+    // Prompt guests for a permanent chatID
+    if (currentUser.chatId?.startsWith("GUEST")) {
+      await promptForChatID(userRef, data);
+    }
+
+    // 🎨 Update UI
+  showChatUI(currentUser);
+console.log("🚀 Starting notifications for:", email);
+startNotificationsFor(email);
+
+
+    return true;
+
+  } catch (err) {
+    console.error("❌ Login error:", err);
+    showStarPopup("Login failed. Try again!");
+    return false;
+  } finally {
+    if (loader) loader.style.display = "none";
   }
 }
 
-/* ========== BUZZ MESSAGE ========== */
-refs.buzzBtn?.addEventListener("click", async () => {
-  if (currentUser.stars < BUZZ_COST) return showStarPopup(`Need ${BUZZ_COST} stars to BUZZ`);
-  const text = refs.messageInputEl.value.trim();
-  if (!text) return showStarPopup("Type a message");
 
-  await updateDoc(doc(db, "users", currentUser.uid), { stars: increment(-BUZZ_COST) });
-  const color = randomColor();
-  const msg = {
-    content: text,
-    uid: currentUser.uid,
-    chatId: currentUser.chatId,
-    timestamp: serverTimestamp(),
-    highlight: true,
-    buzzColor: color,
-    systemBanner: true
-  };
-  const ref = await addDoc(collection(db, CHAT_COLLECTION), msg);
-  refs.messageInputEl.value = "";
-  showStarPopup("BUZZ sent!");
-  renderMessagesFromArray([{ id: ref.id, data: msg }]);
+/* ----------------------------
+   🔁 Auto Login Session
+----------------------------- */
+window.addEventListener("DOMContentLoaded", async () => {
+  const vipUser = JSON.parse(localStorage.getItem("vipUser"));
+  if (vipUser?.email && vipUser?.phone) {
+    const loader = document.getElementById("postLoginLoader");
+    const loadingBar = document.getElementById("loadingBar");
+
+    try {
+      // ✅ Make sure loader and bar are visible
+      if (loader) loader.style.display = "flex";
+      if (loadingBar) loadingBar.style.width = "0%";
+
+      // 🩷 Animate bar while logging in
+      let progress = 0;
+      const interval = 80;
+      const loadingInterval = setInterval(() => {
+        if (progress < 90) { // don’t fill completely until login ends
+          progress += Math.random() * 5;
+          loadingBar.style.width = `${Math.min(progress, 90)}%`;
+        }
+      }, interval);
+
+      // 🧠 Run the login
+      const success = await loginWhitelist(vipUser.email, vipUser.phone);
+
+      // Finish bar smoothly
+      clearInterval(loadingInterval);
+      loadingBar.style.width = "100%";
+
+      if (success) {
+        await sleep(400);
+        updateRedeemLink();
+        updateTipLink();
+      }
+
+    } catch (err) {
+      console.error("❌ Auto-login error:", err);
+    } finally {
+      await sleep(300);
+      if (loader) loader.style.display = "none";
+    }
+  }
 });
 
-/* ========== STAR EARNING ========== */
-function startStarEarning(uid) {
-  if (!uid || starInterval) return;
-  const userRef = doc(db, "users", uid);
 
+/* ===============================
+   💫 Auto Star Earning System
+================================= */
+function startStarEarning(uid) {
+  if (!uid) return;
+  if (starInterval) clearInterval(starInterval);
+
+  const userRef = doc(db, "users", uid);
+  let displayedStars = currentUser.stars || 0;
+  let animationTimeout = null;
+
+  // ✨ Smooth UI update
+  const animateStarCount = target => {
+    if (!refs.starCountEl) return;
+    const diff = target - displayedStars;
+
+    if (Math.abs(diff) < 1) {
+      displayedStars = target;
+      refs.starCountEl.textContent = formatNumberWithCommas(displayedStars);
+      return;
+    }
+
+    displayedStars += diff * 0.25; // smoother easing
+    refs.starCountEl.textContent = formatNumberWithCommas(Math.floor(displayedStars));
+    animationTimeout = setTimeout(() => animateStarCount(target), 40);
+  };
+
+  // 🔄 Real-time listener
   onSnapshot(userRef, snap => {
     if (!snap.exists()) return;
-    const stars = snap.data().stars || 0;
-    currentUser.stars = stars;
-    if (refs.starCountEl) refs.starCountEl.textContent = formatNumber(stars);
+    const data = snap.data();
+    const targetStars = data.stars || 0;
+    currentUser.stars = targetStars;
+
+    if (animationTimeout) clearTimeout(animationTimeout);
+    animateStarCount(targetStars);
+
+    // 🎉 Milestone popup
+    if (targetStars > 0 && targetStars % 1000 === 0) {
+      showStarPopup(`🔥 Congrats! You’ve reached ${formatNumberWithCommas(targetStars)} stars!`);
+    }
   });
 
+  // ⏱️ Increment loop
   starInterval = setInterval(async () => {
     if (!navigator.onLine) return;
+
     const snap = await getDoc(userRef);
     if (!snap.exists()) return;
+
     const data = snap.data();
-    if (data.lastStarDate !== todayDate()) {
-      await updateDoc(userRef, { starsToday: 0, lastStarDate: todayDate() });
+    const today = todayDate();
+
+    // Reset daily count
+    if (data.lastStarDate !== today) {
+      await updateDoc(userRef, { starsToday: 0, lastStarDate: today });
+      return;
     }
-    if ((data.starsToday || 0) < MAX_DAILY_STARS) {
+
+    // Limit: 250/day
+    if ((data.starsToday || 0) < 250) {
       await updateDoc(userRef, {
         stars: increment(10),
         starsToday: increment(10)
       });
     }
-  }, STAR_EARNING_INTERVAL);
+  }, 60000);
+
+  // 🧹 Cleanup
+  window.addEventListener("beforeunload", () => clearInterval(starInterval));
 }
 
-/* ========== VIP LOGIN ========== */
-async function loginWhitelist(email, phone) {
-  const loader = document.getElementById("postLoginLoader");
-  const bar = document.getElementById("loadingBar");
-  try {
-    if (loader) loader.style.display = "flex";
-    if (bar) bar.style.width = "0%";
+/* ===============================
+   🧩 Helper Functions
+================================= */
+const todayDate = () => new Date().toISOString().split("T")[0];
+const sleep = ms => new Promise(res => setTimeout(res, ms));
 
-    const q = query(collection(db, "whitelist"), where("email", "==", email), where("phone", "==", phone));
-    const snap = await getDocs(q);
-    if (snap.empty) throw new Error("Not on whitelist");
+/* ===============================
+   🧠 UI Updates After Auth
+================================= */
+function updateUIAfterAuth(user) {
+  const subtitle = document.getElementById("roomSubtitle");
+  const helloText = document.getElementById("helloText");
+  const roomDescText = document.querySelector(".room-desc .text");
+  const hostsBtn = document.getElementById("openHostsBtn");
 
-    const uid = sanitizeKey(email);
-    const userSnap = await getDoc(doc(db, "users", uid));
-    if (!userSnap.exists()) throw new Error("User not found");
-
-    const data = userSnap.data();
-    currentUser = {
-      uid,
-      email: data.email || email,
-      chatId: data.chatId || "VIP",
-      stars: data.stars || 0,
-      cash: data.cash || 0,
-      usernameColor: data.usernameColor || randomColor(),
-      isAdmin: !!data.isAdmin,
-      isVIP: true,
-      ...data
-    };
-
-    localStorage.setItem("vipUser", JSON.stringify({ email, phone }));
-    setupPresence(currentUser);
-    attachMessagesListener();
-    startStarEarning(uid);
-    showChatUI(currentUser);
-    attachNotificationsListener();
-
-    if (bar) bar.style.width = "100%";
-    showStarPopup(`Welcome back, ${currentUser.chatId}!`);
-    return true;
-  } catch (e) {
-    showStarPopup(e.message || "Login failed");
-    return false;
-  } finally {
-    setTimeout(() => loader && (loader.style.display = "none"), 600);
+  if (user) {
+    // Hide intro texts and show host button
+    if (subtitle) subtitle.style.display = "none";
+    if (helloText) helloText.style.display = "none";
+    if (roomDescText) roomDescText.style.display = "none";
+    if (hostsBtn) hostsBtn.style.display = "block";
+  } else {
+    // Restore intro texts and hide host button
+    if (subtitle) subtitle.style.display = "block";
+    if (helloText) helloText.style.display = "block";
+    if (roomDescText) roomDescText.style.display = "block";
+    if (hostsBtn) hostsBtn.style.display = "none";
   }
 }
 
-/* ========== DOM READY ========== */
-document.addEventListener("DOMContentLoaded", () => {
-  Object.assign(refs, {
+/* ===============================
+   💬 Show Chat UI After Login
+================================= */
+function showChatUI(user) {
+  const { authBox, sendAreaEl, profileBoxEl, profileNameEl, starCountEl, cashCountEl, adminControlsEl } = refs;
+
+  // Hide login/auth elements
+  document.getElementById("emailAuthWrapper")?.style?.setProperty("display", "none");
+  document.getElementById("googleSignInBtn")?.style?.setProperty("display", "none");
+  document.getElementById("vipAccessBtn")?.style?.setProperty("display", "none");
+
+  // Show chat interface
+  authBox && (authBox.style.display = "none");
+  sendAreaEl && (sendAreaEl.style.display = "flex");
+  profileBoxEl && (profileBoxEl.style.display = "block");
+
+  if (profileNameEl) {
+    profileNameEl.innerText = user.chatId;
+    profileNameEl.style.color = user.usernameColor;
+  }
+
+  if (starCountEl) starCountEl.textContent = formatNumberWithCommas(user.stars);
+  if (cashCountEl) cashCountEl.textContent = formatNumberWithCommas(user.cash);
+  if (adminControlsEl) adminControlsEl.style.display = user.isAdmin ? "flex" : "none";
+
+  // 🔹 Apply additional UI updates (hide intro, show hosts)
+  updateUIAfterAuth(user);
+}
+
+/* ===============================
+   🚪 Hide Chat UI On Logout
+================================= */
+function hideChatUI() {
+  const { authBox, sendAreaEl, profileBoxEl, adminControlsEl } = refs;
+
+  authBox && (authBox.style.display = "block");
+  sendAreaEl && (sendAreaEl.style.display = "none");
+  profileBoxEl && (profileBoxEl.style.display = "none");
+  if (adminControlsEl) adminControlsEl.style.display = "none";
+
+  // 🔹 Restore intro UI (subtitle, hello text, etc.)
+  updateUIAfterAuth(null);
+}
+
+/* =======================================
+   🚀 DOMContentLoaded Bootstrap
+======================================= */
+window.addEventListener("DOMContentLoaded", () => {
+
+  /* ----------------------------
+     ⚡ Smooth Loading Bar Helper
+  ----------------------------- */
+  function showLoadingBar(duration = 1000) {
+    const postLoginLoader = document.getElementById("postLoginLoader");
+    const loadingBar = document.getElementById("loadingBar");
+    if (!postLoginLoader || !loadingBar) return;
+
+    postLoginLoader.style.display = "flex";
+    loadingBar.style.width = "0%";
+
+    let progress = 0;
+    const interval = 50;
+    const step = 100 / (duration / interval);
+
+    const loadingInterval = setInterval(() => {
+      progress += step + Math.random() * 4; // adds organic feel
+      loadingBar.style.width = `${Math.min(progress, 100)}%`;
+
+      if (progress >= 100) {
+        clearInterval(loadingInterval);
+        setTimeout(() => postLoginLoader.style.display = "none", 250);
+      }
+    }, interval);
+  }
+
+  /* ----------------------------
+     🧩 Cache DOM References
+  ----------------------------- */
+  refs = {
+    authBox: document.getElementById("authBox"),
     messagesEl: document.getElementById("messages"),
+    sendAreaEl: document.getElementById("sendArea"),
     messageInputEl: document.getElementById("messageInput"),
     sendBtn: document.getElementById("sendBtn"),
     buzzBtn: document.getElementById("buzzBtn"),
-    starCountEl: document.getElementById("starCount"),
+    profileBoxEl: document.getElementById("profileBox"),
     profileNameEl: document.getElementById("profileName"),
-    sendAreaEl: document.getElementById("sendArea"),
-    authBox: document.getElementById("authBox"),
-    onlineCountEl: document.getElementById("onlineCount"),
+    starCountEl: document.getElementById("starCount"),
+    cashCountEl: document.getElementById("cashCount"),
     redeemBtn: document.getElementById("redeemBtn"),
     tipBtn: document.getElementById("tipBtn"),
+    onlineCountEl: document.getElementById("onlineCount"),
     adminControlsEl: document.getElementById("adminControls"),
+    adminClearMessagesBtn: document.getElementById("adminClearMessagesBtn"),
     chatIDModal: document.getElementById("chatIDModal"),
     chatIDInput: document.getElementById("chatIDInput"),
     chatIDConfirmBtn: document.getElementById("chatIDConfirmBtn")
-  });
+  };
 
-  // Send handlers
-  refs.sendBtn?.addEventListener("click", sendMessage);
-  refs.messageInputEl?.addEventListener("keydown", e => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage();
+  if (refs.chatIDInput) refs.chatIDInput.maxLength = 12;
+
+  /* ----------------------------
+     🔐 VIP Login Setup
+  ----------------------------- */
+  const emailInput = document.getElementById("emailInput");
+  const phoneInput = document.getElementById("phoneInput");
+  const loginBtn = document.getElementById("whitelistLoginBtn");
+
+  async function handleLogin() {
+    const email = (emailInput?.value || "").trim().toLowerCase();
+    const phone = (phoneInput?.value || "").trim();
+
+    if (!email || !phone) {
+      return showStarPopup("Enter your email and phone to get access.");
     }
-  });
 
-  // Auto-login
-  const saved = JSON.parse(localStorage.getItem("vipUser") || "null");
-  if (saved?.email && saved?.phone) {
-    loginWhitelist(saved.email, saved.phone);
-  }
-});
+    showLoadingBar(1000);
+    await sleep(50);
 
-/* ========== SHOW CHAT UI ========== */
-function showChatUI(user) {
-  document.querySelectorAll("#emailAuthWrapper, #googleSignInBtn, #vipAccessBtn").forEach(el => el.style.display = "none");
-  refs.authBox && (refs.authBox.style.display = "none");
-  refs.sendAreaEl && (refs.sendAreaEl.style.display = "flex");
-  refs.profileBoxEl && (refs.profileBoxEl.style.display = "block");
-  if (refs.profileNameEl) {
-    refs.profileNameEl.textContent = user.chatId;
-    refs.profileNameEl.style.color = user.usernameColor;
-  }
-  if (refs.starCountEl) refs.starCountEl.textContent = formatNumber(user.stars);
-  document.querySelectorAll(".room-desc, #roomSubtitle, #helloText").forEach(el => el.style.display = "none");
-}
+    const success = await loginWhitelist(email, phone);
+    if (!success) return;
 
-/* ========== EXPORTS ========== */
-window.showStarPopup = showStarPopup;
-window.showGiftAlert = showGiftAlert;
-  
-
-/* ----------------------------
-   VIP Login Setup (UID + Backward Compatible)
------------------------------ */
-const emailInput = document.getElementById("emailInput");
-const phoneInput = document.getElementById("phoneInput");
-const loginBtn = document.getElementById("whitelistLoginBtn");
-
-async function handleLogin() {
-  const email = (emailInput?.value || "").trim().toLowerCase();
-  const phone = (phoneInput?.value || "").trim();
-
-  if (!email || !phone) {
-    return showStarPopup("Enter your email and phone to get access.");
-  }
-
-  showLoadingBar(1200);
-  const success = await loginWhitelist(email, phone);
-  if (success) {
-    setTimeout(() => {
-      updateRedeemLink();
-      updateTipLink();
-    }, 400);
-  }
-}
-
-loginBtn?.addEventListener("click", handleLogin);
-
-/* ----------------------------
-   Auto Login Session (Now UID-Aware + Migration)
------------------------------ */
-async function autoLogin() {
-  const vipUser = JSON.parse(localStorage.getItem("vipUser") || "null");
-  
-  if (!vipUser?.email) return;
-
-  // If already logged in via Firebase Auth (page refresh), skip
-  if (currentUser?.uid) {
-    console.log("Already authenticated via Firebase Auth, skipping auto-login");
+    await sleep(400);
     updateRedeemLink();
     updateTipLink();
-    return;
   }
 
-  showLoadingBar(1200);
-  const success = await loginWhitelist(vipUser.email, vipUser.phone || "");
-  
-  if (success) {
-    setTimeout(() => {
-      updateRedeemLink();
-      updateTipLink();
-    }, 400);
+  loginBtn?.addEventListener("click", handleLogin);
+
+  /* ----------------------------
+     🔁 Auto Login Session
+  ----------------------------- */
+ async function autoLogin() {
+  const vipUser = JSON.parse(localStorage.getItem("vipUser"));
+  if (vipUser?.email && vipUser?.phone) {
+    showLoadingBar(1000);
+    await sleep(60);
+    const success = await loginWhitelist(vipUser.email, vipUser.phone);
+    if (!success) return;
+    await sleep(400);
+    updateRedeemLink();
+    updateTipLink();
   }
 }
 
-// Run auto-login on DOM load
-if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", autoLogin);
-} else {
-  autoLogin();
-}
+// Call on page load
+autoLogin();
+
 
 /* ----------------------------
-   Local Pending Messages Tracker (unchanged — already perfect)
+   ⚡ Global setup for local message tracking
 ----------------------------- */
-let localPendingMsgs = JSON.parse(localStorage.getItem("localPendingMsgs") || "{}");
-// structure: { tempId: { content, uid, chatId, createdAt } } ← This was already correct
+let localPendingMsgs = JSON.parse(localStorage.getItem("localPendingMsgs") || "{}"); 
+// structure: { tempId: { content, uid, chatId, createdAt } }
 
-
-
-
-  
 /* ----------------------------
    💬 Send Message Handler (Instant + No Double Render)
 ----------------------------- */
