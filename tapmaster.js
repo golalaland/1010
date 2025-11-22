@@ -11,6 +11,7 @@
     runTransaction,
     collection,
     addDoc,
+    setDoc,
     serverTimestamp,
     updateDoc,
     getDocs,
