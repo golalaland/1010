@@ -348,13 +348,12 @@ function sanitizeKey(email) {
   return email
     .trim()
     .toLowerCase()
-    // Replace @ and . (and any stray commas or forbidden chars) with _
-    .replace(/[@.]/g, '_')
-    // Also catch any other Firestore-forbidden chars just in case
-    .replace(/[,\\/*[\]]/g, '_')
-    // Collapse multiple underscores into one (optional but clean)
+    // ONLY replace dots and commas → @ stays untouched!
+    .replace(/\./g, '_')        // . becomes _
+    .replace(/,/g, '_')         // , becomes _ (just in case any sneaks in)
+    // Optional: collapse multiple ___ into one (keeps it clean)
     .replace(/_+/g, '_')
-    // Remove leading/trailing underscores
+    // Optional: remove leading/trailing _ (nice and tidy)
     .replace(/^_|_$/g, '');
 }
 // ─────────────────────────────────────────────────────────────────────
