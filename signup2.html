@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=0.85, maximum-scale=0.85, user-scalable=no">
+<title>TAPTAP VIP</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --gold: #ffea00;
+    --pink: #ff0080;
+    --text: #ffffff;
+    --input-bg: rgba(15,15,35,0.55);
+    --input-border: rgba(255,234,0,0.35);
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    min-height: 100vh;
+    background: url('https://cdn.shopify.com/s/files/1/0962/6648/6067/files/IMG_6015.jpg?v=1763341244') center/cover no-repeat fixed;
+    font-family: 'Inter', sans-serif;
+    color: var(--text);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem 1rem;
+    background-attachment: fixed;
+  }
+
+   h2 {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 4.8rem;
+    font-weight: 900;
+    background: linear-gradient(90deg, #ffea00, #ff0080, #00f0ff, #ffea00);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 0 0 40px rgba(255,234,0,0.6);
+    letter-spacing: 10px;
+    margin-bottom: 0.5rem;
+    animation: pulse 4s infinite;
+    text-transform: uppercase;
+  }
+
+  @keyframes pulse {
+    0%,100% { opacity: 0.95; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.04); }
+  }
+
+  .description {
+    font-size: 1.05rem;
+    text-align: center;
+    max-width: 90%;
+    line-height: 1.5;
+    margin: 0 auto 2rem;
+    color: rgba(255,255,255,0.9);
+    font-weight: 500;
+  }
+
+  .form-group {
+    margin: 0.85rem 0;
+  }
+
+  .form-group input {
+    width: 310px;
+    max-width: 90vw;
+    padding: 0.95rem 1.2rem;
+    border-radius: 30px;
+    border: 1px solid var(--input-border);
+    background: var(--input-bg);
+    backdrop-filter: blur(10px);
+    color: white;
+    font-size: 0.95rem;
+    text-align: center;
+    transition: all 0.3s;
+  }
+
+  .form-group input:focus {
+    outline: none;
+    border-color: var(--gold);
+    box-shadow: 0 0 15px rgba(255,234,0,0.4);
+  }
+
+  .gender-label, .dob-label {
+    text-align: center;
+    font-size: 0.9rem;
+    margin: 1.2rem 0 0.6rem;
+    color: rgba(255,255,255,0.9);
+    font-weight: 600;
+  }
+
+Replace yeah?
+
+.gender-select {
+    display: flex;
+    justify-content: center;
+    gap: 22px;
+    margin: 0.5rem 0 1.5rem;
+  }
+
+  .gender-select button {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    border: 2px solid var(--input-border);
+    background: var(--input-bg);
+    color: white;
+    font-size: 1.4rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+
+  .gender-select button:hover {
+    border-color: var(--gold);
+    transform: scale(1.1);
+  }
+
+  .gender-select button.selected {
+    background: var(--gold);
+    color: black;
+    box-shadow: 0 0 20px rgba(255,234,0,0.6);
+    border-color: var(--gold);
+  }
+
+  #dob {
+    width: 200px;
+    padding: 0.9rem;
+    border-radius: 30px;
+    border: 1px solid var(--input-border);
+    background: var(--input-bg);
+    backdrop-filter: blur(10px);
+    color: white;
+    text-align: center;
+    font-size: 0.95rem;
+  }
+
+  #vipLabel {
+    text-align: center;
+    font-weight: 600;
+    font-size: 1rem;
+    margin: 1.3rem 0 0.4rem;
+    color: #ccc;
+  }
+
+  #vipLabel.on { color: var(--gold); text-shadow: 0 0 10px var(--gold); }
+
+  .vip-toggle {
+    width: 84px; height: 40px;
+    background: #333;
+    border-radius: 50px;
+    position: relative;
+    margin: 0 auto;
+    cursor: pointer;
+    border: 2px solid var(--input-border);
+  }
+
+  .vip-circle {
+    width: 36px; height: 36px;
+    background: #666;
+    border-radius: 50%;
+    position: absolute;
+    left: 2px; top: 2px;
+    transition: 0.4s;
+  }
+
+  .vip-toggle.on .vip-circle {
+    left: 44px;
+    background: var(--gold);
+    box-shadow: 0 0 15px var(--gold);
+  }
+
+  #vipMessage {
+    text-align: center;
+    color: var(--gold);
+    font-size: 0.88rem;
+    opacity: 0;
+    margin-top: 0.6rem;
+    font-weight: 600;
+  }
+
+  #submitBtn {
+    margin: 2rem auto 1.5rem;
+    padding: 0.9rem 2.4rem;
+    width: auto;
+    border: none;
+    border-radius: 50px;
+    background: linear-gradient(135deg, var(--gold), #ffd000);
+    color: black;
+    font-weight: bold;
+    font-size: 1.05rem;
+    cursor: pointer;
+    box-shadow: 0 8px 25px rgba(255,234,0,0.4);
+    transition: all 0.3s;
+  }
+
+  #submitBtn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 30px rgba(255,234,0,0.5);
+  }
+
+#fomoPopup {
+  position: fixed;
+  top: 90px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #111;
+  color: #fff;
+  padding: 1rem 2rem;           /* ← was 0.6rem 1.2rem → now much bigger */
+  border-radius: 50px;          /* ← pill shape, looks premium */
+  font-size: 1.15rem;           /* ← was 0.85rem → now bold & readable */
+  font-weight: 600;
+  opacity: 0;
+  transition: opacity 0.5s, transform 0.6s;
+  pointer-events: none;
+  z-index: 10000;
+  white-space: nowrap;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.6),
+              0 0 30px rgba(255,234,0,0.3);   /* ← subtle gold glow */
+  border: 1px solid rgba(255,234,0,0.3);
+  min-width: 320px;             /* ← forces it to be wide enough on small phones */
+  text-align: center;
+}
+
+#fomoPopup.show { 
+  opacity: 1; 
+  transform: translateX(-50%) translateY(-8px);
+}
+
+  .message { text-align: center; min-height: 20px; margin: 0.5rem 0; font-size: 0.9rem; }
+
+  footer {
+    margin-top: 3rem;
+    text-align: center;
+    font-size: 0.78rem;
+    color: rgba(255,255,255,0.7);
+    line-height: 1.6;
+    padding: 1rem 0;
+  }
+
+  footer a { color: #ccc; text-decoration: none; }
+  footer a:hover { color: var(--gold); }
+</style>
+</head>
+<body>
+
+<div id="fomoPopup">Someone just joined VIP!</div>
+
+<h2>$STRZ</h2>
+
+<div class="description">
+  Exclusive access to the hottest nights, private chats, premium hosts & VIP tables.<br>
+  Join the inner circle — where the real ones move.
+</div>
+
+<div class="form-group"><input id="name" type="text" placeholder="Full Name"></div>
+<div class="form-group"><input id="chatId" type="text" placeholder="Choose Chat Name"></div>
+<div class="form-group"><input id="phone" type="text" placeholder="Phone Number"></div>
+<div class="form-group"><input id="email" type="email" placeholder="Email Address"></div>
+<div class="form-group"><input id="password" type="password" placeholder="Create Password (min 6 chars)"></div>
+
+<div class="gender-label">Select Your Gender</div>
+<div class="gender-select">
+  <button id="femaleBtn">F</button>
+  <button id="maleBtn">M</button>
+</div>
+
+<div class="dob-label">Select Your Birth Date</div>
+<input id="dob" type="date" max="">
+
+<div id="vipLabel">VIP</div>
+<div class="vip-toggle" id="vipToggle"><div class="vip-circle"></div></div>
+<div id="vipMessage">You're in VIP zone, way to go!</div>
+
+<button id="submitBtn">
+  <span class="btn-text">Sign Up</span>
+  <span class="spinner" id="spinner"></span>
+</button>
+
+<div class="message" id="message"></div>
+
+<footer id="footer">
+  <div>©5786 ገብር ነፍስህ (Own Your Vibe)</div>
+  <div>自分の雰囲気を自分のものにしよう • 자신의 분위기를 내 것으로 만들자</div>
+  <div>3-1-1 Nihonbashi, Chuo-ku, Tokyo, Japan</div>
+  <div style="margin-top:8px;">
+    <a href="privacy.html">Privacy Policy</a> •
+    <a href="terms.html">Terms of Service</a>
+  </div>
+</footer>
+
+</body>
+</html>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { 
+  getFirestore, doc, setDoc, getDoc, updateDoc, 
+  query, collection, where, getDocs, arrayUnion, 
+  orderBy, limit, serverTimestamp 
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyD_GjkTox5tum9o4AupO0LeWzjTocJg8RI",
+  authDomain: "dettyverse.firebaseapp.com",
+  projectId: "dettyverse",
+  storageBucket: "dettyverse.firebasestorage.app",
+  messagingSenderId: "1036459652488",
+  appId: "1:1036459652488:web:e8910172ed16e9cac9b63d",
+  measurementId: "G-NX2KWZW85V"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
+
+document.addEventListener('DOMContentLoaded', () => {
+  let isVIP = false;
+  let gender = '';
+  const vipToggle = document.getElementById('vipToggle');
+  const vipLabel = document.getElementById('vipLabel');
+  const vipMessage = document.getElementById('vipMessage');
+  const femaleBtn = document.getElementById('femaleBtn');
+  const maleBtn = document.getElementById('maleBtn');
+  const submitBtn = document.getElementById('submitBtn');
+  const spinner = document.getElementById('spinner');
+  const btnText = submitBtn.querySelector('.btn-text');
+  const messageEl = document.getElementById('message');
+  const nameInput = document.getElementById('name');
+  const chatIdInput = document.getElementById('chatId');
+  const phoneInput = document.getElementById('phone');
+  const emailInput = document.getElementById('email');
+  const passwordInput = document.getElementById('password');
+  const dobInput = document.getElementById('dob');
+  const fomoPopup = document.getElementById('fomoPopup');
+  const urlParams = new URLSearchParams(window.location.search);
+  const referrer = urlParams.get('ref') || null;
+
+  const validEmailSuffixes = ['@gmail.com','@yahoo.com','@icloud.com','@proton.me','@protonmail.com'];
+
+  function cleanChatId(input) { return input.toLowerCase().replace(/[^a-z0-9_]/g, ''); }
+  function isValidEmail(email) { return validEmailSuffixes.some(s => email.endsWith(s)); }
+  function calculateAge(dobStr) {
+    if (!dobStr) return 0;
+    const dob = new Date(dobStr);
+    const diffMs = Date.now() - dob.getTime();
+    const ageDt = new Date(diffMs);
+    return Math.abs(ageDt.getUTCFullYear() - 1970);
+  }
+
+  async function isChatIdTaken(chatId) {
+    const q = query(collection(db, "users"), where("chatIdLower", "==", chatId.toLowerCase()));
+    const snapshot = await getDocs(q);
+    return !snapshot.empty;
+  }
+
+  phoneInput.addEventListener('input', () => { 
+    phoneInput.value = phoneInput.value.replace(/\D/g,''); 
+  });
+
+  femaleBtn.addEventListener('click', () => { 
+    gender = 'Female'; 
+    femaleBtn.classList.add('selected'); 
+    maleBtn.classList.remove('selected'); 
+  });
+  maleBtn.addEventListener('click', () => { 
+    gender = 'Male'; 
+    maleBtn.classList.add('selected'); 
+    femaleBtn.classList.remove('selected'); 
+  });
+
+  vipToggle.addEventListener('click', () => {
+    isVIP = !isVIP;
+    vipToggle.classList.toggle('on', isVIP);
+    vipLabel.classList.toggle('on', isVIP);
+    vipMessage.style.opacity = isVIP ? '1' : '0';
+    if (isVIP) triggerSprayConfetti();
+  });
+
+  const today = new Date();
+  const maxDate = new Date(today.getFullYear()-18, today.getMonth(), today.getDate());
+  dobInput.max = maxDate.toISOString().split('T')[0];
+
+  submitBtn.addEventListener('click', async () => {
+    const fullName = nameInput.value.trim();
+    const chatIdRaw = chatIdInput.value.trim();
+    const chatId = cleanChatId(chatIdRaw);
+    const phone = phoneInput.value.trim();
+    const email = emailInput.value.trim().toLowerCase();
+    const password = passwordInput.value.trim();
+    const dob = dobInput.value;
+
+    if (!fullName || !chatId || !phone || !email || !gender || !dob || !password) {
+      messageEl.textContent = 'Fill all fields.';
+      return;
+    }
+
+    if (password.length < 8 || !/[A-Z]/.test(password) || !/[0-9]/.test(password) || !/[^A-Za-z0-9]/.test(password)) {
+      messageEl.textContent = 'Password: 8+ chars, uppercase, number, symbol.';
+      return;
+    }
+
+    if (calculateAge(dob) < 18) { messageEl.textContent = 'Must be 18+'; return; }
+    if (!isValidEmail(email)) { messageEl.textContent = 'Invalid email domain'; return; }
+    if (chatId.length < 5 || chatId.length > 15) { messageEl.textContent = 'Username 5–15 chars'; return; }
+
+    spinner.style.display = 'inline-block';
+    btnText.style.display = 'none';
+    messageEl.textContent = 'Creating your empire...';
+    submitBtn.disabled = true;
+
+    try {
+      // 1. Create Auth user
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const uid = userCredential.user.uid;
+
+      // 2. Use REAL EMAIL as document ID — NO MORE COMMA HELL
+      const userRef = doc(db, "users", email);  // ← THIS IS THE FIX
+
+      const existingSnap = await getDoc(userRef);
+      const chatTaken = await isChatIdTaken(chatId);
+      if (existingSnap.exists() || chatTaken) {
+        messageEl.textContent = "Email or username taken.";
+        await userCredential.user.delete();
+        return;
+      }
+
+      // 3. Save user data
+      await setDoc(userRef, {
+        uid,
+        fullName,
+        chatId,
+        chatIdLower: chatId.toLowerCase(),
+        email,
+        phone,
+        dob,
+        age: calculateAge(dob),
+        gender,
+        isVIP: !!isVIP,
+        isHost: (gender === 'Female' && !isVIP),
+        stars: 50,
+        cash: 0,
+        country: "Unknown",
+        createdAt: serverTimestamp(),
+        lastUpdated: serverTimestamp()
+      });
+
+      messageEl.textContent = `Welcome ${fullName}! Gifted 50 stars`;
+      if (isVIP) triggerSprayConfetti();
+      setTimeout(() => { window.location.href = "nushop.html"; }, 1500);
+
+    } catch (e) {
+      console.error(e);
+      messageEl.textContent = e.code === "auth/email-already-in-use" 
+        ? "Email already registered" 
+        : "Signup failed. Try again.";
+    } finally {
+      spinner.style.display = 'none';
+      btnText.style.display = 'inline';
+      submitBtn.disabled = false;
+    }
+  });
+});
+</script>
+<script type="module">
