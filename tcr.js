@@ -309,7 +309,7 @@ let refs = {};
 /* ---------- Helpers ---------- */
 const generateGuestName = () => `GUEST ${Math.floor(1000 + Math.random() * 9000)}`;
 const formatNumberWithCommas = n => new Intl.NumberFormat('en-NG').format(n || 0);
-const sanitizeKey = key => key.replace(/[.#$[\]]/g, ',');
+const sanitizeKey = key => key.replace(/[.#$[\]]/g, '_');
 
 function randomColor() {
   const palette = ["#FFD700","#FF69B4","#87CEEB","#90EE90","#FFB6C1","#FFA07A","#8A2BE2","#00BFA6","#F4A460"];
