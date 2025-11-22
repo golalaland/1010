@@ -590,46 +590,37 @@ function triggerBannerEffect(bannerEl) {
   // setTimeout(() => confetti.remove(), 1500);
 }
 
-const NEAR_BOTTOM = 150;
-const SHOW_ARROW_AT = 400;
-let isAtBottom = true;
-let scrollPending = false;
 
-// === Enhanced: Render Messages ===
+// Render messages
 function renderMessagesFromArray(messages) {
   if (!refs.messagesEl) return;
-
   messages.forEach(item => {
-    if (!item.id || document.getElementById(item.id)) return;
+    if (!item.id) return;
+    if (document.getElementById(item.id)) return;
 
     const m = item.data || item;
     const wrapper = document.createElement("div");
     wrapper.className = "msg";
     wrapper.id = item.id;
 
-    // === Banner Message ===
+    // Banner
     if (m.systemBanner || m.isBanner || m.type === "banner") {
       wrapper.classList.add("chat-banner");
-      Object.assign(wrapper.style, {
-        textAlign: "center",
-        padding: "4px 0",
-        margin: "4px 0",
-        borderRadius: "8px",
-        background: m.buzzColor || "linear-gradient(90deg,#ffcc00,#ff33cc)",
-        boxShadow: "0 0 16px rgba(255,255,255,0.3)",
-        position: "relative"
-      });
+      wrapper.style.textAlign = "center";
+      wrapper.style.padding = "4px 0";
+      wrapper.style.margin = "4px 0";
+      wrapper.style.borderRadius = "8px";
+      wrapper.style.background = m.buzzColor || "linear-gradient(90deg,#ffcc00,#ff33cc)";
+      wrapper.style.boxShadow = "0 0 16px rgba(255,255,255,0.3)";
 
       const innerPanel = document.createElement("div");
-      Object.assign(innerPanel.style, {
-        display: "inline-block",
-        padding: "6px 14px",
-        borderRadius: "6px",
-        background: "rgba(255,255,255,0.35)",
-        backdropFilter: "blur(6px)",
-        color: "#000",
-        fontWeight: "700"
-      });
+      innerPanel.style.display = "inline-block";
+      innerPanel.style.padding = "6px 14px";
+      innerPanel.style.borderRadius = "6px";
+      innerPanel.style.background = "rgba(255,255,255,0.35)";
+      innerPanel.style.backdropFilter = "blur(6px)";
+      innerPanel.style.color = "#000";
+      innerPanel.style.fontWeight = "700";
       innerPanel.textContent = m.content || "";
       wrapper.appendChild(innerPanel);
 
@@ -637,25 +628,28 @@ function renderMessagesFromArray(messages) {
 
       if (window.currentUser?.isAdmin) {
         const delBtn = document.createElement("button");
-        delBtn.textContent = "Delete";
+        delBtn.textContent = "🗑";
         delBtn.title = "Delete Banner";
-        delBtn.style.cssText = "position:absolute;right:6px;top:3px;cursor:pointer;";
+        delBtn.style.position = "absolute";
+        delBtn.style.right = "6px";
+        delBtn.style.top = "3px";
+        delBtn.style.cursor = "pointer";
         delBtn.onclick = async () => {
           await deleteDoc(doc(db, "messages", item.id));
           wrapper.remove();
         };
         wrapper.appendChild(delBtn);
       }
-    } 
-    // === Regular Message ===
-    else {
+    } else {
+      // Regular message
       const usernameEl = document.createElement("span");
       usernameEl.className = "meta";
-      usernameEl.innerHTML = `${escapeHtml(m.chatId || "Guest")}:`;
+      usernameEl.innerHTML = `<span class="chat-username" data-username="${m.uid}">${m.chatId || "Guest"}</span>:`;
       usernameEl.style.color = (m.uid && refs.userColors?.[m.uid]) ? refs.userColors[m.uid] : "#fff";
       usernameEl.style.marginRight = "4px";
       wrapper.appendChild(usernameEl);
 
+      // Reply preview
       if (m.replyTo) {
         const replyPreview = document.createElement("div");
         replyPreview.className = "reply-preview";
@@ -692,6 +686,61 @@ function renderMessagesFromArray(messages) {
 
     refs.messagesEl.appendChild(wrapper);
   });
+
+  // Auto-scroll
+  if (!scrollPending) {
+    scrollPending = true;
+    requestAnimationFrame(() => {
+      refs.messagesEl.scrollTop = refs.messagesEl.scrollHeight;
+      scrollPending = false;
+    });
+  }
+}
+
+// Auto-scroll + scroll-to-bottom button
+function handleChatAutoScroll() {
+  if (!refs.messagesEl) return;
+
+  let scrollBtn = document.getElementById("scrollToBottomBtn");
+  if (!scrollBtn) {
+    scrollBtn = document.createElement("div");
+    scrollBtn.id = "scrollToBottomBtn";
+    scrollBtn.textContent = "↓";
+    scrollBtn.style.cssText = `
+      position: fixed;
+      bottom: 90px;
+      right: 20px;
+      padding: 6px 12px;
+      background: rgba(255,20,147,0.9);
+      color: #fff;
+      border-radius: 14px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      opacity: 1;
+      pointer-events: none;
+      transition: all 0.3s ease;
+      z-index: 9999;
+    `;
+    document.body.appendChild(scrollBtn);
+    scrollBtn.addEventListener("click", () => {
+      refs.messagesEl.scrollTo({ top: refs.messagesEl.scrollHeight, behavior: "smooth" });
+      scrollBtn.style.opacity = 0;
+      scrollBtn.style.pointerEvents = "none";
+    });
+  }
+
+  refs.messagesEl.addEventListener("scroll", () => {
+    const distance = refs.messagesEl.scrollHeight - refs.messagesEl.scrollTop - refs.messagesEl.clientHeight;
+    if (distance > 150) {
+      scrollBtn.style.opacity = 1;
+      scrollBtn.style.pointerEvents = "auto";
+    } else {
+      scrollBtn.style.opacity = 1;
+      scrollBtn.style.pointerEvents = "none";
+    }
+  });
+}
 
 
 /* ---------- 🔔 Messages Listener (Final Optimized Version) ---------- */
@@ -1300,61 +1349,39 @@ autoLogin();
 let localPendingMsgs = JSON.parse(localStorage.getItem("localPendingMsgs") || "{}"); 
 // structure: { tempId: { content, uid, chatId, createdAt } }
 
-
-
 /* ----------------------------
    💬 Send Message Handler (Instant + No Double Render)
-   + Enter key + auto-scroll to bottom
 ----------------------------- */
 
+// ✅ Helper: Fully clear reply UI after message send
 function clearReplyAfterSend() {
-  if (typeof cancelReply === "function") cancelReply();
+  if (typeof cancelReply === "function") cancelReply(); // hides reply UI if exists
   currentReplyTarget = null;
   refs.messageInputEl.placeholder = "Type a message...";
 }
 
-/* ---------- SCROLL TO BOTTOM (smooth) ---------- */
-function scrollToBottom(el) {
-  if (!el) return;
-  el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
-}
-
-/* ---------- SEND ON CLICK ---------- */
-refs.sendBtn?.addEventListener("click", sendMessage);
-
-/* ---------- SEND ON ENTER (Shift+Enter = newline) ---------- */
-refs.messageInputEl?.addEventListener("keydown", e => {
-  if (e.key === "Enter" && !e.shiftKey) {
-    e.preventDefault();           // stop newline
-    sendMessage();
-  }
-});
-
-/* ---------- CORE SEND FUNCTION ---------- */
-async function sendMessage() {
+refs.sendBtn?.addEventListener("click", async () => {
   try {
     if (!currentUser) return showStarPopup("Sign in to chat.");
-
     const txt = refs.messageInputEl?.value.trim();
     if (!txt) return showStarPopup("Type a message first.");
-
     if ((currentUser.stars || 0) < SEND_COST)
       return showStarPopup("Not enough stars to send message.");
 
-    /* ---- 1. Deduct stars locally + Firestore ---- */
+    // 💫 Deduct stars locally + in Firestore
     currentUser.stars -= SEND_COST;
     refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
     await updateDoc(doc(db, "users", currentUser.uid), {
       stars: increment(-SEND_COST)
     });
 
-    /* ---- 2. Create local echo (temp message) ---- */
+    // 🕓 Create temp message (local echo)
     const tempId = "temp_" + Date.now();
     const newMsg = {
       content: txt,
       uid: currentUser.uid || "unknown",
       chatId: currentUser.chatId || "anon",
-      timestamp: { toMillis: () => Date.now() },
+      timestamp: { toMillis: () => Date.now() }, // fake for local display
       highlight: false,
       buzzColor: null,
       replyTo: currentReplyTarget?.id || null,
@@ -1362,34 +1389,32 @@ async function sendMessage() {
       tempId
     };
 
-    /* ---- 3. Store temp in localStorage (survives refresh) ---- */
-    const pending = JSON.parse(localStorage.getItem("localPendingMsgs") || "{}");
-    pending[tempId] = { ...newMsg, createdAt: Date.now() };
-    localStorage.setItem("localPendingMsgs", JSON.stringify(pending));
+    // 💾 Store temp message reference locally
+    let localPendingMsgs = JSON.parse(localStorage.getItem("localPendingMsgs") || "{}");
+    localPendingMsgs[tempId] = { ...newMsg, createdAt: Date.now() };
+    localStorage.setItem("localPendingMsgs", JSON.stringify(localPendingMsgs));
 
-    /* ---- 4. Render local echo immediately ---- */
-    renderMessagesFromArray([{ id: tempId, data: newMsg }]); // your existing renderer
-
-    /* ---- 5. Clear input & UI ---- */
+    // 🧹 Reset input instantly
     refs.messageInputEl.value = "";
-    clearReplyAfterSend();
 
-    /* ---- 6. SCROLL TO BOTTOM (right after local echo) ---- */
-    requestAnimationFrame(() => scrollToBottom(refs.messagesEl));
+    scrollToBottom(refs.messagesEl);
 
-    /* ---- 7. Push to Firestore ---- */
+    // 🚀 Send to Firestore
     const msgRef = await addDoc(collection(db, CHAT_COLLECTION), {
       ...newMsg,
-      tempId: null,
+      tempId: null, // remove temp flag for actual Firestore entry
       timestamp: serverTimestamp()
     });
 
-    console.log("Message sent:", msgRef.id);
+    // ✅ Clear reply UI + placeholder after successful send
+    clearReplyAfterSend();
+
+    console.log("✅ Message sent:", msgRef.id);
   } catch (err) {
-    console.error("Message send error:", err);
+    console.error("❌ Message send error:", err);
     showStarPopup("Message failed: " + (err.message || err));
   }
-}
+});
 
   /* ----------------------------
      🚨 BUZZ Message Handler
@@ -2495,54 +2520,61 @@ confirmBtn.onclick = async () => {
 // 💰 $ell Content (Highlight Upload)
 // ================================
 document.getElementById("uploadHighlightBtn").addEventListener("click", async () => {
-  const statusEl = document.getElementById("highlightUploadStatus");
-  statusEl.textContent = "";
-  // 🧍 Wait until user is confirmed
-  if (!currentUser) {
-    statusEl.textContent = "⚠️ Please sign in first!";
-    console.warn("❌ Upload blocked — no currentUser found");
-    return;
-  }
-  // 🧾 Get field values
-  const videoUrl = document.getElementById("highlightVideoInput").value.trim();
-  const title = document.getElementById("highlightTitleInput").value.trim();
-  const desc = document.getElementById("highlightDescInput").value.trim();
-  const price = parseInt(document.getElementById("highlightPriceInput").value.trim() || "0");
-  if (!videoUrl || !title || !price) {
-    statusEl.textContent = "⚠️ Fill in all required fields (URL, title, price)";
-    return;
-  }
-  try {
-    const userId = currentUser.uid;
-    const emailId = (currentUser.email || "").replace(/./g, ",");
-    const chatId = currentUser.chatId || currentUser.displayName || "Anonymous";
-    statusEl.textContent = "⏳ Uploading highlight...";
-    // ✅ Direct upload without thumbnail generation
-    const docRef = await addDoc(collection(db, "highlightVideos"), {
-      uploaderId: userId,
-      uploaderEmail: emailId,
-      uploaderName: chatId,
-      highlightVideo: videoUrl,
-      highlightVideoPrice: price,
-      title,
-      description: desc || "",
-      createdAt: serverTimestamp(),
-    });
-    console.log("✅ Uploaded highlight:", docRef.id);
-    statusEl.textContent = "✅ Highlight uploaded successfully!";
-    setTimeout(() => (statusEl.textContent = ""), 4000);
-    // 🧹 Reset form
-    document.getElementById("highlightVideoInput").value = "";
-    document.getElementById("highlightTitleInput").value = "";
-    document.getElementById("highlightDescInput").value = "";
-    document.getElementById("highlightPriceInput").value = "";
-  } catch (err) {
-    console.error("❌ Error uploading highlight:", err);
-    statusEl.textContent = "⚠️ Failed to upload. Try again.";
-  }
+  const statusEl = document.getElementById("highlightUploadStatus");
+  statusEl.textContent = "";
+
+  // 🧍 Wait until user is confirmed
+  if (!currentUser) {
+    statusEl.textContent = "⚠️ Please sign in first!";
+    console.warn("❌ Upload blocked — no currentUser found");
+    return;
+  }
+
+  // 🧾 Get field values
+  const videoUrl = document.getElementById("highlightVideoInput").value.trim();
+  const title = document.getElementById("highlightTitleInput").value.trim();
+  const desc = document.getElementById("highlightDescInput").value.trim();
+  const price = parseInt(document.getElementById("highlightPriceInput").value.trim() || "0");
+
+  if (!videoUrl || !title || !price) {
+    statusEl.textContent = "⚠️ Fill in all required fields (URL, title, price)";
+    return;
+  }
+
+  try {
+    const userId = currentUser.uid;
+    const emailId = (currentUser.email || "").replace(/\./g, ",");
+    const chatId = currentUser.chatId || currentUser.displayName || "Anonymous";
+
+    statusEl.textContent = "⏳ Uploading highlight...";
+
+    // ✅ Direct upload without thumbnail generation
+    const docRef = await addDoc(collection(db, "highlightVideos"), {
+      uploaderId: userId,
+      uploaderEmail: emailId,
+      uploaderName: chatId,
+      highlightVideo: videoUrl,
+      highlightVideoPrice: price,
+      title,
+      description: desc || "",
+      createdAt: serverTimestamp(),
+    });
+
+    console.log("✅ Uploaded highlight:", docRef.id);
+    statusEl.textContent = "✅ Highlight uploaded successfully!";
+    setTimeout(() => (statusEl.textContent = ""), 4000);
+
+    // 🧹 Reset form
+    document.getElementById("highlightVideoInput").value = "";
+    document.getElementById("highlightTitleInput").value = "";
+    document.getElementById("highlightDescInput").value = "";
+    document.getElementById("highlightPriceInput").value = "";
+
+  } catch (err) {
+    console.error("❌ Error uploading highlight:", err);
+    statusEl.textContent = "⚠️ Failed to upload. Try again.";
+  }
 });
-
-
 
 
   // --- Initial random values for first load ---
@@ -3347,33 +3379,118 @@ await addDoc(notifRef, {
 })();
 
 
-// 🌤️ Dynamic Host Panel Greeting
+/* =======================================
+   Dynamic Host Panel Greeting + Scroll Arrow
+========================================== */
 function capitalizeFirstLetter(str) {
-  if (!str) return "";
-  return str.charAt(0).toUpperCase() + str.slice(1);
+  if (!str) return "Guest";
+  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
 }
 
 function setGreeting() {
-  const chatId = currentUser?.chatId || "Guest";
-  const name = capitalizeFirstLetter(chatId);
-  const hour = new Date().getHours();
-
-  let greeting, emoji;
-  if (hour < 12) {
-    greeting = `Good Morning, ${name}! ☀️`;
-  } else if (hour < 18) {
-    greeting = `Good Afternoon, ${name}! ⛅️`;
-  } else {
-    greeting = `Good Evening, ${name}! 🌙`;
+  if (!currentUser?.chatId) {
+    document.getElementById("hostPanelTitle").textContent = "Host Panel";
+    return;
   }
 
-  document.getElementById("hostPanelTitle").textContent = greeting;
+  const name = capitalizeFirstLetter(currentUser.chatId.replace(/_/g, " "));
+  const hour = new Date().getHours();
+  let greeting;
+
+  if (hour < 12) {
+    greeting = `Good Morning, ${name}!`;
+  } else if (hour < 18) {
+    greeting = `Good Afternoon, ${name}!`;
+  } else {
+    greeting = `Good Evening, ${name}!`;
+  }
+
+  const titleEl = document.getElementById("hostPanelTitle");
+  if (titleEl) titleEl.textContent = greeting;
 }
 
-// Run whenever the modal opens
-hostSettingsBtn.addEventListener("click", () => {
+/* Run greeting when host panel opens */
+document.getElementById("hostSettingsBtn")?.addEventListener("click", () => {
   setGreeting();
 });
+
+/* =======================================
+   Scroll to Bottom Arrow (Smart & Smooth)
+========================================== */
+const scrollArrow = document.getElementById("scrollArrow");
+const chatContainer = document.getElementById("chatContainer") || document.getElementById("messages");
+
+if (scrollArrow && chatContainer) {
+  let fadeTimeout = null;
+
+  function showArrow() {
+    scrollArrow.classList.add("show");
+    if (fadeTimeout) clearTimeout(fadeTimeout);
+    fadeTimeout = setTimeout(() => {
+      scrollArrow.classList.remove("show");
+    }, 3000);
+  }
+
+  function checkScroll() {
+    const distanceFromBottom = chatContainer.scrollHeight - chatContainer.scrollTop - chatContainer.clientHeight;
+
+    if (distanceFromBottom > 300) {
+      showArrow();
+    } else {
+      scrollArrow.classList.remove("show");
+    }
+  }
+
+  // Listen to scroll
+  chatContainer.addEventListener("scroll", checkScroll);
+
+  // Click to scroll down
+  scrollArrow.addEventListener("click", () => {
+    chatContainer.scrollTo({
+      top: chatContainer.scrollHeight,
+      behavior: "smooth"
+    });
+  });
+
+  // Initial check
+  setTimeout(checkScroll, 1000);
+
+  // Re-check when new messages come in
+  const observer = new MutationObserver(checkScroll);
+  observer.observe(chatContainer, { childList: true, subtree: true });
+}
+
+
+const scrollArrow = document.getElementById('scrollArrow');
+  const chatContainer = document.querySelector('#chatContainer'); // your chat wrapper
+  let fadeTimeout;
+
+  function showArrow() {
+    scrollArrow.classList.add('show');
+    if (fadeTimeout) clearTimeout(fadeTimeout);
+    fadeTimeout = setTimeout(() => {
+      scrollArrow.classList.remove('show');
+    }, 2000); // disappears after 2 seconds
+  }
+
+  function checkScroll() {
+    const distanceFromBottom = chatContainer.scrollHeight - chatContainer.scrollTop - chatContainer.clientHeight;
+    if (distanceFromBottom > 200) { // threshold for showing arrow
+      showArrow();
+    }
+  }
+
+  chatContainer.addEventListener('scroll', checkScroll);
+
+  scrollArrow.addEventListener('click', () => {
+    chatContainer.scrollTo({
+      top: chatContainer.scrollHeight,
+      behavior: 'smooth'
+    });
+  });
+  
+checkScroll(); // initial check
+}); // ✅ closes DOMContentLoaded event listener
 
 
 /* ---------- Highlights Button ---------- */
@@ -3438,26 +3555,38 @@ function showHighlightsModal(videos) {
     zIndex: "999999",
     overflowY: "auto",
     padding: "20px",
-    boxSizing: "border-box"
+    boxSizing: "border-box",
+    fontFamily: "system-ui, sans-serif"
   });
 
-  // Sticky intro
+  // === STICKY INTRO (Your Size, My Glow) ===
   const intro = document.createElement("div");
   intro.innerHTML = `
     <div style="text-align:center;color:#ccc;max-width:640px;margin:0 auto;line-height:1.6;font-size:14px;
-      background:rgba(255,255,255,0.06);padding:14px 20px;border-radius:10px;backdrop-filter:blur(5px);
-      box-shadow:0 0 12px rgba(255,255,255,0.08);">
-      <p style="margin:0;">🎬 <b>Highlights</b> are exclusive creator moments.<br>
-      Unlock premium clips with ⭐ Stars to support your favorite creators.</p>
+      background:linear-gradient(135deg,rgba(255,0,110,0.12),rgba(255,100,0,0.08));
+            padding:14px 48px 14px 20px;  /* right padding for X */
+      border:1px solid rgba(255,0,110,0.3);box-shadow:0 0 16px rgba(255,0,110,0.15);">
+      <p style="margin:0;">
+        <span style="background:linear-gradient(90deg,#ff006e,#ff8c00);-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-weight:700;">
+          Highlights
+        </span> 🎬 are exclusive creator moments.<br>
+        Unlock premium clips with ⭐ Stars to support your favorite creators.
+      </p>
     </div>`;
-  Object.assign(intro.style, { position: "sticky", top: "10px", zIndex: "1001", marginBottom: "12px", transition: "opacity 0.3s ease" });
+  Object.assign(intro.style, {
+    position: "sticky",
+    top: "10px",
+    zIndex: "1001",
+    marginBottom: "12px",
+    transition: "opacity 0.3s ease"
+  });
   modal.appendChild(intro);
 
   modal.addEventListener("scroll", () => {
     intro.style.opacity = modal.scrollTop > 50 ? "0.7" : "1";
   });
 
-  // Search + toggle container (vertical stack)
+  // === SEARCH + TOGGLE (Your Exact Layout & Sizes) ===
   const searchWrap = document.createElement("div");
   Object.assign(searchWrap.style, {
     position: "sticky",
@@ -3470,27 +3599,53 @@ function showHighlightsModal(videos) {
     gap: "6px"
   });
 
-  // Search input
+  // Search Input (280px)
   const searchInputWrap = document.createElement("div");
   searchInputWrap.style.cssText = `
-    display:flex;
-    align-items:center;
-    background:rgba(255,255,255,0.08);
-    border-radius:30px;
-    padding:8px 14px;
-    width:280px;
-    backdrop-filter:blur(6px);
-    box-shadow:0 0 10px rgba(0,0,0,0.25);
+    display:flex;align-items:center;
+    background:linear-gradient(135deg,rgba(255,255,255,0.08),rgba(255,255,255,0.04));
+    border:1px solid rgba(255,0,110,0.3);
+    border-radius:30px;padding:8px 14px;width:280px;
+    backdrop-filter:blur(8px);box-shadow:0 0 12px rgba(255,0,110,0.15);
   `;
   searchInputWrap.innerHTML = `
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M15 15L21 21M10 17C6.13401 17 3 13.866 3 10C3 6.13401 6.13401 3 10 3C13.866 3 17 6.13401 17 10C17 13.866 13.866 17 10 17Z" stroke="#999999" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M15 15L21 21M10 17C6.13401 17 3 13.866 3 10C3 6.13401 6.13401 3 10 3C13.866 3 17 6.13401 17 10C17 13.866 13.866 17 10 17Z" 
+            stroke="url(#gradSearch)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      <defs><linearGradient id="gradSearch" x1="3" y1="3" x2="21" y2="21"><stop stop-color="#ff006e"/><stop offset="1" stop-color="#ff8c00"/></linearGradient></defs>
     </svg>
-    <input id="highlightSearchInput" type="text" placeholder="Search by creator..." style="flex:1;background:transparent;border:none;outline:none;color:#fff;font-size:13px;letter-spacing:0.3px;"/>
+    <input id="highlightSearchInput" type="text" placeholder="Search by creator..." 
+           style="flex:1;background:transparent;border:none;outline:none;color:#fff;font-size:13px;letter-spacing:0.3px;"/>
   `;
   searchWrap.appendChild(searchInputWrap);
-  
-  
+
+  // Toggle Button
+  const toggleBtn = document.createElement("button");
+  toggleBtn.id = "toggleLocked";
+  toggleBtn.textContent = "Show Unlocked";
+  Object.assign(toggleBtn.style, {
+    padding: "4px 10px",
+    borderRadius: "6px",
+    background: "linear-gradient(135deg, #333, #222)",
+    color: "#fff",
+    border: "1px solid rgba(255,0,110,0.3)",
+    fontSize: "12px",
+    cursor: "pointer",
+    fontWeight: "600",
+    transition: "all 0.2s",
+    boxShadow: "0 2px 8px rgba(0,0,0,0.3)"
+  });
+  toggleBtn.onmouseenter = () => {
+    toggleBtn.style.background = "linear-gradient(135deg, #ff006e, #ff8c00)";
+    toggleBtn.style.transform = "translateY(-1px)";
+  };
+  toggleBtn.onmouseleave = () => {
+    toggleBtn.style.background = "linear-gradient(135deg, #333, #222)";
+    toggleBtn.style.transform = "translateY(0)";
+  };
+  searchWrap.appendChild(toggleBtn);
+  modal.appendChild(searchWrap);
+
   // === DOPE X BUTTON — NO PAD, OG EFFECT, INSIDE PANEL ===
   const closeBtn = document.createElement("div");
   closeBtn.innerHTML = `
@@ -3544,170 +3699,125 @@ function showHighlightsModal(videos) {
 
   let unlockedVideos = JSON.parse(localStorage.getItem("userUnlockedVideos") || "[]");
   let showUnlockedOnly = false;
-function renderCards(videosToRender) {
-  content.innerHTML = "";
-  const filtered = videosToRender.filter(v => !showUnlockedOnly || unlockedVideos.includes(v.id));
 
-  filtered.forEach(video => {
-    const isUnlocked = unlockedVideos.includes(video.id);
+  function renderCards(videosToRender) {
+    content.innerHTML = "";
+    const filtered = videosToRender.filter(v => !showUnlockedOnly || unlockedVideos.includes(v.id));
 
-    const card = document.createElement("div");
-    Object.assign(card.style, {
-      minWidth: "230px", maxWidth: "230px", background: "#1b1b1b", borderRadius: "12px",
-      overflow: "hidden", display: "flex", flexDirection: "column", justifyContent: "space-between",
-      cursor: "pointer", flexShrink: 0, boxShadow: "0 4px 16px rgba(255,0,110,0.15)",
-      transition: "transform 0.3s ease, box-shadow 0.3s ease", border: "1px solid rgba(255,0,110,0.2)"
-    });
-    card.onmouseenter = () => {
-      card.style.transform = "scale(1.03)";
-      card.style.boxShadow = "0 8px 24px rgba(255,0,110,0.3)";
-    };
-    card.onmouseleave = () => {
-      card.style.transform = "scale(1)";
-      card.style.boxShadow = "0 4px 16px rgba(255,0,110,0.15)";
-    };
-    card.classList.add("videoCard");
-    card.setAttribute("data-uploader", video.uploaderName || "Anonymous");
-    card.setAttribute("data-title", video.title || "");
+    filtered.forEach(video => {
+      const isUnlocked = unlockedVideos.includes(video.id);
 
-    // === VIDEO CONTAINER ===
-    const videoContainer = document.createElement("div");
-    Object.assign(videoContainer.style, { height: "320px", overflow: "hidden", position: "relative" });
-
-        // === UPGRADED VIDEO ELEMENT (AUTOPLAY UNLOCKED + EARLY LOAD) ===
-    const videoEl = document.createElement("video");
-    
-    // Unlocked → full video + sound | Locked → preview or full but blurred
-    videoEl.src = isUnlocked ? video.highlightVideo : (video.previewClip || video.highlightVideo);
-    
-    videoEl.loop = true;
-    videoEl.playsInline = true;
-    videoEl.muted = !isUnlocked;  // Sound ON only for unlocked
-    videoEl.volume = 0.6;
-    
-    // Critical: unlocked videos load fully ASAP
-    videoEl.preload = isUnlocked ? "auto" : "metadata";
-    
-    // Autoplay unlocked videos immediately when card is visible
-    if (isUnlocked) {
-      videoEl.autoplay = true;
-    }
-    
-    videoEl.poster = video.thumbnail || `https://image-thumbnails-service/?video=${encodeURIComponent(video.highlightVideo)}&blur=10`;
-    
-    videoEl.style.cssText = `
-      width:100%; height:100%; object-fit:cover;
-      filter: ${isUnlocked ? 'none' : 'blur(6px)'};
-      transition: filter 0.5s ease;
-      background: #000;
-    `;
-
-    // === LOCK OVERLAY (only for locked) ===
-    if (!isUnlocked) {
-      const lock = document.createElement("div");
-      lock.innerHTML = `
-        <div style="position:absolute;inset:0;background:linear-gradient(135deg,rgba(0,0,0,0.65),rgba(255,0,110,0.25));
-                    display:flex;align-items:center;justify-content:center;z-index:2;opacity:1;transition:opacity 0.4s;">
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M12 2C9.2 2 7 4.2 7 7V11H6C4.9 11 4 11.9 4 13V20C4 21.1 4.9 22 6 22H18C19.1 22 20 21.1 20 20V13C20 11.9 19.1 11 18 11H17V7C17 4.2 14.8 2 12 2ZM12 4C13.7 4 15 5.3 15 7V11H9V7C9 5.3 10.3 4 12 4Z" fill="#ff006e"/>
-          </svg>
-        </div>`;
-      videoContainer.appendChild(lock);
-    }
-
-    videoContainer.appendChild(videoEl);
-
-    // === PLAYBACK LOGIC (only hover preview for locked) ===
-    if (!isUnlocked) {
-      // Locked → play blurred preview only on hover
-      videoContainer.onmouseenter = () => videoEl.play().catch(() => {});
-      videoContainer.onmouseleave = () => {
-        videoEl.pause();
-        videoEl.currentTime = 0;
+      const card = document.createElement("div");
+      Object.assign(card.style, {
+        minWidth: "230px", maxWidth: "230px", background: "#1b1b1b", borderRadius: "12px",
+        overflow: "hidden", display: "flex", flexDirection: "column", justifyContent: "space-between",
+        cursor: "pointer", flexShrink: 0, boxShadow: "0 4px 16px rgba(255,0,110,0.15)",
+        transition: "transform 0.3s ease, box-shadow 0.3s ease", border: "1px solid rgba(255,0,110,0.2)"
+      });
+      card.onmouseenter = () => {
+        card.style.transform = "scale(1.03)";
+        card.style.boxShadow = "0 8px 24px rgba(255,0,110,0.3)";
       };
-    }
-    // Unlocked → autoplay already handled above, no hover needed
+      card.onmouseleave = () => {
+        card.style.transform = "scale(1)";
+        card.style.boxShadow = "0 4px 16px rgba(255,0,110,0.15)";
+      };
+      card.classList.add("videoCard");
+      card.setAttribute("data-uploader", video.uploaderName || "Anonymous");
+      card.setAttribute("data-title", video.title || "");
 
-    // === CLICK ANYWHERE ON CARD → FULLSCREEN (both locked/unlocked) ===
-    videoContainer.onclick = (e) => {
-      e.stopPropagation();
-      if (isUnlocked) {
-        playFullVideo(video);
-      } else {
-        showUnlockConfirm(video, () => {
-          unlockedVideos = JSON.parse(localStorage.getItem("userUnlockedVideos") || "[]");
-          renderCards(videos);
-        });
+      const videoContainer = document.createElement("div");
+      Object.assign(videoContainer.style, { height: "320px", overflow: "hidden", position: "relative" });
+
+      const videoEl = document.createElement("video");
+      videoEl.src = video.previewClip || video.highlightVideo;
+      videoEl.muted = true; videoEl.controls = false; videoEl.loop = true; videoEl.preload = "metadata";
+      videoEl.poster = video.thumbnail || `https://image-thumbnails-service/?video=${encodeURIComponent(video.highlightVideo)}&blur=10`;
+      videoEl.style.cssText = `
+        width:100%;height:100%;object-fit:cover;
+        filter: ${isUnlocked ? 'none' : "blur(6px)"};
+        transition: filter 0.4s ease;
+      `;
+
+      if (!isUnlocked) {
+        const lock = document.createElement("div");
+        lock.innerHTML = `
+          <div style="position:absolute;inset:0;background:linear-gradient(135deg,rgba(0,0,0,0.65),rgba(255,0,110,0.25));
+                      display:flex;align-items:center;justify-content:center;z-index:2;">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 2C9.2 2 7 4.2 7 7V11H6C4.9 11 4 11.9 4 13V20C4 21.1 4.9 22 6 22H18C19.1 22 20 21.1 20 20V13C20 11.9 19.1 11 18 11H17V7C17 4.2 14.8 2 12 2ZM12 4C13.7 4 15 5.3 15 7V11H9V7C9 5.3 10.3 4 12 4Z" fill="#ff006e"/>
+            </svg>
+          </div>`;
+        videoContainer.appendChild(lock);
       }
-    };
 
-    // === CLICK TO UNLOCK / PLAY ===
-    videoContainer.onclick = (e) => {
-      e.stopPropagation();
-      if (isUnlocked) {
-        playFullVideo(video);
-      } else {
-        showUnlockConfirm(video, () => {
-          unlockedVideos = JSON.parse(localStorage.getItem("userUnlockedVideos") || "[]");
-          renderCards(videos);
-        });
+      videoContainer.appendChild(videoEl);
+
+      if (!isUnlocked) {
+        videoContainer.onmouseenter = () => videoEl.play().catch(() => {});
+        videoContainer.onmouseleave = () => { videoEl.pause(); videoEl.currentTime = 0; };
       }
-    };
 
-    // === INFO PANEL ===
-    const infoPanel = document.createElement("div");
-    Object.assign(infoPanel.style, {
-      background: "#111", padding: "10px", display: "flex", flexDirection: "column", textAlign: "left", gap: "4px"
-    });
-
-    const vidTitle = document.createElement("div");
-    vidTitle.textContent = video.title || "Untitled";
-    Object.assign(vidTitle.style, { fontWeight: "700", color: "#fff", fontSize: "14px" });
-
-    const uploader = document.createElement("div");
-    uploader.textContent = `By: ${video.uploaderName || "Anonymous"}`;
-    Object.assign(uploader.style, { fontSize: "12px", color: "#ff006e" });
-
-    const unlockBtn = document.createElement("button");
-    unlockBtn.textContent = isUnlocked ? "Unlocked" : `Unlock ${video.highlightVideoPrice || 100} ⭐`;
-    Object.assign(unlockBtn.style, {
-      background: isUnlocked ? "#333" : "linear-gradient(135deg, #ff006e, #ff4500)",
-      border: "none",
-      borderRadius: "6px",
-      padding: "8px 0",
-      fontWeight: "600",
-      color: "#fff",
-      cursor: isUnlocked ? "default" : "pointer",
-      transition: "all 0.2s",
-      fontSize: "13px",
-      boxShadow: isUnlocked ? "inset 0 2px 6px rgba(0,0,0,0.3)" : "0 3px 10px rgba(255,0,110,0.3)"
-    });
-
-    if (!isUnlocked) {
-      unlockBtn.onmouseenter = () => {
-        unlockBtn.style.background = "linear-gradient(135deg, #ff3385, #ff6600)";
-        unlockBtn.style.transform = "translateY(-1px)";
-      };
-      unlockBtn.onmouseleave = () => {
-        unlockBtn.style.background = "linear-gradient(135deg, #ff006e, #ff4500)";
-        unlockBtn.style.transform = "translateY(0)";
-      };
-      unlockBtn.onclick = (e) => {
+      videoContainer.onclick = (e) => {
         e.stopPropagation();
-        showUnlockConfirm(video, () => {
-          unlockedVideos = JSON.parse(localStorage.getItem("userUnlockedVideos") || "[]");
-          renderCards(videos);
-        });
+        if (isUnlocked) playFullVideo(video);
+        else showUnlockConfirm(video, () => renderCards(videos));
       };
-    } else {
-      unlockBtn.disabled = true;
-    }
 
-    infoPanel.append(vidTitle, uploader, unlockBtn);
-    card.append(videoContainer, infoPanel);
-    content.appendChild(card);
-  });
-}
+      const infoPanel = document.createElement("div");
+      Object.assign(infoPanel.style, {
+        background: "#111", padding: "10px", display: "flex", flexDirection: "column", textAlign: "left", gap: "4px"
+      });
+
+      const vidTitle = document.createElement("div");
+      vidTitle.textContent = video.title || "Untitled";
+      Object.assign(vidTitle.style, { fontWeight: "700", color: "#fff", fontSize: "14px" });
+
+      const uploader = document.createElement("div");
+      uploader.textContent = `By: ${video.uploaderName || "Anonymous"}`;
+      Object.assign(uploader.style, { fontSize: "12px", color: "#ff006e" });
+
+      const unlockBtn = document.createElement("button");
+      unlockBtn.textContent = isUnlocked ? "Unlocked" : `Unlock ${video.highlightVideoPrice || 100} ⭐`;
+      Object.assign(unlockBtn.style, {
+        background: isUnlocked ? "#333" : "linear-gradient(135deg, #ff006e, #ff4500)",
+        border: "none",
+        borderRadius: "6px",
+        padding: "8px 0",
+        fontWeight: "600",
+        color: "#fff",
+        cursor: isUnlocked ? "default" : "pointer",
+        transition: "all 0.2s",
+        fontSize: "13px",
+        boxShadow: isUnlocked ? "inset 0 2px 6px rgba(0,0,0,0.3)" : "0 3px 10px rgba(255,0,110,0.3)"
+      });
+
+      if (!isUnlocked) {
+        unlockBtn.onmouseenter = () => {
+          unlockBtn.style.background = "linear-gradient(135deg, #ff3385, #ff6600)";
+          unlockBtn.style.transform = "translateY(-1px)";
+        };
+        unlockBtn.onmouseleave = () => {
+          unlockBtn.style.background = "linear-gradient(135deg, #ff006e, #ff4500)";
+          unlockBtn.style.transform = "translateY(0)";
+        };
+        unlockBtn.onclick = (e) => {
+          e.stopPropagation();
+          showUnlockConfirm(video, () => {
+            unlockedVideos = JSON.parse(localStorage.getItem("userUnlockedVideos") || "[]");
+            renderCards(videos);
+          });
+        };
+      } else {
+        unlockBtn.disabled = true;
+      }
+
+      infoPanel.append(vidTitle, uploader, unlockBtn);
+      card.append(videoContainer, infoPanel);
+      content.appendChild(card);
+    });
+  }
+
   renderCards(videos);
 
   // Search & Toggle
@@ -3864,255 +3974,3 @@ function playFullVideo(video) {
   modal.onclick = () => modal.remove();
   document.body.appendChild(modal);
 }
-
-function notifyNewContent(buttonId) {
-  const btn = document.getElementById(buttonId) || document.querySelector(buttonId);
-  if (!btn) return;
-
-  btn.classList.remove("glow-pulse");
-  void btn.offsetWidth; // force reflow
-  btn.classList.add("glow-pulse");
-
-  // Auto-remove after 6 seconds so it can trigger again
-  setTimeout(() => btn.classList.remove("glow-pulse"), 6000);
-}
-
-// Usage examples:
-notifyNewContent("#topBallersBtn");    // new airdrop or winner
-notifyNewContent("#openHostsBtn");     // new host online
-notifyNewContent("#highlightsBtn");    // new highlight clip
-
-document.getElementById("topBallersBtn").onclick = () => {
-  showStrzAirdropModal();
-  notifyNewContent("#topBallersBtn"); // glow again when reopened
-};
-
-function showStrzAirdropModal() {
-  // Remove old
-  document.getElementById("strzAirdropModal")?.remove();
-
-  const modal = document.createElement("div");
-  modal.id = "strzAirdropModal";
-  modal.style.cssText = `
-    position:fixed;inset:0;background:rgba(0,0,0,0.94);
-    backdrop-filter:blur(12px);display:flex;align-items:center;
-    justify-content:center;z-index:999999;font-family:Poppins,sans-serif;
-  `;
-
-  modal.innerHTML = `
-    <div style="background:linear-gradient(135deg,#111,#1a0033);padding:24px 20px;
-                 border-radius:20px;max-width:340px;width:90%;text-align:center;
-                 border:2px solid #333;position:relative;overflow:hidden;">
-      
-      <!-- Animated conic border -->
-      <div style="position:absolute;inset:-4px;border-radius:22px;
-                  background:conic-gradient(from 0deg,#ffd700,#ff00ff,#00ffff,#ffd700);
-                  animation:spin 5s linear infinite;z-index:-1;opacity:0.8;"></div>
-
-      <button onclick="this.parentElement.parentElement.parentElement.remove()"
-              style="position:absolute;top:8px;right:12px;background:none;border:none;
-                     color:#fff;font-size:28px;cursor:pointer;">×</button>
-
-      <h2 style="margin:0 0 16px;font-size:20px;background:linear-gradient(90deg,#ffd700,#ff00ff);
-                 -webkit-background-clip:text;-webkit-text-fill-color:transparent;">
-        $STRZ TOKEN AIRDROP
-      </h2>
-
-      <div id="airdropCountdown" style="font-size:52px;font-weight:900;margin:20px 0;
-           background:linear-gradient(90deg,#00ffff,#ff00ff);
-           -webkit-background-clip:text;-webkit-text-fill-color:transparent;">
-        09:59
-      </div>
-
-      <button id="claimFreeStars" style="width:88%;padding:16px;border:none;border-radius:50px;
-               background:linear-gradient(90deg,#ffd700,#ff0066);color:#000;font-weight:900;
-               font-size:18px;cursor:pointer;margin:10px 0;
-               box-shadow:0 8px 25px rgba(255,215,0,0.4);">
-        CLAIM 500 ⭐️ FREE
-      </button>
-
-      <div style="font-size:13px;opacity:0.8;margin-top:12px;">
-        Every 30 mins → Random match winner gets <b>1000 ⭐️</b>
-      </div>
-    </div>
-  `;
-
-  document.body.appendChild(modal);
-
-  // 10-minute countdown
-  let seconds = 599;
-  const cd = modal.querySelector("#airdropCountdown");
-  const claimBtn = modal.querySelector("#claimFreeStars");
-
-  const timer = setInterval(() => {
-    seconds--;
-    const m = String(Math.floor(seconds/60)).padStart(2,'0');
-    const s = String(seconds%60).padStart(2,'0');
-    cd.textContent = `${m}:${s}`;
-
-    if (seconds <= 0) {
-      clearInterval(timer);
-      cd.textContent = "LIVE!";
-      claimBtn.textContent = "CLAIM NOW";
-      claimBtn.style.background = "linear-gradient(90deg,#ff0000,#ffff00)";
-      notifyNewContent("#topBallersBtn");
-    }
-  }, 1000);
-
-  // Claim logic
-  claimBtn.onclick = () => {
-    if (seconds > 0) return showToast("Wait for countdown!");
-    
-    currentUser.stars += 500;
-    updateStarDisplay();
-    showToast("500 ⭐️ CLAIMED! Keep ballin'");
-    modal.remove();
-  };
-
-  // Close on backdrop
-  modal.onclick = (e) => e.target === modal && modal.remove();
-
-  // Add rotating border animation
-  const style = document.createElement("style");
-  style.textContent = `@keyframes spin { from { transform:rotate(0deg) } to { transform:rotate(360deg) } }`;
-  document.head.appendChild(style);
-}
-
-
-/* ===============================
-   FULLY WORKING: Auto-Scroll + "New" Button + Center Arrow
-   100% for @doctortantra
-================================= */
-
-// === 1. Wait for DOM ===
-document.addEventListener("DOMContentLoaded", () => {
-  const messagesEl = document.getElementById("messages");
-  if (!messagesEl) {
-    console.error("ERROR: #messages not found!");
-    return;
-  }
-
-  // === 2. Set refs (if not already) ===
-  if (!window.refs) window.refs = {};
-  window.refs.messagesEl = messagesEl;
-
-  // === 3. Config ===
-  const NEAR_BOTTOM = 150;
-  const SHOW_ARROW_AT = 400;
-  let isAtBottom = true;
-  let scrollPending = false;
-
-  // === 4. Create "New" Button ===
-  let scrollBtn = document.getElementById("scrollToBottomBtn");
-  if (!scrollBtn) {
-    scrollBtn = document.createElement("div");
-    scrollBtn.id = "scrollToBottomBtn";
-    scrollBtn.textContent = "New";
-    scrollBtn.style.cssText = `
-      position: fixed; bottom: 90px; right: 20px;
-      background: #ff1493; color: white; font-weight: bold;
-      padding: 10px 18px; border-radius: 25px; font-size: 14px;
-      cursor: pointer; z-index: 9999; box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-      opacity: 0; pointer-events: none; transition: all 0.3s ease;
-    `;
-    document.body.appendChild(scrollBtn);
-  }
-
-  // === 5. Create Center Arrow ===
-  let centerArrow = document.getElementById("centerScrollArrow");
-  if (!centerArrow) {
-    centerArrow = document.createElement("div");
-    centerArrow.id = "centerScrollArrow";
-    centerArrow.innerHTML = `
-      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3">
-        <path d="M12 19V5M5 12l7 7 7-7"/>
-      </svg>
-    `;
-    centerArrow.style.cssText = `
-      position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
-      width: 60px; height: 60px; background: rgba(0,0,0,0.8); color: white;
-      border-radius: 50%; display: flex; align-items: center; justify-content: center;
-      cursor: pointer; z-index: 100; opacity: 0; pointer-events: none;
-      transition: opacity 0.3s ease; backdrop-filter: blur(8px);
-      border: 2px solid rgba(255,255,255,0.2); animation: bounce 1.8s infinite;
-    `;
-    messagesEl.style.position = "relative";
-    messagesEl.appendChild(centerArrow);
-  }
-
-  // === 6. Scroll to bottom ===
-  const scrollToBottom = () => {
-    messagesEl.scrollTo({ top: messagesEl.scrollHeight, behavior: "smooth" });
-    scrollBtn.style.opacity = 0;
-    scrollBtn.style.pointerEvents = "none";
-    centerArrow.style.opacity = 0;
-    centerArrow.style.pointerEvents = "none";
-  };
-
-  // === 7. Click handlers ===
-  scrollBtn.onclick = scrollToBottom;
-  centerArrow.onclick = scrollToBottom;
-
-  // === 8. Scroll listener ===
-  messagesEl.addEventListener("scroll", () => {
-    const distance = messagesEl.scrollHeight - messagesEl.scrollTop - messagesEl.clientHeight;
-    const wasAtBottom = isAtBottom;
-    isAtBottom = distance <= NEAR_BOTTOM;
-
-    // Show "New" button
-    if (distance > NEAR_BOTTOM) {
-      scrollBtn.style.opacity = 1;
-      scrollBtn.style.pointerEvents = "auto";
-    } else {
-      scrollBtn.style.opacity = 0;
-      scrollBtn.style.pointerEvents = "none";
-    }
-
-    // Show center arrow
-    if (distance > SHOW_ARROW_AT) {
-      centerArrow.style.opacity = 1;
-      centerArrow.style.pointerEvents = "auto";
-    } else {
-      centerArrow.style.opacity = 0;
-      centerArrow.style.pointerEvents = "none";
-    }
-  });
-
-  // === 9. Update renderMessagesFromArray (auto-scroll only if near bottom) ===
-  const originalRender = window.renderMessagesFromArray;
-  window.renderMessagesFromArray = function(messages) {
-    originalRender?.(messages);
-
-    if (isAtBottom && !scrollPending) {
-      scrollPending = true;
-      requestAnimationFrame(() => {
-        messagesEl.scrollTop = messagesEl.scrollHeight;
-        scrollPending = false;
-      });
-    }
-  };
-
-  // === 10. Add bounce animation ===
-  if (!document.getElementById("scroll-bounce-style")) {
-    const style = document.createElement("style");
-    style.id = "scroll-bounce-style";
-    style.textContent = `
-      @keyframes bounce {
-        0%, 100% { transform: translate(-50%, -50%) translateY(0); }
-        50% { transform: translate(-50%, -50%) translateY(-10px); }
-      }
-    `;
-    document.head.appendChild(style);
-  }
-
-  // === 11. FORCE TEST: Add dummy message after 2s ===
-  setTimeout(() => {
-    const test = document.createElement("div");
-    test.className = "msg";
-    test.innerHTML = `<span class="meta">System</span> <span class="content">Scroll test active! Scroll up to see button + arrow</span>`;
-    messagesEl.appendChild(test);
-    console.log("TEST MESSAGE ADDED — SCROLL UP NOW");
-  }, 2000);
-
-  console.log("Chat scroll system LOADED @doctortantra");
-});
