@@ -1730,14 +1730,6 @@ let hosts = [];
 let currentIndex = 0;
 
 
-/* ============================================================= */
-/*                  FEATURED HOSTS SYSTEM – FULL REWRITE         */
-/*          UID-Based • Performant • Beautiful • Secure          */
-/* ============================================================= */
-
-let hosts = [];
-let currentIndex = 0;
-
 // ──────────────────────────────────────────────────────────────────
 // 1. Listen to featuredHosts + merge with real user doc (UID-based)
 // ──────────────────────────────────────────────────────────────────
