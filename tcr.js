@@ -1545,30 +1545,35 @@ let localPendingMsgs = JSON.parse(localStorage.getItem("localPendingMsgs") || "{
 autoLogin();
 
   
-/* SEND MESSAGE + BUZZ — FINAL FIXED VERSION */
+/* ----------------------------
+   Send Message Handler (Instant + No Double Render)
+----------------------------- */
+// Helper: Fully clear reply UI after message send
 function clearReplyAfterSend() {
-  if (typeof cancelReply === "function") cancelReply();
+  if (typeof cancelReply === "function") cancelReply(); // hides reply UI if exists
   currentReplyTarget = null;
   refs.messageInputEl.placeholder = "Type a message...";
 }
 
-/* SEND REGULAR MESSAGE */
 refs.sendBtn?.addEventListener("click", async () => {
   try {
     if (!currentUser?.uid) return showStarPopup("Sign in to chat.");
 
     const txt = refs.messageInputEl?.value.trim();
     if (!txt) return showStarPopup("Type a message first.");
-    if ((currentUser.stars || 0) < SEND_COST) return showStarPopup("Not enough stars to send message.");
+    if ((currentUser.stars || 0) < SEND_COST)
+      return showStarPopup("Not enough stars to send message.");
 
-    // Deduct stars
+    // Deduct stars locally + in Firestore
     currentUser.stars -= SEND_COST;
     refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
-    await updateDoc(doc(db, "users", currentUser.uid), { stars: increment(-SEND_COST) });
+    await updateDoc(doc(db, "users", currentUser.uid), {
+      stars: increment(-SEND_COST)
+    });
 
-    // Local echo
+    // Create temp message (local echo)
     const tempId = "temp_" + Date.now();
-    const tempMsg = {
+    const newMsg = {
       content: txt,
       uid: currentUser.uid,
       chatId: currentUser.chatId || "VIP",
@@ -1580,85 +1585,78 @@ refs.sendBtn?.addEventListener("click", async () => {
       tempId
     };
 
-    // Save locally
-    const pending = JSON.parse(localStorage.getItem("localPendingMsgs") || "{}");
-    pending[tempId] = { ...tempMsg, createdAt: Date.now() };
-    localStorage.setItem("localPendingMsgs", JSON.stringify(pending));
+    // Store temp message locally
+    let localPendingMsgs = JSON.parse(localStorage.getItem("localPendingMsgs") || "{}");
+    localPendingMsgs[tempId] = { ...newMsg, createdAt: Date.now() };
+    localStorage.setItem("localPendingMsgs", JSON.stringify(localPendingMsgs));
 
+    // Reset input instantly
     refs.messageInputEl.value = "";
     scrollToBottom(refs.messagesEl);
 
     // Send to Firestore
-    await addDoc(collection(db, CHAT_COLLECTION), {
-      content: txt,
-      uid: currentUser.uid,
-      chatId: currentUser.chatId || "VIP",
-      timestamp: serverTimestamp(),
-      highlight: false,
-      buzzColor: null,
-      replyTo: currentReplyTarget?.id || null,
-      replyToContent: currentReplyTarget?.content || null
+    const msgRef = await addDoc(collection(db, CHAT_COLLECTION), {
+      ...newMsg,
+      tempId: null,
+      timestamp: serverTimestamp()
     });
 
+    // Clear reply UI
     clearReplyAfterSend();
-    console.log("Message sent");
+    console.log("Message sent:", msgRef.id);
 
   } catch (err) {
-    console.error("Send failed:", err);
-    showStarPopup("Failed to send message.");
+    console.error("Message send error:", err);
+    showStarPopup("Message failed: " + (err.message || err));
   }
 });
 
-/* BUZZ MESSAGE */
+/* ----------------------------
+     BUZZ Message Handler
+----------------------------- */
 refs.buzzBtn?.addEventListener("click", async () => {
-  try {
-    if (!currentUser?.uid) return showStarPopup("Sign in to BUZZ.");
+  if (!currentUser?.uid) return showStarPopup("Sign in to BUZZ.");
 
-    const txt = refs.messageInputEl?.value.trim();
-    if (!txt) return showStarPopup("Type a message to BUZZ");
+  const txt = refs.messageInputEl?.value.trim();
+  if (!txt) return showStarPopup("Type a message to BUZZ");
 
-    const userRef = doc(db, "users", currentUser.uid);
-    const snap = await getDoc(userRef);
-    const stars = snap.data()?.stars || 0;
+  const userRef = doc(db, "users", currentUser.uid);
+  const snap = await getDoc(userRef);
+  const stars = snap.data()?.stars || 0;
 
-    if (stars < BUZZ_COST) return showStarPopup("Not enough stars for BUZZ.");
+  if (stars < BUZZ_COST) return showStarPopup("Not enough stars for BUZZ.");
 
-    await updateDoc(userRef, { stars: increment(-BUZZ_COST) });
-    currentUser.stars = stars - BUZZ_COST;
-    refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
+  await updateDoc(userRef, { stars: increment(-BUZZ_COST) });
+  currentUser.stars = stars - BUZZ_COST;
+  refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
 
-    const buzzColor = randomColor();
+  const buzzColor = randomColor();
+  const newBuzz = {
+    content: txt,
+    uid: currentUser.uid,
+    chatId: currentUser.chatId || "VIP",
+    timestamp: serverTimestamp(),
+    highlight: true,
+    buzzColor
+  };
 
-    const buzzMsg = {
-      content: txt,
-      uid: currentUser.uid,
-      chatId: currentUser.chatId || "VIP",
-      timestamp: serverTimestamp(),
-      highlight: true,
-      buzzColor
-    };
+  const docRef = await addDoc(collection(db, CHAT_COLLECTION), newBuzz);
+  refs.messageInputEl.value = "";
+  showStarPopup("BUZZ sent!");
 
-    const docRef = await addDoc(collection(db, CHAT_COLLECTION), buzzMsg);
+  renderMessagesFromArray([{ id: docRef.id, data: newBuzz }]);
+  scrollToBottom(refs.messagesEl);
 
-    refs.messageInputEl.value = "";
-    showStarPopup("BUZZ sent!");
-
-    renderMessagesFromArray([{ id: docRef.id, data: buzzMsg }]);
-    scrollToBottom(refs.messagesEl);
-
-    setTimeout(() => {
-      const el = document.getElementById(docRef.id);
-      if (!el) return;
-      const content = el.querySelector(".content") || el;
-      content.style.setProperty("--buzz-color", buzzColor);
-      content.classList.add("buzz-highlight");
-      setTimeout(() => content.classList.remove("buzz-highlight"), 12000);
-    }, 100);
-
-  } catch (err) {
-    console.error("BUZZ failed:", err);
-    showStarPopup("BUZZ failed.");
-  }
+  // Apply BUZZ glow
+  const msgEl = document.getElementById(docRef.id);
+  if (!msgEl) return;
+  const contentEl = msgEl.querySelector(".content") || msgEl;
+  contentEl.style.setProperty("--buzz-color", buzzColor);
+  contentEl.classList.add("buzz-highlight");
+  setTimeout(() => {
+    contentEl.classList.remove("buzz-highlight");
+    contentEl.style.boxShadow = "none";
+  }, 12000);
 });
   
   /* ----------------------------
