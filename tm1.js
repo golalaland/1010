@@ -254,13 +254,12 @@ const snap = await getDoc(userRef);
 if (!snap.exists()) {
   // CREATE USER AUTOMATICALLY — only once, forever
   await setDoc(userRef, {
-    uid, {
-    uid,                                            // the safe document ID
+    uid,                                            // safe document ID
     chatId: storedUser.fullName || 
             storedUser.displayName || 
-            storedUser.email.split('@')[0] ||     // now safe: use original @ to split
+            storedUser.email.split('@')[0] || 
             "Player",
-    email: storedUser.email,                        // original email (with @ and .)
+    email: storedUser.email,                        // original email with @ and .
     stars: 100,
     cash: 0,
     totalTaps: 0,
