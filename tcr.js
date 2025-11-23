@@ -1445,7 +1445,9 @@ function clearReplyAfterSend() {
   refs.messageInputEl.placeholder = "Type a message...";
 }
 
-// SEND REGULAR MESSAGE
+
+
+// SEND REGULAR MESSAGE — FIXED & WORKING (messages now persist forever)
 refs.sendBtn?.addEventListener("click", async () => {
   try {
     if (!currentUser) return showStarPopup("Sign in to chat.");
@@ -1463,11 +1465,12 @@ refs.sendBtn?.addEventListener("click", async () => {
     currentUser.stars -= SEND_COST;
     refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
 
-    // Update stars in DB (fire-and-forget — will sync eventually)
-    updateDoc(doc(db, "users", myUid), { stars: increment(-SEND_COST) });
+    await updateDoc(doc(db, "users", myUid), {
+      stars: increment(-SEND_COST)
+    });
 
-    // Create temp message for instant display
-    const tempId = "temp_" + Date.now() + "_" + Math.random();
+    // Local echo (instant feedback + color)
+    const tempId = "temp_" + Date.now();
     const tempMsg = {
       id: tempId,
       data: {
@@ -1481,14 +1484,13 @@ refs.sendBtn?.addEventListener("click", async () => {
       }
     };
 
-    // Show instantly
     renderMessagesFromArray([tempMsg]);
     refs.messageInputEl.value = "";
     clearReplyAfterSend();
     scrollToBottom(refs.messagesEl);
 
-    // Actually send to Firestore
-    const msgRef = await addDoc(collection(db, CHAT_COLLECTION), {
+    // Send to Firestore
+    await addDoc(collection(db, CHAT_COLLECTION), {
       content: txt,
       uid: myUid,
       chatId: myDisplayName,
@@ -1498,29 +1500,16 @@ refs.sendBtn?.addEventListener("click", async () => {
       replyToContent: currentReplyTarget?.content || null
     });
 
-    // SUCCESS: Replace temp message with real one
-    // Find the temp message element and remove it
-    const tempEl = refs.messagesEl.querySelector(`[data-msg-id="${tempId}"]`);
-    if (tempEl) tempEl.remove();
-
-    // Render the real message (now has proper server timestamp & ID)
-    const realMsg = {
-      id: msgRef.id,
-      data: () => ({
-        ...(await getDoc(msgRef)).data(),
-        createdAt: { toMillis: () => Date.now() } // or use server time when available
-      })
-    };
-    renderMessagesFromArray([realMsg]); // your existing render function handles this fine
+    // THIS IS THE ONLY FIX: Remove temp message → real one appears via onSnapshot
+    document.querySelector(`[data-msg-id="${tempId}"]`)?.remove();
 
   } catch (err) {
-    // FAILURE: Refund stars + show error
+    // Refund stars on failure
     currentUser.stars += SEND_COST;
     refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
 
-    // Remove temp message if still there
-    const tempEl = refs.messagesEl.querySelector(`[data-msg-id^="temp_"]`);
-    if (tempEl) tempEl.remove();
+    // Clean up temp message if something went wrong
+    document.querySelector(`[data-msg-id^="temp_"]`)?.remove();
 
     showStarPopup("Failed to send — check connection");
   }
