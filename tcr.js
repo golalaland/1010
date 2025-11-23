@@ -115,41 +115,68 @@ function pushNotificationTx(tx, userId, message) {
   });
 }
 
-/* ---------- Auth State Watcher (with Unlocked Sync + Notifications) ---------- */
+/* ========== SHARED UTILS ========== */
+const sanitizeEmail = (email) => email.replace(/\./g, "_");
+let currentUser = null;
+let notificationsUnsubscribe = null;  // Single global unsubscribe
+
+/* ---------- Auth State Watcher (Clean & Reliable) ---------- */
+let hasUserEverSignedIn = false;
+
 onAuthStateChanged(auth, async (user) => {
   currentUser = user;
 
-  // 🔒 Hide modals until login completes
-  const allModals = document.querySelectorAll(".featured-modal, #giftModal, #sessionModal");
-  allModals.forEach(m => (m.style.display = "none"));
+  // Always hide modals during auth transitions
+  document.querySelectorAll(".featured-modal, #giftModal, #sessionModal")
+    .forEach(m => m.style.display = "none");
 
+  // ——————— User is NOT signed in ———————
   if (!user) {
-    console.warn("⚠️ No logged-in user found");
+    if (hasUserEverSignedIn) {
+      console.log("User signed out");
+    } else {
+      console.log("Page loaded — waiting for sign-in...");
+    }
+    hasUserEverSignedIn = false;
     localStorage.removeItem("userId");
 
-    // Hide protected sections
-    document.querySelectorAll(".after-login-only").forEach(el => (el.style.display = "none"));
+    document.querySelectorAll(".after-login-only").forEach(el => el.style.display = "none");
+    document.querySelectorAll(".before-login-only").forEach(el => el.style.display = "");
+    
+    // Clean up any existing listener
+    if (notificationsUnsubscribe) {
+      notificationsUnsubscribe();
+      notificationsUnsubscribe = null;
+    }
     return;
   }
 
-  // ✅ Logged in user
-  console.log("✅ User authenticated:", user.email || user.uid);
-  document.querySelectorAll(".after-login-only").forEach(el => (el.style.display = ""));
+  // ——————— User IS signed in ———————
+  const userEmail = user.email || user.uid;
+  const userQueryId = sanitizeEmail(userEmail);
 
-  // ---------- Sync unlocked videos across devices ----------
-  try {
-    await syncUserUnlocks(); // 🔁 Keeps unlocks consistent across browsers
-    console.log("🔄 Unlocked videos synced successfully.");
-  } catch (err) {
-    console.error("⚠️ Sync unlocks failed:", err);
+  if (!hasUserEverSignedIn) {
+    console.log("User signed in:", userEmail);
+    hasUserEverSignedIn = true;
   }
 
-  // ---------- Notifications Setup ----------
-  const sanitizeEmail = (email) => email.replace(/\./g, "_");
-  const userQueryId = sanitizeEmail(currentUser.email);
-  console.log("📩 Logged in as Sanitized ID:", userQueryId);
-  localStorage.setItem("userId", userQueryId);
+  // Show protected content
+  document.querySelectorAll(".after-login-only").forEach(el => el.style.display = "");
+  document.querySelectorAll(".before-login-only").forEach(el => el.style.display = "none");
 
+  // Store sanitized ID for other scripts
+  localStorage.setItem("userId", userQueryId);
+  console.log("Logged in as Sanitized ID:", userQueryId);
+
+  // ——————— Sync Unlocks ———————
+  try {
+    await syncUserUnlocks();
+    console.log("Unlocked videos synced successfully.");
+  } catch (err) {
+    console.error("Sync unlocks failed:", err);
+  }
+
+  // ——————— Setup Notifications Listener ———————
   const notifRef = collection(db, "notifications");
   const notifQuery = query(
     notifRef,
@@ -157,87 +184,83 @@ onAuthStateChanged(auth, async (user) => {
     orderBy("timestamp", "desc")
   );
 
-  let unsubscribe = null;
-
-  async function initNotificationsListener() {
+  async function setupNotificationsListener() {
     const notificationsList = document.getElementById("notificationsList");
     if (!notificationsList) {
-      console.warn("⚠️ #notificationsList not found — retrying...");
-      setTimeout(initNotificationsListener, 500);
+      console.log("#notificationsList not ready — retrying in 500ms");
+      setTimeout(setupNotificationsListener, 500);
       return;
     }
 
-    if (unsubscribe) unsubscribe(); // Prevent duplicate listeners
+    // Remove previous listener if exists
+    if (notificationsUnsubscribe) notificationsUnsubscribe();
 
-    console.log("🔔 Setting up live notification listener for:", userQueryId);
-    unsubscribe = onSnapshot(
+    console.log("Setting up live notification listener for:", userQueryId);
+
+    notificationsUnsubscribe = onSnapshot(
       notifQuery,
       (snapshot) => {
-        console.log(`✅ Received ${snapshot.docs.length} notifications for ${userQueryId}`);
+        const count = snapshot.docs.length;
+        console.log(`Received ${count} notification(s)`);
+
         if (snapshot.empty) {
           notificationsList.innerHTML = `<p style="opacity:0.7;">No new notifications yet.</p>`;
           return;
         }
 
-        const items = snapshot.docs.map((docSnap) => {
+        const html = snapshot.docs.map(docSnap => {
           const n = docSnap.data();
           const time = n.timestamp?.seconds
-            ? new Date(n.timestamp.seconds * 1000).toLocaleTimeString([], {
-                hour: "2-digit",
-                minute: "2-digit",
-              })
+            ? new Date(n.timestamp.seconds * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
             : "--:--";
 
           return `
             <div class="notification-item ${n.read ? "" : "unread"}" data-id="${docSnap.id}">
               <span>${n.message || "(no message)"}</span>
               <span class="notification-time">${time}</span>
-            </div>
-          `;
-        });
+            </div>`;
+        }).join("");
 
-        notificationsList.innerHTML = items.join("");
+        notificationsList.innerHTML = html;
       },
-      (error) => console.error("🔴 Firestore Listener Error:", error)
+      (err) => console.error("Firestore Listener Error:", err)
     );
   }
 
-  // Run notifications listener when DOM is ready
+  // Start listener (DOM ready safe)
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", initNotificationsListener);
+    document.addEventListener("DOMContentLoaded", setupNotificationsListener);
   } else {
-    initNotificationsListener();
+    setupNotificationsListener();
   }
 
-  // Re-init when Notifications tab opens
+  // Re-init when user opens notifications tab
   const notifTabBtn = document.querySelector('.tab-btn[data-tab="notificationsTab"]');
   if (notifTabBtn) {
-    notifTabBtn.addEventListener("click", () => {
-      setTimeout(initNotificationsListener, 150);
-    });
+    notifTabBtn.addEventListener("click", () => setTimeout(setupNotificationsListener, 150));
   }
 
-  // Mark all notifications as read
+  // Mark all as read button
   const markAllBtn = document.getElementById("markAllRead");
   if (markAllBtn) {
-    markAllBtn.addEventListener("click", async () => {
-      console.log("🟡 Marking all notifications as read...");
+    markAllBtn.onclick = async () => {
+      console.log("Marking all notifications as read...");
       const snapshot = await getDocs(query(notifRef, where("userId", "==", userQueryId)));
-      for (const docSnap of snapshot.docs) {
-        await updateDoc(doc(db, "notifications", docSnap.id), { read: true });
-      }
-      alert("✅ All notifications marked as read.");
-    });
+      const batch = writeBatch(db);
+      snapshot.docs.forEach(docSnap => batch.update(docSnap.ref, { read: true }));
+      await batch.commit();
+      alert("All notifications marked as read.");
+    };
   }
 });
 
 /* ===============================
-   🔔 Manual Notification Starter (for whitelist login)
+   Manual Notification Starter (for whitelist / debug login)
 ================================= */
 async function startNotificationsFor(userEmail) {
-  const sanitizeEmail = (email) => email.replace(/\./g, "_");
   const userQueryId = sanitizeEmail(userEmail);
   localStorage.setItem("userId", userQueryId);
+  console.log("Manual notification listener started for:", userQueryId);
 
   const notifRef = collection(db, "notifications");
   const notifQuery = query(
@@ -248,43 +271,31 @@ async function startNotificationsFor(userEmail) {
 
   const notificationsList = document.getElementById("notificationsList");
   if (!notificationsList) {
-    console.warn("⚠️ #notificationsList not found yet — retrying...");
+    console.warn("#notificationsList not found — retrying...");
     setTimeout(() => startNotificationsFor(userEmail), 500);
     return;
   }
 
-  console.log("🔔 Listening for notifications for:", userQueryId);
+  onSnapshot(notifQuery, (snapshot) => {
+    if (snapshot.empty) {
+      notificationsList.innerHTML = `<p style="opacity:0.7;">No new notifications yet.</p>`;
+      return;
+    }
 
-  onSnapshot(
-    notifQuery,
-    (snapshot) => {
-      if (snapshot.empty) {
-        notificationsList.innerHTML = `<p style="opacity:0.7;">No new notifications yet.</p>`;
-        return;
-      }
+    notificationsList.innerHTML = snapshot.docs.map(docSnap => {
+      const n = docSnap.data();
+      const time = n.timestamp?.seconds
+        ? new Date(n.timestamp.seconds * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+        : "--:--";
 
-      const html = snapshot.docs.map((docSnap) => {
-        const n = docSnap.data();
-        const time = n.timestamp?.seconds
-          ? new Date(n.timestamp.seconds * 1000).toLocaleTimeString([], {
-              hour: "2-digit",
-              minute: "2-digit",
-            })
-          : "--:--";
-        return `
-          <div class="notification-item ${n.read ? "" : "unread"}" data-id="${docSnap.id}">
-            <span>${n.message}</span>
-            <span class="notification-time">${time}</span>
-          </div>
-        `;
-      }).join("");
-
-      notificationsList.innerHTML = html;
-    },
-    (err) => console.error("🔴 Notification listener error:", err)
-  );
+      return `
+        <div class="notification-item ${n.read ? "" : "unread"}" data-id="${docSnap.id}">
+          <span>${n.message || "(no message)"}</span>
+          <span class="notification-time">${time}</span>
+        </div>`;
+    }).join("");
+  });
 }
-
 
 
 /* ---------- Helper: Get current user ID ---------- */
