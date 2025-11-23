@@ -344,6 +344,42 @@ const getUserId = (input) => {
   return str;
 };
 
+
+/* ========== PERSISTENT LOGIN — STAY IN CHATROOM AFTER RELOAD ========== */
+onAuthStateChanged(auth, async (user) => {
+  if (user) {
+    console.log("User is signed in (persisted):", user.email);
+
+    // Use our PERFECT getUserId
+    const uid = getUserId(user.email);
+
+    // Load user profile
+    const userSnap = await getDoc(doc(db, "users", uid));
+    if (userSnap.exists()) {
+      const data = userSnap.data();
+      currentUser = {
+        uid,
+        email: user.email,
+        chatId: data.chatId || user.email.split("@")[0],
+        isVIP: !!data.isVIP,
+        fullName: data.fullName || "",
+        // ... copy all your fields
+      };
+
+      // RESTORE CHATROOM INSTANTLY
+      showChatUI(currentUser);
+      startNotificationsFor?.(user.email);
+      attachMessagesListener?.();
+      setupPresence?.(currentUser);
+
+      showStarPopup(`Welcome back, ${currentUser.chatId || "VIP"}!`);
+    }
+  } else {
+    console.log("No user — show login screen");
+    // show login UI
+  }
+});
+
 /* ----------------------------
    ⭐ GIFT MODAL / CHAT BANNER ALERT
 ----------------------------- */
