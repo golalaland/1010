@@ -244,12 +244,21 @@ body.light .play{background:linear-gradient(135deg,#39ff14,#00ff9d)}
     background:var(--accent);color:#fff;padding:12px 36px;border:none;width:70%;margin:0 auto 20px;
     display:block;border-radius:50px;font-weight:800;font-size:15px;cursor:pointer
   }
+  #back img{
+  display:block;
+  margin:0 auto;
+}
 </style>
 </head>
 <body>
 
 <button id="theme">🔘</button>
-<a href="YOUR_CHATROOM_LINK" target="_blank"><button id="back">💬</button></a>
+<!-- BACK TO CHATROOM – WITH YOUR CUSTOM LOGO -->
+<a href="YOUR_CHATROOM_LINK" target="_blank">
+  <button id="back">
+    <img src="https://cdn.shopify.com/s/files/1/0962/6648/6067/files/chat-bubble.png?v=1763902619" alt="Chat" style="width:40px;height:40px;object-fit:contain;">
+  </button>
+</a>
 
 <div class="container">
   <header>
