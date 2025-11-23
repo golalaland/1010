@@ -275,6 +275,9 @@ onAuthStateChanged(auth, async (user) => {
   }
 });
 
+
+setupMyColorListener(); 
+
 /* ===============================
    Manual Notification Starter (for whitelist / debug login)
 ================================= */
@@ -551,17 +554,27 @@ if (rtdb) {
   });
 }
 
-/* ---------- User Colors ---------- */
-function setupUsersListener() {
-  onSnapshot(collection(db, "users"), snap => {
-    refs.userColors = refs.userColors || {};
-    snap.forEach(docSnap => {
-      refs.userColors[docSnap.id] = docSnap.data()?.usernameColor || "#ffffff";
-    });
-    if (lastMessagesArray.length) renderMessagesFromArray(lastMessagesArray);
+// ONLY LISTEN TO CURRENT USER'S COLOR (safe + works)
+function setupMyColorListener() {
+  if (!currentUser?.email) return;
+  
+  const myId = getUserId(currentUser.email);
+  const myRef = doc(db, "users", myId);
+  
+  return onSnapshot(myRef, (snap) => {
+    if (snap.exists()) {
+      const color = snap.data()?.usernameColor || "#ff69b4";
+      refs.userColors = refs.userColors || {};
+      refs.userColors[myId] = color;
+      // Optional: re-render messages to update your own name color
+      if (lastMessagesArray.length) renderMessagesFromArray(lastMessagesArray);
+    }
   });
 }
-setupUsersListener();
+
+// Call it only after login
+// setupMyColorListener();  // ← call inside onAuthStateChanged or after login
+
 
 let scrollPending = false;
 let tapModalEl = null;
