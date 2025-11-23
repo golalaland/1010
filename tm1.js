@@ -130,7 +130,7 @@ function showEndGameModal() {
   // REAL NAME — NEVER "Tapper" AGAIN
   const realName = currentUser?.chatId || 
                    currentUser?.username || 
-                   currentUser?.email?.replace(/,/g, '_').split('_')[0] || 
+                   currentUser?.email?.replace(/,/g, '_').split('@')[0] || 
                    "Legend";
 
   document.getElementById('playerName').textContent = realName;
@@ -175,7 +175,7 @@ setTimeout(() => {
  document.getElementById('shareBtn')?.addEventListener('click', () => {
   const realName = currentUser?.chatId || 
                    currentUser?.username || 
-                   currentUser?.email?.replace(/,/g, '_').split('_')[0] || 
+                   currentUser?.email?.replace(/,/g, '_').split('@')[0] || 
                    "A Warrior";
 
   const text = `${realName} just smashed ${taps.toLocaleString()} taps and earned ₦${earnings.toLocaleString()}! Can you beat that?`;
@@ -240,25 +240,36 @@ async function loadCurrentUserForGame() {
       return;
     }
 
-    const uid = storedUser.email.replace(/\./g, "_").toLowerCase();
-    const userRef = doc(db, "users", uid);
-    const snap = await getDoc(userRef);
+// Generate the exact same document ID as your signup page
+const uid = storedUser.email
+  .trim()
+  .toLowerCase()
+  .replace(/[@.]/g, '_')      // @ and . → _   (this is the key!)
+  .replace(/_+/g, '_')        // collapse multiple ___ → _
+  .replace(/^_|_$/g, '');     // remove leading/trailing _
 
-    if (!snap.exists()) {
-      // CREATE USER AUTOMATICALLY
-      await setDoc(userRef, {
-        uid,
-        chatId: storedUser.fullName || storedUser.displayName || storedUser.email.split("_")[0],
-        email: storedUser.email,
-        stars: 100,
-        cash: 0,
-        totalTaps: 0,
-        createdAt: serverTimestamp(),
-        tapsDaily: {},
-        tapsWeekly: {},
-        tapsMonthly: {}
-      });
-    }
+const userRef = doc(db, "users", uid);
+const snap = await getDoc(userRef);
+
+if (!snap.exists()) {
+  // CREATE USER AUTOMATICALLY — only once, forever
+  await setDoc(userRef, {
+    uid, {
+    uid,                                            // the safe document ID
+    chatId: storedUser.fullName || 
+            storedUser.displayName || 
+            storedUser.email.split('@')[0] ||     // now safe: use original @ to split
+            "Player",
+    email: storedUser.email,                        // original email (with @ and .)
+    stars: 100,
+    cash: 0,
+    totalTaps: 0,
+    createdAt: serverTimestamp(),
+    tapsDaily: {},
+    tapsWeekly: {},
+    tapsMonthly: {}
+  });
+}
 
     const data = (await getDoc(userRef)).data();
     currentUser = {
