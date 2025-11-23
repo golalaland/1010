@@ -542,11 +542,7 @@ function setupUsersListener() {
 }
 setupUsersListener();
 // Call it once after login
-// (add this line in onAuthStateChanged after currentUser is set)
-setupUserColors();
 
-// Call it only after login
-// setupMyColorListener();  // ← call inside onAuthStateChanged or after login
 
 
 let scrollPending = false;
