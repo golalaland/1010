@@ -130,7 +130,7 @@ function showEndGameModal() {
   // REAL NAME — NEVER "Tapper" AGAIN
   const realName = currentUser?.chatId || 
                    currentUser?.username || 
-                   currentUser?.email?.replace(/,/g, '_').split('@')[0] || 
+                   currentUser?.email?.replace(/,/g, '_').split('_')[0] || 
                    "Legend";
 
   document.getElementById('playerName').textContent = realName;
@@ -175,7 +175,7 @@ setTimeout(() => {
  document.getElementById('shareBtn')?.addEventListener('click', () => {
   const realName = currentUser?.chatId || 
                    currentUser?.username || 
-                   currentUser?.email?.replace(/,/g, '_').split('@')[0] || 
+                   currentUser?.email?.replace(/,/g, '_').split('_')[0] || 
                    "A Warrior";
 
   const text = `${realName} just smashed ${taps.toLocaleString()} taps and earned ₦${earnings.toLocaleString()}! Can you beat that?`;
@@ -248,7 +248,7 @@ async function loadCurrentUserForGame() {
       // CREATE USER AUTOMATICALLY
       await setDoc(userRef, {
         uid,
-        chatId: storedUser.fullName || storedUser.displayName || storedUser.email.split("@")[0],
+        chatId: storedUser.fullName || storedUser.displayName || storedUser.email.split("_")[0],
         email: storedUser.email,
         stars: 100,
         cash: 0,
@@ -263,7 +263,7 @@ async function loadCurrentUserForGame() {
     const data = (await getDoc(userRef)).data();
     currentUser = {
       uid,
-      chatId: data.chatId || storedUser.email.split("@")[0],
+      chatId: data.chatId || storedUser.email.split("_")[0],
       email: storedUser.email,
       stars: Number(data.stars || 100),
       cash: Number(data.cash || 0),
