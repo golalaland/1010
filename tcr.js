@@ -340,10 +340,13 @@ function showStarPopup(text) {
   const popup = document.getElementById("starPopup");
   const starText = document.getElementById("starText");
   if (!popup || !starText) return;
-  starText.innerText = text;
+
+  starText.innerHTML = text; // <- changed from innerText
   popup.style.display = "block";
+
   setTimeout(() => popup.style.display = "none", 1700);
 }
+
 
 /* ========== FIX: UNIVERSAL ID FUNCTION (ADD THIS EXACTLY) ========== */
 const getUserId = (input) => {
@@ -409,14 +412,16 @@ onAuthStateChanged(auth, async (user) => {
   if (typeof startNotificationsFor === "function") startNotificationsFor(user.email);
 
   // EPIC RANDOM COLOR WELCOME
- const colors = ["#FF1493","#FFD700","#00FFFF","#FF4500","#DA70D6","#FF69B4","#32CD32","#FFA500"];
-const color = colors[Math.floor(Math.random()*colors.length)];
-showStarPopup(
-  `Welcome back,<br>
-   <span style="font-size:1.5em;font-weight:bold;color:${color};text-shadow:0 0 12px ${color}99;">
-     ${currentUser.chatId.toUpperCase()}
-   </span>!`
-);
+const colors = ["#FF1493","#FFD700","#00FFFF","#FF4500","#DA70D6","#FF69B4","#32CD32","#FFA500"];
+const color = colors[Math.floor(Math.random() * colors.length)];
+
+showStarPopup(`
+  Welcome back,<br>
+  <span style="font-size:1.5em;font-weight:bold;color:${color};text-shadow:0 0 12px ${color}99;">
+    ${currentUser.chatId.toUpperCase()}
+  </span>!
+`);
+
 
   localStorage.setItem("lastVipEmail", user.email);
 });
