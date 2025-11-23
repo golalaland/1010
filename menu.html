@@ -12,10 +12,84 @@
   *{margin:0;box-sizing:border-box}
   body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;transition:0.5s;overflow-x:hidden}
   
-  /* Floating buttons */
-  #theme{background:var(--accent);color:#fff;border:none;width:52px;height:52px;border-radius:50%;position:fixed;top:18px;right:18px;z-index:999;font-size:22px;cursor:pointer;box-shadow:0 4px 20px rgba(233,30,99,0.4)}
-  #back{background:#00ff9d;color:#000;border:none;width:64px;height:64px;border-radius:50%;position:fixed;bottom:28px;right:20px;z-index:998;font-size:26px;font-weight:800;cursor:pointer;box-shadow:0 8px 30px rgba(0,255,157,0.5);animation:pulse 2.5s infinite}
-  @keyframes pulse{0%,100%{box-shadow:0 8px 30px rgba(0,255,157,0.5)}50%{box-shadow:0 10px 50px rgba(0,255,157,0.8)}}
+  /* ───── FROSTED GLASS FLOATING BUTTONS – PURE 2025 ENERGY ───── */
+  #theme, #back{
+    border:none;
+    border-radius:50%;
+    cursor:pointer;
+    position:fixed;
+    z-index:999;
+    font-weight:900;
+    backdrop-filter:blur(16px) saturate(180%);
+    -webkit-backdrop-filter:blur(16px) saturate(180%);
+    box-shadow:0 8px 32px rgba(0,0,0,0.6);
+    transition:all 0.3s cubic-bezier(0.34,1.56,0.64,1);
+  }
+
+  /* RED THEME TOGGLE – BLOOD NEON FROSTED */
+  #theme{
+    width:56px; height:56px;
+    top:18px; right:18px;
+    background:rgba(255,20,80,0.22);
+    border:1.5px solid rgba(255,40,100,0.6);
+    color:#fff;
+    font-size:24px;
+    box-shadow:0 8px 32px rgba(255,0,60,0.4),
+               inset 0 2px 10px rgba(255,255,255,0.15);
+  }
+  #theme:hover{
+    background:rgba(255,40,100,0.35);
+    border:1.5px solid rgba(255,80,140,0.8);
+    box-shadow:0 12px 50px rgba(255,0,80,0.6),
+               inset 0 4px 20px rgba(255,255,255,0.25);
+    transform:scale(1.1) translateY(-4px);
+  }
+
+  /* GREEN BACK-TO-CHAT – TOXIC FROSTED MONSTER */
+  #back{
+    width:68px; height:68px;
+    bottom:28px; right:20px;
+    background:rgba(57,255,150,0.22);
+    border:2px solid rgba(80,255,180,0.7);
+    color:#000;
+    font-size:30px;
+    box-shadow:0 10px 40px rgba(57,255,150,0.45),
+               inset 0 2px 12px rgba(255,255,255,0.25);
+    animation:pulseFrost 2.4s infinite;
+  }
+  #back:hover{
+    background:rgba(80,255,180,0.35);
+    border:2px solid rgba(100,255,200,0.9);
+    box-shadow:0 16px 60px rgba(57,255,150,0.7),
+               inset 0 4px 20px rgba(255,255,255,0.35);
+    transform:scale(1.1) translateY(-6px);
+  }
+  #back:active{
+    transform:scale(0.94);
+  }
+
+  @keyframes pulseFrost{
+    0%,100%{
+      box-shadow:0 10px 40px rgba(57,255,150,0.45),
+                 inset 0 2px 12px rgba(255,255,255,0.25);
+    }
+    50%{
+      box-shadow:0 16px 70px rgba(57,255,150,0.8),
+                 inset 0 4px 25px rgba(255,255,255,0.4);
+    }
+  }
+
+  /* Light mode – still frosted & beautiful */
+  body.light #theme{
+    background:rgba(255,20,80,0.15);
+    border:1.5px solid rgba(255,60,100,0.5);
+    box-shadow:0 8px 32px rgba(255,0,60,0.25);
+  }
+  body.light #back{
+    background:rgba(57,255,150,0.15);
+    border:2px solid rgba(80,255,180,0.6);
+    box-shadow:0 10px 40px rgba(57,255,150,0.3);
+  }
   
   .container{max-width:440px;margin:0 auto;padding:20px 16px 140px}
   
