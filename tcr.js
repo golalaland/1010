@@ -705,11 +705,21 @@ function triggerBannerEffect(bannerEl) {
 // Render messages
 function renderMessagesFromArray(messages) {
   if (!refs.messagesEl) return;
+
   messages.forEach(item => {
     if (!item.id) return;
-    if (document.getElementById(item.id)) return;
+
+    // Skip duplicate check for temp messages
+    if (!item.isTemp && document.getElementById(item.id)) return;
 
     const m = item.data || item;
+
+    // CACHE USERNAME COLOR FROM EVERY MESSAGE
+    if (m.uid && m.usernameColor) {
+      refs.userColors = refs.userColors || {};
+      refs.userColors[m.uid] = m.usernameColor;
+    }
+
     const wrapper = document.createElement("div");
     wrapper.className = "msg";
     wrapper.id = item.id;
