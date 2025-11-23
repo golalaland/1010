@@ -1074,17 +1074,29 @@ document.querySelectorAll("#googleLoginBtn, .google-btn, [data-google-login]")
     });
 });
 
-/* VIP EMAIL/PASSWORD LOGIN — FULLY WORKING */
+// FINAL: WORKING LOGIN BUTTON — THIS MAKES SIGN IN ACTUALLY WORK
 document.getElementById("whitelistLoginBtn")?.addEventListener("click", async () => {
   const email = document.getElementById("emailInput")?.value.trim().toLowerCase();
-  const pass = document.getElementById("passwordInput")?.value;
-  if (!email || !pass) return showStarPopup("Fill in both fields");
+  const password = document.getElementById("passwordInput")?.value;
+
+  if (!email || !password) {
+    showStarPopup("Enter email and password");
+    return;
+  }
 
   try {
-    await signInWithEmailAndPassword(auth, email, pass);
-    // onAuthStateChanged will handle the rest — no need to do anything here
+    await signInWithEmailAndPassword(auth, email, password);
+    // onAuthStateChanged will handle everything else — just wait
+    showStarPopup("Logging in...");
   } catch (err) {
-    showStarPopup("Wrong password or not whitelisted");
+    console.error("Login failed:", err.code);
+    if (err.code === "auth/user-not-found" || err.code === "auth/wrong-password") {
+      showStarPopup("Wrong email or password");
+    } else if (err.code === "auth/too-many-requests") {
+      showStarPopup("Too many tries. Wait a minute.");
+    } else {
+      showStarPopup("Login failed. Check console.");
+    }
   }
 });
 
