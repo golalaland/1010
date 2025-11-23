@@ -705,11 +705,19 @@ function triggerBannerEffect(bannerEl) {
 // Render messages
 function renderMessagesFromArray(messages) {
   if (!refs.messagesEl) return;
+
   messages.forEach(item => {
     if (!item.id) return;
     if (document.getElementById(item.id)) return;
 
     const m = item.data || item;
+
+    // CACHE USERNAME COLOR FROM EVERY MESSAGE (this is the fix!)
+    if (m.uid && m.usernameColor) {
+      refs.userColors = refs.userColors || {};
+      refs.userColors[m.uid] = m.usernameColor;
+    }
+
     const wrapper = document.createElement("div");
     wrapper.className = "msg";
     wrapper.id = item.id;
@@ -1454,70 +1462,67 @@ refs.sendBtn?.addEventListener("click", async () => {
     if ((currentUser.stars || 0) < SEND_COST)
       return showStarPopup("Not enough stars to send message.");
 
-    // Deduct stars locally + in Firestore
+    const myUid = currentUser.uid || getUserId(currentUser.email);
+    const myDisplayName = currentUser.chatId || currentUser.displayName || currentUser.email.split('@')[0];
+
+    // Get your current color from the live cache (always up-to-date)
+    const myColor = refs.userColors[myUid] || currentUser.usernameColor || "#ff69b4";
+
+    // Deduct stars locally first (optimistic UI)
     currentUser.stars -= SEND_COST;
     refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
-    await updateDoc(doc(db, "users", currentUser.uid), {
+
+    await updateDoc(doc(db, "users", myUid), {
       stars: increment(-SEND_COST)
     });
 
-    // Create temp message (local echo)
+    // Local echo (instant feedback + color guaranteed)
     const tempId = "temp_" + Date.now();
-    const newMsg = {
-      content: txt,
-      uid: currentUser.uid || "unknown",
-      chatId: currentUser.chatId || "anon",
-      usernameColor: currentUser.usernameColor || "#ff69b4",  // COLORS ARE BACK
-      timestamp: { toMillis: () => Date.now() },
-      highlight: false,
-      buzzColor: null,
-      replyTo: currentReplyTarget?.id || null,
-      replyToContent: currentReplyTarget?.content || null,
-      tempId
+    const tempMsg = {
+      id: tempId,
+      data: {
+        content: txt,
+        uid: myUid,
+        chatId: myDisplayName,
+        usernameColor: myColor,           // COLOR SHOWS INSTANTLY
+        createdAt: { toMillis: () => Date.now() },
+        replyTo: currentReplyTarget?.id || null,
+        replyToContent: currentReplyTarget?.content || null
+      }
     };
 
-    // Store temp message locally for dedupe
-    let localPendingMsgs = JSON.parse(localStorage.getItem("localPendingMsgs") || "{}");
-    localPendingMsgs[tempId] = { ...newMsg, createdAt: Date.now() };
-    localStorage.setItem("localPendingMsgs", JSON.stringify(localPendingMsgs));
-
-    // Reset input + scroll
+    // Render instantly
+    renderMessagesFromArray([tempMsg]);
     refs.messageInputEl.value = "";
     clearReplyAfterSend();
     scrollToBottom(refs.messagesEl);
 
-    // RENDER LOCAL ECHO IMMEDIATELY
-    renderMessagesFromArray([newMsg]);
-
-    // SEND TO FIRESTORE — USING YOUR DYNAMIC CHAT_COLLECTION
+    // Send to Firestore
     const msgRef = await addDoc(collection(db, CHAT_COLLECTION), {
       content: txt,
-      uid: currentUser.uid,
-      chatId: currentUser.chatId,
-      usernameColor: currentUser.usernameColor || "#ff69b4",   // SAVED IN DB
-      timestamp: serverTimestamp(),
-      highlight: false,
-      buzzColor: null,
+      uid: myUid,
+      chatId: myDisplayName,
+      usernameColor: myColor,                    // SAVED IN DB — COLORS FLOW TO EVERYONE
+      createdAt: serverTimestamp(),
       replyTo: currentReplyTarget?.id || null,
       replyToContent: currentReplyTarget?.content || null
-      // tempId is NOT sent — clean Firestore doc
     });
 
-    // Clean up pending on success
-    delete localPendingMsgs[tempId];
-    localStorage.setItem("localPendingMsgs", JSON.stringify(localPendingMsgs));
+    console.log("Message sent king!", msgRef.id);
 
-    console.log("Message sent & saved:", msgRef.id);
+    // Optional: store pending messages locally if you want offline support later
+    // (not needed now that it's instant + reliable)
 
   } catch (err) {
-    console.error("Message send error:", err);
-    showStarPopup("Message failed: " + (err.message || "Network error"));
+    console.error("Send failed:", err);
+    showStarPopup("Failed to send — check connection");
 
-    // Refund stars on fail
+    // Refund stars on failure
     currentUser.stars += SEND_COST;
     refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
   }
 });
+
 
 // BUZZ MESSAGE (EPIC GLOW EFFECT)
 refs.buzzBtn?.addEventListener("click", async () => {
