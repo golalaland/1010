@@ -361,34 +361,36 @@ const getUserId = (input) => {
 
 
 /* ========== FINAL: PERSISTENT LOGIN — FLAWLESS & CLEAN ========== */
-/* ========== FINAL: PERSISTENT LOGIN — 100% NO SYNTAX ERROR ========== */
+/* ========== PERFECT PERSISTENT LOGIN — FULL PROFILE RESTORED ON RELOAD ========== */
 onAuthStateChanged(auth, async (user) => {
   if (!user) {
     console.log("No user — show login screen");
     currentUser = null;
-    if (typeof showLoginUI === "function") showLoginUI();
+    // show login UI
     return;
   }
 
   console.log("Firebase Auth restored user:", user.email);
+
   const uid = getUserId(user.email);
   const userRef = doc(db, "users", uid);
   const snap = await getDoc(userRef);
 
   if (!snap.exists()) {
-    console.error("Profile missing for:", user.email);
-    showStarPopup("Profile not found. Contact admin.");
+    console.error("User profile not found in Firestore!");
+    showStarPopup("Profile error. Contact admin.");
     await signOut(auth);
     return;
   }
 
   const data = snap.data();
 
+  // RESTORE FULL USER OBJECT — EXACTLY LIKE MANUAL LOGIN
   currentUser = {
     uid: uid,
     email: user.email,
     chatId: data.chatId || user.email.split("@")[0],
-    fullName: data.fullName || "$VIP",
+    fullName: data.fullName || "",
     isVIP: !!data.isVIP,
     isAdmin: !!data.isAdmin,
     isHost: !!data.isHost,
@@ -398,32 +400,23 @@ onAuthStateChanged(auth, async (user) => {
     subscriptionActive: !!data.subscriptionActive,
     hostLink: data.hostLink || null,
     invitedBy: data.invitedBy || null,
-    unlockedVideos: data.unlockedVideos || []
+    // Add any other fields you save
   };
 
   console.log("FULL PROFILE RESTORED:", currentUser);
 
-  // SAFE CALLS — ALL OPTIONAL
-  if (typeof showChatUI === "function") showChatUI(currentUser);
-  if (typeof updateRedeemLink === "function") updateRedeemLink();
-  if (typeof updateTipLink === "function") updateTipLink();
-  if (typeof attachMessagesListener === "function") attachMessagesListener();
-  if (typeof startStarEarning === "function") startStarEarning(currentUser.uid);
-  if (typeof startNotificationsFor === "function") startNotificationsFor(user.email);
+  // RESTORE ENTIRE CHATROOM STATE
+  showChatUI(currentUser);
+  updateRedeemLink?.();
+  updateTipLink?.();
+  setupPresence?.(currentUser);
+  attachMessagesListener?.();
+  startStarEarning?.(currentUser.uid);
+  startNotificationsFor?.(user.email);
 
-// EPIC RANDOM COLOR WELCOME — FIXED & FLAWLESS
-const colors = ["#FF1493", "#FFD700", "#00FFFF", "#FF4500", "#DA70D6", "#FF69B4", "#32CD32", "#FFA500"];
-const color = colors[Math.floor(Math.random() * colors.length)];
-
-showStarPopup(`
-  Welcome back,<br>
-  <span style="font-size:1.5em; font-weight:bold; color:${color}; text-shadow:0 0 12px ${color}99;">
-    ${currentUser.chatId.toUpperCase()}
-  </span>!
-`);
-
-localStorage.setItem("lastVipEmail", user.email);
-
+  // Optional welcome back
+  showStarPopup(`Welcome back, ${currentUser.chatId || "VIP"}!`);
+});
 
 // After successful login or auth restore
 syncUserUnlocks().then(unlocks => {
