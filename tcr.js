@@ -1,5 +1,7 @@
-/* ---------- Imports (Firebase v10) ---------- */
+/* ---------- Firebase Modular Imports (v10+) — FIXED & WORKING ---------- */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+
+// Firestore — all your needed functions
 import {
   getFirestore,
   doc,
@@ -11,40 +13,43 @@ import {
   serverTimestamp,
   onSnapshot,
   query,
-  signInWithEmailAndPassword,
-  signOut,
   orderBy,
   increment,
   getDocs,
   where,
   runTransaction,
-  arrayUnion
+  arrayUnion,
+  writeBatch
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-import { 
-  getDatabase, 
-  ref as rtdbRef, 
-  set as rtdbSet, 
-  onDisconnect, 
-  onValue 
+// Realtime Database (RTDB) — optional but you use it
+import {
+  getDatabase,
+  ref as rtdbRef,
+  set as rtdbSet,
+  onDisconnect,
+  onValue
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
-import { 
-  getAuth, 
-  onAuthStateChanged 
+// Auth — CRITICAL: signInWithEmailAndPassword & signOut live HERE
+import {
+  getAuth,
+  signInWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-  // ---------- FIREBASE CONFIG ----------
+/* ---------- Firebase Config ---------- */
 const firebaseConfig = {
   apiKey: "AIzaSyD_GjkTox5tum9o4AupO0LeWzjTocJg8RI",
   authDomain: "dettyverse.firebaseapp.com",
   projectId: "dettyverse",
   storageBucket: "dettyverse.firebasestorage.app",
   messagingSenderId: "1036459652488",
-  appId: "1:1036459652488:web:e8910172ed16e9cac9b63d",
-  measurementId: "G-NX2KWZW85V"
+  appId: "1:1036452488:web:e8910172ed16e9cac9b63d",
+  measurementId: "G-NX2KWZW85V",
+  databaseURL: "https://dettyverse-default-rtdb.firebaseio.com/"  // Fixes the yellow RTDB warning
 };
-
 
 /* ---------- Firebase Setup ---------- */
 const app = initializeApp(firebaseConfig);
