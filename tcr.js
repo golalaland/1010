@@ -1450,35 +1450,30 @@ refs.sendBtn?.addEventListener("click", async () => {
 
   const text = refs.messageInputEl?.value.trim();
   if (!text) return showStarPopup("Type a message first.");
-  if ((currentUser.stars || 0) < SEND_COST) 
+  if ((currentUser.stars || 0) < SEND_COST)
     return showStarPopup(`Need ${SEND_COST} stars to send.`);
 
   try {
-    // Deduct stars locally + in Firestore
+    // Deduct stars
     currentUser.stars -= SEND_COST;
     refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
-
     await updateDoc(doc(db, "users", getUserId(currentUser.email)), {
       stars: increment(-SEND_COST)
     });
 
-    // Local echo (instant UI)
+    // Local echo
     const tempId = "temp_" + Date.now();
     const tempMsg = {
       id: tempId,
       content: text,
       senderId: getUserId(currentUser.email),
-      chatId: currentUser.chatId || currentUser.email.split("@")[0],
+      chatId: currentUser.chatId,
       timestamp: { toMillis: () => Date.now() },
+      usernameColor: currentUser.usernameColor || "#ff69b4",  // COLORS BACK
       highlight: false,
       replyTo: currentReplyTarget?.id || null,
       replyToContent: currentReplyTarget?.content || null
     };
-
-    // Optional: store pending for offline recovery
-    let pending = JSON.parse(localStorage.getItem("pendingMsgs") || "{}");
-    pending[tempId] = tempMsg;
-    localStorage.setItem("pendingMsgs", JSON.stringify(pending));
 
     // Render instantly
     renderMessagesFromArray([tempMsg]);
@@ -1486,24 +1481,24 @@ refs.sendBtn?.addEventListener("click", async () => {
     clearReplyAfterSend();
     scrollToBottom(refs.messagesEl);
 
-    // Send to Firestore (correct path!)
-    await addDoc(collection(db, "chats", "main", "messages"), {
+    // SEND TO THE CORRECT PATH THAT EXISTS AND IS ALLOWED
+    await addDoc(collection(db, "messages_room1"), {
       content: text,
       senderId: getUserId(currentUser.email),
-      chatId: currentUser.chatId || currentUser.email.split("@")[0],
+      chatId: currentUser.chatId,
       timestamp: serverTimestamp(),
+      usernameColor: currentUser.usernameColor || "#ff69b4",   // CRITICAL FOR COLORS
       highlight: false,
       replyTo: currentReplyTarget?.id || null,
       replyToContent: currentReplyTarget?.content || null
     });
 
-    console.log("Message sent!");
-    localStorage.removeItem("pendingMsgs"); // clear after success
+    console.log("Message sent & saved permanently!");
 
   } catch (err) {
     console.error("Send failed:", err);
     showStarPopup("Failed to send message.");
-    // Refund stars on fail
+    // Refund stars
     currentUser.stars += SEND_COST;
     refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
   }
