@@ -1124,6 +1124,53 @@ window.logoutVIP = async () => {
   location.reload();
 };
 
+
+/* FINAL WORKING LOGOUT — WORKS NO MATTER WHAT YOUR BUTTON IS */
+document.addEventListener("click", async function(e) {
+  // Detect ANY logout click — by text, class, id, or data attribute
+  const target = e.target;
+  const isLogout = 
+    target.id === "logoutBtn" ||
+    target.classList.contains("logout-btn") ||
+    target.closest("[data-logout]") ||
+    target.textContent.toLowerCase().includes("log out") ||
+    target.textContent.toLowerCase().includes("sign out") ||
+    target.getAttribute("onclick")?.includes("signOut");
+
+  if (!isLogout) return;
+
+  e.preventDefault();
+  e.stopPropagation();
+
+  console.log("LOGOUT DETECTED — cleaning everything");
+
+  try {
+    await signOut(auth);
+    localStorage.removeItem("lastVipEmail");     // THIS STOPS AUTO-RELOGIN
+    sessionStorage.setItem("justLoggedOut", "1");
+    currentUser = null;
+
+    showStarPopup("You have been logged out");
+
+    setTimeout(() => location.reload(), 1200);
+  } catch (err) {
+    console.error("Logout failed:", err);
+  }
+});
+
+/* ALSO — block auto-login right after logout */
+window.addEventListener("DOMContentLoaded", () => {
+  if (sessionStorage.getItem("justLoggedOut")) {
+    console.log("User just logged out — blocking auto-login");
+    sessionStorage.removeItem("justLoggedOut");
+    // Do NOT run tryAutoLogin() here
+    return;
+  }
+
+  // Only run auto-login if not just logged out
+  setTimeout(tryAutoLogin, 1000);
+});
+
 /* ===============================
    💫 Auto Star Earning System
 ================================= */
