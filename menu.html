@@ -3,109 +3,175 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>xixi</title>
-<style>
-  body{margin:0;background:#0e0e0e;color:#fff;font-family:'Montserrat',sans-serif;overflow-x:hidden}
-  #toggle{background:#FF1493;color:#fff;padding:12px 20px;border:none;border-radius:50px;font-weight:800;position:fixed;top:20px;right:20px;z-index:99;cursor:pointer;box-shadow:0 4px 15px rgba(255,20,147,0.5)}
-  .container{max-width:480px;margin:0 auto;padding:20px}
-  h1{font-family:'Press Start 2P',cursive;font-size:28px;text-align:center;margin:80px 0 40px;color:#FF1493;text-shadow:0 0 10px #FF1493}
-  .games{ display:grid; gap:24px; }
-  .game{background:rgba(255,255,255,0.07);border-radius:20px;overflow:hidden;box-shadow:0 8px 30px rgba(0,0,0,0.6);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.1);transition:all 0.3s}
-  .poster{width:100%;height:220px;object-fit:cover}
-  .info{padding:20px;text-align:center}
-  .title{font-size:20px;font-weight:800;margin:0 0 8px;color:#fff}
-  .desc{font-size:14px;color:#ccc;line-height:1.5;margin:0 0 20px}
-  .buttons{display:flex;gap:12px;justify-content:center}
-  .btn{padding:12px 24px;border-radius:50px;font-weight:800;font-size:15px;cursor:pointer;border:none;transition:0.3s}
-  .learn{background:#333;color:#fff}
-  .play{background:linear-gradient(90deg,#00e676,#00b0ff);color:#000}
-  .shop{margin-top:40px;background:linear-gradient(135deg,#FFD700,#FF8C00);padding:30px;border-radius:20px;text-align:center;box-shadow:0 10px 40px rgba(255,215,0,0.4)}
-  .shop img{width:100%;max-width:300px;border-radius:16px;margin-bottom:20px}
-  .shop .title{font-size:24px;margin:0 0 12px}
-  .shop .desc{font-size:16px;color:#111;margin-bottom:20px}
-  .shop .btn{background:#000;color:#FFD700;padding:14px 40px;font-size:18px}
-  .bw .game,.bw .shop{filter:grayscale(100%)}
-  .bw h1,.bw .title,.bw .desc{color:#ddd}
-</style>
+<title>Dettyverse Games</title>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Montserrat:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#0e0e0e;--text:#fff;--card:rgba(255,255,255,0.07);--accent:#FF1493;--glow:0 0 20px rgba(255,20,147,0.5)}
+  body.light{--bg:#f5f5f5;--text:#000;--card:rgba(0,0,0,0.08);--accent:#FF1493;--glow:0 0 20px rgba(255,20,147,0.4)}
+  
+  body{margin:0;background:var(--bg);color:var(--text);font-family:'Montserrat',sans-serif;overflow-x:hidden;transition:background 0.6s,color 0.6s}
+  
+  /* Toggle Button */
+  #themeToggle{background:var(--accent);color:#fff;padding:14px 18px;border:none;border-radius:50%;font-weight:800;position:fixed;top:20px;right:20px;z-index:999;cursor:pointer;box-shadow:var(--glow);width:56px;height:56px;font-size:20px}
+  
+  /* Back to Chatroom Button */
+  #backToChat{background:#00ff9d;color:#000;padding:16px;border:none;border-radius:50%;font-weight:800;position:fixed;bottom:30px;right:20px;z-index:998;cursor:pointer;box-shadow:0 8px 30px rgba(0,255,157,0.5);width:64px;height:64px;font-size:28px;animation:pulse 2s infinite}
+  @keyframes pulse{0%{box-shadow:0 8px 30px rgba(0,255,157,0.5)}50%{box-shadow:0 8px 50px rgba(0,255,157,0.8)}100%{box-shadow:0 8px 30px rgba(0,255,157,0.5)}}
+  
+  .container{max-width:480px;margin:0 auto;padding:20px 20px 100px}
+  h1{font-family:'Press Start 2P',cursive;font-size:28px;text-align:center;margin:90px 0 50px;color:var(--accent);text-shadow:0 0 15px var(--accent);animation:fadeIn 1s}
+  
+  .games{display:grid;gap:28px}
+  .game{
+    background:var(--card);border-radius:22px;overflow:hidden;
+    box-shadow:0 10px 40px rgba(0,0,0,0.5);border:1px solid rgba(255,255,255,0.1);
+    transform:translateY(30px);opacity:0;animation:slideUp 0.6s forwards;
+    backdrop-filter:blur(12px);
+  }
+  @keyframes slideUp{to{transform:translateY(0);opacity:1}}
+  .game:nth-child(1){animation-delay:0.1s}
+  .game:nth-child(2){animation-delay:0.2s}
+  .game:nth-child(3){animation-delay:0.3s}
+  .game:nth-child(4){animation-delay:0.4s}
+  
+  .poster{width:100%;height:240px;object-fit:cover;transition:transform 0.4s}
+  .game:hover .poster{transform:scale(1.05)}
+  
+  .info{padding:22px;text-align:center}
+  .title{font-size:21px;font-weight:800;margin:0 0 10px;color:var(--text)}
+  .desc{font-size:14.5px;color:#ccc;line-height:1.6;margin:0 0 22px}
+  body.light .desc{color:#444}
+  
+  .buttons{display:flex;gap:14px;justify-content:center}
+  .btn{padding:13px 26px;border-radius:50px;font-weight:800;font-size:15px;cursor:pointer;border:none;transition:0.3s;min-width:120px}
+  .learn{background:#333;color:#fff}
+  .learn:hover{background:#555}
+  .play{background:linear-gradient(90deg,#00e676,#00b0ff);color:#000;transform:scale(1);transition:0.3s}
+  .play:hover{transform:scale(1.08);box-shadow:0 8px 25px rgba(0,230,118,0.5)}
+  
+  .shop{margin-top:50px;background:linear-gradient(135deg,#FFD700,#FF8C00);padding:34px;border-radius:24px;text-align:center;box-shadow:0 15px 50px rgba(255,215,0,0.4);animation:slideUp 0.6s 0.5s both}
+  .shop img{width:100%;max-width:320px;border-radius:18px;margin-bottom:20px;box-shadow:0 10px 30px rgba(0,0,0,0.3)}
+  .shop .title{font-size:26px;margin:0 0 12px;color:#000;font-weight:800}
+  .shop .desc{font-size:16px;color:#111;margin-bottom:24px}
+  .shop .btn{background:#000;color:#FFD700;padding:16px 50px;font-size:19px;border-radius:50px}
+  
+  /* Custom Modal */
+  .modal-backdrop{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:9999;align-items:center;justify-content:center;padding:20px}
+  .modal-content{
+    background:var(--bg);width:90%;max-width:380px;border-radius:20px;overflow:hidden;
+    border:2px solid var(--accent);box-shadow:0 0 60px rgba(255,20,147,0.6);
+    animation:pop 0.4s
+  }
+  @keyframes pop{from{transform:scale(0.7);opacity:0}to{transform:scale(1);opacity:1}}
+  .modal-header{padding:20px 20px 10px;text-align:center;border-bottom:1px solid rgba(255,20,147,0.3)}
+  .modal-header h3{font-family:'Press Start 2P',cursive;font-size:18px;color:var(--accent);margin:0}
+  .modal-body{padding:20px;font-size:15px;line-height:1.7;color:#ddd}
+  body.light .modal-body{color:#333}
+  .closeModal{background:var(--accent);color:#fff;padding:14px 40px;border:none;border-radius:50px;font-weight:800;margin:10px auto 20px;display:block;cursor:pointer}
+</style>
 </head>
 <body>
 
-<button id="toggle">🔘</button>
+<!-- Theme Toggle -->
+<button id="themeToggle">D/L</button>
+
+<!-- Back to Chatroom -->
+<a href="YOUR_CHATROOM_LINK_HERE" target="_blank">
+  <button id="backToChat">CHAT</button>
+</a>
 
 <div class="container">
-  <h1>· ─ ·𖥸· ─ ·</h1>
+  <h1>DETTYVERSE</h1>
   
   <div class="games">
     
     <!-- GAME 1 -->
     <div class="game">
-      <img src="https://via.placeholder.com/480x220/FF1493/000000?text=TAP+MASTER" class="poster" alt="Tap Master">
+      <img src="https://via.placeholder.com/480x240/FF1493/000000?text=TAP+MASTER" class="poster">
       <div class="info">
         <div class="title">Tap Master</div>
-        <div class="desc">Tap fast, earn real cash. ₦250k PvP wars daily.</div>
+        <div class="desc">Tap fast. Win real cash. ₦250k PvP wars daily.</div>
         <div class="buttons">
-          <button class="btn learn" onclick="alert('60-second rounds. Top 3 split the pot. Cashout via OPay.')">Learn More</button>
-          <a href="YOUR_TAP_MASTER_LINK_HERE" target="_blank"><button class="btn play">PLAY NOW</button></a>
+          <button class="btn learn" data-title="Tap Master" data-desc="60-second rounds.<br>Top 3 split the pot.<br>Real cash via OPay & bank transfer.<br>Daily wars at 3PM, 6PM, 9PM.">Learn More</button>
+          <a href="YOUR_TAP_LINK" target="_blank"><button class="btn play">PLAY NOW</button></a>
         </div>
       </div>
     </div>
     
     <!-- GAME 2 -->
     <div class="game">
-      <img src="https://via.placeholder.com/480x220/00D4FF/000000?text=DICE+WARS" class="poster" alt="Dice Wars">
+      <img src="https://via.placeholder.com/480x240/00D4FF/000000?text=DICE+WARS" class="poster">
       <div class="info">
         <div class="title">Dice Wars</div>
-        <div class="desc">Roll higher than the house. Instant wins up to ₦50k.</div>
+        <div class="desc">Roll higher than the house. Instant payouts.</div>
         <div class="buttons">
-          <button class="btn learn" onclick="alert('Simple dice game. Beat the roll, double your bet.')">Learn More</button>
-          <a href="YOUR_DICE_LINK_HERE" target="_blank"><button class="btn play">PLAY NOW</button></a>
+          <button class="btn learn" data-title="Dice Wars" data-desc="Bet stars → roll dice.<br>Beat the house roll = double your bet.<br>Instant win up to ₦50k.<br>No waiting.">Learn More</button>
+          <a href="YOUR_DICE_LINK" target="_blank"><button class="btn play">PLAY NOW</button></a>
         </div>
       </div>
     </div>
     
     <!-- GAME 3 -->
     <div class="game">
-      <img src="https://via.placeholder.com/480x220/00FFA3/000000?text=SPIN+TO+WIN" class="poster" alt="Spin to Win">
+      <img src="https://via.placeholder.com/480x240/00FFA3/000000?text=SPIN+TO+WIN" class="poster">
       <div class="info">
         <div class="title">Spin to Win</div>
-        <div class="desc">One spin = free stars or real cash. Daily free spins.</div>
+        <div class="desc">Free daily spins. Win stars or real cash.</div>
         <div class="buttons">
-          <button class="btn learn" onclick="alert('Spin the wheel. Win stars, cash or boosters.')">Learn More</button>
-          <a href="YOUR_SPIN_LINK_HERE" target="_blank"><button class="btn play">PLAY NOW</button></a>
+          <button class="btn learn" data-title="Spin to Win" data-desc="One free spin every 24hrs.<br>Win 1,000–50,000 stars or ₦5k cash.<br>No entry fee.">Learn More</button>
+          <a href="YOUR_SPIN_LINK" target="_blank"><button class="btn play">PLAY NOW</button></a>
         </div>
       </div>
     </div>
     
     <!-- GAME 4 -->
     <div class="game">
-      <img src="https://via.placeholder.com/480x220/FFD700/000000?text=NUMBER+CRUSH" class="poster" alt="Number Crush">
+      <img src="https://via.placeholder.com/480x240/FFD700/000000?text=NUMBER+CRUSH" class="poster">
       <div class="info">
         <div class="title">Number Crush</div>
-        <div class="desc">Match numbers, clear the board, win big pots.</div>
+        <div class="desc">Match numbers. Clear board. Win big.</div>
         <div class="buttons">
-          <button class="btn learn" onclick="alert('Like Candy Crush but you win real money.')">Learn More</button>
-          <a href="YOUR_NUMBER_LINK_HERE" target="_blank"><button class="btn play">PLAY NOW</button></a>
+          <button class="btn learn" data-title="Number Crush" data-desc="Like Candy Crush but with real money pots.<br>Clear levels fast → climb leaderboard → win weekly cash.">Learn More</button>
+          <a href="YOUR_CRUSH_LINK" target="_blank"><button class="btn play">PLAY NOW</button></a>
         </div>
       </div>
     </div>
     
   </div>
   
-  <!-- SHOP BLOCK -->
+  <!-- SHOP -->
   <div class="shop">
-    <img src="https://via.placeholder.com/600x400/FFD700/000000?text=DETTY+SHOP" alt="Detty Shop">
-    <div class="title">SHOP</div>
-    <div class="desc">Airtime, Data, Gift Cards, Bottles & more. Spend your STRZ ⭐️ here!</div>
-    <a href="YOUR_SHOP_LINK_HERE" target="_blank"><button class="btn">ENTER SHOP</button></a>
+    <img src="https://via.placeholder.com/600x400/111/FFD700?text=DETTY+SHOP" alt="Shop">
+    <div class="title">DETTYVERSE SHOP</div>
+    <div class="desc">Airtime • Data • Gift Cards • Bottles • Merch<br>Spend your STRZ ⭐ here!</div>
+    <a href="YOUR_SHOP_LINK" target="_blank"><button class="btn">ENTER SHOP</button></a>
+  </div>
+</div>
+
+<!-- Modal -->
+<div class="modal-backdrop" id="learnModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 id="modalTitle">Game Name</h3>
+    </div>
+    <div class="modal-body" id="modalDesc">Loading...</div>
+    <button class="closeModal" onclick="document.getElementById('learnModal').style.display='none'">CLOSE</button>
   </div>
 </div>
 
 <script>
-document.getElementById('toggle').addEventListener('click', () => {
-  document.body.classList.toggle('bw');
-  const text = document.body.classList.contains('bw') ? 'BLACK & WHITE MODE ON' : 'BLACK & WHITE MODE OFF';
-  document.getElementById('toggle').textContent = text;
+// Theme Toggle
+document.getElementById('themeToggle').addEventListener('click', () => {
+  document.body.classList.toggle('light');
+});
+
+// Learn More Modal
+document.querySelectorAll('.learn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.getElementById('modalTitle').textContent = btn.dataset.title;
+    document.getElementById('modalDesc').innerHTML = btn.dataset.desc;
+    document.getElementById('learnModal').style.display = 'flex';
+  });
 });
 </script>
 </body>
