@@ -399,8 +399,22 @@ onAuthStateChanged(auth, async (user) => {
   startNotificationsFor?.(user.email);
 
   // Optional welcome back
-  showStarPopup(`Welcome back, ${currentUser.chatId || "VIP"}!`);
+showStarPopup(`Welcome back,<br><span style="font-size:1.4em;font-weight:bold;color:${["#FF1493","#FFD700","#00FF00","#00FFFF","#FF4500","#DA70D6","#FF69B4","#32CD32","#FFA500"][Math.floor(Math.random()*9)]};text-shadow:0 0 10px ${'#'+Math.floor(Math.random()*16777215).toString(16)}60">${(currentUser.chatId||currentUser.email.split("@")[0]||"VIP").toUpperCase()}</span>!`);
 });
+
+// OPTIONAL: EPIC WELCOME BACK WITH BOLD + RANDOM COLOR
+const colors = ["#FF1493", "#FFD700", "#00FF00", "#00FFFF", "#FF4500", "#DA70D6", "#FF69B4", "#32CD32", "#FFA500"];
+const randomColor = colors[Math.floor(Math.random() * colors.length)];
+
+const username = currentUser.chatId || currentUser.email.split("@")[0] || "VIP";
+const welcomeHTML = `
+  Welcome back,<br>
+  <span style="font-size:1.4em; font-weight:bold; color:${randomColor}; text-shadow: 0 0 10px ${randomColor}60;">
+    ${username.toUpperCase()}
+  </span>!
+`;
+
+showStarPopup(welcomeHTML);
 
 /* ----------------------------
    ⭐ GIFT MODAL / CHAT BANNER ALERT
