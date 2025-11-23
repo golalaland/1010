@@ -397,22 +397,20 @@ onAuthStateChanged(auth, async (user) => {
   attachMessagesListener?.();
   startStarEarning?.(currentUser.uid);
   startNotificationsFor?.(user.email);
+  
 
-  // Optional welcome back
-showStarPopup(`Welcome back,<br><span style="font-size:1.4em;font-weight:bold;color:${["#FF1493","#FFD700","#00FF00","#00FFFF","#FF4500","#DA70D6","#FF69B4","#32CD32","#FFA500"][Math.floor(Math.random()*9)]};text-shadow:0 0 10px ${'#'+Math.floor(Math.random()*16777215).toString(16)}60">${(currentUser.chatId||currentUser.email.split("@")[0]||"VIP").toUpperCase()}</span>!`);
-});
+// EPIC WELCOME BACK — Bold + Random Color Every Time
+const vipColors = ["#FF1493", "#FFD700", "#00FFFF", "#FF4500", "#DA70D6", "#FF69B4", "#32CD32", "#FFA500", "#00FF7F"];
+const glowColor = vipColors[Math.floor(Math.random() * vipColors.length)];
 
-// OPTIONAL: EPIC WELCOME BACK WITH BOLD + RANDOM COLOR
-const colors = ["#FF1493", "#FFD700", "#00FF00", "#00FFFF", "#FF4500", "#DA70D6", "#FF69B4", "#32CD32", "#FFA500"];
-const randomColor = colors[Math.floor(Math.random() * colors.length)];
+const displayName = (currentUser.chatId || currentUser.email.split("@")[0] || "VIP").toUpperCase();
 
-const username = currentUser.chatId || currentUser.email.split("@")[0] || "VIP";
-const welcomeHTML = `
+showStarPopup(`
   Welcome back,<br>
-  <span style="font-size:1.4em; font-weight:bold; color:${randomColor}; text-shadow: 0 0 10px ${randomColor}60;">
-    ${username.toUpperCase()}
+  <span style="font-size:1.5em; font-weight:bold; color:${glowColor}; text-shadow:0 0 12px ${glowColor}99;">
+    ${displayName}
   </span>!
-`;
+`);
 
 showStarPopup(welcomeHTML);
 
