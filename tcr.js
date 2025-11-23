@@ -425,6 +425,13 @@ onAuthStateChanged(auth, async (user) => {
   // Optional welcome back
   showStarPopup(`Welcome back, ${currentUser.chatId || "VIP"}!`);
 });
+
+
+// After successful login or auth restore
+syncUserUnlocks().then(unlocks => {
+  console.log("User has access to", unlocks.length, "premium videos");
+  // Optionally update UI badges, etc.
+});
   
 
 /* ----------------------------
