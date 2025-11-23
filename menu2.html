@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DETTYVERSE • GAME HUB</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Montserrat:wght@600;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --text: #fff;
+    --card: rgba(255,255,255,0.06);
+    --border: rgba(255,255,255,0.12);
+    --accent: #FF1493;
+    --gold: #FFD700;
+  }
+  .light {
+    --bg: #f8f8f8;
+    --text: #111;
+    --card: rgba(0,0,0,0.06);
+    --border: rgba(0,0,0,0.12);
+  }
+  body {margin:0;background:var(--bg);color:var(--text);font-family:'Montserrat',sans-serif;min-height:100vh;display:flex;flex-direction:column;transition:background 0.4s;}
+  .toggle {position:fixed;top:20px;right:20px;z-index:999;font-size:28px;cursor:pointer;filter:drop-shadow(0 0 10px var(--accent));transition:0.4s;}
+  header {text-align:center;padding:40px 20px 20px;}
+  header h1 {font-family:'Press Start 2P',cursive;font-size:28px;color:var(--accent);text-shadow:0 0 20px var(--accent);}
+  header p {font-size:15px;color:#aaa;margin-top:8px;}
+  .grid {display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:24px;padding:20px;max-width:1200px;margin:0 auto;flex:1;}
+  .game-card {
+    position:relative;height:480px;border-radius:20px;overflow:hidden;cursor:pointer;
+    background:var(--card);border:1px solid var(--border);box-shadow:0 10px 30px rgba(0,0,0,0.4);
+    transition:transform 0.3s,box-shadow 0.3s;
+  }
+  .game-card:hover {transform:translateY(-12px);box-shadow:0 20px 50px rgba(255,20,147,0.4);}
+  .front, .back {position:absolute;inset:0;transition:transform 0.6s cubic-bezier(0.68,-0.55,0.27,1.55);backface-visibility:hidden;}
+  .back {transform:rotateY(180deg);background:rgba(0,0,0,0.85);display:flex;flex-direction:column;justify-content:center;align-items:center;padding:30px;text-align:center;}
+  .flip .front {transform:rotateY(180deg);}
+  .flip .back {transform:rotateY(0deg);}
+  .poster {width:100%;height:100%;object-fit:cover;}
+  .play-btn {
+    margin-top:20px;padding:16px 40px;background:linear-gradient(90deg,var(--accent),#FF8C00);
+    color:#000;font-weight:800;font-size:18px;border:none;border-radius:14px;cursor:pointer;
+    box-shadow:0 8px 30px rgba(255,20,147,0.5);transition:0.3s;
+  }
+  .play-btn:hover {transform:scale(1.1);}
+  .shop-block {
+    background:linear-gradient(135deg,#FFD700,#FF8C00);color:#000;padding:60px 20px;text-align:center;
+    margin:40px 20px 60px;border-radius:24px;box-shadow:0 20px 50px rgba(255,215,0,0.4);
+  }
+  .shop-block h2 {font-family:'Press Start 2P';font-size:32px;margin:0 0 16px;}
+  .shop-btn {padding:18px 50px;background:#111;color:#FFD700;font-weight:800;font-size:20px;border-radius:16px;border:none;margin-top:20px;cursor:pointer;}
+</style>
+</head>
+<body>
+
+<div class="toggle" onclick="document.body.classList.toggle('light')">Moon/Sun</div>
+
+<header>
+  <h1>DETTYVERSE</h1>
+  <p>Choose your war.</p>
+</header>
+
+<div class="grid">
+
+  <!-- GAME 1 – TAP MASTER -->
+  <div class="game-card" onclick="this.classList.toggle('flip')">
+    <div class="front"><img src="https://via.placeholder.com/600x800/FF1493/111?text=TAP+MASTER" class="poster"></div>
+    <div class="back">
+      <h3>TAP MASTER</h3>
+      <p style="margin:16px 0;font-size:15px;line-height:1.6;">60 seconds. Pure speed. Real cash.<br>Tap like your rent depends on it.</p>
+      <button class="play-btn" onclick="event.stopPropagation();location.href='tapmaster.html'">PLAY NOW</button>
+    </div>
+  </div>
+
+  <!-- GAME 2 – (add your second game poster here) -->
+  <div class="game-card" onclick="this.classList.toggle('flip')">
+    <div class="front"><img src="https://via.placeholder.com/600x800/00FFA3/111?text=GAME+TWO" class="poster"></div>
+    <div class="back">
+      <h3>GAME TWO</h3>
+      <p style="margin:16px 0;font-size:15px;line-height:1.6;">Coming soon — pure chaos loading…</p>
+      <button class="play-btn" onclick="event.stopPropagation();">SOON</button>
+    </div>
+  </div>
+
+  <!-- GAME 3 -->
+  <div class="game-card" onclick="this.classList.toggle('flip')">
+    <div class="front"><img src="https://via.placeholder.com/600x800/00D4FF/111?text=GAME+THREE" class="poster"></div>
+    <div class="back">
+      <h3>GAME THREE</h3>
+      <p style="margin:16px 0;font-size:15px;line-height:1.6;">Coming soon — stay ready.</p>
+      <button class="play-btn" onclick="event.stopPropagation();">SOON</button>
+    </div>
+  </div>
+
+  <!-- GAME 4 -->
+  <div class="game-card" onclick="this.classList.toggle('flip')">
+    <div class="front"><img src="https://via.placeholder.com/600x800/FFD700/000?text=GAME+FOUR" class="poster"></div>
+    <div class="back">
+      <h3>GAME FOUR</h3>
+      <p style="margin:16px 0;font-size:15px;line-height:1.6;">Coming soon — golden era loading.</p>
+      <button class="play-btn" onclick="event.stopPropagation();">SOON</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- SHOP BLOCK -->
+<div class="shop-block">
+  <h2>DETTYVERSE SHOP</h2>
+  <p style="font-size:18px;margin:20px 0;">Merch • Boosts • Exclusive drops</p>
+  <button class="shop-btn" onclick="location.href='https://yourshoplink.com'">ENTER SHOP</button>
+</div>
+
+<script>
+// Dark/light toggle with smooth feel
+document.querySelector('.toggle').addEventListener('click', () => {
+  document.body.classList.toggle('light');
+  document.querySelector('.toggle').textContent = document.body.classList.contains('light') ? 'Sun' : 'Moon';
+});
+</script>
+</body>
+</html>
