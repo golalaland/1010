@@ -528,37 +528,17 @@ function updateTipLink() {
 }
 
 
-/* ---------- USER COLORS — FIXED, SECURE & FLAWLESS ---------- */
-// Only listens to YOUR color + colors from messages (no more reading all users!)
-function setupUserColors() {
-  if (!currentUser?.email) return;
-
-  const myId = getUserId(currentUser.email);
-  refs.userColors = refs.userColors || {};
-
-  // 1. Listen ONLY to your own color (allowed by rules)
-  const myRef = doc(db, "users", myId);
-  onSnapshot(myRef, (snap) => {
-    if (snap.exists()) {
-      const color = snap.data()?.usernameColor || "#ff69b4";
-      refs.userColors[myId] = color;
-      // Update your name color in chat instantly
-      if (lastMessagesArray.length) renderMessagesFromArray(lastMessagesArray);
-    }
-  });
-
-  // 2. Also pull colors from incoming messages (best source!)
-  const originalRender = renderMessagesFromArray;
-  renderMessagesFromArray = function(messages) {
-    messages.forEach(msg => {
-      if (msg.usernameColor) {
-        refs.userColors[msg.senderId || msg.uid] = msg.usernameColor;
-      }
-    });
-    originalRender(messages);
-  };
+/* ---------- User Colors ---------- */
+function setupUsersListener() {
+  onSnapshot(collection(db, "users"), snap => {
+    refs.userColors = refs.userColors || {};
+    snap.forEach(docSnap => {
+      refs.userColors[docSnap.id] = docSnap.data()?.usernameColor || "#ffffff";
+    });
+    if (lastMessagesArray.length) renderMessagesFromArray(lastMessagesArray);
+  });
 }
-
+setupUsersListener();
 // Call it once after login
 // (add this line in onAuthStateChanged after currentUser is set)
 setupUserColors();
