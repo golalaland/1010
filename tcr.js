@@ -397,6 +397,10 @@ onAuthStateChanged(auth, async (user) => {
   attachMessagesListener?.();
   startStarEarning?.(currentUser.uid);
   startNotificationsFor?.(user.email);
+
+  // Optional welcome back
+  showStarPopup(`Welcome back, ${currentUser.chatId || "VIP"}!`);
+});
   
 
 // EPIC WELCOME BACK — Bold + Random Color Every Time
