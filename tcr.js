@@ -855,6 +855,60 @@ function attachMessagesListener() {
   });
 }
 
+function handleChatAutoScroll() {
+  if (!refs.messagesEl) return;
+
+  let scrollBtn = document.getElementById("scrollToBottomBtn");
+  if (!scrollBtn) {
+    scrollBtn = document.createElement("div");
+    scrollBtn.id = "scrollToBottomBtn";
+    scrollBtn.textContent = "↓";
+    scrollBtn.style.cssText = `
+      position: fixed;
+      bottom: 90px;
+      right: 20px;
+      padding: 6px 12px;
+      background: rgba(255,20,147,0.9);
+      color: #fff;
+      border-radius: 14px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.3s ease;
+      z-index: 9999;
+    `;
+    document.body.appendChild(scrollBtn);
+
+    scrollBtn.addEventListener("click", () => {
+      refs.messagesEl.scrollTo({ top: refs.messagesEl.scrollHeight, behavior: "smooth" });
+      scrollBtn.style.opacity = 0;
+      scrollBtn.style.pointerEvents = "none";
+    });
+  }
+
+  // Show/hide button based on scroll position
+  refs.messagesEl.addEventListener("scroll", () => {
+    const distanceFromBottom = refs.messagesEl.scrollHeight - refs.messagesEl.scrollTop - refs.messagesEl.clientHeight;
+    if (distanceFromBottom > 150) {
+      scrollBtn.style.opacity = 1;
+      scrollBtn.style.pointerEvents = "auto";
+    } else {
+      scrollBtn.style.opacity = 0;
+      scrollBtn.style.pointerEvents = "none";
+    }
+  });
+
+  // Initial auto-scroll to bottom on reload
+  requestAnimationFrame(() => {
+    refs.messagesEl.scrollTop = refs.messagesEl.scrollHeight;
+  });
+}
+
+// Call this once after DOM is ready / messages container exists
+handleChatAutoScroll();
+
 
 /* ===== Notifications Tab Lazy + Live Setup (Robust) ===== */
 let notificationsListenerAttached = false;
