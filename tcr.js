@@ -22,15 +22,6 @@ import {
   writeBatch
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-// Realtime Database (RTDB) — optional but you use it
-import {
-  getDatabase,
-  ref as rtdbRef,
-  set as rtdbSet,
-  onDisconnect,
-  onValue
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
-
 // Auth — CRITICAL: signInWithEmailAndPassword & signOut live HERE
 import {
   getAuth,
@@ -47,21 +38,18 @@ const firebaseConfig = {
   storageBucket: "dettyverse.firebasestorage.app",
   messagingSenderId: "1036459652488",
   appId: "1:1036452488:web:e8910172ed16e9cac9b63d",
-  measurementId: "G-NX2KWZW85V",
-  databaseURL: "https://dettyverse-default-rtdb.firebaseio.com/"  // Fixes the yellow RTDB warning
+  measurementId: "G-NX2KWZW85V"
 };
 
 /* ---------- Firebase Setup ---------- */
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-const rtdb = getDatabase(app);
 const auth = getAuth(app);
 
 // Make Firebase objects available globally (for debugging or reuse)
 window.app = app;
 window.db = db;
 window.auth = auth;
-window.rtdb = rtdb;
 
 
 // SYNC UNLOCKED VIDEOS — 100% Secure & Reliable
@@ -329,7 +317,7 @@ export function getCurrentUserId() {
 window.currentUser = currentUser;
 
 /* ---------- Exports for other scripts ---------- */
-export { app, db, rtdb, auth };
+export { app, db, auth };
 
 /* ---------- Global State ---------- */
 const ROOM_ID = "room5";
@@ -539,20 +527,6 @@ function updateTipLink() {
   refs.tipBtn.style.display = "inline-block";
 }
 
-/* ---------- Presence (Realtime) ---------- */
-function setupPresence(user) {
-  if (!rtdb) return;
-  const pRef = rtdbRef(rtdb, `presence/${ROOM_ID}/${getUserId(user.uid)}`);
-  rtdbSet(pRef, { online: true, chatId: user.chatId, email: user.email }).catch(() => {});
-  onDisconnect(pRef).remove().catch(() => {});
-}
-
-if (rtdb) {
-  onValue(rtdbRef(rtdb, `presence/${ROOM_ID}`), snap => {
-    const users = snap.val() || {};
-    if (refs.onlineCountEl) refs.onlineCountEl.innerText = `(${Object.keys(users).length} online)`;
-  });
-}
 
 // ONLY LISTEN TO CURRENT USER'S COLOR (safe + works)
 function setupMyColorListener() {
