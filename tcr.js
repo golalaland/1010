@@ -530,67 +530,61 @@ function updateTipLink() {
 }
 
 
-/* ---------- USER COLORS — FINAL, PERFECT, BULLETPROOF ---------- */
+/* ============================================================
+   USER COLORS — FINAL, CLEAN & BULLETPROOF
+============================================================ */
 function setupUserColors() {
   if (!currentUser?.email) return;
 
   const myId = getUserId(currentUser.email);
   refs.userColors = refs.userColors || {};
 
-  // 1. Listen ONLY to your own color from your user doc (secure + instant)
+  // --- LISTEN TO YOUR OWN USER DOC FOR LIVE COLOR UPDATES ---
   const myDocRef = doc(db, "users", myId);
   const unsubscribeMyColor = onSnapshot(myDocRef, (snap) => {
     if (snap.exists()) {
       const color = snap.data()?.usernameColor || "#ff69b4";
       refs.userColors[myId] = color;
 
-      // Optional: instantly update your name color in existing messages
+      // Instantly recolor already-rendered messages
       document.querySelectorAll(`[data-uid="${myId}"] .username`).forEach(el => {
         el.style.color = color;
       });
     }
   });
 
-  // 2. Automatically collect colors from EVERY incoming message (best source)
-  // We override renderMessagesFromArray ONCE and safely
+  // --- PATCH renderMessagesFromArray ONCE (NO DOUBLE WRAP) ---
   if (!window.renderMessagesFromArrayPatched) {
     const originalRender = renderMessagesFromArray;
 
     renderMessagesFromArray = function(messages) {
-      // Extract and cache colors from all messages (temp or real)
       messages.forEach(item => {
         const data = item.data || item;
         const uid = data.uid || data.senderId;
         const color = data.usernameColor;
-
-        if (uid && color) {
-          refs.userColors[uid] = color;
-        }
+        if (uid && color) refs.userColors[uid] = color;
       });
 
-      // Now render normally
       return originalRender(messages);
     };
 
-    // Mark as patched so we never double-wrap
     window.renderMessagesFromArrayPatched = true;
   }
 
-  // Return cleanup function (good practice)
-  return () => {
-    unsubscribeMyColor();
-  };
+  return () => unsubscribeMyColor();
 }
 
-// Call ONCE after login (inside onAuthStateChanged)
-setupUserColors();
+setupUserColors(); // Call ONCE after login
 
 
+
+/* ============================================================
+   REPLY SYSTEM
+============================================================ */
 let scrollPending = false;
 let tapModalEl = null;
 let currentReplyTarget = null;
 
-// Cancel reply
 function cancelReply() {
   currentReplyTarget = null;
   refs.messageInputEl.placeholder = "Type a message...";
@@ -600,7 +594,6 @@ function cancelReply() {
   }
 }
 
-// Show the little cancel reply button
 function showReplyCancelButton() {
   if (!refs.cancelReplyBtn) {
     const btn = document.createElement("button");
@@ -613,25 +606,33 @@ function showReplyCancelButton() {
   }
 }
 
-// Report a message
+
+
+/* ============================================================
+   REPORT MESSAGE
+============================================================ */
 async function reportMessage(msgData) {
   try {
     const reportRef = doc(db, "reportedmsgs", msgData.id);
     const reportSnap = await getDoc(reportRef);
+
     const reporterChatId = currentUser?.chatId || "unknown";
     const reporterUid = currentUser?.uid || null;
 
     if (reportSnap.exists()) {
       const data = reportSnap.data();
+
       if ((data.reportedBy || []).includes(reporterChatId)) {
         return showStarPopup("You’ve already reported this message.", { type: "info" });
       }
+
       await updateDoc(reportRef, {
         reportCount: increment(1),
         reportedBy: arrayUnion(reporterChatId),
         reporterUids: arrayUnion(reporterUid),
         lastReportedAt: serverTimestamp()
       });
+
     } else {
       await setDoc(reportRef, {
         messageId: msgData.id,
@@ -646,17 +647,19 @@ async function reportMessage(msgData) {
       });
     }
 
-    // ✅ Success popup
     showStarPopup("✅ Report submitted!", { type: "success" });
 
   } catch (err) {
     console.error(err);
-    // ❌ Error popup
     showStarPopup("❌ Error reporting message.", { type: "error" });
   }
 }
 
-// Tap modal for Reply / Report
+
+
+/* ============================================================
+   TAP MODAL (Reply / Report)
+============================================================ */
 function showTapModal(targetEl, msgData) {
   tapModalEl?.remove();
   tapModalEl = document.createElement("div");
@@ -665,8 +668,13 @@ function showTapModal(targetEl, msgData) {
   const replyBtn = document.createElement("button");
   replyBtn.textContent = "⏎ Reply";
   replyBtn.onclick = () => {
-    currentReplyTarget = { id: msgData.id, chatId: msgData.chatId, content: msgData.content };
-    refs.messageInputEl.placeholder = `Replying to ${msgData.chatId}: ${msgData.content.substring(0, 30)}...`;
+    currentReplyTarget = {
+      id: msgData.id,
+      chatId: msgData.chatId,
+      content: msgData.content
+    };
+    refs.messageInputEl.placeholder =
+      `Replying to ${msgData.chatId}: ${msgData.content.substring(0, 30)}...`;
     refs.messageInputEl.focus();
     showReplyCancelButton();
     tapModalEl.remove();
@@ -702,39 +710,32 @@ function showTapModal(targetEl, msgData) {
   setTimeout(() => tapModalEl?.remove(), 3000);
 }
 
-// Confetti / glow for banners
-// Banner glow only (no confetti)
+
+
+/* ============================================================
+   BANNER GLOW (no confetti)
+============================================================ */
 function triggerBannerEffect(bannerEl) {
   bannerEl.style.animation = "bannerGlow 1s ease-in-out infinite alternate";
-
-  // ✅ Confetti removed
-  // const confetti = document.createElement("div");
-  // confetti.className = "confetti";
-  // confetti.style.position = "absolute";
-  // confetti.style.top = "-4px";
-  // confetti.style.left = "50%";
-  // confetti.style.width = "6px";
-  // confetti.style.height = "6px";
-  // confetti.style.background = "#fff";
-  // confetti.style.borderRadius = "50%";
-  // bannerEl.appendChild(confetti);
-  // setTimeout(() => confetti.remove(), 1500);
 }
 
 
-// Render messages
+
+/* ============================================================
+   RENDER MESSAGES — CLEAN, NO DUPLICATES
+============================================================ */
 function renderMessagesFromArray(messages) {
   if (!refs.messagesEl) return;
 
   messages.forEach(item => {
     if (!item.id) return;
 
-    // Skip duplicate check for temp messages
+    // Prevent duplicate permanent messages
     if (!item.isTemp && document.getElementById(item.id)) return;
 
     const m = item.data || item;
 
-    // CACHE USERNAME COLOR FROM EVERY MESSAGE
+    // Cache username colors
     if (m.uid && m.usernameColor) {
       refs.userColors = refs.userColors || {};
       refs.userColors[m.uid] = m.usernameColor;
@@ -744,7 +745,8 @@ function renderMessagesFromArray(messages) {
     wrapper.className = "msg";
     wrapper.id = item.id;
 
-    // Banner
+
+    /* ---------- BANNER MESSAGE ---------- */
     if (m.systemBanner || m.isBanner || m.type === "banner") {
       wrapper.classList.add("chat-banner");
       wrapper.style.textAlign = "center";
@@ -774,19 +776,22 @@ function renderMessagesFromArray(messages) {
         delBtn.style.position = "absolute";
         delBtn.style.right = "6px";
         delBtn.style.top = "3px";
-        delBtn.style.cursor = "pointer";
         delBtn.onclick = async () => {
           await deleteDoc(doc(db, "messages", item.id));
           wrapper.remove();
         };
         wrapper.appendChild(delBtn);
       }
+
     } else {
-      // Regular message
+
+      /* ---------- REGULAR MESSAGE ---------- */
       const usernameEl = document.createElement("span");
       usernameEl.className = "meta";
-      usernameEl.innerHTML = `<span class="chat-username" data-username="${m.uid}">${m.chatId || "Guest"}</span>:`;
-      usernameEl.style.color = (m.uid && refs.userColors?.[m.uid]) ? refs.userColors[m.uid] : "#fff";
+      usernameEl.innerHTML =
+        `<span class="chat-username username" data-uid="${m.uid}">${m.chatId || "Guest"}</span>:`;
+      usernameEl.style.color = (m.uid && refs.userColors?.[m.uid]) ?
+        refs.userColors[m.uid] : "#fff";
       usernameEl.style.marginRight = "4px";
       wrapper.appendChild(usernameEl);
 
@@ -795,13 +800,12 @@ function renderMessagesFromArray(messages) {
         const replyPreview = document.createElement("div");
         replyPreview.className = "reply-preview";
         replyPreview.textContent = m.replyToContent || "Original message";
-        replyPreview.style.cursor = "pointer";
         replyPreview.onclick = () => {
-          const originalMsg = document.getElementById(m.replyTo);
-          if (originalMsg) {
-            originalMsg.scrollIntoView({ behavior: "smooth", block: "center" });
-            originalMsg.style.outline = "2px solid #FFD700";
-            setTimeout(() => originalMsg.style.outline = "", 1000);
+          const original = document.getElementById(m.replyTo);
+          if (original) {
+            original.scrollIntoView({ behavior: "smooth", block: "center" });
+            original.style.outline = "2px solid #FFD700";
+            setTimeout(() => original.style.outline = "", 1000);
           }
         };
         wrapper.appendChild(replyPreview);
@@ -828,7 +832,8 @@ function renderMessagesFromArray(messages) {
     refs.messagesEl.appendChild(wrapper);
   });
 
-  // Auto-scroll
+
+  /* ---------- AUTO SCROLL ---------- */
   if (!scrollPending) {
     scrollPending = true;
     requestAnimationFrame(() => {
@@ -837,7 +842,6 @@ function renderMessagesFromArray(messages) {
     });
   }
 }
-
 // Auto-scroll + scroll-to-bottom button
 function handleChatAutoScroll() {
   if (!refs.messagesEl) return;
