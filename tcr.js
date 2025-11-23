@@ -1456,80 +1456,67 @@ function clearReplyAfterSend() {
 
 // SEND REGULAR MESSAGE
 refs.sendBtn?.addEventListener("click", async () => {
-  if (!currentUser) return showStarPopup("Sign in to chat.");
-
-  const txt = refs.messageInputEl?.value.trim();
-  if (!txt) return showStarPopup("Type a message first.");
-  if ((currentUser.stars || 0) < SEND_COST)
-    return showStarPopup("Not enough stars to send message.");
-
-  const tempId = "temp_" + Date.now() + "_" + Math.random().toString(36);
-
-  // Deduct stars locally (optimistic)
-  currentUser.stars -= SEND_COST;
-  refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
-
-  // Fire-and-forget star deduction (never blocks UI)
-  updateDoc(doc(db, "users", currentUser.uid), {
-    stars: increment(-SEND_COST)
-  }).catch(() => {});
-
-  // Create local echo message
-  const newMsg = {
-    content: txt,
-    uid: currentUser.uid || "unknown",
-    chatId: currentUser.chatId || "anon",
-    usernameColor: currentUser.usernameColor || "#ff69b4",
-    timestamp: { toMillis: () => Date.now() },
-    highlight: false,
-    buzzColor: null,
-    replyTo: currentReplyTarget?.id || null,
-    replyToContent: currentReplyTarget?.content || null,
-    tempId
-  };
-
-  // Save to localStorage so we can remove it later
-  let pending = JSON.parse(localStorage.getItem("pendingMsgs") || "{}");
-  pending[tempId] = true;
-  localStorage.setItem("pendingMsgs", JSON.stringify(pending));
-
-  // Show instantly
-  refs.messageInputEl.value = "";
-  clearReplyAfterSend();
-  scrollToBottom(refs.messagesEl);
-  renderMessagesFromArray([newMsg]);
-
   try {
-    // Actually send to Firestore
-    await addDoc(collection(db, CHAT_COLLECTION), {
+    if (!currentUser) return showStarPopup("Sign in to chat.");
+
+    const txt = refs.messageInputEl?.value.trim();
+    if (!txt) return showStarPopup("Type a message first.");
+    if ((currentUser.stars || 0) < SEND_COST)
+      return showStarPopup("Not enough stars to send message.");
+
+    const myUid = currentUser.uid || getUserId(currentUser.email);
+    const myDisplayName = currentUser.chatId || currentUser.displayName || currentUser.email.split('@')[0];
+    const myColor = refs.userColors[myUid] || currentUser.usernameColor || "#ff69b4";
+
+    // Optimistic star deduction
+    currentUser.stars -= SEND_COST;
+    refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
+
+    // Fire-and-forget star update (never blocks UI)
+    updateDoc(doc(db, "users", myUid), { stars: increment(-SEND_COST) }).catch(() => {});
+
+    // Unique temp ID + mark as temp so render function can skip duplicate check
+    const tempId = "temp_" + Date.now() + "_" + Math.random().toString(36).substr(2, 9);
+
+    const tempMsg = {
+      id: tempId,
+      isTemp: true, // ← This is the key: tells render to skip "already exists" check
+      data: {
+        content: txt,
+        uid: myUid,
+        chatId: myDisplayName,
+        usernameColor: myColor,
+        createdAt: { toMillis: () => Date.now() },
+        replyTo: currentReplyTarget?.id || null,
+        replyToContent: currentReplyTarget?.content || null
+      }
+    };
+
+    // Show instantly
+    renderMessagesFromArray([tempMsg]);
+    refs.messageInputEl.value = "";
+    clearReplyAfterSend();
+    scrollToBottom(refs.messagesEl);
+
+    // Send to Firestore
+    const msgRef = await addDoc(collection(db, CHAT_COLLECTION), {
       content: txt,
-      uid: currentUser.uid,
-      chatId: currentUser.chatId,
-      usernameColor: currentUser.usernameColor || "#ff69b4",
-      timestamp: serverTimestamp(),
-      highlight: false,
-      buzzColor: null,
+      uid: myUid,
+      chatId: myDisplayName,
+      usernameColor: myColor,
+      createdAt: serverTimestamp(),
       replyTo: currentReplyTarget?.id || null,
       replyToContent: currentReplyTarget?.content || null
     });
 
-    // Success: remove temp message — your onSnapshot will add the real one instantly
-    document.querySelector(`[data-temp-id="${tempId}"]`)?.remove();
-
-    // Clean up localStorage
-    delete pending[tempId];
-    localStorage.setItem("pendingMsgs", JSON.stringify(pending));
+    // Remove temp message — real one will appear instantly via onSnapshot
+    document.getElementById(tempId)?.remove();
 
   } catch (err) {
-    // Failed: refund stars + remove temp message
+    // Refund + cleanup on failure
     currentUser.stars += SEND_COST;
     refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
-
-    document.querySelector(`[data-temp-id="${tempId}"]`)?.remove();
-    delete pending[tempId];
-    localStorage.setItem("pendingMsgs", JSON.stringify(pending));
-
-    showStarPopup("Failed to send — will retry when online");
+    showStarPopup("Failed to send — try again");
   }
 });
 
