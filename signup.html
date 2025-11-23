@@ -329,7 +329,6 @@ Replace yeah?
 <div class="form-group"><input id="email" type="email" placeholder="Email Address"></div>
 <div class="form-group"><input id="password" type="password" placeholder="Create Password (min 6 chars)"></div>
 
-!-- PASSWORD REQUIREMENTS INDICATOR -->
 <div id="passwordRequirements" class="password-requirements">
   <div class="req-header">Password requirements met!</div>
   <div class="req-item" data-rule="length">
@@ -796,46 +795,6 @@ function triggerSprayConfetti() {
     }
   });
 });
-  // === PASSWORD STRENGTH INDICATOR (BEAUTIFUL & PROFESSIONAL) ===
-  const reqBox = document.getElementById('passwordRequirements');
-  const reqItems = document.querySelectorAll('.req-item');
-
-  function updatePasswordRequirements() {
-    const val = passwordInput.value;
-    const hasLength = val.length >= 8;
-    const hasNumber = /\d/.test(val);
-    const hasSpecial = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(val);
-    const noWhitespaceEdge = !/^\s|\s$/.test(val);
-
-    // Update each item
-    document.querySelector('[data-rule="length"]').classList.toggle('met', hasLength);
-    document.querySelector('[data-rule="number"]').classList.toggle('met', hasNumber);
-    document.querySelector('[data-rule="special"]').classList.toggle('met', hasSpecial);
-    document.querySelector('[data-rule="whitespace"]').classList.toggle('met', noWhitespaceEdge && val.length > 0);
-
-    // Show box only when typing
-    if (val.length > 0) {
-      reqBox.classList.add('visible');
-    } else {
-      reqBox.classList.remove('visible');
-    }
-
-    // All met glow
-    const allMet = hasLength && hasNumber && hasSpecial && noWhitespaceEdge;
-    reqBox.classList.toggle('all-met', allMet);
-  }
-
-  passwordInput.addEventListener('input', updatePasswordRequirements);
-  passwordInput.addEventListener('focus', () => {
-    if (passwordInput.value.length > 0) reqBox.classList.add('visible');
-  });
-  passwordInput.addEventListener('blur', () => {
-    {
-    if (passwordInput.value.length === 0) reqBox.classList.remove('visible');
-  });
-
-  // Initial hide
-  reqBox.classList.remove('visible');
 </script>
 </body>
 </html>
