@@ -345,39 +345,61 @@ const getUserId = (input) => {
 };
 
 
-/* ========== PERSISTENT LOGIN — STAY IN CHATROOM AFTER RELOAD ========== */
+/* ========== PERFECT PERSISTENT LOGIN — FULL PROFILE RESTORED ON RELOAD ========== */
 onAuthStateChanged(auth, async (user) => {
-  if (user) {
-    console.log("User is signed in (persisted):", user.email);
-
-    // Use our PERFECT getUserId
-    const uid = getUserId(user.email);
-
-    // Load user profile
-    const userSnap = await getDoc(doc(db, "users", uid));
-    if (userSnap.exists()) {
-      const data = userSnap.data();
-      currentUser = {
-        uid,
-        email: user.email,
-        chatId: data.chatId || user.email.split("@")[0],
-        isVIP: !!data.isVIP,
-        fullName: data.fullName || "",
-        // ... copy all your fields
-      };
-
-      // RESTORE CHATROOM INSTANTLY
-      showChatUI(currentUser);
-      startNotificationsFor?.(user.email);
-      attachMessagesListener?.();
-      setupPresence?.(currentUser);
-
-      showStarPopup(`Welcome back, ${currentUser.chatId || "VIP"}!`);
-    }
-  } else {
+  if (!user) {
     console.log("No user — show login screen");
+    currentUser = null;
     // show login UI
+    return;
   }
+
+  console.log("Firebase Auth restored user:", user.email);
+
+  const uid = getUserId(user.email);
+  const userRef = doc(db, "users", uid);
+  const snap = await getDoc(userRef);
+
+  if (!snap.exists()) {
+    console.error("User profile not found in Firestore!");
+    showStarPopup("Profile error. Contact admin.");
+    await signOut(auth);
+    return;
+  }
+
+  const data = snap.data();
+
+  // RESTORE FULL USER OBJECT — EXACTLY LIKE MANUAL LOGIN
+  currentUser = {
+    uid: uid,
+    email: user.email,
+    chatId: data.chatId || user.email.split("@")[0],
+    fullName: data.fullName || "",
+    isVIP: !!data.isVIP,
+    isAdmin: !!data.isAdmin,
+    isHost: !!data.isHost,
+    stars: data.stars || 0,
+    cash: data.cash || 0,
+    usernameColor: data.usernameColor || "#ff69b4",
+    subscriptionActive: !!data.subscriptionActive,
+    hostLink: data.hostLink || null,
+    invitedBy: data.invitedBy || null,
+    // Add any other fields you save
+  };
+
+  console.log("FULL PROFILE RESTORED:", currentUser);
+
+  // RESTORE ENTIRE CHATROOM STATE
+  showChatUI(currentUser);
+  updateRedeemLink?.();
+  updateTipLink?.();
+  setupPresence?.(currentUser);
+  attachMessagesListener?.();
+  startStarEarning?.(currentUser.uid);
+  startNotificationsFor?.(user.email);
+
+  // Optional welcome back
+  showStarPopup(`Welcome back, ${currentUser.chatId || "VIP"}!`);
 });
 
 /* ----------------------------
