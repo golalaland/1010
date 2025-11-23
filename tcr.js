@@ -117,30 +117,27 @@ const sanitizeEmail = (email) => email.replace(/\./g, "_");
 let currentUser = null;
 let notificationsUnsubscribe = null;  // Single global unsubscribe
 
-/* ---------- Auth State Watcher (Clean & Reliable) ---------- */
+/* ---------- Auth State Watcher (FIXED — NO MORE AUTO SIGN-OUT) ---------- */
 let hasUserEverSignedIn = false;
 
 onAuthStateChanged(auth, async (user) => {
   currentUser = user;
 
-  // Always hide modals during auth transitions
+  // Hide modals during transition
   document.querySelectorAll(".featured-modal, #giftModal, #sessionModal")
     .forEach(m => m.style.display = "none");
 
-  // ——————— User is NOT signed in ———————
   if (!user) {
     if (hasUserEverSignedIn) {
-      console.log("User signed out");
+      console.log("User signed out (you clicked logout)");
     } else {
       console.log("Page loaded — waiting for sign-in...");
     }
     hasUserEverSignedIn = false;
     localStorage.removeItem("userId");
-
     document.querySelectorAll(".after-login-only").forEach(el => el.style.display = "none");
     document.querySelectorAll(".before-login-only").forEach(el => el.style.display = "");
     
-    // Clean up any existing listener
     if (notificationsUnsubscribe) {
       notificationsUnsubscribe();
       notificationsUnsubscribe = null;
@@ -148,31 +145,27 @@ onAuthStateChanged(auth, async (user) => {
     return;
   }
 
-  // ——————— User IS signed in ———————
+  // USER IS SIGNED IN — STOP ANYTHING FROM SIGNING THEM OUT
   const userEmail = user.email || user.uid;
   const userQueryId = sanitizeEmail(userEmail);
 
-  if (!hasUserEverSignedIn) {
-    console.log("User signed in:", userEmail);
-    hasUserEverSignedIn = true;
-  }
+  console.log("User signed in (and staying in):", userEmail);
+  hasUserEverSignedIn = true;
 
-  // Show protected content
+  // Show logged-in UI
   document.querySelectorAll(".after-login-only").forEach(el => el.style.display = "");
   document.querySelectorAll(".before-login-only").forEach(el => el.style.display = "none");
 
-  // Store sanitized ID for other scripts
   localStorage.setItem("userId", userQueryId);
   console.log("Logged in as Sanitized ID:", userQueryId);
 
-  // ——————— Sync Unlocks ———————
+  // Sync unlocks
   try {
     await syncUserUnlocks();
     console.log("Unlocked videos synced successfully.");
   } catch (err) {
     console.error("Sync unlocks failed:", err);
   }
-
   // ——————— Setup Notifications Listener ———————
   const notifRef = collection(db, "notifications");
   const notifQuery = query(
