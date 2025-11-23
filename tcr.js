@@ -1075,15 +1075,18 @@ document.querySelectorAll("#googleLoginBtn, .google-btn, [data-google-login]")
 });
 
 /* VIP EMAIL/PASSWORD LOGIN — FULLY WORKING */
-async function loginWhitelist(email, password) { ... }  // ← DELETE WHOLE FUNCTION
+document.getElementById("whitelistLoginBtn")?.addEventListener("click", async () => {
+  const email = document.getElementById("emailInput")?.value.trim().toLowerCase();
+  const pass = document.getElementById("passwordInput")?.value;
+  if (!email || !pass) return showStarPopup("Fill in both fields");
 
-/* VIP BUTTON — 100% WORKING */
-const vipBtn = document.getElementById("whitelistLoginBtn");
-if (vipBtn) { ... }  // ← DELETE THIS ENTIRE BLOCK
-
-/* SAFE AUTO-LOGIN */
-async function tryAutoLogin() { ... }
-window.addEventListener("DOMContentLoaded", tryAutoLogin);
+  try {
+    await signInWithEmailAndPassword(auth, email, pass);
+    // onAuthStateChanged will handle the rest — no need to do anything here
+  } catch (err) {
+    showStarPopup("Wrong password or not whitelisted");
+  }
+});
 
 /* LOGOUT */
 window.logoutVIP = async () => {
