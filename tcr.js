@@ -953,16 +953,28 @@ async function promptForChatID(userRef, userData) {
    Google button temporarily disabled
 ================================= */
 
-// BLOCK GOOGLE SIGN-IN (as you requested)
-document.querySelectorAll("[data-google-login], #googleLoginBtn, .google-btn, [onclick*='google'], [onclick*='Google']").forEach(btn => {
-  btn.style.opacity = "0.5";
-  btn.style.pointerEvents = "none";
-  btn.title = "Google login temporarily disabled";
-  btn.addEventListener("click", e => {
-    e.preventDefault();
-    e.stopPropagation();
-    showStarPopup("Google Sign-Up is not available at the moment.<br>Use VIP Email Login instead.");
-  });
+/* BLOCK GOOGLE SIGN-IN — button stays beautiful & clickable → shows your message */
+document.querySelectorAll("#googleLoginBtn, .google-btn, [data-google-login], [onclick*='google'], [onclick*='Google'], [href*='google']")
+  .forEach(btn => {
+    if (!btn) return;
+
+    // 1. Visual: looks normal but slightly dimmed + not-allowed cursor
+    btn.style.opacity = "0.68";
+    btn.style.cursor = "not-allowed";
+    if (btn.tagName === "BUTTON" || btn.tagName === "INPUT") btn.disabled = true;
+
+    // 2. VERY IMPORTANT: remove any old onclick that would trigger real Google login
+    btn.onclick = null;
+    btn.removeAttribute("onclick");
+
+    // 3. Add our own click handler (this WILL fire because we didn't use pointer-events:none)
+    btn.addEventListener("click", e => {
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+
+      showStarPopup("Google Sign-Up is not available at the moment.<br>Use VIP Email Login instead.");
+    }, true); // true = capture phase, beats any other listeners
 });
 
 /* ---------- VIP Login + Smooth Progress Bar ---------- */
