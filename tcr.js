@@ -530,54 +530,47 @@ function updateTipLink() {
 }
 
 
-/* ============================================================
-   USER COLORS — FINAL, CLEAN & BULLETPROOF
-============================================================ */
+/* ---------- USER COLORS — FIXED, SECURE & FLAWLESS ---------- */
+// Only listens to YOUR color + colors from messages (no more reading all users!)
 function setupUserColors() {
   if (!currentUser?.email) return;
+
   const myId = getUserId(currentUser.email);
   refs.userColors = refs.userColors || {};
 
-  const myDocRef = doc(db, "users", myId);
-  const unsubscribeMyColor = onSnapshot(myDocRef, (snap) => {
+  // 1. Listen ONLY to your own color (allowed by rules)
+  const myRef = doc(db, "users", myId);
+  onSnapshot(myRef, (snap) => {
     if (snap.exists()) {
       const color = snap.data()?.usernameColor || "#ff69b4";
       refs.userColors[myId] = color;
-
-      // Update already rendered messages
-      document.querySelectorAll(`[data-uid="${myId}"] .username`).forEach(el => {
-        el.style.color = color;
-      });
+      // Update your name color in chat instantly
+      if (lastMessagesArray.length) renderMessagesFromArray(lastMessagesArray);
     }
   });
 
-  if (!window.renderMessagesFromArrayPatched) {
-    const originalRender = renderMessagesFromArray;
-    renderMessagesFromArray = function(messages) {
-      messages.forEach(item => {
-        const data = item.data || item;
-        const uid = data.uid || data.senderId;
-        const color = data.usernameColor;
-        if (uid && color) refs.userColors[uid] = color;
-      });
-      return originalRender(messages);
-    };
-    window.renderMessagesFromArrayPatched = true;
-  }
-
-  return () => unsubscribeMyColor();
+  // 2. Also pull colors from incoming messages (best source!)
+  const originalRender = renderMessagesFromArray;
+  renderMessagesFromArray = function(messages) {
+    messages.forEach(msg => {
+      if (msg.usernameColor) {
+        refs.userColors[msg.senderId || msg.uid] = msg.usernameColor;
+      }
+    });
+    originalRender(messages);
+  };
 }
 
+// Call it once after login
+// (add this line in onAuthStateChanged after currentUser is set)
 setupUserColors();
 
 
-/* ============================================================
-   REPLY SYSTEM
-============================================================ */
 let scrollPending = false;
 let tapModalEl = null;
 let currentReplyTarget = null;
 
+// Cancel reply
 function cancelReply() {
   currentReplyTarget = null;
   refs.messageInputEl.placeholder = "Type a message...";
@@ -587,6 +580,7 @@ function cancelReply() {
   }
 }
 
+// Show the little cancel reply button
 function showReplyCancelButton() {
   if (!refs.cancelReplyBtn) {
     const btn = document.createElement("button");
@@ -599,33 +593,25 @@ function showReplyCancelButton() {
   }
 }
 
-
-
-/* ============================================================
-   REPORT MESSAGE
-============================================================ */
+// Report a message
 async function reportMessage(msgData) {
   try {
     const reportRef = doc(db, "reportedmsgs", msgData.id);
     const reportSnap = await getDoc(reportRef);
-
     const reporterChatId = currentUser?.chatId || "unknown";
     const reporterUid = currentUser?.uid || null;
 
     if (reportSnap.exists()) {
       const data = reportSnap.data();
-
       if ((data.reportedBy || []).includes(reporterChatId)) {
         return showStarPopup("You’ve already reported this message.", { type: "info" });
       }
-
       await updateDoc(reportRef, {
         reportCount: increment(1),
         reportedBy: arrayUnion(reporterChatId),
         reporterUids: arrayUnion(reporterUid),
         lastReportedAt: serverTimestamp()
       });
-
     } else {
       await setDoc(reportRef, {
         messageId: msgData.id,
@@ -640,19 +626,17 @@ async function reportMessage(msgData) {
       });
     }
 
+    // ✅ Success popup
     showStarPopup("✅ Report submitted!", { type: "success" });
 
   } catch (err) {
     console.error(err);
+    // ❌ Error popup
     showStarPopup("❌ Error reporting message.", { type: "error" });
   }
 }
 
-
-
-/* ============================================================
-   TAP MODAL (Reply / Report)
-============================================================ */
+// Tap modal for Reply / Report
 function showTapModal(targetEl, msgData) {
   tapModalEl?.remove();
   tapModalEl = document.createElement("div");
@@ -661,13 +645,8 @@ function showTapModal(targetEl, msgData) {
   const replyBtn = document.createElement("button");
   replyBtn.textContent = "⏎ Reply";
   replyBtn.onclick = () => {
-    currentReplyTarget = {
-      id: msgData.id,
-      chatId: msgData.chatId,
-      content: msgData.content
-    };
-    refs.messageInputEl.placeholder =
-      `Replying to ${msgData.chatId}: ${msgData.content.substring(0, 30)}...`;
+    currentReplyTarget = { id: msgData.id, chatId: msgData.chatId, content: msgData.content };
+    refs.messageInputEl.placeholder = `Replying to ${msgData.chatId}: ${msgData.content.substring(0, 30)}...`;
     refs.messageInputEl.focus();
     showReplyCancelButton();
     tapModalEl.remove();
@@ -703,62 +682,69 @@ function showTapModal(targetEl, msgData) {
   setTimeout(() => tapModalEl?.remove(), 3000);
 }
 
-
-
-/* ============================================================
-   BANNER GLOW (no confetti)
-============================================================ */
+// Confetti / glow for banners
+// Banner glow only (no confetti)
 function triggerBannerEffect(bannerEl) {
   bannerEl.style.animation = "bannerGlow 1s ease-in-out infinite alternate";
+
+  // ✅ Confetti removed
+  // const confetti = document.createElement("div");
+  // confetti.className = "confetti";
+  // confetti.style.position = "absolute";
+  // confetti.style.top = "-4px";
+  // confetti.style.left = "50%";
+  // confetti.style.width = "6px";
+  // confetti.style.height = "6px";
+  // confetti.style.background = "#fff";
+  // confetti.style.borderRadius = "50%";
+  // bannerEl.appendChild(confetti);
+  // setTimeout(() => confetti.remove(), 1500);
 }
 
 
-
-/* ============================================================
-   RENDER MESSAGES — CLEAN, NO DUPLICATES
-============================================================ */
+// Render messages
 function renderMessagesFromArray(messages) {
   if (!refs.messagesEl) return;
-
   messages.forEach(item => {
     if (!item.id) return;
-
-    if (!item.isTemp && document.getElementById(item.id)) return;
+    if (document.getElementById(item.id)) return;
 
     const m = item.data || item;
-
-    if (m.uid && m.usernameColor) {
-      refs.userColors = refs.userColors || {};
-      refs.userColors[m.uid] = m.usernameColor;
-    }
-
     const wrapper = document.createElement("div");
     wrapper.className = "msg";
     wrapper.id = item.id;
-    wrapper.dataset.uid = m.uid || "";
 
+    // Banner
     if (m.systemBanner || m.isBanner || m.type === "banner") {
       wrapper.classList.add("chat-banner");
-      wrapper.style.cssText = `
-        text-align:center; padding:4px 0; margin:4px 0;
-        border-radius:8px; background:${m.buzzColor||"linear-gradient(90deg,#ffcc00,#ff33cc)"};
-        box-shadow:0 0 16px rgba(255,255,255,0.3);
-      `;
+      wrapper.style.textAlign = "center";
+      wrapper.style.padding = "4px 0";
+      wrapper.style.margin = "4px 0";
+      wrapper.style.borderRadius = "8px";
+      wrapper.style.background = m.buzzColor || "linear-gradient(90deg,#ffcc00,#ff33cc)";
+      wrapper.style.boxShadow = "0 0 16px rgba(255,255,255,0.3)";
+
       const innerPanel = document.createElement("div");
-      innerPanel.style.cssText = `
-        display:inline-block; padding:6px 14px; border-radius:6px;
-        background:rgba(255,255,255,0.35); backdrop-filter:blur(6px);
-        color:#000; font-weight:700;
-      `;
+      innerPanel.style.display = "inline-block";
+      innerPanel.style.padding = "6px 14px";
+      innerPanel.style.borderRadius = "6px";
+      innerPanel.style.background = "rgba(255,255,255,0.35)";
+      innerPanel.style.backdropFilter = "blur(6px)";
+      innerPanel.style.color = "#000";
+      innerPanel.style.fontWeight = "700";
       innerPanel.textContent = m.content || "";
       wrapper.appendChild(innerPanel);
+
       triggerBannerEffect(wrapper);
 
-      if (currentUser?.isAdmin) {
+      if (window.currentUser?.isAdmin) {
         const delBtn = document.createElement("button");
         delBtn.textContent = "🗑";
         delBtn.title = "Delete Banner";
-        delBtn.style.cssText = "position:absolute; right:6px; top:3px;";
+        delBtn.style.position = "absolute";
+        delBtn.style.right = "6px";
+        delBtn.style.top = "3px";
+        delBtn.style.cursor = "pointer";
         delBtn.onclick = async () => {
           await deleteDoc(doc(db, "messages", item.id));
           wrapper.remove();
@@ -766,23 +752,26 @@ function renderMessagesFromArray(messages) {
         wrapper.appendChild(delBtn);
       }
     } else {
+      // Regular message
       const usernameEl = document.createElement("span");
       usernameEl.className = "meta";
-      usernameEl.innerHTML = `<span class="chat-username username" data-uid="${m.uid}">${m.chatId||"Guest"}</span>:`;
-      usernameEl.style.color = refs.userColors[m.uid] || "#fff";
+      usernameEl.innerHTML = `<span class="chat-username" data-username="${m.uid}">${m.chatId || "Guest"}</span>:`;
+      usernameEl.style.color = (m.uid && refs.userColors?.[m.uid]) ? refs.userColors[m.uid] : "#fff";
       usernameEl.style.marginRight = "4px";
       wrapper.appendChild(usernameEl);
 
+      // Reply preview
       if (m.replyTo) {
         const replyPreview = document.createElement("div");
         replyPreview.className = "reply-preview";
         replyPreview.textContent = m.replyToContent || "Original message";
+        replyPreview.style.cursor = "pointer";
         replyPreview.onclick = () => {
-          const original = document.getElementById(m.replyTo);
-          if (original) {
-            original.scrollIntoView({ behavior: "smooth", block: "center" });
-            original.style.outline = "2px solid #FFD700";
-            setTimeout(() => original.style.outline = "", 1000);
+          const originalMsg = document.getElementById(m.replyTo);
+          if (originalMsg) {
+            originalMsg.scrollIntoView({ behavior: "smooth", block: "center" });
+            originalMsg.style.outline = "2px solid #FFD700";
+            setTimeout(() => originalMsg.style.outline = "", 1000);
           }
         };
         wrapper.appendChild(replyPreview);
@@ -795,7 +784,14 @@ function renderMessagesFromArray(messages) {
 
       wrapper.addEventListener("click", (e) => {
         e.stopPropagation();
-        showTapModal(wrapper, { ...m, id: item.id });
+        showTapModal(wrapper, {
+          id: item.id,
+          chatId: m.chatId,
+          uid: m.uid,
+          content: m.content,
+          replyTo: m.replyTo,
+          replyToContent: m.replyToContent
+        });
       });
     }
 
@@ -812,49 +808,7 @@ function renderMessagesFromArray(messages) {
   }
 }
 
-/* ---------- 🔔 Messages Listener (Final Optimized Version) ---------- */
-function attachMessagesListener() {
-  const q = query(collection(db, CHAT_COLLECTION), orderBy("createdAt","asc"));
-  const shownGiftAlerts = new Set(JSON.parse(localStorage.getItem("shownGiftAlerts")||"[]"));
-  const saveShownGift = (id)=>{ shownGiftAlerts.add(id); localStorage.setItem("shownGiftAlerts",JSON.stringify([...shownGiftAlerts])); };
-
-  onSnapshot(q, snapshot => {
-    snapshot.docChanges().forEach(change => {
-      if(change.type!=="added") return;
-
-      const data = change.doc.data();
-      const id = change.doc.id;
-      const serverTime = data.createdAt?.toMillis?.() || Date.now();
-
-      if(document.getElementById(id)) return;
-
-      document.querySelectorAll('[data-temp="true"]').forEach(el=>{
-        const tempText = el.textContent.trim();
-        const realText = data.content?.trim();
-        const isSameUser = el.dataset.uid === data.uid;
-        const timeDiff = Math.abs(serverTime - (el.dataset.sentTime||0));
-        if(isSameUser && tempText===realText && timeDiff<10000) el.remove();
-      });
-
-      renderMessagesFromArray([{id,data}]);
-
-      // Gift alert
-      if(data.highlight && data.content?.includes("gifted")) {
-        const myId = currentUser?.chatId?.toLowerCase();
-        if(!myId) return;
-        const parts = data.content.split(" ");
-        const sender = parts[0], receiver = parts[2], amount = parts[3];
-        if(sender && receiver && amount && receiver.toLowerCase()===myId && !shownGiftAlerts.has(id)){
-          showGiftAlert(`${sender} gifted you ${amount} stars ⭐️`);
-          saveShownGift(id);
-        }
-      }
-
-      if(data.uid===currentUser?.uid) scrollToBottom(refs.messagesEl);
-    });
-  });
-}
-
+// Auto-scroll + scroll-to-bottom button
 function handleChatAutoScroll() {
   if (!refs.messagesEl) return;
 
@@ -874,13 +828,12 @@ function handleChatAutoScroll() {
       font-size: 16px;
       font-weight: 700;
       cursor: pointer;
-      opacity: 0;
+      opacity: 1;
       pointer-events: none;
       transition: all 0.3s ease;
       z-index: 9999;
     `;
     document.body.appendChild(scrollBtn);
-
     scrollBtn.addEventListener("click", () => {
       refs.messagesEl.scrollTo({ top: refs.messagesEl.scrollHeight, behavior: "smooth" });
       scrollBtn.style.opacity = 0;
@@ -888,27 +841,93 @@ function handleChatAutoScroll() {
     });
   }
 
-  // Show/hide button based on scroll position
   refs.messagesEl.addEventListener("scroll", () => {
-    const distanceFromBottom = refs.messagesEl.scrollHeight - refs.messagesEl.scrollTop - refs.messagesEl.clientHeight;
-    if (distanceFromBottom > 150) {
+    const distance = refs.messagesEl.scrollHeight - refs.messagesEl.scrollTop - refs.messagesEl.clientHeight;
+    if (distance > 150) {
       scrollBtn.style.opacity = 1;
       scrollBtn.style.pointerEvents = "auto";
     } else {
-      scrollBtn.style.opacity = 0;
+      scrollBtn.style.opacity = 1;
       scrollBtn.style.pointerEvents = "none";
     }
   });
-
-  // Initial auto-scroll to bottom on reload
-  requestAnimationFrame(() => {
-    refs.messagesEl.scrollTop = refs.messagesEl.scrollHeight;
-  });
 }
 
-// Call this once after DOM is ready / messages container exists
-handleChatAutoScroll();
 
+/* ---------- 🔔 Messages Listener (Final Optimized Version) ---------- */
+function attachMessagesListener() {
+  const q = query(collection(db, CHAT_COLLECTION), orderBy("timestamp", "asc"));
+
+  // 💾 Track shown gift alerts
+  const shownGiftAlerts = new Set(JSON.parse(localStorage.getItem("shownGiftAlerts") || "[]"));
+  function saveShownGift(id) {
+    shownGiftAlerts.add(id);
+    localStorage.setItem("shownGiftAlerts", JSON.stringify([...shownGiftAlerts]));
+  }
+
+  // 💾 Track local pending messages to prevent double rendering
+  let localPendingMsgs = JSON.parse(localStorage.getItem("localPendingMsgs") || "{}");
+
+  onSnapshot(q, snapshot => {
+    snapshot.docChanges().forEach(change => {
+      if (change.type !== "added") return;
+
+      const msg = change.doc.data();
+      const msgId = change.doc.id;
+
+      // 🛑 Skip messages that look like local temp echoes
+      if (msg.tempId && msg.tempId.startsWith("temp_")) return;
+
+      // 🛑 Skip already rendered messages
+      if (document.getElementById(msgId)) return;
+
+      // ✅ Match Firestore-confirmed message to a locally sent one
+      for (const [tempId, pending] of Object.entries(localPendingMsgs)) {
+        const sameUser = pending.uid === msg.uid;
+        const sameText = pending.content === msg.content;
+        const createdAt = pending.createdAt || 0;
+        const msgTime = msg.timestamp?.toMillis?.() || 0;
+        const timeDiff = Math.abs(msgTime - createdAt);
+
+        if (sameUser && sameText && timeDiff < 7000) {
+          // 🔥 Remove local temp bubble
+          const tempEl = document.getElementById(tempId);
+          if (tempEl) tempEl.remove();
+
+          // 🧹 Clean up memory + storage
+          delete localPendingMsgs[tempId];
+          localStorage.setItem("localPendingMsgs", JSON.stringify(localPendingMsgs));
+          break;
+        }
+      }
+
+      // ✅ Render message
+      renderMessagesFromArray([{ id: msgId, data: msg }]);
+
+      /* 💝 Gift Alert Logic */
+      if (msg.highlight && msg.content?.includes("gifted")) {
+        const myId = currentUser?.chatId?.toLowerCase();
+        if (!myId) return;
+
+        const parts = msg.content.split(" ");
+        const sender = parts[0];
+        const receiver = parts[2];
+        const amount = parts[3];
+        if (!sender || !receiver || !amount) return;
+
+        if (receiver.toLowerCase() === myId && !shownGiftAlerts.has(msgId)) {
+          showGiftAlert(`${sender} gifted you ${amount} stars ⭐️`);
+          saveShownGift(msgId);
+        }
+      }
+
+      // 🌀 Keep scroll locked for your messages
+      if (refs.messagesEl && msg.uid === currentUser?.uid) {
+        refs.messagesEl.scrollTop = refs.messagesEl.scrollHeight;
+      }
+    });
+  });
+}
 
 /* ===== Notifications Tab Lazy + Live Setup (Robust) ===== */
 let notificationsListenerAttached = false;
@@ -1427,44 +1446,76 @@ function clearReplyAfterSend() {
 
 // SEND REGULAR MESSAGE
 refs.sendBtn?.addEventListener("click", async () => {
-  if (!currentUser) return showStarPopup("Sign in to chat.");
-  const txt = refs.messageInputEl?.value.trim();
-  if (!txt) return showStarPopup("Type a message first.");
-  if ((currentUser.stars||0) < SEND_COST) return showStarPopup("Not enough stars.");
-
-  const myUid = currentUser.uid || getUserId(currentUser.email);
-  const myName = currentUser.chatId || currentUser.displayName || myUid;
-  const myColor = refs.userColors[myUid] || currentUser.usernameColor || "#ff69b4";
-
-  currentUser.stars -= SEND_COST;
-  refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
-  updateDoc(doc(db,"users",myUid),{stars: increment(-SEND_COST)}).catch(()=>{});
-
-  const tempId = "temp_"+Date.now()+"_"+Math.random().toString(36).substr(2,9);
-  const tempMsg = {
-    id: tempId,
-    isTemp:true,
-    data: { content:txt, uid:myUid, chatId:myName, usernameColor:myColor, createdAt:{toMillis:()=>Date.now()}, replyTo:currentReplyTarget?.id, replyToContent:currentReplyTarget?.content }
-  };
-
-  renderMessagesFromArray([tempMsg]);
-  refs.messageInputEl.value = "";
-  clearReplyAfterSend();
-  scrollToBottom(refs.messagesEl);
-
   try {
-    await addDoc(collection(db, CHAT_COLLECTION), {
-      content: txt, uid: myUid, chatId: myName,
-      usernameColor: myColor, createdAt: serverTimestamp(),
-      replyTo: currentReplyTarget?.id, replyToContent: currentReplyTarget?.content
+    if (!currentUser) return showStarPopup("Sign in to chat.");
+
+    const txt = refs.messageInputEl?.value.trim();
+    if (!txt) return showStarPopup("Type a message first.");
+    if ((currentUser.stars || 0) < SEND_COST)
+      return showStarPopup("Not enough stars to send message.");
+
+    // Deduct stars locally + in Firestore
+    currentUser.stars -= SEND_COST;
+    refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
+    await updateDoc(doc(db, "users", currentUser.uid), {
+      stars: increment(-SEND_COST)
     });
-    const tempEl = document.getElementById(tempId);
-    if(tempEl) tempEl.remove();
-  } catch(err) {
+
+    // Create temp message (local echo)
+    const tempId = "temp_" + Date.now();
+    const newMsg = {
+      content: txt,
+      uid: currentUser.uid || "unknown",
+      chatId: currentUser.chatId || "anon",
+      usernameColor: currentUser.usernameColor || "#ff69b4",  // COLORS ARE BACK
+      timestamp: { toMillis: () => Date.now() },
+      highlight: false,
+      buzzColor: null,
+      replyTo: currentReplyTarget?.id || null,
+      replyToContent: currentReplyTarget?.content || null,
+      tempId
+    };
+
+    // Store temp message locally for dedupe
+    let localPendingMsgs = JSON.parse(localStorage.getItem("localPendingMsgs") || "{}");
+    localPendingMsgs[tempId] = { ...newMsg, createdAt: Date.now() };
+    localStorage.setItem("localPendingMsgs", JSON.stringify(localPendingMsgs));
+
+    // Reset input + scroll
+    refs.messageInputEl.value = "";
+    clearReplyAfterSend();
+    scrollToBottom(refs.messagesEl);
+
+    // RENDER LOCAL ECHO IMMEDIATELY
+    renderMessagesFromArray([newMsg]);
+
+    // SEND TO FIRESTORE — USING YOUR DYNAMIC CHAT_COLLECTION
+    const msgRef = await addDoc(collection(db, CHAT_COLLECTION), {
+      content: txt,
+      uid: currentUser.uid,
+      chatId: currentUser.chatId,
+      usernameColor: currentUser.usernameColor || "#ff69b4",   // SAVED IN DB
+      timestamp: serverTimestamp(),
+      highlight: false,
+      buzzColor: null,
+      replyTo: currentReplyTarget?.id || null,
+      replyToContent: currentReplyTarget?.content || null
+      // tempId is NOT sent — clean Firestore doc
+    });
+
+    // Clean up pending on success
+    delete localPendingMsgs[tempId];
+    localStorage.setItem("localPendingMsgs", JSON.stringify(localPendingMsgs));
+
+    console.log("Message sent & saved:", msgRef.id);
+
+  } catch (err) {
+    console.error("Message send error:", err);
+    showStarPopup("Message failed: " + (err.message || "Network error"));
+
+    // Refund stars on fail
     currentUser.stars += SEND_COST;
     refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
-    const tempEl = document.getElementById(tempId); if(tempEl) tempEl.remove();
-    showStarPopup("Failed to send — will retry when online");
   }
 });
 
