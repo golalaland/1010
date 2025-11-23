@@ -427,40 +427,6 @@ showStarPopup(`
 });
 
 
-function showStarPopup(message) {
-  let popup = document.getElementById("starPopup");
-  if (!popup) {
-    popup = document.createElement("div");
-    popup.id = "starPopup";
-    popup.style.cssText = `
-      position: fixed;
-      top: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: rgba(0,0,0,0.85);
-      color: #fff;
-      padding: 12px 20px;
-      border-radius: 8px;
-      font-family: sans-serif;
-      font-size: 14px;
-      text-align: center;
-      z-index: 9999;
-      pointer-events: none;
-    `;
-    document.body.appendChild(popup);
-  }
-
-  // Inject HTML (not text)
-  popup.innerHTML = message;
-
-  // Fade out after 2.5s
-  popup.style.opacity = "1";
-  setTimeout(() => {
-    popup.style.opacity = "0";
-  }, 2500);
-}
-
-
 // After successful login or auth restore
 syncUserUnlocks().then(unlocks => {
   console.log("User has access to", unlocks.length, "premium videos");
