@@ -119,17 +119,6 @@ function pushNotificationTx(tx, userId, message) {
   });
 }
 
-/* ONE AND ONLY SANITIZE FUNCTION — WORKS FOR EVERYTHING FOREVER */
-const getUserId = (input) => {
-  if (!input) return "";
-  const str = String(input).trim().toLowerCase();
-  if (str.includes("@")) {
-    // it's an email → convert correctly
-    return str.replace(/@/g, "_").replace(/\./g, "_");
-  }
-  // it's already a sanitized ID → return as-is
-  return str;
-};
 
 /* ========== SHARED UTILS ========== */
 let currentUser = null;
@@ -165,7 +154,7 @@ onAuthStateChanged(auth, async (user) => {
 
   // USER IS SIGNED IN — STOP ANYTHING FROM SIGNING THEM OUT
   const userEmail = user.email || user.uid;
-  const userQueryId = sanitizeEmail(userEmail);
+  const userQueryId = getUserId(userEmail);
 
   console.log("User signed in (and staying in):", userEmail);
   hasUserEverSignedIn = true;
@@ -266,7 +255,7 @@ onAuthStateChanged(auth, async (user) => {
    Manual Notification Starter (for whitelist / debug login)
 ================================= */
 async function startNotificationsFor(userEmail) {
-  const userQueryId = sanitizeEmail(userEmail);
+  const userQueryId = getUserId(userEmail);
   localStorage.setItem("userId", userQueryId);
   console.log("Manual notification listener started for:", userQueryId);
 
@@ -343,6 +332,17 @@ function showStarPopup(text) {
   setTimeout(() => popup.style.display = "none", 1700);
 }
 
+/* ========== FIX: UNIVERSAL ID FUNCTION (ADD THIS EXACTLY) ========== */
+const getUserId = (input) => {
+  if (!input) return "";
+  const str = String(input).trim().toLowerCase();
+  if (str.includes("@")) {
+    // it's an email → convert properly
+    return str.replace(/@/g, "_").replace(/\./g, "_");
+  }
+  // already sanitized → return as-is (supports old docs)
+  return str;
+};
 
 /* ----------------------------
    ⭐ GIFT MODAL / CHAT BANNER ALERT
@@ -449,7 +449,7 @@ function updateTipLink() {
 /* ---------- Presence (Realtime) ---------- */
 function setupPresence(user) {
   if (!rtdb) return;
-  const pRef = rtdbRef(rtdb, `presence/${ROOM_ID}/${sanitizeKey(user.uid)}`);
+  const pRef = rtdbRef(rtdb, `presence/${ROOM_ID}/${getUserId(user.uid)}`);
   rtdbSet(pRef, { online: true, chatId: user.chatId, email: user.email }).catch(() => {});
   onDisconnect(pRef).remove().catch(() => {});
 }
@@ -1024,7 +1024,7 @@ async function loginWhitelist(email, password) {
     }
 
     // Load profile
-    const uidKey = sanitizeKey(email);
+    const uidKey = getUserId(email);
     const userDoc = await getDoc(doc(db, "users", uidKey));
     if (!userDoc.exists()) {
       await signOut(auth);
