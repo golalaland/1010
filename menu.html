@@ -43,12 +43,77 @@
   .desc{font-size:14px;line-height:1.5;color:#aaa;margin-bottom:18px}
   body.light .desc{color:#666}
   
-  .buttons{display:flex;gap:12px;justify-content:center}
-  .btn{padding:11px 20px;border-radius:50px;font-weight:700;font-size:14px;cursor:pointer;border:none;min-width:108px;transition:0.3s}
-  .learn{background:#222;color:#fff}
-  body.light .learn{background:#333;color:#fff}
-  .play{background:linear-gradient(135deg,#00ff9d,#00c4ff);color:#000;font-weight:800}
-  .play:active{transform:scale(0.95)}
+ .buttons{
+  display:flex;
+  gap:14px;
+  justify-content:center;
+  margin-top:4px;
+}
+
+.btn{
+  padding:12px 24px;
+  border-radius:50px;
+  font-weight:800;
+  font-size:14.5px;
+  cursor:pointer;
+  border:none;
+  min-width:116px;
+  transition:all 0.25s;
+  box-shadow:0 4px 15px rgba(0,0,0,0.4);
+}
+
+/* LEARN MORE → Fiery Reddish */
+.learn{
+  background:linear-gradient(135deg,#ff0044,#ff1a5e);
+  color:#fff;
+  position:relative;
+  overflow:hidden;
+}
+.learn::before{
+  content:'';
+  position:absolute;
+  top:0; left:-100%;
+  width:100%; height:100%;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,0.2),transparent);
+  transition:0.6s;
+}
+.learn:hover::before{left:100%}
+
+/* PLAY → Neon Green Fury */
+.play{
+  background:linear-gradient(135deg,#39ff14,#00ff9d);
+  color:#000;
+  font-weight:900;
+  letter-spacing:0.5px;
+  position:relative;
+  overflow:hidden;
+}
+.play::before{
+  content:'';
+  position:absolute;
+  top:-50%; left:-50%;
+  width:200%; height:200%;
+  background:radial-gradient(circle,rgba(255,255,255,0.4) 0%,transparent 70%);
+  transform:translateX(-50%) translateY(-50%) rotate(30deg);
+  transition:0.6s;
+  opacity:0;
+}
+.play:active{
+  transform:scale(0.93);
+}
+.play:hover::before{
+  opacity:1;
+  animation:neonPulse 1.5s infinite;
+}
+
+@keyframes neonPulse{
+  0%,100%{transform:translateX(-50%) translateY(-50%) rotate(30deg) scale(1)}
+  50%{transform:translateX(-50%) translateY(-50%) rotate(30deg) scale(1.3)}
+}
+
+/* Light mode overrides (still works) */
+body.light .learn{background:linear-gradient(135deg,#ff0044,#ff3366)}
+body.light .play{background:linear-gradient(135deg,#39ff14,#00ff9d)}
   
   /* Golden Shop Only */
   .shop{margin-top:40px;background:linear-gradient(135deg,#FFD700,#FF8C00);border-radius:18px;overflow:hidden;box-shadow:0 12px 40px rgba(255,215,0,0.4);animation:up 0.6s 0.5s both;color:#000}
