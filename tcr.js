@@ -705,19 +705,11 @@ function triggerBannerEffect(bannerEl) {
 // Render messages
 function renderMessagesFromArray(messages) {
   if (!refs.messagesEl) return;
-
   messages.forEach(item => {
     if (!item.id) return;
     if (document.getElementById(item.id)) return;
 
     const m = item.data || item;
-
-    // CACHE USERNAME COLOR FROM EVERY MESSAGE (this is the fix!)
-    if (m.uid && m.usernameColor) {
-      refs.userColors = refs.userColors || {};
-      refs.userColors[m.uid] = m.usernameColor;
-    }
-
     const wrapper = document.createElement("div");
     wrapper.className = "msg";
     wrapper.id = item.id;
@@ -929,7 +921,13 @@ function attachMessagesListener() {
         }
       }
 
-
+      // 🌀 Keep scroll locked for your messages
+      if (refs.messagesEl && msg.uid === currentUser?.uid) {
+        refs.messagesEl.scrollTop = refs.messagesEl.scrollHeight;
+      }
+    });
+  });
+}
 
 /* ===== Notifications Tab Lazy + Live Setup (Robust) ===== */
 let notificationsListenerAttached = false;
@@ -1085,7 +1083,8 @@ document.querySelectorAll("#googleLoginBtn, .google-btn, [data-google-login]")
       showStarPopup("Google Sign-Up is not available at the moment.<br>Use VIP Email Login instead.");
     });
 });
-// FINAL: CLEAN LOGIN BUTTON — NO CONSOLE LOGS
+
+// FINAL: WORKING LOGIN BUTTON — THIS MAKES SIGN IN ACTUALLY WORK
 document.getElementById("whitelistLoginBtn")?.addEventListener("click", async () => {
   const email = document.getElementById("emailInput")?.value.trim().toLowerCase();
   const password = document.getElementById("passwordInput")?.value;
@@ -1097,16 +1096,16 @@ document.getElementById("whitelistLoginBtn")?.addEventListener("click", async ()
 
   try {
     await signInWithEmailAndPassword(auth, email, password);
-    // onAuthStateChanged will handle the rest
+    // onAuthStateChanged will handle everything else — just wait
     showStarPopup("Logging in...");
   } catch (err) {
-    // Silently handle errors – no console output
+    console.error("Login failed:", err.code);
     if (err.code === "auth/user-not-found" || err.code === "auth/wrong-password") {
       showStarPopup("Wrong email or password");
     } else if (err.code === "auth/too-many-requests") {
       showStarPopup("Too many tries. Wait a minute.");
     } else {
-      showStarPopup("Login failed.");
+      showStarPopup("Login failed. Check console.");
     }
   }
 });
@@ -1445,7 +1444,6 @@ function clearReplyAfterSend() {
   refs.messageInputEl.placeholder = "Type a message...";
 }
 
-
 // SEND REGULAR MESSAGE
 refs.sendBtn?.addEventListener("click", async () => {
   try {
@@ -1456,67 +1454,70 @@ refs.sendBtn?.addEventListener("click", async () => {
     if ((currentUser.stars || 0) < SEND_COST)
       return showStarPopup("Not enough stars to send message.");
 
-    const myUid = currentUser.uid || getUserId(currentUser.email);
-    const myDisplayName = currentUser.chatId || currentUser.displayName || currentUser.email.split('@')[0];
-
-    // Get your current color from the live cache (always up-to-date)
-    const myColor = refs.userColors[myUid] || currentUser.usernameColor || "#ff69b4";
-
-    // Deduct stars locally first (optimistic UI)
+    // Deduct stars locally + in Firestore
     currentUser.stars -= SEND_COST;
     refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
-
-    await updateDoc(doc(db, "users", myUid), {
+    await updateDoc(doc(db, "users", currentUser.uid), {
       stars: increment(-SEND_COST)
     });
 
-    // Local echo (instant feedback + color guaranteed)
+    // Create temp message (local echo)
     const tempId = "temp_" + Date.now();
-    const tempMsg = {
-      id: tempId,
-      data: {
-        content: txt,
-        uid: myUid,
-        chatId: myDisplayName,
-        usernameColor: myColor,           // COLOR SHOWS INSTANTLY
-        createdAt: { toMillis: () => Date.now() },
-        replyTo: currentReplyTarget?.id || null,
-        replyToContent: currentReplyTarget?.content || null
-      }
+    const newMsg = {
+      content: txt,
+      uid: currentUser.uid || "unknown",
+      chatId: currentUser.chatId || "anon",
+      usernameColor: currentUser.usernameColor || "#ff69b4",  // COLORS ARE BACK
+      timestamp: { toMillis: () => Date.now() },
+      highlight: false,
+      buzzColor: null,
+      replyTo: currentReplyTarget?.id || null,
+      replyToContent: currentReplyTarget?.content || null,
+      tempId
     };
 
-    // Render instantly
-    renderMessagesFromArray([tempMsg]);
+    // Store temp message locally for dedupe
+    let localPendingMsgs = JSON.parse(localStorage.getItem("localPendingMsgs") || "{}");
+    localPendingMsgs[tempId] = { ...newMsg, createdAt: Date.now() };
+    localStorage.setItem("localPendingMsgs", JSON.stringify(localPendingMsgs));
+
+    // Reset input + scroll
     refs.messageInputEl.value = "";
     clearReplyAfterSend();
     scrollToBottom(refs.messagesEl);
 
-    // Send to Firestore
+    // RENDER LOCAL ECHO IMMEDIATELY
+    renderMessagesFromArray([newMsg]);
+
+    // SEND TO FIRESTORE — USING YOUR DYNAMIC CHAT_COLLECTION
     const msgRef = await addDoc(collection(db, CHAT_COLLECTION), {
       content: txt,
-      uid: myUid,
-      chatId: myDisplayName,
-      usernameColor: myColor,                    // SAVED IN DB — COLORS FLOW TO EVERYONE
-      createdAt: serverTimestamp(),
+      uid: currentUser.uid,
+      chatId: currentUser.chatId,
+      usernameColor: currentUser.usernameColor || "#ff69b4",   // SAVED IN DB
+      timestamp: serverTimestamp(),
+      highlight: false,
+      buzzColor: null,
       replyTo: currentReplyTarget?.id || null,
       replyToContent: currentReplyTarget?.content || null
+      // tempId is NOT sent — clean Firestore doc
     });
 
-    console.log("Message sent king!", msgRef.id);
+    // Clean up pending on success
+    delete localPendingMsgs[tempId];
+    localStorage.setItem("localPendingMsgs", JSON.stringify(localPendingMsgs));
 
-    // Optional: store pending messages locally if you want offline support later
-    // (not needed now that it's instant + reliable)
+    console.log("Message sent & saved:", msgRef.id);
 
   } catch (err) {
-    console.error("Send failed:", err);
-    showStarPopup("Failed to send — check connection");
+    console.error("Message send error:", err);
+    showStarPopup("Message failed: " + (err.message || "Network error"));
 
-    // Refund stars on failure
+    // Refund stars on fail
     currentUser.stars += SEND_COST;
     refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
   }
 });
-
 
 // BUZZ MESSAGE (EPIC GLOW EFFECT)
 refs.buzzBtn?.addEventListener("click", async () => {
