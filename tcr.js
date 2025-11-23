@@ -409,16 +409,52 @@ onAuthStateChanged(auth, async (user) => {
   if (typeof startNotificationsFor === "function") startNotificationsFor(user.email);
 
   // EPIC RANDOM COLOR WELCOME
-  const colors = ["#FF1493", "#FFD700", "#00FFFF", "#FF4500", "#DA70D6", "#FF69B4", "#32CD32", "#FFA500"];
-  const color = colors[Math.floor(Math.random() * colors.length)];
-  showStarPopup(
-    "Welcome back,<br><span style=\"font-size:1.5em;font-weight:bold;color:" + color + ";text-shadow:0 0 12px " + color + "99;\">" +
-    currentUser.chatId.toUpperCase() +
-    "</span>!"
-  );
+ const colors = ["#FF1493","#FFD700","#00FFFF","#FF4500","#DA70D6","#FF69B4","#32CD32","#FFA500"];
+const color = colors[Math.floor(Math.random()*colors.length)];
+showStarPopup(
+  `Welcome back,<br>
+   <span style="font-size:1.5em;font-weight:bold;color:${color};text-shadow:0 0 12px ${color}99;">
+     ${currentUser.chatId.toUpperCase()}
+   </span>!`
+);
 
   localStorage.setItem("lastVipEmail", user.email);
 });
+
+
+function showStarPopup(message) {
+  let popup = document.getElementById("starPopup");
+  if (!popup) {
+    popup = document.createElement("div");
+    popup.id = "starPopup";
+    popup.style.cssText = `
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,0.85);
+      color: #fff;
+      padding: 12px 20px;
+      border-radius: 8px;
+      font-family: sans-serif;
+      font-size: 14px;
+      text-align: center;
+      z-index: 9999;
+      pointer-events: none;
+    `;
+    document.body.appendChild(popup);
+  }
+
+  // Inject HTML (not text)
+  popup.innerHTML = message;
+
+  // Fade out after 2.5s
+  popup.style.opacity = "1";
+  setTimeout(() => {
+    popup.style.opacity = "0";
+  }, 2500);
+}
+
 
 // After successful login or auth restore
 syncUserUnlocks().then(unlocks => {
