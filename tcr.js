@@ -361,11 +361,12 @@ const getUserId = (input) => {
 
 
 /* ========== FINAL: PERSISTENT LOGIN — FLAWLESS & CLEAN ========== */
+/* ========== FINAL: PERSISTENT LOGIN — 100% NO SYNTAX ERROR ========== */
 onAuthStateChanged(auth, async (user) => {
   if (!user) {
     console.log("No user — show login screen");
     currentUser = null;
-    showLoginUI?.();  // your function to show email/password form
+    if (typeof showLoginUI === "function") showLoginUI();
     return;
   }
 
@@ -384,7 +385,7 @@ onAuthStateChanged(auth, async (user) => {
   const data = snap.data();
 
   currentUser = {
-    uid,
+    uid: uid,
     email: user.email,
     chatId: data.chatId || user.email.split("@")[0],
     fullName: data.fullName || "$VIP",
@@ -402,25 +403,23 @@ onAuthStateChanged(auth, async (user) => {
 
   console.log("FULL PROFILE RESTORED:", currentUser);
 
-  // RESTORE EVERYTHING — ALL OPTIONAL SO NO ERRORS
-  showChatUI(currentUser);
-  updateRedeemLink?.();
-  updateTipLink?.();
-  attachMessagesListener?.();
-  startStarEarning?.(currentUser.uid);
-  startNotificationsFor?.(user.email);
+  // SAFE CALLS — ALL OPTIONAL
+  if (typeof showChatUI === "function") showChatUI(currentUser);
+  if (typeof updateRedeemLink === "function") updateRedeemLink();
+  if (typeof updateTipLink === "function") updateTipLink();
+  if (typeof attachMessagesListener === "function") attachMessagesListener();
+  if (typeof startStarEarning === "function") startStarEarning(currentUser.uid);
+  if (typeof startNotificationsFor === "function") startNotificationsFor(user.email);
 
-  // EPIC WELCOME BACK
-  const colors = ["#FF1493", "#FFD700", "#00FFFF", "#FF4500", "#DA70D6", "#FF69B4", "#32CD32"];
+  // EPIC RANDOM COLOR WELCOME
+  const colors = ["#FF1493", "#FFD700", "#00FFFF", "#FF4500", "#DA70D6", "#FF69B4", "#32CD32", "#FFA500"];
   const color = colors[Math.floor(Math.random() * colors.length)];
-  showStarPopup(`
-    Welcome back,<br>
-    <span style="font-size:1.5em;font-weight:bold;color:${color};text-shadow:0 0 12px ${color}99;">
-      ${currentUser.chatId.toUpperCase()}
-    </span>!
-  `);
+  showStarPopup(
+    "Welcome back,<br><span style=\"font-size:1.5em;font-weight:bold;color:" + color + ";text-shadow:0 0 12px " + color + "99;\">" +
+    currentUser.chatId.toUpperCase() +
+    "</span>!"
+  );
 
-  // Save last email (for future auto-suggest, not auto-login)
   localStorage.setItem("lastVipEmail", user.email);
 });
 
