@@ -1446,59 +1446,74 @@ function clearReplyAfterSend() {
 
 // SEND REGULAR MESSAGE
 refs.sendBtn?.addEventListener("click", async () => {
-  if (!currentUser?.email) return showStarPopup("Sign in to chat.");
-
-  const text = refs.messageInputEl?.value.trim();
-  if (!text) return showStarPopup("Type a message first.");
-  if ((currentUser.stars || 0) < SEND_COST)
-    return showStarPopup(`Need ${SEND_COST} stars to send.`);
-
   try {
-    // Deduct stars
+    if (!currentUser) return showStarPopup("Sign in to chat.");
+
+    const txt = refs.messageInputEl?.value.trim();
+    if (!txt) return showStarPopup("Type a message first.");
+    if ((currentUser.stars || 0) < SEND_COST)
+      return showStarPopup("Not enough stars to send message.");
+
+    // Deduct stars locally + in Firestore
     currentUser.stars -= SEND_COST;
     refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
-    await updateDoc(doc(db, "users", getUserId(currentUser.email)), {
+    await updateDoc(doc(db, "users", currentUser.uid), {
       stars: increment(-SEND_COST)
     });
 
-    // Local echo
+    // Create temp message (local echo)
     const tempId = "temp_" + Date.now();
-    const tempMsg = {
-      id: tempId,
-      content: text,
-      senderId: getUserId(currentUser.email),
-      chatId: currentUser.chatId,
+    const newMsg = {
+      content: txt,
+      uid: currentUser.uid || "unknown",
+      chatId: currentUser.chatId || "anon",
+      usernameColor: currentUser.usernameColor || "#ff69b4",  // COLORS ARE BACK
       timestamp: { toMillis: () => Date.now() },
-      usernameColor: currentUser.usernameColor || "#ff69b4",  // COLORS BACK
       highlight: false,
+      buzzColor: null,
       replyTo: currentReplyTarget?.id || null,
-      replyToContent: currentReplyTarget?.content || null
+      replyToContent: currentReplyTarget?.content || null,
+      tempId
     };
 
-    // Render instantly
-    renderMessagesFromArray([tempMsg]);
+    // Store temp message locally for dedupe
+    let localPendingMsgs = JSON.parse(localStorage.getItem("localPendingMsgs") || "{}");
+    localPendingMsgs[tempId] = { ...newMsg, createdAt: Date.now() };
+    localStorage.setItem("localPendingMsgs", JSON.stringify(localPendingMsgs));
+
+    // Reset input + scroll
     refs.messageInputEl.value = "";
     clearReplyAfterSend();
     scrollToBottom(refs.messagesEl);
 
-    // SEND TO THE CORRECT PATH THAT EXISTS AND IS ALLOWED
-    await addDoc(collection(db, "messages_room5"), {
-      content: text,
-      senderId: getUserId(currentUser.email),
+    // RENDER LOCAL ECHO IMMEDIATELY
+    renderMessagesFromArray([newMsg]);
+
+    // SEND TO FIRESTORE — USING YOUR DYNAMIC CHAT_COLLECTION
+    const msgRef = await addDoc(collection(db, CHAT_COLLECTION), {
+      content: txt,
+      uid: currentUser.uid,
       chatId: currentUser.chatId,
+      usernameColor: currentUser.usernameColor || "#ff69b4",   // SAVED IN DB
       timestamp: serverTimestamp(),
-      usernameColor: currentUser.usernameColor || "#ff69b4",   // CRITICAL FOR COLORS
       highlight: false,
+      buzzColor: null,
       replyTo: currentReplyTarget?.id || null,
       replyToContent: currentReplyTarget?.content || null
+      // tempId is NOT sent — clean Firestore doc
     });
 
-    console.log("Message sent & saved permanently!");
+    // Clean up pending on success
+    delete localPendingMsgs[tempId];
+    localStorage.setItem("localPendingMsgs", JSON.stringify(localPendingMsgs));
+
+    console.log("Message sent & saved:", msgRef.id);
 
   } catch (err) {
-    console.error("Send failed:", err);
-    showStarPopup("Failed to send message.");
-    // Refund stars
+    console.error("Message send error:", err);
+    showStarPopup("Message failed: " + (err.message || "Network error"));
+
+    // Refund stars on fail
     currentUser.stars += SEND_COST;
     refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
   }
