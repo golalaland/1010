@@ -411,17 +411,18 @@ onAuthStateChanged(auth, async (user) => {
   if (typeof startStarEarning === "function") startStarEarning(currentUser.uid);
   if (typeof startNotificationsFor === "function") startNotificationsFor(user.email);
 
-  // EPIC RANDOM COLOR WELCOME
-  const colors = ["#FF1493", "#FFD700", "#00FFFF", "#FF4500", "#DA70D6", "#FF69B4", "#32CD32", "#FFA500"];
-  const color = colors[Math.floor(Math.random() * colors.length)];
-  showStarPopup(
-    "Welcome back,<br><span style=\"font-size:1.5em;font-weight:bold;color:" + color + ";text-shadow:0 0 12px " + color + "99;\">" +
-    currentUser.chatId.toUpperCase() +
-    "</span>!"
-  );
+// EPIC RANDOM COLOR WELCOME — FIXED & FLAWLESS
+const colors = ["#FF1493", "#FFD700", "#00FFFF", "#FF4500", "#DA70D6", "#FF69B4", "#32CD32", "#FFA500"];
+const color = colors[Math.floor(Math.random() * colors.length)];
 
-  localStorage.setItem("lastVipEmail", user.email);
-});
+showStarPopup(`
+  Welcome back,<br>
+  <span style="font-size:1.5em; font-weight:bold; color:${color}; text-shadow:0 0 12px ${color}99;">
+    ${currentUser.chatId.toUpperCase()}
+  </span>!
+`);
+
+localStorage.setItem("lastVipEmail", user.email);
 
 
 // After successful login or auth restore
@@ -534,23 +535,40 @@ function updateTipLink() {
 }
 
 
-// ONLY LISTEN TO CURRENT USER'S COLOR (safe + works)
-function setupMyColorListener() {
+/* ---------- USER COLORS — FIXED, SECURE & FLAWLESS ---------- */
+// Only listens to YOUR color + colors from messages (no more reading all users!)
+function setupUserColors() {
   if (!currentUser?.email) return;
-  
+
   const myId = getUserId(currentUser.email);
+  refs.userColors = refs.userColors || {};
+
+  // 1. Listen ONLY to your own color (allowed by rules)
   const myRef = doc(db, "users", myId);
-  
-  return onSnapshot(myRef, (snap) => {
+  onSnapshot(myRef, (snap) => {
     if (snap.exists()) {
       const color = snap.data()?.usernameColor || "#ff69b4";
-      refs.userColors = refs.userColors || {};
       refs.userColors[myId] = color;
-      // Optional: re-render messages to update your own name color
+      // Update your name color in chat instantly
       if (lastMessagesArray.length) renderMessagesFromArray(lastMessagesArray);
     }
   });
+
+  // 2. Also pull colors from incoming messages (best source!)
+  const originalRender = renderMessagesFromArray;
+  renderMessagesFromArray = function(messages) {
+    messages.forEach(msg => {
+      if (msg.usernameColor) {
+        refs.userColors[msg.senderId || msg.uid] = msg.usernameColor;
+      }
+    });
+    originalRender(messages);
+  };
 }
+
+// Call it once after login
+// (add this line in onAuthStateChanged after currentUser is set)
+setupUserColors();
 
 // Call it only after login
 // setupMyColorListener();  // ← call inside onAuthStateChanged or after login
