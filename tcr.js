@@ -264,8 +264,6 @@ onAuthStateChanged(auth, async (user) => {
 });
 
 
-setupMyColorListener(); 
-
 /* ===============================
    Manual Notification Starter (for whitelist / debug login)
 ================================= */
