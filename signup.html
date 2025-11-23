@@ -243,6 +243,73 @@ Replace yeah?
 
   footer a { color: #ccc; text-decoration: none; }
   footer a:hover { color: var(--gold); }
+  .password-requirements {
+  margin-top: 12px;
+  font-size: 13.5px;
+  color: #aaa;
+  transition: all 0.3s ease;
+  opacity: 0;
+  transform: translateY(-8px);
+  pointer-events: none;
+}
+
+.password-requirements.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.req-header {
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.req-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 5px 0;
+  transition: color 0.3s ease;
+}
+
+.req-item.met {
+  color: #4ade80 !important;
+  font-weight: 500;
+}
+
+.req-item .checkmark {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #555;
+  border-radius: 50%;
+  position: relative;
+  flex-shrink: 0;
+  transition: all 0.3s ease;
+}
+
+.req-item.met .checkmark {
+  background: #4ade80;
+  border-color: #4ade80;
+  box-shadow: 0 0 12px rgba(74, 222, 128, 0.5);
+}
+
+.req-item.met .checkmark::after {
+  content: '✓';
+  position: absolute;
+  color: #000;
+  font-weight: bold;
+  font-size: 11px;
+  top: 49%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* Glow effect when all are met */
+.password-requirements.all-met .req-header {
+  color: #4ade80;
+  text-shadow: 0 0 10px rgba(74, 222, 128, 0.6);
+}
 </style>
 </head>
 <body>
@@ -261,6 +328,23 @@ Replace yeah?
 <div class="form-group"><input id="phone" type="text" placeholder="Phone Number"></div>
 <div class="form-group"><input id="email" type="email" placeholder="Email Address"></div>
 <div class="form-group"><input id="password" type="password" placeholder="Create Password (min 6 chars)"></div>
+
+!-- PASSWORD REQUIREMENTS INDICATOR -->
+<div id="passwordRequirements" class="password-requirements">
+  <div class="req-header">Password requirements met!</div>
+  <div class="req-item" data-rule="length">
+    <span class="checkmark"></span> 8 characters
+  </div>
+  <div class="req-item" data-rule="number">
+    <span class="checkmark"></span> 1 number
+  </div>
+  <div class="req-item" data-rule="special">
+    <span class="checkmark"></span> 1 special character e.g., $, !, @, %, &
+  </div>
+  <div class="req-item" data-rule="whitespace">
+    <span class="checkmark"></span> No leading or trailing whitespace
+  </div>
+</div>
 
 <div class="gender-label">Select Your Gender</div>
 <div class="gender-select">
@@ -712,6 +796,46 @@ function triggerSprayConfetti() {
     }
   });
 });
+  // === PASSWORD STRENGTH INDICATOR (BEAUTIFUL & PROFESSIONAL) ===
+  const reqBox = document.getElementById('passwordRequirements');
+  const reqItems = document.querySelectorAll('.req-item');
+
+  function updatePasswordRequirements() {
+    const val = passwordInput.value;
+    const hasLength = val.length >= 8;
+    const hasNumber = /\d/.test(val);
+    const hasSpecial = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(val);
+    const noWhitespaceEdge = !/^\s|\s$/.test(val);
+
+    // Update each item
+    document.querySelector('[data-rule="length"]').classList.toggle('met', hasLength);
+    document.querySelector('[data-rule="number"]').classList.toggle('met', hasNumber);
+    document.querySelector('[data-rule="special"]').classList.toggle('met', hasSpecial);
+    document.querySelector('[data-rule="whitespace"]').classList.toggle('met', noWhitespaceEdge && val.length > 0);
+
+    // Show box only when typing
+    if (val.length > 0) {
+      reqBox.classList.add('visible');
+    } else {
+      reqBox.classList.remove('visible');
+    }
+
+    // All met glow
+    const allMet = hasLength && hasNumber && hasSpecial && noWhitespaceEdge;
+    reqBox.classList.toggle('all-met', allMet);
+  }
+
+  passwordInput.addEventListener('input', updatePasswordRequirements);
+  passwordInput.addEventListener('focus', () => {
+    if (passwordInput.value.length > 0) reqBox.classList.add('visible');
+  });
+  passwordInput.addEventListener('blur', () => {
+    {
+    if (passwordInput.value.length === 0) reqBox.classList.remove('visible');
+  });
+
+  // Initial hide
+  reqBox.classList.remove('visible');
 </script>
 </body>
 </html>
