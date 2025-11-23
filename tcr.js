@@ -411,16 +411,11 @@ onAuthStateChanged(auth, async (user) => {
   if (typeof startStarEarning === "function") startStarEarning(currentUser.uid);
   if (typeof startNotificationsFor === "function") startNotificationsFor(user.email);
 
-  // EPIC RANDOM COLOR WELCOME
 const colors = ["#FF1493","#FFD700","#00FFFF","#FF4500","#DA70D6","#FF69B4","#32CD32","#FFA500"];
 const color = colors[Math.floor(Math.random() * colors.length)];
 
-showStarPopup(`
-  Welcome back,<br>
-  <span style="font-size:1.5em;font-weight:bold;color:${color};text-shadow:0 0 12px ${color}99;">
-    ${currentUser.chatId.toUpperCase()}
-  </span>!
-`);
+showStarPopup(`Welcome back, <span style="font-weight:bold;color:${color};">${currentUser.chatId.toUpperCase()}</span>!`);
+
 
 
   localStorage.setItem("lastVipEmail", user.email);
