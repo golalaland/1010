@@ -535,28 +535,24 @@ function updateTipLink() {
 ============================================================ */
 function setupUserColors() {
   if (!currentUser?.email) return;
-
   const myId = getUserId(currentUser.email);
   refs.userColors = refs.userColors || {};
 
-  // --- LISTEN TO YOUR OWN USER DOC FOR LIVE COLOR UPDATES ---
   const myDocRef = doc(db, "users", myId);
   const unsubscribeMyColor = onSnapshot(myDocRef, (snap) => {
     if (snap.exists()) {
       const color = snap.data()?.usernameColor || "#ff69b4";
       refs.userColors[myId] = color;
 
-      // Instantly recolor already-rendered messages
+      // Update already rendered messages
       document.querySelectorAll(`[data-uid="${myId}"] .username`).forEach(el => {
         el.style.color = color;
       });
     }
   });
 
-  // --- PATCH renderMessagesFromArray ONCE (NO DOUBLE WRAP) ---
   if (!window.renderMessagesFromArrayPatched) {
     const originalRender = renderMessagesFromArray;
-
     renderMessagesFromArray = function(messages) {
       messages.forEach(item => {
         const data = item.data || item;
@@ -564,18 +560,15 @@ function setupUserColors() {
         const color = data.usernameColor;
         if (uid && color) refs.userColors[uid] = color;
       });
-
       return originalRender(messages);
     };
-
     window.renderMessagesFromArrayPatched = true;
   }
 
   return () => unsubscribeMyColor();
 }
 
-setupUserColors(); // Call ONCE after login
-
+setupUserColors();
 
 
 /* ============================================================
@@ -730,12 +723,10 @@ function renderMessagesFromArray(messages) {
   messages.forEach(item => {
     if (!item.id) return;
 
-    // Prevent duplicate permanent messages
     if (!item.isTemp && document.getElementById(item.id)) return;
 
     const m = item.data || item;
 
-    // Cache username colors
     if (m.uid && m.usernameColor) {
       refs.userColors = refs.userColors || {};
       refs.userColors[m.uid] = m.usernameColor;
@@ -744,58 +735,44 @@ function renderMessagesFromArray(messages) {
     const wrapper = document.createElement("div");
     wrapper.className = "msg";
     wrapper.id = item.id;
+    wrapper.dataset.uid = m.uid || "";
 
-
-    /* ---------- BANNER MESSAGE ---------- */
     if (m.systemBanner || m.isBanner || m.type === "banner") {
       wrapper.classList.add("chat-banner");
-      wrapper.style.textAlign = "center";
-      wrapper.style.padding = "4px 0";
-      wrapper.style.margin = "4px 0";
-      wrapper.style.borderRadius = "8px";
-      wrapper.style.background = m.buzzColor || "linear-gradient(90deg,#ffcc00,#ff33cc)";
-      wrapper.style.boxShadow = "0 0 16px rgba(255,255,255,0.3)";
-
+      wrapper.style.cssText = `
+        text-align:center; padding:4px 0; margin:4px 0;
+        border-radius:8px; background:${m.buzzColor||"linear-gradient(90deg,#ffcc00,#ff33cc)"};
+        box-shadow:0 0 16px rgba(255,255,255,0.3);
+      `;
       const innerPanel = document.createElement("div");
-      innerPanel.style.display = "inline-block";
-      innerPanel.style.padding = "6px 14px";
-      innerPanel.style.borderRadius = "6px";
-      innerPanel.style.background = "rgba(255,255,255,0.35)";
-      innerPanel.style.backdropFilter = "blur(6px)";
-      innerPanel.style.color = "#000";
-      innerPanel.style.fontWeight = "700";
+      innerPanel.style.cssText = `
+        display:inline-block; padding:6px 14px; border-radius:6px;
+        background:rgba(255,255,255,0.35); backdrop-filter:blur(6px);
+        color:#000; font-weight:700;
+      `;
       innerPanel.textContent = m.content || "";
       wrapper.appendChild(innerPanel);
-
       triggerBannerEffect(wrapper);
 
-      if (window.currentUser?.isAdmin) {
+      if (currentUser?.isAdmin) {
         const delBtn = document.createElement("button");
         delBtn.textContent = "🗑";
         delBtn.title = "Delete Banner";
-        delBtn.style.position = "absolute";
-        delBtn.style.right = "6px";
-        delBtn.style.top = "3px";
+        delBtn.style.cssText = "position:absolute; right:6px; top:3px;";
         delBtn.onclick = async () => {
           await deleteDoc(doc(db, "messages", item.id));
           wrapper.remove();
         };
         wrapper.appendChild(delBtn);
       }
-
     } else {
-
-      /* ---------- REGULAR MESSAGE ---------- */
       const usernameEl = document.createElement("span");
       usernameEl.className = "meta";
-      usernameEl.innerHTML =
-        `<span class="chat-username username" data-uid="${m.uid}">${m.chatId || "Guest"}</span>:`;
-      usernameEl.style.color = (m.uid && refs.userColors?.[m.uid]) ?
-        refs.userColors[m.uid] : "#fff";
+      usernameEl.innerHTML = `<span class="chat-username username" data-uid="${m.uid}">${m.chatId||"Guest"}</span>:`;
+      usernameEl.style.color = refs.userColors[m.uid] || "#fff";
       usernameEl.style.marginRight = "4px";
       wrapper.appendChild(usernameEl);
 
-      // Reply preview
       if (m.replyTo) {
         const replyPreview = document.createElement("div");
         replyPreview.className = "reply-preview";
@@ -818,22 +795,14 @@ function renderMessagesFromArray(messages) {
 
       wrapper.addEventListener("click", (e) => {
         e.stopPropagation();
-        showTapModal(wrapper, {
-          id: item.id,
-          chatId: m.chatId,
-          uid: m.uid,
-          content: m.content,
-          replyTo: m.replyTo,
-          replyToContent: m.replyToContent
-        });
+        showTapModal(wrapper, { ...m, id: item.id });
       });
     }
 
     refs.messagesEl.appendChild(wrapper);
   });
 
-
-  /* ---------- AUTO SCROLL ---------- */
+  // Auto-scroll
   if (!scrollPending) {
     scrollPending = true;
     requestAnimationFrame(() => {
@@ -842,121 +811,50 @@ function renderMessagesFromArray(messages) {
     });
   }
 }
-// Auto-scroll + scroll-to-bottom button
-function handleChatAutoScroll() {
-  if (!refs.messagesEl) return;
-
-  let scrollBtn = document.getElementById("scrollToBottomBtn");
-  if (!scrollBtn) {
-    scrollBtn = document.createElement("div");
-    scrollBtn.id = "scrollToBottomBtn";
-    scrollBtn.textContent = "↓";
-    scrollBtn.style.cssText = `
-      position: fixed;
-      bottom: 90px;
-      right: 20px;
-      padding: 6px 12px;
-      background: rgba(255,20,147,0.9);
-      color: #fff;
-      border-radius: 14px;
-      font-size: 16px;
-      font-weight: 700;
-      cursor: pointer;
-      opacity: 1;
-      pointer-events: none;
-      transition: all 0.3s ease;
-      z-index: 9999;
-    `;
-    document.body.appendChild(scrollBtn);
-    scrollBtn.addEventListener("click", () => {
-      refs.messagesEl.scrollTo({ top: refs.messagesEl.scrollHeight, behavior: "smooth" });
-      scrollBtn.style.opacity = 0;
-      scrollBtn.style.pointerEvents = "none";
-    });
-  }
-
-  refs.messagesEl.addEventListener("scroll", () => {
-    const distance = refs.messagesEl.scrollHeight - refs.messagesEl.scrollTop - refs.messagesEl.clientHeight;
-    if (distance > 150) {
-      scrollBtn.style.opacity = 1;
-      scrollBtn.style.pointerEvents = "auto";
-    } else {
-      scrollBtn.style.opacity = 1;
-      scrollBtn.style.pointerEvents = "none";
-    }
-  });
-}
-
 
 /* ---------- 🔔 Messages Listener (Final Optimized Version) ---------- */
 function attachMessagesListener() {
-  // Use the correct field name: createdAt (not timestamp)
-  const q = query(collection(db, CHAT_COLLECTION), orderBy("createdAt", "asc"));
+  const q = query(collection(db, CHAT_COLLECTION), orderBy("createdAt","asc"));
+  const shownGiftAlerts = new Set(JSON.parse(localStorage.getItem("shownGiftAlerts")||"[]"));
+  const saveShownGift = (id)=>{ shownGiftAlerts.add(id); localStorage.setItem("shownGiftAlerts",JSON.stringify([...shownGiftAlerts])); };
 
-  // Track gift alerts to avoid showing twice
-  const shownGiftAlerts = new Set(
-    JSON.parse(localStorage.getItem("shownGiftAlerts") || "[]")
-  );
-  const saveShownGift = (id) => {
-    shownGiftAlerts.add(id);
-    localStorage.setItem("shownGiftAlerts", JSON.stringify([...shownGiftAlerts]));
-  };
-
-  // Listen to real-time updates
-  onSnapshot(q, (snapshot) => {
-    snapshot.docChanges().forEach((change) => {
-      if (change.type !== "added") return;
+  onSnapshot(q, snapshot => {
+    snapshot.docChanges().forEach(change => {
+      if(change.type!=="added") return;
 
       const data = change.doc.data();
       const id = change.doc.id;
-
-      // CRITICAL FIX: Use correct field name
       const serverTime = data.createdAt?.toMillis?.() || Date.now();
 
-      // Skip if already rendered (prevents duplicates)
-      if (document.getElementById(id)) return;
+      if(document.getElementById(id)) return;
 
-      // Optional: Match & replace temp message if you use local echo
-      const tempElements = document.querySelectorAll('[data-temp="true"]');
-      tempElements.forEach((el) => {
+      document.querySelectorAll('[data-temp="true"]').forEach(el=>{
         const tempText = el.textContent.trim();
         const realText = data.content?.trim();
         const isSameUser = el.dataset.uid === data.uid;
-        const timeDiff = Math.abs(serverTime - (el.dataset.sentTime || 0));
-
-        if (isSameUser && tempText === realText && timeDiff < 10000) {
-          el.remove(); // Replace temp with real one below
-        }
+        const timeDiff = Math.abs(serverTime - (el.dataset.sentTime||0));
+        if(isSameUser && tempText===realText && timeDiff<10000) el.remove();
       });
 
-      // Render the real message from Firestore
-      renderMessagesFromArray([{ id, data }]);
+      renderMessagesFromArray([{id,data}]);
 
-      // Gift alert logic (unchanged & working)
-      if (data.highlight && data.content?.includes("gifted")) {
+      // Gift alert
+      if(data.highlight && data.content?.includes("gifted")) {
         const myId = currentUser?.chatId?.toLowerCase();
-        if (!myId) return;
-
+        if(!myId) return;
         const parts = data.content.split(" ");
-        const sender = parts[0];
-        const receiver = parts[2];
-        const amount = parts[3];
-
-        if (sender && receiver && amount && receiver.toLowerCase() === myId) {
-          if (!shownGiftAlerts.has(id)) {
-            showGiftAlert(`${sender} gifted you ${amount} stars ⭐️`);
-            saveShownGift(id);
-          }
+        const sender = parts[0], receiver = parts[2], amount = parts[3];
+        if(sender && receiver && amount && receiver.toLowerCase()===myId && !shownGiftAlerts.has(id)){
+          showGiftAlert(`${sender} gifted you ${amount} stars ⭐️`);
+          saveShownGift(id);
         }
       }
 
-      // Auto-scroll only for your own messages
-      if (data.uid === currentUser?.uid) {
-        scrollToBottom(refs.messagesEl);
-      }
+      if(data.uid===currentUser?.uid) scrollToBottom(refs.messagesEl);
     });
   });
 }
+
 
 /* ===== Notifications Tab Lazy + Live Setup (Robust) ===== */
 let notificationsListenerAttached = false;
@@ -1476,75 +1374,45 @@ function clearReplyAfterSend() {
 // SEND REGULAR MESSAGE
 refs.sendBtn?.addEventListener("click", async () => {
   if (!currentUser) return showStarPopup("Sign in to chat.");
-
   const txt = refs.messageInputEl?.value.trim();
   if (!txt) return showStarPopup("Type a message first.");
-  if ((currentUser.stars || 0) < SEND_COST) {
-    return showStarPopup("Not enough stars to send message.");
-  }
+  if ((currentUser.stars||0) < SEND_COST) return showStarPopup("Not enough stars.");
 
   const myUid = currentUser.uid || getUserId(currentUser.email);
-  const myDisplayName = currentUser.chatId || currentUser.displayName || currentUser.email.split('@')[0];
+  const myName = currentUser.chatId || currentUser.displayName || myUid;
   const myColor = refs.userColors[myUid] || currentUser.usernameColor || "#ff69b4";
 
-  // Instant optimistic UI
   currentUser.stars -= SEND_COST;
   refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
+  updateDoc(doc(db,"users",myUid),{stars: increment(-SEND_COST)}).catch(()=>{});
 
-  // Fire-and-forget star deduction (never blocks)
-  updateDoc(doc(db, "users", myUid), { stars: increment(-SEND_COST) }).catch(() => {});
-
-  // Unique temp ID
-  const tempId = "temp_" + Date.now() + "_" + Math.random().toString(36).substr(2, 9);
-
+  const tempId = "temp_"+Date.now()+"_"+Math.random().toString(36).substr(2,9);
   const tempMsg = {
     id: tempId,
-    isTemp: true, // Critical: allows render even if ID exists (prevents dupes)
-    data: {
-      content: txt,
-      uid: myUid,
-      chatId: myDisplayName,
-      usernameColor: myColor,
-      createdAt: { toMillis: () => Date.now() },
-      replyTo: currentReplyTarget?.id || null,
-      replyToContent: currentReplyTarget?.content || null
-    }
+    isTemp:true,
+    data: { content:txt, uid:myUid, chatId:myName, usernameColor:myColor, createdAt:{toMillis:()=>Date.now()}, replyTo:currentReplyTarget?.id, replyToContent:currentReplyTarget?.content }
   };
 
-  // Show instantly
   renderMessagesFromArray([tempMsg]);
   refs.messageInputEl.value = "";
   clearReplyAfterSend();
   scrollToBottom(refs.messagesEl);
 
   try {
-    // Actually send to Firestore
     await addDoc(collection(db, CHAT_COLLECTION), {
-      content: txt,
-      uid: myUid,
-      chatId: myDisplayName,
-      usernameColor: myColor,
-      createdAt: serverTimestamp(),
-      replyTo: currentReplyTarget?.id || null,
-      replyToContent: currentReplyTarget?.content || null
+      content: txt, uid: myUid, chatId: myName,
+      usernameColor: myColor, createdAt: serverTimestamp(),
+      replyTo: currentReplyTarget?.id, replyToContent: currentReplyTarget?.content
     });
-
-    // Success: remove temp — real message appears instantly via onSnapshot
     const tempEl = document.getElementById(tempId);
-    if (tempEl) tempEl.remove();
-
-  } catch (err) {
-    // Failed: refund stars + remove temp message
+    if(tempEl) tempEl.remove();
+  } catch(err) {
     currentUser.stars += SEND_COST;
     refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
-
-    const tempEl = document.getElementById(tempId);
-    if (tempEl) tempEl.remove();
-
+    const tempEl = document.getElementById(tempId); if(tempEl) tempEl.remove();
     showStarPopup("Failed to send — will retry when online");
   }
 });
-
 
 // BUZZ MESSAGE (EPIC GLOW EFFECT)
 refs.buzzBtn?.addEventListener("click", async () => {
