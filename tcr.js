@@ -929,13 +929,7 @@ function attachMessagesListener() {
         }
       }
 
-      // 🌀 Keep scroll locked for your messages
-      if (refs.messagesEl && msg.uid === currentUser?.uid) {
-        refs.messagesEl.scrollTop = refs.messagesEl.scrollHeight;
-      }
-    });
-  });
-}
+
 
 /* ===== Notifications Tab Lazy + Live Setup (Robust) ===== */
 let notificationsListenerAttached = false;
@@ -1091,8 +1085,7 @@ document.querySelectorAll("#googleLoginBtn, .google-btn, [data-google-login]")
       showStarPopup("Google Sign-Up is not available at the moment.<br>Use VIP Email Login instead.");
     });
 });
-
-// FINAL: WORKING LOGIN BUTTON — THIS MAKES SIGN IN ACTUALLY WORK
+// FINAL: CLEAN LOGIN BUTTON — NO CONSOLE LOGS
 document.getElementById("whitelistLoginBtn")?.addEventListener("click", async () => {
   const email = document.getElementById("emailInput")?.value.trim().toLowerCase();
   const password = document.getElementById("passwordInput")?.value;
@@ -1104,16 +1097,16 @@ document.getElementById("whitelistLoginBtn")?.addEventListener("click", async ()
 
   try {
     await signInWithEmailAndPassword(auth, email, password);
-    // onAuthStateChanged will handle everything else — just wait
+    // onAuthStateChanged will handle the rest
     showStarPopup("Logging in...");
   } catch (err) {
-    console.error("Login failed:", err.code);
+    // Silently handle errors – no console output
     if (err.code === "auth/user-not-found" || err.code === "auth/wrong-password") {
       showStarPopup("Wrong email or password");
     } else if (err.code === "auth/too-many-requests") {
       showStarPopup("Too many tries. Wait a minute.");
     } else {
-      showStarPopup("Login failed. Check console.");
+      showStarPopup("Login failed.");
     }
   }
 });
@@ -1464,62 +1457,72 @@ refs.sendBtn?.addEventListener("click", async () => {
 
     const myUid = currentUser.uid || getUserId(currentUser.email);
     const myDisplayName = currentUser.chatId || currentUser.displayName || currentUser.email.split('@')[0];
-
-    // Get your current color from the live cache (always up-to-date)
     const myColor = refs.userColors[myUid] || currentUser.usernameColor || "#ff69b4";
 
-    // Deduct stars locally first (optimistic UI)
+    // Optimistic star deduction
     currentUser.stars -= SEND_COST;
     refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
 
-    await updateDoc(doc(db, "users", myUid), {
-      stars: increment(-SEND_COST)
-    });
+    // Update stars in DB (fire-and-forget — will sync eventually)
+    updateDoc(doc(db, "users", myUid), { stars: increment(-SEND_COST) });
 
-    // Local echo (instant feedback + color guaranteed)
-    const tempId = "temp_" + Date.now();
+    // Create temp message for instant display
+    const tempId = "temp_" + Date.now() + "_" + Math.random();
     const tempMsg = {
       id: tempId,
       data: {
         content: txt,
         uid: myUid,
         chatId: myDisplayName,
-        usernameColor: myColor,           // COLOR SHOWS INSTANTLY
+        usernameColor: myColor,
         createdAt: { toMillis: () => Date.now() },
         replyTo: currentReplyTarget?.id || null,
         replyToContent: currentReplyTarget?.content || null
       }
     };
 
-    // Render instantly
+    // Show instantly
     renderMessagesFromArray([tempMsg]);
     refs.messageInputEl.value = "";
     clearReplyAfterSend();
     scrollToBottom(refs.messagesEl);
 
-    // Send to Firestore
+    // Actually send to Firestore
     const msgRef = await addDoc(collection(db, CHAT_COLLECTION), {
       content: txt,
       uid: myUid,
       chatId: myDisplayName,
-      usernameColor: myColor,                    // SAVED IN DB — COLORS FLOW TO EVERYONE
+      usernameColor: myColor,
       createdAt: serverTimestamp(),
       replyTo: currentReplyTarget?.id || null,
       replyToContent: currentReplyTarget?.content || null
     });
 
-    console.log("Message sent king!", msgRef.id);
+    // SUCCESS: Replace temp message with real one
+    // Find the temp message element and remove it
+    const tempEl = refs.messagesEl.querySelector(`[data-msg-id="${tempId}"]`);
+    if (tempEl) tempEl.remove();
 
-    // Optional: store pending messages locally if you want offline support later
-    // (not needed now that it's instant + reliable)
+    // Render the real message (now has proper server timestamp & ID)
+    const realMsg = {
+      id: msgRef.id,
+      data: () => ({
+        ...(await getDoc(msgRef)).data(),
+        createdAt: { toMillis: () => Date.now() } // or use server time when available
+      })
+    };
+    renderMessagesFromArray([realMsg]); // your existing render function handles this fine
 
   } catch (err) {
-    console.error("Send failed:", err);
-    showStarPopup("Failed to send — check connection");
-
-    // Refund stars on failure
+    // FAILURE: Refund stars + show error
     currentUser.stars += SEND_COST;
     refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
+
+    // Remove temp message if still there
+    const tempEl = refs.messagesEl.querySelector(`[data-msg-id^="temp_"]`);
+    if (tempEl) tempEl.remove();
+
+    showStarPopup("Failed to send — check connection");
   }
 });
 
