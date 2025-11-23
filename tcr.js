@@ -403,18 +403,6 @@ onAuthStateChanged(auth, async (user) => {
 });
   
 
-// EPIC WELCOME BACK — Bold + Random Color Every Time
-const vipColors = ["#FF1493", "#FFD700", "#00FFFF", "#FF4500", "#DA70D6", "#FF69B4", "#32CD32", "#FFA500", "#00FF7F"];
-const glowColor = vipColors[Math.floor(Math.random() * vipColors.length)];
-const displayName = (currentUser.chatId || currentUser.email.split("@")[0] || "VIP").toUpperCase();
-
-showStarPopup(`
-  Welcome back,<br>
-  <span style="font-size:1.5em; font-weight:bold; color:${glowColor}; text-shadow:0 0 12px ${glowColor}99;">
-    ${displayName}
-  </span>!
-`);
-
 /* ----------------------------
    ⭐ GIFT MODAL / CHAT BANNER ALERT
 ----------------------------- */
