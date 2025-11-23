@@ -32,46 +32,38 @@ header {
   border-bottom: 2px solid #ddd;  /* subtle divider */
 }
 
-/* ---------- PROFILE CARD ---------- */
-#user-info {
-  display: flex;
-  justify-content: center;
-  padding: 1rem;
-}
-.profile-card {
-  background: #fff;
-  padding: 1rem 2rem;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-  text-align: center;
-  min-width: 280px;
-}
-#username {
-  font-weight: bold;
-  font-size: 1.2rem;
-  margin-bottom: 0.8rem;
-}
-.balances {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.5rem;
-}
-.balance-item { text-align: center; }
-.balance-label {
-  font-size: 0.85rem;
-  color: #555;  /* muted dark for label */
-  margin-bottom: 0.2rem;
-}
-.balance-value {
-  font-size: 1rem;
-  font-weight: bold;
-  color: var(--theme-solid);
-  display: inline-flex;
-  align-items: center;
-  gap: 4px; /* space between number and emoji */
-  font-variant-numeric: tabular-nums; /* THIS makes numbers line up */
-}
+  /* ===== PROFILE CARD ===== */
+    #user-info {
+      padding: 1.5rem 1rem;
+      display: flex;
+      justify-content: center;
+    }
+    .profile-card {
+      background: var(--surface);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 1.5rem 2rem;
+      width: 320px;
+      max-width: 90%;
+      text-align: center;
+      box-shadow: var(--shadow);
+      transition: transform 0.3s ease;
+    }
+    .profile-card:hover { transform: translateY(-4px); }
+    #username { font-size: 1.4rem; font-weight: 700; margin-bottom: 0.8rem; }
+    .balance-label { font-size: 0.9rem; color: var(--text-muted); }
+    .balance-value {
+      font-size: 1.5rem;
+      font-weight: 800;
+      background: var(--gradient);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
 
     /* ===== TABS ===== */
     .host-tabs, #userTabs {
