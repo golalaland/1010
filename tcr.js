@@ -414,7 +414,7 @@ onAuthStateChanged(auth, async (user) => {
 const colors = ["#FF1493","#FFD700","#00FFFF","#FF4500","#DA70D6","#FF69B4","#32CD32","#FFA500"];
 const color = colors[Math.floor(Math.random() * colors.length)];
 
-showStarPopup(`Welcome back, <span style="font-weight:bold;color:${color};">${currentUser.chatId.toUpperCase()}</span>!`);
+showStarPopup(`Welcome back, <span style="font-weight:bold;color:${color};">${currentUser.chatId.toUpperCase()}</span> !`);
 
 
 
