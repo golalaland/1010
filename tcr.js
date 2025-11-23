@@ -1446,67 +1446,75 @@ function clearReplyAfterSend() {
 }
 
 
+// SEND REGULAR MESSAGE
+refs.sendBtn?.addEventListener("click", async () => {
+  try {
+    if (!currentUser) return showStarPopup("Sign in to chat.");
 
+    const txt = refs.messageInputEl?.value.trim();
+    if (!txt) return showStarPopup("Type a message first.");
+    if ((currentUser.stars || 0) < SEND_COST)
+      return showStarPopup("Not enough stars to send message.");
 
-// SEND REGULAR MESSAGE — FIXED & WORKING (messages now persist forever)
+    const myUid = currentUser.uid || getUserId(currentUser.email);
+    const myDisplayName = currentUser.chatId || currentUser.displayName || currentUser.email.split('@')[0];
 
-// SEND MESSAGE — FINAL, CANNOT HANG, MESSAGES ALWAYS SAVED
-refs.sendBtn?.addEventListener("click", () => {
-  if (!currentUser) return showStarPopup("Sign in to chat.");
+    // Get your current color from the live cache (always up-to-date)
+    const myColor = refs.userColors[myUid] || currentUser.usernameColor || "#ff69b4";
 
-  const txt = refs.messageInputEl?.value.trim();
-  if (!txt) return showStarPopup("Type a message first.");
-  if ((currentUser.stars || 0) < SEND_COST)
-    return showStarPopup("Not enough stars to send message.");
+    // Deduct stars locally first (optimistic UI)
+    currentUser.stars -= SEND_COST;
+    refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
 
-  const myUid = currentUser.uid || getUserId(currentUser.email);
-  const myDisplayName = currentUser.chatId || currentUser.displayName || currentUser.email.split('@')[0];
-  const myColor = refs.userColors[myUid] || currentUser.usernameColor || "#ff69b4";
+    await updateDoc(doc(db, "users", myUid), {
+      stars: increment(-SEND_COST)
+    });
 
-  // INSTANT UI — nothing can block this
-  currentUser.stars -= SEND_COST;
-  refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
+    // Local echo (instant feedback + color guaranteed)
+    const tempId = "temp_" + Date.now();
+    const tempMsg = {
+      id: tempId,
+      data: {
+        content: txt,
+        uid: myUid,
+        chatId: myDisplayName,
+        usernameColor: myColor,           // COLOR SHOWS INSTANTLY
+        createdAt: { toMillis: () => Date.now() },
+        replyTo: currentReplyTarget?.id || null,
+        replyToContent: currentReplyTarget?.content || null
+      }
+    };
 
-  const tempId = "temp_" + Date.now() + Math.random();
-  const tempMsg = {
-    id: tempId,
-    data: {
+    // Render instantly
+    renderMessagesFromArray([tempMsg]);
+    refs.messageInputEl.value = "";
+    clearReplyAfterSend();
+    scrollToBottom(refs.messagesEl);
+
+    // Send to Firestore
+    const msgRef = await addDoc(collection(db, CHAT_COLLECTION), {
       content: txt,
       uid: myUid,
       chatId: myDisplayName,
-      usernameColor: myColor,
-      createdAt: { toMillis: () => Date.now() },
+      usernameColor: myColor,                    // SAVED IN DB — COLORS FLOW TO EVERYONE
+      createdAt: serverTimestamp(),
       replyTo: currentReplyTarget?.id || null,
       replyToContent: currentReplyTarget?.content || null
-    }
-  };
+    });
 
-  renderMessagesFromArray([tempMsg]);
-  refs.messageInputEl.value = "";
-  clearReplyAfterSend();
-  scrollToBottom(refs.messagesEl);
+    console.log("Message sent king!", msgRef.id);
 
-  // FIRE AND FORGET — these run in background, never freeze UI
-  updateDoc(doc(db, "users", myUid), { stars: increment(-SEND_COST) }).catch(() => {});
+    // Optional: store pending messages locally if you want offline support later
+    // (not needed now that it's instant + reliable)
 
-  addDoc(collection(db, CHAT_COLLECTION), {
-    content: txt,
-    uid: myUid,
-    chatId: myDisplayName,
-    usernameColor: myColor,
-    createdAt: serverTimestamp(),
-    replyTo: currentReplyTarget?.id || null,
-    replyToContent: currentReplyTarget?.content || null
-  }).then(() => {
-    // Success → remove temp message (real one appears via your onSnapshot)
-    document.querySelector(`[data-msg-id="${tempId}"]`)?.remove();
-  }).catch(() => {
-    // Failed → refund stars and remove temp message
+  } catch (err) {
+    console.error("Send failed:", err);
+    showStarPopup("Failed to send — check connection");
+
+    // Refund stars on failure
     currentUser.stars += SEND_COST;
     refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
-    document.querySelector(`[data-msg-id="${tempId}"]`)?.remove();
-    showStarPopup("Message failed (saved offline)");
-  });
+  }
 });
 
 
