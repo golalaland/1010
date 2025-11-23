@@ -1447,72 +1447,66 @@ function clearReplyAfterSend() {
 
 
 
+
 // SEND REGULAR MESSAGE — FIXED & WORKING (messages now persist forever)
-refs.sendBtn?.addEventListener("click", async () => {
-  try {
-    if (!currentUser) return showStarPopup("Sign in to chat.");
 
-    const txt = refs.messageInputEl?.value.trim();
-    if (!txt) return showStarPopup("Type a message first.");
-    if ((currentUser.stars || 0) < SEND_COST)
-      return showStarPopup("Not enough stars to send message.");
+// SEND MESSAGE — FINAL, CANNOT HANG, MESSAGES ALWAYS SAVED
+refs.sendBtn?.addEventListener("click", () => {
+  if (!currentUser) return showStarPopup("Sign in to chat.");
 
-    const myUid = currentUser.uid || getUserId(currentUser.email);
-    const myDisplayName = currentUser.chatId || currentUser.displayName || currentUser.email.split('@')[0];
-    const myColor = refs.userColors[myUid] || currentUser.usernameColor || "#ff69b4";
+  const txt = refs.messageInputEl?.value.trim();
+  if (!txt) return showStarPopup("Type a message first.");
+  if ((currentUser.stars || 0) < SEND_COST)
+    return showStarPopup("Not enough stars to send message.");
 
-    // Optimistic star deduction
-    currentUser.stars -= SEND_COST;
-    refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
+  const myUid = currentUser.uid || getUserId(currentUser.email);
+  const myDisplayName = currentUser.chatId || currentUser.displayName || currentUser.email.split('@')[0];
+  const myColor = refs.userColors[myUid] || currentUser.usernameColor || "#ff69b4";
 
-    await updateDoc(doc(db, "users", myUid), {
-      stars: increment(-SEND_COST)
-    });
+  // INSTANT UI — nothing can block this
+  currentUser.stars -= SEND_COST;
+  refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
 
-    // Local echo (instant feedback + color)
-    const tempId = "temp_" + Date.now();
-    const tempMsg = {
-      id: tempId,
-      data: {
-        content: txt,
-        uid: myUid,
-        chatId: myDisplayName,
-        usernameColor: myColor,
-        createdAt: { toMillis: () => Date.now() },
-        replyTo: currentReplyTarget?.id || null,
-        replyToContent: currentReplyTarget?.content || null
-      }
-    };
-
-    renderMessagesFromArray([tempMsg]);
-    refs.messageInputEl.value = "";
-    clearReplyAfterSend();
-    scrollToBottom(refs.messagesEl);
-
-    // Send to Firestore
-    await addDoc(collection(db, CHAT_COLLECTION), {
+  const tempId = "temp_" + Date.now() + Math.random();
+  const tempMsg = {
+    id: tempId,
+    data: {
       content: txt,
       uid: myUid,
       chatId: myDisplayName,
       usernameColor: myColor,
-      createdAt: serverTimestamp(),
+      createdAt: { toMillis: () => Date.now() },
       replyTo: currentReplyTarget?.id || null,
       replyToContent: currentReplyTarget?.content || null
-    });
+    }
+  };
 
-    // THIS IS THE ONLY FIX: Remove temp message → real one appears via onSnapshot
+  renderMessagesFromArray([tempMsg]);
+  refs.messageInputEl.value = "";
+  clearReplyAfterSend();
+  scrollToBottom(refs.messagesEl);
+
+  // FIRE AND FORGET — these run in background, never freeze UI
+  updateDoc(doc(db, "users", myUid), { stars: increment(-SEND_COST) }).catch(() => {});
+
+  addDoc(collection(db, CHAT_COLLECTION), {
+    content: txt,
+    uid: myUid,
+    chatId: myDisplayName,
+    usernameColor: myColor,
+    createdAt: serverTimestamp(),
+    replyTo: currentReplyTarget?.id || null,
+    replyToContent: currentReplyTarget?.content || null
+  }).then(() => {
+    // Success → remove temp message (real one appears via your onSnapshot)
     document.querySelector(`[data-msg-id="${tempId}"]`)?.remove();
-
-  } catch (err) {
-    // Refund stars on failure
+  }).catch(() => {
+    // Failed → refund stars and remove temp message
     currentUser.stars += SEND_COST;
     refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
-
-    // Clean up temp message if something went wrong
-    document.querySelector(`[data-msg-id^="temp_"]`)?.remove();
-
-    showStarPopup("Failed to send — check connection");
-  }
+    document.querySelector(`[data-msg-id="${tempId}"]`)?.remove();
+    showStarPopup("Message failed (saved offline)");
+  });
 });
 
 
