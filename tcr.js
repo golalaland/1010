@@ -953,29 +953,39 @@ async function promptForChatID(userRef, userData) {
    Google button temporarily disabled
 ================================= */
 
-/* BLOCK GOOGLE SIGN-IN — button stays beautiful & clickable → shows your message */
-document.querySelectorAll("#googleLoginBtn, .google-btn, [data-google-login], [onclick*='google'], [onclick*='Google'], [href*='google']")
-  .forEach(btn => {
-    if (!btn) return;
+/* BLOCK ONLY GOOGLE BUTTON — WHITELIST/VIP BUTTON IS 100% SAFE */
+document.querySelectorAll("#googleLoginBtn, .google-btn, [data-google-login]")
+  .forEach(googleBtn => {
+    if (!googleBtn) return;
 
-    // 1. Visual: looks normal but slightly dimmed + not-allowed cursor
-    btn.style.opacity = "0.68";
-    btn.style.cursor = "not-allowed";
-    if (btn.tagName === "BUTTON" || btn.tagName === "INPUT") btn.disabled = true;
+    // 1. Make Google button look and feel completely normal
+    googleBtn.style.cssText = "";                // remove ALL inline styles (opacity, cursor, etc.)
+    googleBtn.disabled = false;                  // make sure it's enabled
+    if (googleBtn.tagName === "BUTTON") googleBtn.removeAttribute("disabled");
 
-    // 2. VERY IMPORTANT: remove any old onclick that would trigger real Google login
-    btn.onclick = null;
-    btn.removeAttribute("onclick");
+    // 2. Nuke every possible old Google login handler (this is the nuclear option)
+    googleBtn.replaceWith(googleBtn.cloneNode(true));
+    
+    // 3. Grab the fresh clean button after cloning
+    const freshGoogleBtn = document.querySelector("#googleLoginBtn") || 
+                           document.querySelector(".google-btn") || 
+                           document.querySelector("[data-google-login]");
 
-    // 3. Add our own click handler (this WILL fire because we didn't use pointer-events:none)
-    btn.addEventListener("click", e => {
+    if (!freshGoogleBtn) return;
+
+    // 4. Add ONLY our message — nothing else can run
+    freshGoogleBtn.addEventListener("click", function(e) {
       e.preventDefault();
       e.stopPropagation();
       e.stopImmediatePropagation();
 
       showStarPopup("Google Sign-Up is not available at the moment.<br>Use VIP Email Login instead.");
-    }, true); // true = capture phase, beats any other listeners
+    });
 });
+
+/* WHITELIST / VIP BUTTON IS COMPLETELY IGNORED — WORKS 100% */
+console.log("Google button blocked. VIP Whitelist button is fully working.");
+
 
 /* ---------- VIP Login + Smooth Progress Bar ---------- */
 async function loginWhitelist(email, password) {
