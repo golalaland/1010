@@ -544,9 +544,74 @@ setupUsersListener();
 
 
 
-let scrollPending = false;
-let tapModalEl = null;
-let currentReplyTarget = null;
+// ---------------------- GLOBALS ----------------------
+let scrollPending = false;      // used to throttle scroll updates
+let tapModalEl = null;          // your tap modal reference
+let currentReplyTarget = null;  // current reply target
+let scrollArrow = null;         // scroll button reference
+
+
+// ---------------------- INIT AUTO-SCROLL ----------------------
+function handleChatAutoScroll() {
+  if (!refs.messagesEl) return;
+
+  // Create scroll-to-bottom button if it doesn't exist
+  scrollArrow = document.getElementById("scrollToBottomBtn");
+  if (!scrollArrow) {
+    scrollArrow = document.createElement("div");
+    scrollArrow.id = "scrollToBottomBtn";
+    scrollArrow.textContent = "↓";
+    scrollArrow.style.cssText = `
+      position: fixed;
+      bottom: 90px;
+      right: 20px;
+      padding: 6px 12px;
+      background: rgba(255,20,147,0.9);
+      color: #fff;
+      border-radius: 14px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.3s ease;
+      z-index: 9999;
+    `;
+    document.body.appendChild(scrollArrow);
+
+    // Scroll on click
+    scrollArrow.addEventListener("click", () => {
+      refs.messagesEl.scrollTo({ top: refs.messagesEl.scrollHeight, behavior: "smooth" });
+      scrollArrow.style.opacity = 0;
+      scrollArrow.style.pointerEvents = "none";
+    });
+  }
+
+  // Listen for scroll events
+  refs.messagesEl.addEventListener("scroll", () => {
+    const distanceFromBottom = refs.messagesEl.scrollHeight - refs.messagesEl.scrollTop - refs.messagesEl.clientHeight;
+    if (distanceFromBottom > 150) {
+      scrollArrow.style.opacity = 1;
+      scrollArrow.style.pointerEvents = "auto";
+    } else {
+      scrollArrow.style.opacity = 0;
+      scrollArrow.style.pointerEvents = "none";
+    }
+  });
+
+  // Initial auto-scroll to bottom (safe with scrollPending)
+  if (!scrollPending) {
+    scrollPending = true;
+    requestAnimationFrame(() => {
+      refs.messagesEl.scrollTop = refs.messagesEl.scrollHeight;
+      scrollPending = false;
+    });
+  }
+}
+
+// ---------------------- CALL ON PAGE LOAD / AFTER LOGIN ----------------------
+handleChatAutoScroll();
+
 
 // Cancel reply
 function cancelReply() {
@@ -785,52 +850,6 @@ function renderMessagesFromArray(messages) {
     });
   }
 }
-
-// Auto-scroll + scroll-to-bottom button
-function handleChatAutoScroll() {
-  if (!refs.messagesEl) return;
-
-  let scrollBtn = document.getElementById("scrollToBottomBtn");
-  if (!scrollBtn) {
-    scrollBtn = document.createElement("div");
-    scrollBtn.id = "scrollToBottomBtn";
-    scrollBtn.textContent = "↓";
-    scrollBtn.style.cssText = `
-      position: fixed;
-      bottom: 90px;
-      right: 20px;
-      padding: 6px 12px;
-      background: rgba(255,20,147,0.9);
-      color: #fff;
-      border-radius: 14px;
-      font-size: 16px;
-      font-weight: 700;
-      cursor: pointer;
-      opacity: 1;
-      pointer-events: none;
-      transition: all 0.3s ease;
-      z-index: 9999;
-    `;
-    document.body.appendChild(scrollBtn);
-    scrollBtn.addEventListener("click", () => {
-      refs.messagesEl.scrollTo({ top: refs.messagesEl.scrollHeight, behavior: "smooth" });
-      scrollBtn.style.opacity = 0;
-      scrollBtn.style.pointerEvents = "none";
-    });
-  }
-
-  refs.messagesEl.addEventListener("scroll", () => {
-    const distance = refs.messagesEl.scrollHeight - refs.messagesEl.scrollTop - refs.messagesEl.clientHeight;
-    if (distance > 150) {
-      scrollBtn.style.opacity = 1;
-      scrollBtn.style.pointerEvents = "auto";
-    } else {
-      scrollBtn.style.opacity = 1;
-      scrollBtn.style.pointerEvents = "none";
-    }
-  });
-}
-
 
 /* ---------- 🔔 Messages Listener (Final Optimized Version) ---------- */
 function attachMessagesListener() {
