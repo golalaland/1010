@@ -948,13 +948,26 @@ async function promptForChatID(userRef, userData) {
 }
 
 
-/* ---------- VIP Login + Smooth Auto-login with Progress ---------- */
-import { signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+/* ===============================
+   VIP Email/Password Login + Safe Auto-Login (NO PASSWORD IN localStorage)
+================================= */
+import { signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
+// ——————— BLOCK GOOGLE SIGN-IN (as requested) ———————
+document.querySelectorAll("[data-google-login], #googleLoginBtn, .google-btn").forEach(btn => {
+  btn.style.opacity = "0.6";
+  btn.style.pointerEvents = "none";
+  btn.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    showStarPopup("Google Sign-Up is not available at the moment. Use VIP Email Login.");
+  });
+});
+
+/* ---------- VIP Login + Smooth Progress Bar ---------- */
 async function loginWhitelist(email, password) {
   const loader = document.getElementById("postLoginLoader");
   const loadingBar = document.getElementById("loadingBar");
-
   let progress = 0;
   let loadingInterval;
 
@@ -965,35 +978,32 @@ async function loginWhitelist(email, password) {
       loadingBar.style.background = "linear-gradient(90deg, #ff69b4, #ff1493)";
     }
 
-    // Smooth progress animation
     loadingInterval = setInterval(() => {
       if (progress < 95 && loadingBar) {
-        progress += Math.random() * 2 + 0.5; // slow, smooth increment
+        progress += Math.random() * 2 + 0.5;
         loadingBar.style.width = `${progress}%`;
       }
     }, 80);
 
-    // Firebase Auth
+    // Firebase Auth Login
     const cred = await signInWithEmailAndPassword(auth, email, password);
     const user = cred.user;
-    console.log("✅ Authenticated:", user.email);
+    console.log("Authenticated via Email:", user.email);
 
-    // Whitelist check
-    const q = query(collection(db, "whitelist"), where("email", "==", email));
-    const snap = await getDocs(q);
-    if (snap.empty) {
+    // Whitelist Check
+    const whitelistSnap = await getDocs(query(collection(db, "whitelist"), where("email", "==", email)));
+    if (whitelistSnap.empty) {
       await signOut(auth);
-      showStarPopup("❌ You’re not on the whitelist. Access denied.");
+      showStarPopup("You're not on the whitelist. Access denied.");
       return false;
     }
 
-    // Load user profile
+    // Load User Profile
     const uidKey = sanitizeKey(email);
-    const userRef = doc(db, "users", uidKey);
-    const userSnap = await getDoc(userRef);
+    const userSnap = await getDoc(doc(db, "users", uidKey));
     if (!userSnap.exists()) {
       await signOut(auth);
-      showStarPopup("⚠️ Profile missing. Please complete signup first.");
+      showStarPopup("Profile missing. Please complete signup first.");
       return false;
     }
 
@@ -1015,10 +1025,10 @@ async function loginWhitelist(email, password) {
       isHost: !!data.isHost
     };
 
-// Cache credentials
-    localStorage.setItem("vipUser", JSON.stringify({ email, password }));
+    // SAFE AUTO-LOGIN: Only store email (never password!)
+    localStorage.setItem("lastVipEmail", email);
 
-    // Initialize chat + notifications
+    // Initialize everything
     updateRedeemLink();
     updateTipLink();
     setupPresence?.(currentUser);
@@ -1027,64 +1037,117 @@ async function loginWhitelist(email, password) {
     showChatUI(currentUser);
     startNotificationsFor?.(email);
 
-    console.log("🚀 Chatroom access granted:", email);
+    console.log("Chatroom access granted:", email);
 
-    // Complete progress bar smoothly to 100%
+    // Final progress to 100%
     if (loadingBar) {
-      let finalProgress = progress;
-      const finalizeInterval = setInterval(() => {
-        finalProgress += 2;
-        if (finalProgress >= 100) {
+      clearInterval(loadingInterval);
+      let final = progress;
+      const finish = setInterval(() => {
+        final += 3;
+        if (final >= 100) {
           loadingBar.style.width = "100%";
-          clearInterval(finalizeInterval);
+          clearInterval(finish);
         } else {
-          loadingBar.style.width = `${finalProgress}%`;
+          loadingBar.style.width = `${final}%`;
         }
       }, 30);
     }
 
-    await sleep(400);
+    await sleep(500);
     return true;
 
   } catch (err) {
-    console.error("❌ Login error:", err);
-    showStarPopup("Login failed. Please check credentials.");
+    console.error("Login failed:", err.message);
+    showStarPopup("Login failed. Wrong email or password.");
     if (loadingBar) loadingBar.style.width = "0%";
     return false;
   } finally {
     clearInterval(loadingInterval);
-    if (loader) loader.style.display = "none";
+    setTimeout(() => {
+      if (loader) loader.style.display = "none";
+    }, 600);
   }
 }
 
 /* ===============================
-   🎟️ Bind VIP ACCESS button
+   Bind VIP Login Button
 ================================= */
 document.getElementById("whitelistLoginBtn")?.addEventListener("click", async () => {
   const email = (document.getElementById("emailInput")?.value || "").trim().toLowerCase();
-  const password = (document.getElementById("passwordInput")?.value || "").trim();
+  const password = document.getElementById("passwordInput")?.value?.trim() || "";
 
-  if (!email || !password) return showStarPopup("Enter both email and password.");
+  if (!email || !password) {
+    return showStarPopup("Please enter both email and password.");
+  }
+
   await loginWhitelist(email, password);
 });
 
-/* ----------------------------
-   🔁 Auto-login session
------------------------------ */
-async function autoLogin() {
-  const vipUser = JSON.parse(localStorage.getItem("vipUser"));
-  if (!vipUser?.email || !vipUser?.password) return;
-
-  console.log("🔄 Auto-login for:", vipUser.email);
-  const success = await loginWhitelist(vipUser.email, vipUser.password);
-
-  if (success && currentUser?.isVIP) {
-    showStarPopup(`Welcome back, VIP ${currentUser.chatId || currentUser.email}! ⭐️`);
+/* ===============================
+   SAFE AUTO-LOGIN (No password stored!)
+================================= */
+async function autoLoginIfPossible() {
+  const savedEmail = localStorage.getItem("lastVipEmail");
+  if (!savedEmail) {
+    console.log("No saved VIP email — waiting for manual login");
+    return;
   }
+
+  // Check if user is already signed in via Firebase persistence
+  const user = auth.currentUser;
+  if (user && user.email.toLowerCase() === savedEmail.toLowerCase()) {
+    console.log("Already signed in as:", user.email);
+    // Re-trigger UI setup (in case page reloaded)
+    const uidKey = sanitizeKey(savedEmail);
+    const userSnap = await getDoc(doc(db, "users", uidKey));
+    if (userSnap.exists()) {
+      const data = userSnap.data();
+      currentUser = { uid: uidKey, email: data.email, ...data };
+      showChatUI(currentUser);
+      startNotificationsFor?.(savedEmail);
+      console.log("Auto-restored VIP session for:", savedEmail);
+      showStarPopup(`Welcome back, ${currentUser.chatId || savedEmail.split("@")[0]}!`);
+    }
+    return;
+  }
+
+  // If not signed in, prompt for password (safe & user-friendly)
+  showStarPopup(`
+    <div style="text-align:center;">
+      <p>Auto-login detected for:</p>
+      <strong>${savedEmail}</strong><br><br>
+      <input type="password" id="autoLoginPass" placeholder="Enter password to continue" style="width:90%; padding:12px; border-radius:8px; border:1px solid #ff69b4; margin:10px 0;">
+      <br>
+      <button onclick="continueAutoLogin('${savedEmail}')" style="background:#ff1493; color:white; border:none; padding:12px 24px; border-radius:8px; cursor:pointer;">
+        Continue Login
+      </button>
+    </div>
+  `);
 }
 
-window.addEventListener("DOMContentLoaded", autoLogin);
+// Global function for the popup button
+window.continueAutoLogin = async (email) => {
+  const pass = document.getElementById("autoLoginPass")?.value?.trim();
+  if (!pass) return showStarPopup("Please enter your password.");
+  document.querySelector(".popup-close")?.click(); // close popup
+  await loginWhitelist(email, pass);
+};
 
+// Run on page load
+window.addEventListener("DOMContentLoaded", () => {
+  setTimeout(autoLoginIfPossible, 800); // small delay for smoother UX
+});
+
+/* ===============================
+   Optional: Clear saved email on manual logout
+================================= */
+window.logoutVIP = async () => {
+  await signOut(auth);
+  localStorage.removeItem("lastVipEmail");
+  currentUser = null;
+  location.reload();
+};
 
 /* ===============================
    💫 Auto Star Earning System
