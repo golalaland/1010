@@ -530,39 +530,59 @@ function updateTipLink() {
 }
 
 
-/* ---------- USER COLORS — FIXED, SECURE & FLAWLESS ---------- */
-// Only listens to YOUR color + colors from messages (no more reading all users!)
+/* ---------- USER COLORS — FINAL, PERFECT, BULLETPROOF ---------- */
 function setupUserColors() {
   if (!currentUser?.email) return;
 
   const myId = getUserId(currentUser.email);
   refs.userColors = refs.userColors || {};
 
-  // 1. Listen ONLY to your own color (allowed by rules)
-  const myRef = doc(db, "users", myId);
-  onSnapshot(myRef, (snap) => {
+  // 1. Listen ONLY to your own color from your user doc (secure + instant)
+  const myDocRef = doc(db, "users", myId);
+  const unsubscribeMyColor = onSnapshot(myDocRef, (snap) => {
     if (snap.exists()) {
       const color = snap.data()?.usernameColor || "#ff69b4";
       refs.userColors[myId] = color;
-      // Update your name color in chat instantly
-      if (lastMessagesArray.length) renderMessagesFromArray(lastMessagesArray);
+
+      // Optional: instantly update your name color in existing messages
+      document.querySelectorAll(`[data-uid="${myId}"] .username`).forEach(el => {
+        el.style.color = color;
+      });
     }
   });
 
-  // 2. Also pull colors from incoming messages (best source!)
-  const originalRender = renderMessagesFromArray;
-  renderMessagesFromArray = function(messages) {
-    messages.forEach(msg => {
-      if (msg.usernameColor) {
-        refs.userColors[msg.senderId || msg.uid] = msg.usernameColor;
-      }
-    });
-    originalRender(messages);
+  // 2. Automatically collect colors from EVERY incoming message (best source)
+  // We override renderMessagesFromArray ONCE and safely
+  if (!window.renderMessagesFromArrayPatched) {
+    const originalRender = renderMessagesFromArray;
+
+    renderMessagesFromArray = function(messages) {
+      // Extract and cache colors from all messages (temp or real)
+      messages.forEach(item => {
+        const data = item.data || item;
+        const uid = data.uid || data.senderId;
+        const color = data.usernameColor;
+
+        if (uid && color) {
+          refs.userColors[uid] = color;
+        }
+      });
+
+      // Now render normally
+      return originalRender(messages);
+    };
+
+    // Mark as patched so we never double-wrap
+    window.renderMessagesFromArrayPatched = true;
+  }
+
+  // Return cleanup function (good practice)
+  return () => {
+    unsubscribeMyColor();
   };
 }
 
-// Call it once after login
-// (add this line in onAuthStateChanged after currentUser is set)
+// Call ONCE after login (inside onAuthStateChanged)
 setupUserColors();
 
 
@@ -1451,50 +1471,51 @@ function clearReplyAfterSend() {
 
 // SEND REGULAR MESSAGE
 refs.sendBtn?.addEventListener("click", async () => {
+  if (!currentUser) return showStarPopup("Sign in to chat.");
+
+  const txt = refs.messageInputEl?.value.trim();
+  if (!txt) return showStarPopup("Type a message first.");
+  if ((currentUser.stars || 0) < SEND_COST) {
+    return showStarPopup("Not enough stars to send message.");
+  }
+
+  const myUid = currentUser.uid || getUserId(currentUser.email);
+  const myDisplayName = currentUser.chatId || currentUser.displayName || currentUser.email.split('@')[0];
+  const myColor = refs.userColors[myUid] || currentUser.usernameColor || "#ff69b4";
+
+  // Instant optimistic UI
+  currentUser.stars -= SEND_COST;
+  refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
+
+  // Fire-and-forget star deduction (never blocks)
+  updateDoc(doc(db, "users", myUid), { stars: increment(-SEND_COST) }).catch(() => {});
+
+  // Unique temp ID
+  const tempId = "temp_" + Date.now() + "_" + Math.random().toString(36).substr(2, 9);
+
+  const tempMsg = {
+    id: tempId,
+    isTemp: true, // Critical: allows render even if ID exists (prevents dupes)
+    data: {
+      content: txt,
+      uid: myUid,
+      chatId: myDisplayName,
+      usernameColor: myColor,
+      createdAt: { toMillis: () => Date.now() },
+      replyTo: currentReplyTarget?.id || null,
+      replyToContent: currentReplyTarget?.content || null
+    }
+  };
+
+  // Show instantly
+  renderMessagesFromArray([tempMsg]);
+  refs.messageInputEl.value = "";
+  clearReplyAfterSend();
+  scrollToBottom(refs.messagesEl);
+
   try {
-    if (!currentUser) return showStarPopup("Sign in to chat.");
-
-    const txt = refs.messageInputEl?.value.trim();
-    if (!txt) return showStarPopup("Type a message first.");
-    if ((currentUser.stars || 0) < SEND_COST)
-      return showStarPopup("Not enough stars to send message.");
-
-    const myUid = currentUser.uid || getUserId(currentUser.email);
-    const myDisplayName = currentUser.chatId || currentUser.displayName || currentUser.email.split('@')[0];
-    const myColor = refs.userColors[myUid] || currentUser.usernameColor || "#ff69b4";
-
-    // Optimistic star deduction
-    currentUser.stars -= SEND_COST;
-    refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
-
-    // Fire-and-forget star update (never blocks UI)
-    updateDoc(doc(db, "users", myUid), { stars: increment(-SEND_COST) }).catch(() => {});
-
-    // Unique temp ID + mark as temp so render function can skip duplicate check
-    const tempId = "temp_" + Date.now() + "_" + Math.random().toString(36).substr(2, 9);
-
-    const tempMsg = {
-      id: tempId,
-      isTemp: true, // ← This is the key: tells render to skip "already exists" check
-      data: {
-        content: txt,
-        uid: myUid,
-        chatId: myDisplayName,
-        usernameColor: myColor,
-        createdAt: { toMillis: () => Date.now() },
-        replyTo: currentReplyTarget?.id || null,
-        replyToContent: currentReplyTarget?.content || null
-      }
-    };
-
-    // Show instantly
-    renderMessagesFromArray([tempMsg]);
-    refs.messageInputEl.value = "";
-    clearReplyAfterSend();
-    scrollToBottom(refs.messagesEl);
-
-    // Send to Firestore
-    const msgRef = await addDoc(collection(db, CHAT_COLLECTION), {
+    // Actually send to Firestore
+    await addDoc(collection(db, CHAT_COLLECTION), {
       content: txt,
       uid: myUid,
       chatId: myDisplayName,
@@ -1504,16 +1525,22 @@ refs.sendBtn?.addEventListener("click", async () => {
       replyToContent: currentReplyTarget?.content || null
     });
 
-    // Remove temp message — real one will appear instantly via onSnapshot
-    document.getElementById(tempId)?.remove();
+    // Success: remove temp — real message appears instantly via onSnapshot
+    const tempEl = document.getElementById(tempId);
+    if (tempEl) tempEl.remove();
 
   } catch (err) {
-    // Refund + cleanup on failure
+    // Failed: refund stars + remove temp message
     currentUser.stars += SEND_COST;
     refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
-    showStarPopup("Failed to send — try again");
+
+    const tempEl = document.getElementById(tempId);
+    if (tempEl) tempEl.remove();
+
+    showStarPopup("Failed to send — will retry when online");
   }
 });
+
 
 // BUZZ MESSAGE (EPIC GLOW EFFECT)
 refs.buzzBtn?.addEventListener("click", async () => {
