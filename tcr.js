@@ -11,6 +11,8 @@ import {
   serverTimestamp,
   onSnapshot,
   query,
+  signInWithEmailAndPassword,
+  signOut,
   orderBy,
   increment,
   getDocs,
