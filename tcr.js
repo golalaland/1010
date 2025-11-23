@@ -1482,7 +1482,7 @@ refs.sendBtn?.addEventListener("click", async () => {
     scrollToBottom(refs.messagesEl);
 
     // SEND TO THE CORRECT PATH THAT EXISTS AND IS ALLOWED
-    await addDoc(collection(db, "messages_room1"), {
+    await addDoc(collection(db, "messages_room5"), {
       content: text,
       senderId: getUserId(currentUser.email),
       chatId: currentUser.chatId,
