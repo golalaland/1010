@@ -21,6 +21,9 @@ import {
   arrayUnion,
   writeBatch
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import {
+  getDatabase, ref as rtdbRef, set as rtdbSet, onDisconnect, onValue
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
 // Auth — CRITICAL: signInWithEmailAndPassword & signOut live HERE
 import {
