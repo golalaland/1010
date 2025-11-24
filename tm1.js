@@ -2023,23 +2023,45 @@ setInterval(updateLiveBanner, 21000);
 updateLiveBanner();
 RedHotMode.init();
 
-
 // ======================================================
 // WEEKLY STREAK SYSTEM — SUNDAY = DAY 1, SATURDAY = DAY 7
-// 350 STRZ EVERY 7 DAYS — FLAWLESS & ACCURATE
+// 350 STRZ EVERY 7 DAYS — ACCURATE
 // ======================================================
 
-// Get THIS WEEK'S Sunday (Lagos time) — CORRECT FOR SUNDAY START
-function getThisWeekSunday() {
+// Helper: get current date in Lagos timezone (UTC+1), start of day
+function getLagosDate() {
   const now = new Date();
-  const lagos = new Date(now.getTime() + 60*60*1000); // UTC+1
-  lagos.setHours(0, 0, 0, 0);
-  
-  const day = lagos.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
-  const diff = lagos.getDate() - day; // This already gives us THIS WEEK'S Sunday
+  const utc = now.getTime() + now.getTimezoneOffset() * 60000; // convert to UTC
+  const lagos = new Date(utc + 3600000); // +1 hour for Lagos
+  lagos.setHours(0, 0, 0, 0); // start of day
+  return lagos;
+}
+
+// Get THIS WEEK's Sunday (Lagos time)
+function getThisWeekSunday() {
+  const lagos = getLagosDate();
+  const day = lagos.getDay(); // 0 = Sunday
+  const diff = lagos.getDate() - day; // back to Sunday
   const sunday = new Date(lagos);
   sunday.setDate(diff);
   return sunday;
+}
+
+// Build week: Sunday → Saturday
+function buildWeekArray(streakDays) {
+  const weekStart = getThisWeekSunday();
+  const labels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+  return Array.from({ length: 7 }, (_, i) => {
+    const day = new Date(weekStart);
+    day.setDate(day.getDate() + i);
+    const key = day.toISOString().split('T')[0];
+    return {
+      played: !!streakDays[key],
+      date: key,
+      label: labels[i]
+    };
+  });
 }
 
 // Start streak system
@@ -2050,11 +2072,9 @@ async function startWeeklyStreakSystem() {
   try {
     const snap = await getDoc(userRef);
     const data = snap.exists() ? snap.data() : {};
-    const lagosToday = new Date(Date.now() + 60*60*1000);
-    const todayKey = lagosToday.toISOString().split('T')[0];
 
-    const weekStart = getThisWeekSunday(); // Sunday = Day 1
-    const weekKey = weekStart.toISOString().split('T')[0];
+    const lagosToday = getLagosDate();
+    const todayKey = lagosToday.toISOString().split('T')[0];
 
     let streakDays = data.streakDays || {};
     let lastClaimWeek = data.lastStreakClaim || null;
@@ -2065,21 +2085,11 @@ async function startWeeklyStreakSystem() {
       await updateDoc(userRef, { streakDays });
     }
 
-    // Build week: Sunday → Saturday (7 days)
-    const weekArray = [];
-    for (let i = 0; i < 7; i++) {
-      const day = new Date(weekStart);
-      day.setDate(day.getDate() + i); // i=0 → Sunday, i=6 → Saturday
-      const key = day.toISOString().split('T')[0];
-      weekArray.push({ 
-        played: !!streakDays[key],
-        date: key,
-        label: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][i]
-      });
-    }
+    const weekArray = buildWeekArray(streakDays);
+    const currentWeekStart = weekArray[0].date;
 
     currentUser.weekStreak = weekArray;
-    currentUser.currentWeekStart = weekKey;
+    currentUser.currentWeekStart = currentWeekStart;
     currentUser.lastStreakClaim = lastClaimWeek;
 
     forceRenderStreak();
@@ -2088,7 +2098,7 @@ async function startWeeklyStreakSystem() {
   }
 }
 
-// Render streak bar — SUNDAY FIRST!
+// Render streak bar — SUNDAY FIRST
 function forceRenderStreak() {
   const countEl = document.getElementById('streakDayCount');
   const btn = document.getElementById('claimStreakRewardBtn');
@@ -2100,9 +2110,11 @@ function forceRenderStreak() {
       el.classList.remove('active');
       el.querySelector('.streak-dot')?.classList.remove('active');
     });
-    btn && (btn.textContent = 'CLAIM 350 STRZ (0/7)');
-    btn && (btn.style.opacity = '0.4');
-    btn && (btn.style.pointerEvents = 'none');
+    if (btn) {
+      btn.textContent = 'CLAIM 350 STRZ (0/7)';
+      btn.style.opacity = '0.4';
+      btn.style.pointerEvents = 'none';
+    }
     return;
   }
 
@@ -2118,7 +2130,6 @@ function forceRenderStreak() {
       el?.classList.remove('active');
       dot?.classList.remove('active');
     }
-    // Optional: show day label
     const label = el?.querySelector('.streak-label');
     if (label) label.textContent = day.label;
   });
@@ -2195,6 +2206,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 document.getElementById('claimStreakRewardBtn')?.addEventListener('click', claimWeeklyStreak);
 
+// Refresh every 2 minutes
 setInterval(() => {
   if (currentUser?.uid) startWeeklyStreakSystem();
 }, 120000);
