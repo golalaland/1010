@@ -674,6 +674,9 @@ function getWeekNumber(date) {
 // ======================================================
 //  END SESSION RECORD — 1 ATOMIC WRITE ONLY
 // ======================================================
+// ======================================================
+// END SESSION RECORD — FINAL FIXED & BULLETPROOF VERSION
+// ======================================================
 let sessionAlreadySaved = false; // ← Global guard (reset in startSession())
 
 async function endSessionRecord() {
@@ -683,12 +686,13 @@ async function endSessionRecord() {
 
   const userRef = doc(db, "users", currentUser.uid);
   const now = new Date();
-  const lagosTime = new Date(now.getTime() + 60*60*1000);
+  const lagosTime = new Date(now.getTime() + 60 * 60 * 1000); // UTC+1
   const dailyKey = lagosTime.toISOString().split("T")[0];
   const weeklyKey = `${lagosTime.getFullYear()}-W${getWeekNumber(lagosTime)}`;
   const monthlyKey = `${lagosTime.getFullYear()}-${String(lagosTime.getMonth() + 1).padStart(2, "0")}`;
 
   try {
+    // 1. Update user's main stats (cash, taps, daily/weekly/monthly)
     await runTransaction(db, async (t) => {
       const snap = await t.get(userRef);
       const data = snap.data() || {};
@@ -704,31 +708,29 @@ async function endSessionRecord() {
       });
     });
 
-// === 3. BID LEADERBOARD — ONLY IF USER ACTUALLY JOINED TODAY'S BID ===
-if (window.CURRENT_ROUND_ID && sessionTaps > 0) {
-  const bidCheck = await getDocs(query(
-    collection(db, "bids"),
-    where("uid", "==", currentUser.uid),
-    where("roundId", "==", window.CURRENT_ROUND_ID),
-    where("status", "==", "active")
-  ));
+    // 2. ONLY save to BID leaderboard if user actually joined today's bid
+    if (window.CURRENT_ROUND_ID && sessionTaps > 0) {
+      const bidCheck = await getDocs(query(
+        collection(db, "bids"),
+        where("uid", "==", currentUser.uid),
+        where("roundId", "==", window.CURRENT_ROUND_ID),
+        where("status", "==", "active")
+      ));
 
-  if (!bidCheck.empty) {
-    // ONLY write to bid leaderboard if they paid & joined
-    await addDoc(collection(db, "taps"), {
-  uid: currentUser.uid,
-  username: currentUser.chatId,        // ← already correct
-  displayName: currentUser.chatId,     // ← ADD THIS LINE (the golden fix)
-  count: count,
-  roundId: window.CURRENT_ROUND_ID,
-  inBid: true,
-  timestamp: serverTimestamp()
-});
-  }
-  // else: silently ignore — they tapped, but not in bid → only general leaderboard counts
-}
+      if (!bidCheck.empty) {
+        await addDoc(collection(db, "taps"), {
+          uid: currentUser.uid,
+          username: currentUser.chatId || "Player",
+          displayName: currentUser.chatId || "Player",
+          count: sessionTaps,           // ← FIXED: was "count" → now "sessionTaps"
+          roundId: window.CURRENT_ROUND_ID,
+          inBid: true,
+          timestamp: serverTimestamp()
+        });
+      }
+    }
 
-    // === 4. UPDATE LOCAL UI INSTANTLY ===
+    // 3. Update local UI instantly
     currentUser.cash += sessionEarnings;
     currentUser.totalTaps += sessionTaps;
 
@@ -736,18 +738,14 @@ if (window.CURRENT_ROUND_ID && sessionTaps > 0) {
     if (earningsEl) earningsEl.textContent = '₦0';
     if (miniEarnings) miniEarnings.textContent = '₦0';
 
-    console.log("%c ROUND SAVED — YOU ARE UNSTOPPABLE", "color:#0f9;font-size:20px;font-weight:bold");
-    return true;
+    console.log("%cROUND SAVED — UNSTOPPABLE!", "color:#0f9;font-size:20px;font-weight:bold");
 
   } catch (err) {
-    console.error("%c SAVE FAILED — RETRYING NEXT ROUND", "color:#f00;background:#300;padding:12px;border-radius:10px", err);
-    sessionAlreadySaved = false;
-    return false;
-
-  } finally {
-    // EMPTY. CLEAN. PERFECT.
+    console.error("%cSAVE FAILED — WILL RETRY NEXT ROUND", "color:#f00;background:#300;padding:12px;border-radius:10px", err);
+    sessionAlreadySaved = false; // ← allow retry on next round
   }
 }
+
 // ======================================================
 //  RED HOT DEVIL MODE — EXACTLY AS YOU HAD IT
 // ======================================================
