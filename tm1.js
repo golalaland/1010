@@ -1762,6 +1762,7 @@ function startDailyBidEngine() {
     }
 
      // === LIVE PRIZE POOL & PLAYER COUNT ===
+        // === LIVE PRIZE POOL & PLAYER COUNT ===
     if (unsubStats) unsubStats();
     if (unsubLeaderboard) unsubLeaderboard();
 
@@ -1784,7 +1785,7 @@ function startDailyBidEngine() {
       const tapsQuery = query(
         collection(db, "taps"),
         where("roundId", "==", window.CURRENT_ROUND_ID),
-        where("inBid", "==", true)           // ← ONLY real paying players
+        where("inBid", "==", true)
       );
 
       unsubLeaderboard = onSnapshot(tapsQuery, (snap) => {
@@ -1792,8 +1793,6 @@ function startDailyBidEngine() {
 
         snap.docs.forEach(doc => {
           const d = doc.data();
-
-          // Extra safety (optional but recommended)
           if (d.roundId !== window.CURRENT_ROUND_ID || d.inBid !== true) return;
 
           const realName = d.displayName || d.username || "Player";
@@ -1801,18 +1800,17 @@ function startDailyBidEngine() {
           if (!scores[d.uid]) {
             scores[d.uid] = { name: realName, taps: 0 };
           }
-          scores[d.uid].taps += d.count || 1;
+          scores[d.uid].taps += (d.count || 1);
         });
 
         const ranked = Object.values(scores)
           .sort((a, b) => b.taps - a.taps)
-          .slice(0, 15);   // ← change to 5 later if you want Top 5 only
+          .slice(0, 15);   // change to 5 later if you want Top-5 only
 
         if (ranked.length === 0) {
-          leaderboardEl.innerHTML = `
-            <div style="text-align:center;color:#666;padding:30px 0;font-size:14px;">
-              No taps yet.<br>Join now and dominate!
-            </div>`;
+          leaderboardEl.innerHTML = `<div style="text-align:center;color:#666;padding:30px 0;font-size:14px;">
+            No taps yet.<br>Join now and dominate!
+          </div>`;
         } else {
           leaderboardEl.innerHTML = ranked.map((p, i) => `
             <div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid #333;">
@@ -1824,12 +1822,17 @@ function startDailyBidEngine() {
           `).join('');
         }
       });
+
     } else if (leaderboardEl) {
-      leaderboardEl.innerHTML = `
-        <div style="text-align:center;color:#555;padding:30px 0;">
-          Bid opens at 00:33
-        </div>`;
+      leaderboardEl.innerHTML = `<div style="text-align:center;color:#555;padding:30px 0;">
+        Bid opens at 00:33
+      </div>`;
     }
+  }
+
+  updateTimerAndStats();
+  setInterval(updateTimerAndStats, 1000);
+}
 /* ====================== TAP SAVING – CORRECTLY FEEDS BOTH LEADERBOARDS ====================== */
 /* 
   Rules:
