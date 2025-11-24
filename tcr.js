@@ -45,6 +45,9 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
+// Realtime Database (RTDB)
+const rtdb = getDatabase(app);
+
 
 // Make Firebase objects available globally (for debugging or reuse)
 window.app = app;
