@@ -3884,3 +3884,26 @@ document.addEventListener("click", async e => {
     showStarPopup("Logout failed. Check console.");
   }
 });
+// Replace host settings with logout functionality
+document.getElementById("hostLogoutBtn")?.addEventListener("click", async e => {
+  e.preventDefault();
+  e.stopPropagation();
+
+  const btn = e.target;
+  btn.disabled = true; // prevent double-clicks
+
+  try {
+    await signOut(auth);                     // Firebase logout
+    localStorage.removeItem("lastVipEmail"); // stop auto-login
+    sessionStorage.setItem("justLoggedOut", "1");
+    currentUser = null;
+
+    showStarPopup("You have been logged out");
+
+    setTimeout(() => location.reload(), 1200); // reload page after logout
+  } catch (err) {
+    console.error("Logout failed:", err);
+    btn.disabled = false;
+    showStarPopup("Logout failed. Check console.");
+  }
+});
