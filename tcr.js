@@ -1084,6 +1084,8 @@ document.querySelectorAll(
 });
 
 // FINAL: WORKING LOGIN BUTTON — THIS MAKES SIGN IN ACTUALLY WORK
+import { doc, getDoc } from "firebase/firestore";
+
 document.getElementById("whitelistLoginBtn")?.addEventListener("click", async () => {
   const email = document.getElementById("emailInput")?.value.trim().toLowerCase();
   const password = document.getElementById("passwordInput")?.value;
@@ -1094,9 +1096,18 @@ document.getElementById("whitelistLoginBtn")?.addEventListener("click", async ()
   }
 
   try {
-    await signInWithEmailAndPassword(auth, email, password);
-    // onAuthStateChanged will handle everything else — just wait
-    showStarPopup("Logging in...");
+    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    const uid = userCredential.user.uid;
+
+    // Check whitelist collection
+    const whitelistDoc = await getDoc(doc(firestore, "whitelist", uid));
+    if (!whitelistDoc.exists()) {
+      await signOut(auth);  // immediately log out unauthorized user
+      showStarPopup("You are not whitelisted");
+      return;
+    }
+
+    showStarPopup("Welcome, whitelisted user!");
   } catch (err) {
     console.error("Login failed:", err.code);
     if (err.code === "auth/user-not-found" || err.code === "auth/wrong-password") {
