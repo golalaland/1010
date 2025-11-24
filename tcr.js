@@ -1345,110 +1345,107 @@ window.addEventListener("DOMContentLoaded", () => {
   /* ----------------------------
      🔐 VIP Login Setup
   ----------------------------- */
-// Tiny delay – safe name, no redeclaration issues
-const delay = ms => new Promise(r => setTimeout(r, ms));
+// ──────────────────────────────────────────────────────────────
+//  VIP WHITELIST LOGIN — FULLY FIXED & BULLETPROOF (2025)
+//  Works on any site, survives DOM changes, strict whitelist
+// ──────────────────────────────────────────────────────────────
 
-// ──────────────────────────────────────
-// HARD WHITELIST CHECK – rejects instantly if not present
-async function isWhitelisted(uid) {
-  if (!uid) return false;
+const auth = window.auth
+const db = window.db
+const delay = ms => new Promise(r => setTimeout(r, ms))
+
+// === 2. Convert email → safe doc ID (exactly like your main app) ===
+function emailToId(email) {
+  return email.toLowerCase().replace(/\./g, '_').replace('@', '_')
+}
+
+// === 3. STRICT WHITELIST CHECK (by sanitized email) ===
+async function isWhitelisted() {
+  if (!auth.currentUser?.email) return false
+  const safeId = emailToId(auth.currentUser.email)
   try {
-    const docRef = doc(firestore, "whitelist", uid);
-    const snap  = await getDoc(docRef);
-    const allowed = snap.exists();           // ← must exist in whitelist collection
-    console.log(`Whitelist check for ${uid}: ${allowed ? "ALLOWED" : "DENIED"}`);
-    return allowed;
-  } catch (err) {
-    console.error("Whitelist fetch failed:", err);
-    return false;
+    const docRef = doc(db, "whitelist", safeId)
+    const snap = await getDoc(docRef)
+    const ok = snap.exists()
+    console.log(`VIP Check → ${auth.currentUser.email} (${safeId}) → ${ok ? "ALLOWED" : "BLOCKED"}`)
+    return ok
+  } catch (e) {
+    console.error("Whitelist check failed:", e)
+    return false
   }
 }
 
-// ──────────────────────────────────────
-// Main login – now with strict whitelist enforcement
+// === 4. Main Login Handler ===
 async function handleLogin() {
-  const emailEl    = document.getElementById("emailInput");
-  const passwordEl = document.getElementById("passwordInput");
+  const emailEl = document.getElementById("emailInput")
+  const passEl  = document.getElementById("passwordInput")
 
-  const email    = (emailEl?.value || "").trim().toLowerCase();
-  const password = (passwordEl?.value || "").trim();
+  const email = emailEl?.value.trim().toLowerCase()
+  const pass  = passEl?.value
 
-  if (!email || !password) {
-    return showStarPopup("Enter email and password");
-  }
+  if (!email || !pass) return showStarPopup("Enter email + password")
 
-  showLoadingBar(1400);
+  showLoadingBar(1400)
 
-  let userCredential;
   try {
-    userCredential = await signInWithEmailAndPassword(auth, email, password);
-  } catch (err) {
+    const cred = await signInWithEmailAndPassword(auth, email, pass)
+    console.log("Firebase Auth OK →", email)
+
+    // ←←← THE ONLY GATE THAT MATTERS ←←←
+    const allowed = await isWhitelisted()
+    if (!allowed) {
+      await signOut(auth)
+      return showStarPopup("Access denied. Not on VIP whitelist.")
+    }
+
+    // SUCCESS
+    localStorage.setItem("lastVipEmail", email)
+    showStarPopup("Welcome, VIP!")
+    await delay(600)
+    updateRedeemLink?.()
+    updateTipLink?.()
+
+  } catch (e) {
+    console.error(e)
     const msg = {
-      "auth/wrong-password"     : "Wrong password",
-      "auth/user-not-found"     : "No account with this email",
-      "auth/invalid-credential" : "Invalid email or password",
-      "auth/too-many-requests"  : "Too many attempts – wait a minute",
-    }[err.code] || "Login failed";
-
-    return showStarPopup(msg);
+      "auth/wrong-password": "Wrong password",
+      "auth/user-not-found": "Email not found",
+      "auth/invalid-credential": "Invalid email or password",
+      "auth/too-many-requests": "Too many attempts — wait a minute"
+    }[e.code] || "Login failed"
+    showStarPopup(msg)
   }
-
-  const uid = userCredential.user.uid;
-
-  // ←←← THIS IS THE CRITICAL PART ←←←
-  const allowed = await isWhitelisted(uid);
-
-  if (!allowed) {
-    // Force logout immediately – they never get real access
-    await signOut(auth);
-    console.warn(`User ${uid} (${email}) tried to login but is NOT whitelisted`);
-    return showStarPopup("Access denied – you are not on the VIP whitelist");
-  }
-
-  // SUCCESS – only reaches here if whitelisted
-  console.log(`Whitelisted user logged in: ${uid} (${email})`);
-  localStorage.setItem("lastVipEmail", email);
-
-  showStarPopup("Welcome, VIP member!");
-  await delay(600);
-  updateRedeemLink?.();
-  updateTipLink?.();
 }
 
-// ──────────────────────────────────────
-// Persistent button (survives DOM changes)
+// === 5. Persistent Button (survives any DOM changes) ===
 function attachButton() {
-  const btn = document.getElementById("whitelistLoginBtn");
-  if (!btn) return;
+  const btn = document.getElementById("whitelistLoginBtn")
+  if (!btn) return
 
-  const newBtn = btn.cloneNode(true);
-  btn.replaceWith(newBtn);
-
-  newBtn.addEventListener("click", e => {
-    e.preventDefault();
-    e.stopPropagation();
-    handleLogin();
-  });
+  const fresh = btn.cloneNode(true)
+  btn.replaceWith(fresh)
+  fresh.addEventListener("click", e => {
+    e.preventDefault()
+    e.stopPropagation()
+    handleLogin()
+  })
 }
+setInterval(attachButton, 600)
+attachButton()
 
-setInterval(attachButton, 600);
-attachButton(); // immediate first run
-
-// ──────────────────────────────────────
-// Auto-fill last email
+// === 6. Auto-fill last email ===
 document.addEventListener("DOMContentLoaded", () => {
-  const saved = localStorage.getItem("lastVipEmail");
-  if (saved) document.getElementById("emailInput")?.setAttribute("value", saved);
-});
+  const last = localStorage.getItem("lastVipEmail")
+  if (last) document.getElementById("emailInput")?.setAttribute("value", last)
+})
 
-// ──────────────────────────────────────
-// Global logout
+// === 7. Global Logout ===
 window.logoutVIP = async () => {
-  await signOut(auth);
-  localStorage.removeItem("lastVipEmail");
-  showStarPopup("Logged out");
-  setTimeout(() => location.reload(), 1200);
-};
+  await signOut(auth)
+  localStorage.removeItem("lastVipEmail")
+  showStarPopup("Logged out")
+  setTimeout(() => location.reload(), 1200)
+}
 
   /* ----------------------------
      🔁 Auto Login Session
