@@ -38,7 +38,8 @@ const firebaseConfig = {
   storageBucket: "dettyverse.firebasestorage.app",
   messagingSenderId: "1036459652488",
   appId: "1:1036452488:web:e8910172ed16e9cac9b63d",
-  measurementId: "G-NX2KWZW85V"
+  measurementId: "G-NX2KWZW85V",
+ databaseURL: "https://dettyverse-default-rtdb.firebaseio.com/"
 };
 
 /* ---------- Firebase Setup ---------- */
