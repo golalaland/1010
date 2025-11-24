@@ -1083,7 +1083,38 @@ document.querySelectorAll(
     });
 });
 
+// FINAL: WORKING LOGIN BUTTON — THIS MAKES SIGN IN ACTUALLY WORK
+document.getElementById("whitelistLoginBtn")?.addEventListener("click", async () => {
+  const email = document.getElementById("emailInput")?.value.trim().toLowerCase();
+  const password = document.getElementById("passwordInput")?.value;
 
+  if (!email || !password) {
+    showStarPopup("Enter email and password");
+    return;
+  }
+
+  try {
+    await signInWithEmailAndPassword(auth, email, password);
+    // onAuthStateChanged will handle everything else — just wait
+    showStarPopup("Logging in...");
+  } catch (err) {
+    console.error("Login failed:", err.code);
+    if (err.code === "auth/user-not-found" || err.code === "auth/wrong-password") {
+      showStarPopup("Wrong email or password");
+    } else if (err.code === "auth/too-many-requests") {
+      showStarPopup("Too many tries. Wait a minute.");
+    } else {
+      showStarPopup("Login failed. Check console.");
+    }
+  }
+});
+
+/* LOGOUT */
+window.logoutVIP = async () => {
+  await signOut(auth);
+  localStorage.removeItem("lastVipEmail");
+  location.reload();
+};
 
 
 /* FINAL WORKING LOGOUT — WORKS NO MATTER WHAT YOUR BUTTON IS */
@@ -1345,107 +1376,30 @@ window.addEventListener("DOMContentLoaded", () => {
   /* ----------------------------
      🔐 VIP Login Setup
   ----------------------------- */
-// ──────────────────────────────────────────────────────────────
-//  VIP WHITELIST LOGIN — FULLY FIXED & BULLETPROOF (2025)
-//  Works on any site, survives DOM changes, strict whitelist
-// ──────────────────────────────────────────────────────────────
+  const emailInput = document.getElementById("emailInput");
+  const phoneInput = document.getElementById("phoneInput");
+  const loginBtn = document.getElementById("whitelistLoginBtn");
 
-const auth = window.auth
-const db = window.db
-const delay = ms => new Promise(r => setTimeout(r, ms))
+  async function handleLogin() {
+    const email = (emailInput?.value || "").trim().toLowerCase();
+    const phone = (phoneInput?.value || "").trim();
 
-// === 2. Convert email → safe doc ID (exactly like your main app) ===
-function emailToId(email) {
-  return email.toLowerCase().replace(/\./g, '_').replace('@', '_')
-}
-
-// === 3. STRICT WHITELIST CHECK (by sanitized email) ===
-async function isWhitelisted() {
-  if (!auth.currentUser?.email) return false
-  const safeId = emailToId(auth.currentUser.email)
-  try {
-    const docRef = doc(db, "whitelist", safeId)
-    const snap = await getDoc(docRef)
-    const ok = snap.exists()
-    console.log(`VIP Check → ${auth.currentUser.email} (${safeId}) → ${ok ? "ALLOWED" : "BLOCKED"}`)
-    return ok
-  } catch (e) {
-    console.error("Whitelist check failed:", e)
-    return false
-  }
-}
-
-// === 4. Main Login Handler ===
-async function handleLogin() {
-  const emailEl = document.getElementById("emailInput")
-  const passEl  = document.getElementById("passwordInput")
-
-  const email = emailEl?.value.trim().toLowerCase()
-  const pass  = passEl?.value
-
-  if (!email || !pass) return showStarPopup("Enter email + password")
-
-  showLoadingBar(1400)
-
-  try {
-    const cred = await signInWithEmailAndPassword(auth, email, pass)
-    console.log("Firebase Auth OK →", email)
-
-    // ←←← THE ONLY GATE THAT MATTERS ←←←
-    const allowed = await isWhitelisted()
-    if (!allowed) {
-      await signOut(auth)
-      return showStarPopup("Access denied. Not on VIP whitelist.")
+    if (!email || !phone) {
+      return showStarPopup("Enter your email and phone to get access.");
     }
 
-    // SUCCESS
-    localStorage.setItem("lastVipEmail", email)
-    showStarPopup("Welcome, VIP!")
-    await delay(600)
-    updateRedeemLink?.()
-    updateTipLink?.()
+    showLoadingBar(1000);
+    await sleep(50);
 
-  } catch (e) {
-    console.error(e)
-    const msg = {
-      "auth/wrong-password": "Wrong password",
-      "auth/user-not-found": "Email not found",
-      "auth/invalid-credential": "Invalid email or password",
-      "auth/too-many-requests": "Too many attempts — wait a minute"
-    }[e.code] || "Login failed"
-    showStarPopup(msg)
+    const success = await loginWhitelist(email, phone);
+    if (!success) return;
+
+    await sleep(400);
+    updateRedeemLink();
+    updateTipLink();
   }
-}
 
-// === 5. Persistent Button (survives any DOM changes) ===
-function attachButton() {
-  const btn = document.getElementById("whitelistLoginBtn")
-  if (!btn) return
-
-  const fresh = btn.cloneNode(true)
-  btn.replaceWith(fresh)
-  fresh.addEventListener("click", e => {
-    e.preventDefault()
-    e.stopPropagation()
-    handleLogin()
-  })
-}
-setInterval(attachButton, 600)
-attachButton()
-
-// === 6. Auto-fill last email ===
-document.addEventListener("DOMContentLoaded", () => {
-  const last = localStorage.getItem("lastVipEmail")
-  if (last) document.getElementById("emailInput")?.setAttribute("value", last)
-})
-
-// === 7. Global Logout ===
-window.logoutVIP = async () => {
-  await signOut(auth)
-  localStorage.removeItem("lastVipEmail")
-  showStarPopup("Logged out")
-  setTimeout(() => location.reload(), 1200)
-}
+  loginBtn?.addEventListener("click", handleLogin);
 
   /* ----------------------------
      🔁 Auto Login Session
@@ -3905,35 +3859,23 @@ function playFullVideo(video) {
   modal.onclick = () => modal.remove();
   document.body.appendChild(modal);
 }
-// Logout button handler
+// Replace host settings with logout functionality
 document.getElementById("hostLogoutBtn")?.addEventListener("click", async e => {
   e.preventDefault();
   e.stopPropagation();
 
   const btn = e.target;
-  btn.disabled = true;
+  btn.disabled = true; // prevent double-clicks
 
   try {
-    await signOut(auth);
-    localStorage.removeItem("lastVipEmail");
+    await signOut(auth);                     // Firebase logout
+    localStorage.removeItem("lastVipEmail"); // stop auto-login
     sessionStorage.setItem("justLoggedOut", "1");
     currentUser = null;
 
-    // Show a fun logout message
-    const logoutMessages = [
-      "See ya later, Alligator 🤩",
-      "Off you go, $STRZ ⭐️ waiting when you log back in!",
-      "Catch you on the flip side! 😎",
-      "Adios, Amigo! 👋🏼",
-      "Peace out, Player! ✌🏽",
-      "Hasta la vista, Baby! 🤠",
-      "hmmm, now why'd you do that..🤔",
-      "Off you go, Champ! 🏆"
-    ];
-    const message = logoutMessages[Math.floor(Math.random() * logoutMessages.length)];
-    showStarPopup(message);
+    showStarPopup("You have been logged out");
 
-    setTimeout(() => location.reload(), 1200);
+    setTimeout(() => location.reload(), 1200); // reload page after logout
   } catch (err) {
     console.error("Logout failed:", err);
     btn.disabled = false;
