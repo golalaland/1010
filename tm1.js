@@ -1,46 +1,62 @@
+// ---------------- Firebase imports ----------------
 import { 
-  auth, db, onAuthStateChanged,
+  auth, db, onAuthStateChanged, 
   collection, doc, getDoc, getDocs, addDoc, updateDoc, setDoc,
-  query, where, orderBy, onSnapshot, serverTimestamp
-} from './firebase.js';
+  query, where, orderBy, onSnapshot, serverTimestamp,
+  signInAnonymously
+} from './firebase.js'; // make sure firebase.js has setPersistence(auth, browserLocalPersistence)
 
-
-/* ----------------------------
-   🔁 Auto Login Session
------------------------------ */
+// ---------------- Auto-login ----------------
 async function autoLogin() {
   const vipUser = JSON.parse(localStorage.getItem("vipUser"));
-  
-  if (!vipUser?.email || !vipUser?.phone) return; // nothing to auto-login
+
+  if (!vipUser?.email || !vipUser?.phone) return;
 
   try {
-    // Show loading UI if needed
-    showLoadingBar(1000);
-    await sleep(60);
+    // Optional: show loading UI
+    showLoadingBar?.(1000);
+    await sleep?.(60);
 
-    // Try Firebase email login (whitelist check)
-    const success = await loginWhitelist(vipUser.email, vipUser.phone);
-    if (!success) return;
+    // Check whitelist in Firestore
+    const q = query(collection(db, "whitelist"), where("email", "==", vipUser.email));
+    const snap = await getDocs(q);
 
-    // Small delay for UI updates
-    await sleep(400);
+    if (snap.empty) {
+      console.warn("User not in whitelist:", vipUser.email);
+      return;
+    }
 
-    // Update any game links or UI
-    updateRedeemLink();
-    updateTipLink();
-
-    // Re-persist user in localStorage (refresh token may change)
-    localStorage.setItem("vipUser", JSON.stringify(vipUser));
+    // Sign in anonymously (or adapt to your auth flow)
+    // Firebase needs a signed-in user for persistence to work
+    const userCredential = await signInAnonymously(auth);
 
     console.log("✅ Auto-login successful for:", vipUser.email);
+
+    // Update UI / links
+    updateRedeemLink?.();
+    updateTipLink?.();
+
+    // Re-save to localStorage in case tokens updated
+    localStorage.setItem("vipUser", JSON.stringify(vipUser));
 
   } catch (err) {
     console.error("Auto-login failed:", err);
   }
 }
 
-// Call on page load
+// ---------------- Call on page load ----------------
 window.addEventListener("load", autoLogin);
+
+// ---------------- Optional: Firebase listener ----------------
+// Keeps auth state in sync
+onAuthStateChanged(auth, (user) => {
+  if (user) {
+    console.log("Firebase user signed in:", user.uid);
+  } else {
+    console.log("No user signed in.");
+  }
+});
+
 
   
 // ---------- DOM ----------
