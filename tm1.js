@@ -1,6 +1,9 @@
-// 1️⃣ Firebase imports (from your firebase.js)
-import { auth, db, onAuthStateChanged, collection, doc, getDoc, addDoc, updateDoc, 
-         query, where, orderBy, onSnapshot, serverTimestamp } from './firebase.js';
+import { 
+  auth, db, onAuthStateChanged,
+  collection, doc, getDoc, getDocs, addDoc, updateDoc, setDoc,
+  query, where, orderBy, onSnapshot, serverTimestamp
+} from './firebase.js';
+
 
 // 2️⃣ Restore your VIP user from localStorage
 async function autoLogin() {
