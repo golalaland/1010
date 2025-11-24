@@ -1345,83 +1345,83 @@ window.addEventListener("DOMContentLoaded", () => {
   /* ----------------------------
      🔐 VIP Login Setup
   ----------------------------- */
-// Grab inputs and button
-const emailInput = document.getElementById("emailInput");
-const phoneInput = document.getElementById("phoneInput");
-const loginBtn = document.getElementById("whitelistLoginBtn");
+document.addEventListener("DOMContentLoaded", () => {
+  const emailInput = document.getElementById("emailInput");
+  const phoneInput = document.getElementById("phoneInput");
+  const loginBtn = document.getElementById("whitelistLoginBtn");
 
-// Sleep utility (renamed to avoid conflicts)
-function sleepMs(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
+  if (!loginBtn) return; // safety check
 
-// Helper: check whitelist safely
-async function checkWhitelist(uid) {
-  try {
-    const docSnap = await getDoc(doc(firestore, "whitelist", uid));
-    return docSnap.exists();
-  } catch (err) {
-    console.error("Whitelist check failed:", err);
-    return false; // fail-safe: treat as not whitelisted
-  }
-}
-
-// Full login handler
-async function handleLogin() {
-  const email = (emailInput?.value || "").trim().toLowerCase();
-  const phone = (phoneInput?.value || "").trim();
-
-  if (!email || !phone) {
-    return showStarPopup("Enter your email and phone to get access.");
+  // Sleep utility
+  function sleepMs(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
   }
 
-  showLoadingBar(1000);
-  await sleepMs(50);
-
-  let userCredential;
-  try {
-    // Authenticate with Firebase Auth
-    userCredential = await signInWithEmailAndPassword(auth, email, phone);
-  } catch (err) {
-    console.error("Login failed:", err.code);
-    if (err.code === "auth/user-not-found" || err.code === "auth/wrong-password") {
-      return showStarPopup("Wrong email or phone");
-    } else if (err.code === "auth/too-many-requests") {
-      return showStarPopup("Too many tries. Wait a minute.");
-    } else {
-      return showStarPopup("Login failed. Check console.");
+  // Helper: check whitelist safely
+  async function checkWhitelist(uid) {
+    try {
+      const docSnap = await getDoc(doc(firestore, "whitelist", uid));
+      return docSnap.exists();
+    } catch (err) {
+      console.error("Whitelist check failed:", err);
+      return false;
     }
   }
 
-  // Show logging in popup
-  showStarPopup("Logging in...");
+  // Full login handler
+  async function handleLogin() {
+    const email = (emailInput?.value || "").trim().toLowerCase();
+    const phone = (phoneInput?.value || "").trim();
 
-  // Check whitelist asynchronously
-  const uid = userCredential.user.uid;
-  const isWhitelisted = await checkWhitelist(uid);
+    if (!email || !phone) {
+      return showStarPopup("Enter your email and phone to get access.");
+    }
 
-  if (!isWhitelisted) {
-    await signOut(auth);
-    return showStarPopup("You are not whitelisted");
+    showLoadingBar(1000);
+    await sleepMs(50);
+
+    let userCredential;
+    try {
+      userCredential = await signInWithEmailAndPassword(auth, email, phone);
+    } catch (err) {
+      console.error("Login failed:", err.code);
+      if (err.code === "auth/user-not-found" || err.code === "auth/wrong-password") {
+        return showStarPopup("Wrong email or phone");
+      } else if (err.code === "auth/too-many-requests") {
+        return showStarPopup("Too many tries. Wait a minute.");
+      } else {
+        return showStarPopup("Login failed. Check console.");
+      }
+    }
+
+    showStarPopup("Logging in...");
+
+    const uid = userCredential.user.uid;
+    const isWhitelisted = await checkWhitelist(uid);
+
+    if (!isWhitelisted) {
+      await signOut(auth);
+      return showStarPopup("You are not whitelisted");
+    }
+
+    showStarPopup("Welcome, whitelisted user!");
+    await sleepMs(400);
+
+    updateRedeemLink();
+    updateTipLink();
   }
 
-  // User is whitelisted → proceed
-  showStarPopup("Welcome, whitelisted user!");
-  await sleepMs(400);
+  // Attach listener
+  loginBtn.addEventListener("click", handleLogin);
 
-  updateRedeemLink();
-  updateTipLink();
-}
+  // LOGOUT
+  window.logoutVIP = async () => {
+    await signOut(auth);
+    localStorage.removeItem("lastVipEmail");
+    location.reload();
+  };
+});
 
-// Attach single listener
-loginBtn?.addEventListener("click", handleLogin);
-
-// LOGOUT
-window.logoutVIP = async () => {
-  await signOut(auth);
-  localStorage.removeItem("lastVipEmail");
-  location.reload();
-};
 
 
   /* ----------------------------
