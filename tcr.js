@@ -1093,12 +1093,17 @@ document.getElementById("whitelistLoginBtn")?.addEventListener("click", async ()
     return;
   }
 
+  // STEP 1: Check whitelist FIRST
+  const allowed = await loginWhitelist(email);
+  if (!allowed) return;
+
+  // STEP 2: Then do Firebase login
   try {
     await signInWithEmailAndPassword(auth, email, password);
-    // onAuthStateChanged will handle everything else — just wait
     showStarPopup("Logging in...");
   } catch (err) {
     console.error("Login failed:", err.code);
+
     if (err.code === "auth/user-not-found" || err.code === "auth/wrong-password") {
       showStarPopup("Wrong email or password");
     } else if (err.code === "auth/too-many-requests") {
@@ -1108,6 +1113,95 @@ document.getElementById("whitelistLoginBtn")?.addEventListener("click", async ()
     }
   }
 });
+
+
+/* ===============================
+   🔐 VIP Login (Whitelist Check)
+================================= */
+async function loginWhitelist(email) {
+  const loader = document.getElementById("postLoginLoader");
+  try {
+    if (loader) loader.style.display = "flex";
+    await sleep(50);
+
+    // 🔍 Query whitelist by EMAIL ONLY
+    const whitelistQuery = query(
+      collection(db, "whitelist"),
+      where("email", "==", email)
+    );
+
+    const whitelistSnap = await getDocs(whitelistQuery);
+    console.log("📋 Whitelist result:", whitelistSnap.docs.map(d => d.data()));
+
+    if (whitelistSnap.empty) {
+      showStarPopup("You’re not on the whitelist.");
+      return false;
+    }
+
+    const uidKey = sanitizeKey(email);
+    const userRef = doc(db, "users", uidKey);
+    const userSnap = await getDoc(userRef);
+
+    if (!userSnap.exists()) {
+      showStarPopup("User not found. Please sign up first.");
+      return false;
+    }
+
+    const data = userSnap.data() || {};
+
+    // 🧍🏽 Set current user details
+    currentUser = {
+      uid: uidKey,
+      email: data.email,
+      phone: data.phone,
+      chatId: data.chatId,
+      chatIdLower: data.chatIdLower,
+      stars: data.stars || 0,
+      cash: data.cash || 0,
+      usernameColor: data.usernameColor || randomColor(),
+      isAdmin: !!data.isAdmin,
+      isVIP: !!data.isVIP,
+      fullName: data.fullName || "",
+      gender: data.gender || "",
+      subscriptionActive: !!data.subscriptionActive,
+      subscriptionCount: data.subscriptionCount || 0,
+      lastStarDate: data.lastStarDate || todayDate(),
+      starsGifted: data.starsGifted || 0,
+      starsToday: data.starsToday || 0,
+      hostLink: data.hostLink || null,
+      invitedBy: data.invitedBy || null,
+      inviteeGiftShown: !!data.inviteeGiftShown,
+      isHost: !!data.isHost
+    };
+
+    // 🧠 Setup post-login systems
+    updateRedeemLink();
+    setupPresence(currentUser);
+    attachMessagesListener();
+    startStarEarning(currentUser.uid);
+
+    localStorage.setItem("vipUser", JSON.stringify({ email }));
+
+    // Prompt guests for a permanent chatID
+    if (currentUser.chatId?.startsWith("GUEST")) {
+      await promptForChatID(userRef, data);
+    }
+
+    showChatUI(currentUser);
+    return true;
+
+  } catch (err) {
+    console.error("❌ Login error:", err);
+    showStarPopup("Login failed. Try again!");
+    return false;
+  } finally {
+    if (loader) loader.style.display = "none";
+  }
+}
+
+
+
+
 
 /* LOGOUT */
 window.logoutVIP = async () => {
