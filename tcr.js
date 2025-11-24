@@ -1345,71 +1345,84 @@ window.addEventListener("DOMContentLoaded", () => {
   /* ----------------------------
      🔐 VIP Login Setup
   ----------------------------- */
-document.addEventListener("DOMContentLoaded", () => {
-  const loginBtn = document.getElementById("whitelistLoginBtn");
+// Sleep utility
+function sleepMs(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+// Check whitelist helper
+async function checkWhitelist(uid) {
+  try {
+    const docSnap = await getDoc(doc(firestore, "whitelist", uid));
+    return docSnap.exists();
+  } catch (err) {
+    console.error("Whitelist check failed:", err);
+    return false;
+  }
+}
+
+// Main login logic
+async function handleLogin() {
   const emailInput = document.getElementById("emailInput");
   const phoneInput = document.getElementById("phoneInput");
+  const email = (emailInput?.value || "").trim().toLowerCase();
+  const phone = (phoneInput?.value || "").trim();
 
-  if (!loginBtn || !emailInput || !phoneInput) {
-    console.warn("Login button or inputs not found.");
-    return;
-  }
+  if (!email || !phone) return showStarPopup("Enter your email and phone to get access.");
 
-  function sleepMs(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-  }
+  showLoadingBar(1000);
+  await sleepMs(50);
 
-  async function checkWhitelist(uid) {
-    try {
-      const docSnap = await getDoc(doc(firestore, "whitelist", uid));
-      return docSnap.exists();
-    } catch (err) {
-      console.error("Whitelist check failed:", err);
-      return false;
+  let userCredential;
+  try {
+    userCredential = await signInWithEmailAndPassword(auth, email, phone);
+  } catch (err) {
+    console.error("Login failed:", err.code);
+    if (err.code === "auth/user-not-found" || err.code === "auth/wrong-password") {
+      return showStarPopup("Wrong email or phone");
+    } else if (err.code === "auth/too-many-requests") {
+      return showStarPopup("Too many tries. Wait a minute.");
+    } else {
+      return showStarPopup("Login failed. Check console.");
     }
   }
 
-  async function handleLogin() {
-    const email = (emailInput.value || "").trim().toLowerCase();
-    const phone = (phoneInput.value || "").trim();
+  showStarPopup("Logging in...");
 
-    if (!email || !phone) return showStarPopup("Enter your email and phone to get access.");
+  const uid = userCredential.user.uid;
+  const isWhitelisted = await checkWhitelist(uid);
 
-    showLoadingBar(1000);
-    await sleepMs(50);
-
-    let userCredential;
-    try {
-      userCredential = await signInWithEmailAndPassword(auth, email, phone);
-    } catch (err) {
-      console.error("Login failed:", err.code);
-      if (err.code === "auth/user-not-found" || err.code === "auth/wrong-password") {
-        return showStarPopup("Wrong email or phone");
-      } else if (err.code === "auth/too-many-requests") {
-        return showStarPopup("Too many tries. Wait a minute.");
-      } else {
-        return showStarPopup("Login failed. Check console.");
-      }
-    }
-
-    showStarPopup("Logging in...");
-
-    const uid = userCredential.user.uid;
-    const isWhitelisted = await checkWhitelist(uid);
-
-    if (!isWhitelisted) {
-      await signOut(auth);
-      return showStarPopup("You are not whitelisted");
-    }
-
-    showStarPopup("Welcome, whitelisted user!");
-    await sleepMs(400);
-    updateRedeemLink();
-    updateTipLink();
+  if (!isWhitelisted) {
+    await signOut(auth);
+    return showStarPopup("You are not whitelisted");
   }
 
-  loginBtn.addEventListener("click", handleLogin);
-});
+  showStarPopup("Welcome, whitelisted user!");
+  await sleepMs(400);
+  updateRedeemLink();
+  updateTipLink();
+}
+
+// Persistent button listener
+function attachPersistentLogin() {
+  const btn = document.getElementById("whitelistLoginBtn");
+  if (!btn) return;
+
+  // Remove any old listeners and attach fresh
+  btn.replaceWith(btn.cloneNode(true));
+  const newBtn = document.getElementById("whitelistLoginBtn");
+  newBtn.addEventListener("click", handleLogin);
+}
+
+// Keep attaching the listener every 500ms in case the host code replaces the button
+setInterval(attachPersistentLogin, 500);
+
+// LOGOUT
+window.logoutVIP = async () => {
+  await signOut(auth);
+  localStorage.removeItem("lastVipEmail");
+  location.reload();
+};
 
 
 
