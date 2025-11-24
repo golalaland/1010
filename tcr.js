@@ -1377,21 +1377,21 @@ window.addEventListener("DOMContentLoaded", () => {
      🔐 VIP Login Setup
   ----------------------------- */
   const emailInput = document.getElementById("emailInput");
-  const phoneInput = document.getElementById("phoneInput");
+  const phoneInput = document.getElementById("passwordInput");
   const loginBtn = document.getElementById("whitelistLoginBtn");
 
   async function handleLogin() {
     const email = (emailInput?.value || "").trim().toLowerCase();
-    const phone = (phoneInput?.value || "").trim();
+    const phone = (passwordInput?.value || "").trim();
 
-    if (!email || !phone) {
+    if (!email || !password) {
       return showStarPopup("Enter your email and phone to get access.");
     }
 
     showLoadingBar(1000);
     await sleep(50);
 
-    const success = await loginWhitelist(email, phone);
+    const success = await loginWhitelist(email, password);
     if (!success) return;
 
     await sleep(400);
@@ -1406,10 +1406,10 @@ window.addEventListener("DOMContentLoaded", () => {
   ----------------------------- */
  async function autoLogin() {
   const vipUser = JSON.parse(localStorage.getItem("vipUser"));
-  if (vipUser?.email && vipUser?.phone) {
+  if (vipUser?.email && vipUser?.password) {
     showLoadingBar(1000);
     await sleep(60);
-    const success = await loginWhitelist(vipUser.email, vipUser.phone);
+    const success = await loginWhitelist(vipUser.email, vipUser.password);
     if (!success) return;
     await sleep(400);
     updateRedeemLink();
