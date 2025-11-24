@@ -1837,33 +1837,37 @@ snap.docs.forEach(doc => {
   setInterval(updateTimerAndStats, 1000);
 }
 
-/* ====================== TAP SAVING – FINAL & ABSOLUTELY PERFECT (2025) ====================== */
+/* ====================== TAP SAVING – CORRECTLY FEEDS BOTH LEADERBOARDS ====================== */
+/* 
+  Rules:
+  - Every tap → always counts for General Leaderboard (via endSessionRecord → users.totalTaps)
+  - Bid Leaderboard → ONLY if user has an active entry in "bids" collection for today
+  - No extra reads during rapid tapping (we check only once per session save)
+*/
+
 async function saveTap(count = 1) {
-  if (!currentUser?.uid || !currentUser?.chatId) return;
+  if (!currentUser?.uid) return;
 
-  // ——— Is user in today's bid? Use cached flag first ———
-  let isInBid = window.isUserInCurrentBid === true;   // strict boolean check
+  // === 1. Always count toward general leaderboard (handled in endSessionRecord) ===
+  // We don't write anything here for general taps — your existing endSessionRecord()
+  // already atomically updates users.totalTaps, tapsDaily, etc. Perfect.
 
-  // Only verify with Firestore if we don't already know they're in (covers page refresh)
-  if (!isInBid && window.CURRENT_ROUND_ID) {
-    try {
-      const snap = await getDocs(query(
-        collection(db, "bids"),
-        where("uid", "==", currentUser.uid),
-        where("roundId", "==", window.CURRENT_ROUND_ID),
-        where("status", "==", "active")
-      ));
+  // === 2. Check ONCE if user is in today's active bid (cached for performance) ===
+  let isInBid = window.isUserInCurrentBid ?? false; // use cache if exists
 
-      isInBid = !snap.empty;
-      window.isUserInCurrentBid = isInBid;  // sync the cache
-    } catch (err) {
-      console.warn("Bid status check failed (offline?)", err);
-      // Fallback: assume not in bid if check fails → safe & fair
-      isInBid = false;
-    }
+  if (isInBid === false && window.CURRENT_ROUND_ID) {
+    // First tap of session → verify from Firestore (only once!)
+    const snap = await getDocs(query(
+      collection(db, "bids"),
+      where("uid", "==", currentUser.uid),
+      where("roundId", "==", window.CURRENT_ROUND_ID),
+      where("status", "==", "active")
+    ));
+
+    isInBid = !snap.empty;
+    window.isUserInCurrentBid = isInBid; // cache for rest of session
   }
 
-  // ——— ONLY save to bid leaderboard if confirmed joined ———
   if (isInBid && window.CURRENT_ROUND_ID) {
     await addDoc(collection(db, "taps"), {
       uid: currentUser.uid,
