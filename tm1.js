@@ -37,6 +37,26 @@ const firebaseConfig = {
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
   const db = getFirestore(app);
+
+// LEADERBOARD CACHE + AVATAR FUNCTION (GLOBAL – must be here!)
+const leaderboardCache = {
+  daily:   { data: null, timestamp: 0 },
+  weekly:  { data: null, timestamp: 0 },
+  monthly: { data: null, timestamp: 0 }
+};
+const CACHE_DURATION = 60 * 1000; // 60 seconds
+
+const DEFAULT_MALE   = "https://cdn.shopify.com/s/files/1/0962/6648/6067/files/9720029.jpg?v=1763635357";
+const DEFAULT_FEMALE = "https://cdn.shopify.com/s/files/1/0962/6648/6067/files/10491827.jpg?v=1763635326";
+const DEFAULT_NEUTRAL = DEFAULT_MALE;
+
+// GLOBAL AVATAR FUNCTION – now visible everywhere
+function getAvatar(userData) {
+  if (userData.popupPhoto && userData.popupPhoto.trim()) return userData.popupPhoto.trim();
+  if (userData.gender === "male") return DEFAULT_MALE;
+  if (userData.gender === "female") return DEFAULT_FEMALE;
+  return DEFAULT_NEUTRAL;
+}
   
   
 // ---------- DOM ----------
@@ -967,95 +987,73 @@ closeLeaderboard?.addEventListener("click", () => stopSlider());
 /* -------------------------------------------
    FETCH LEADERBOARD
 -------------------------------------------- */
-async function fetchLeaderboard(period = "daily", topToFetch = 33) {
+async function fetchLeaderboard(period = "daily") {
   const now = Date.now();
 
-  // ——— 1. Check cache first ———
+  // Use cache if fresh
   if (leaderboardCache[period].data && (now - leaderboardCache[period].timestamp < CACHE_DURATION)) {
-    console.log("Leaderboard from cache:", period);
-    renderLeaderboardFromData(leaderboardCache[period].data, period);
+    renderLeaderboardFromData(leaderboardCache[period].data);
     return;
   }
 
-  // ——— 2. Show loading only if no cache ———
-  if (!leaderboardCache[period].data) {
-    leaderboardList.innerHTML = "<li>Loading...</li>";
-  }
+  leaderboardList.innerHTML = "<li>Loading...</li>";
 
   const key = getLeaderboardKey(period);
   const usersCol = collection(db, "users");
-
-  const DEFAULT_MALE = "https://cdn.shopify.com/s/files/1/0962/6648/6067/files/9720029.jpg?v=1763635357";
-  const DEFAULT_FEMALE = "https://cdn.shopify.com/s/files/1/0962/6648/6067/files/10491827.jpg?v=1763635326";
-  const DEFAULT_NEUTRAL = DEFAULT_MALE;
-
-  const getAvatar = (data) => {
-    if (data.popupPhoto && data.popupPhoto.trim()) return data.popupPhoto.trim();
-    if (data.gender === "male") return DEFAULT_MALE;
-    if (data.gender === "female") return DEFAULT_FEMALE;
-    return DEFAULT_NEUTRAL;
-  };
+  const fieldPath = period === "daily" ? `tapsDaily.${key}` :
+                    period === "weekly" ? `tapsWeekly.${key}` : `tapsMonthly.${key}`;
 
   try {
-    const fieldPath = period === "daily" ? `tapsDaily.${key}` :
-                     period === "weekly" ? `tapsWeekly.${key}` : `tapsMonthly.${key}`;
-
-    const leaderboardQuery = query(
-      usersCol,
-      orderBy(fieldPath, "desc"),
-      limit(topToFetch)
-    );
-
-    const leaderboardSnap = await getDocs(leaderboardQuery);
+    // Fetch top 33
+    const q = query(usersCol, orderBy(fieldPath, "desc"), limit(33));
+    const snap = await getDocs(q);
     const topScores = [];
 
-    leaderboardSnap.forEach(docSnap => {
-      const data = docSnap.data();
-      const taps = period === "daily" ? data.tapsDaily?.[key] || 0 :
-                   period === "weekly" ? data.tapsWeekly?.[key] || 0 :
-                   data.tapsMonthly?.[key] || 0;
+    snap.forEach(doc => {
+      const d = doc.data();
+      const taps = period === "daily" ? d.tapsDaily?.[key] || 0 :
+                   period === "weekly" ? d.tapsWeekly?.[key] || 0 :
+                   d.tapsMonthly?.[key] || 0;
 
       if (taps > 0) {
         topScores.push({
-          uid: docSnap.id,
-          chatId: data.chatId || docSnap.id.slice(0, 6),
+          uid: doc.id,
+          chatId: d.chatId || doc.id.slice(0, 6),
           taps,
-          gender: data.gender,
-          popupPhoto: data.popupPhoto || "",
+          gender: d.gender,
+          popupPhoto: d.popupPhoto || ""
         });
       }
     });
 
-    // Fetch current user (only once per open)
+    // Current user data
     let myTaps = 0;
     let myRank = null;
 
     if (currentUser) {
-      const myDocRef = doc(db, "users", currentUser.uid);
-      const mySnap = await getDoc(myDocRef);
-      if (mySnap.exists()) {
-        const data = mySnap.data();
-        myTaps = period === "daily" ? data.tapsDaily?.[key] || 0 :
-                 period === "weekly" ? data.tapsWeekly?.[key] || 0 :
-                 data.tapsMonthly?.[key] || 0;
+      const myDoc = await getDoc(doc(db, "users", currentUser.uid));
+      if (myDoc.exists()) {
+        const d = myDoc.data();
+        myTaps = period === "daily" ? d.tapsDaily?.[key] || 0 :
+                 period === "weekly" ? d.tapsWeekly?.[key] || 0 :
+                 d.tapsMonthly?.[key] || 0;
 
         const inTop = topScores.find(u => u.uid === currentUser.uid);
         if (inTop) {
           myRank = topScores.indexOf(inTop) + 1;
         } else if (myTaps > 0) {
-          const betterQuery = query(usersCol, where(fieldPath, ">", myTaps));
-          const countSnap = await getCountFromServer(betterQuery);
+          const countSnap = await getCountFromServer(query(usersCol, where(fieldPath, ">", myTaps)));
           myRank = countSnap.data().count + 1;
         }
       }
     }
 
-    // ——— Save to cache ———
-    const cacheData = { topScores, myTaps, myRank, timestamp: now };
+    // Cache it
+    const cacheData = { topScores, myTaps, myRank };
     leaderboardCache[period].data = cacheData;
     leaderboardCache[period].timestamp = now;
 
-    renderLeaderboardFromData(cacheData, period);
+    renderLeaderboardFromData(cacheData);
 
   } catch (err) {
     console.error("Leaderboard error:", err);
@@ -1063,9 +1061,11 @@ async function fetchLeaderboard(period = "daily", topToFetch = 33) {
   }
 }
 
-// ——— Helper: renders from cached or fresh data ———
-function renderLeaderboardFromData(cacheData, period) {
-  const { topScores, myTaps, myRank } = cacheData;
+// ——————————————————————————————————————————————
+// 3. RENDER FUNCTION (uses global getAvatar)
+// ——————————————————————————————————————————————
+function renderLeaderboardFromData(data) {
+  const { topScores, myTaps, myRank } = data;
   const displayCount = 10;
   const toDisplay = topScores.slice(0, displayCount);
 
@@ -1073,10 +1073,9 @@ function renderLeaderboardFromData(cacheData, period) {
   const tapsEl = document.getElementById("myDailyTapsValue");
   const rankEl = document.getElementById("myRankFull");
   if (tapsEl) tapsEl.textContent = myTaps.toLocaleString();
-  if (myRank && rankEl) {
-    const suffix = myRank === 1 ? "st" : myRank === 2 ? "nd" : myRank === 3 ? "rd" : "th";
-    rankEl.textContent = myRank + suffix;
-  } else if (rankEl) rankEl.textContent = "-";
+  if (rankEl) {
+    rankEl.textContent = myRank ? `${myRank}${myRank === 1 ? "st" : myRank === 2 ? "nd" : myRank === 3 ? "rd" : "th"}` : "-";
+  }
 
   if (toDisplay.length === 0) {
     leaderboardList.innerHTML = "<li style='text-align:center;padding:20px 0;font-size:13px;color:#888;'>No taps yet — be the first!</li>";
@@ -1085,7 +1084,7 @@ function renderLeaderboardFromData(cacheData, period) {
 
   leaderboardList.innerHTML = toDisplay.map((u, i) => {
     const isMe = currentUser && u.uid === currentUser.uid;
-    const name = (u.chatId || "Anon").split(" ").map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ");
+    const name = (u.chatId || "Anon").split(" ").map(w => w[0].toUpperCase() + w.slice(1).toLowerCase()).join(" ");
 
     let style = "";
     if (i === 0) style = "color:#FFD700;font-weight:700;";
@@ -1104,11 +1103,12 @@ function renderLeaderboardFromData(cacheData, period) {
     `;
   }).join("");
 
+  // Show rank if outside top 10
   if (currentUser && myRank && myRank > displayCount) {
-    const extra = document.createElement("li");
-    extra.style.cssText = "text-align:center;padding:15px 0;font-size:14px;color:#aaa;background:#111;border-top:1px solid #333;";
-    extra.innerHTML = `You are currently <strong>#${myRank}</strong> with ${myTaps.toLocaleString()} taps`;
-    leaderboardList.appendChild(extra);
+    const el = document.createElement("li");
+    el.style.cssText = "text-align:center;padding:15px;font-size:14px;color:#aaa;background:#111;border-top:1px solid #333;";
+    el.innerHTML = `You are currently <strong>#${myRank}</strong> with ${myTaps.toLocaleString()} taps`;
+    leaderboardList.appendChild(el);
   }
 }
 
@@ -1465,15 +1465,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 });
-
-
-// ————— LEADERBOARD CACHE (MUST BE AT THE TOP!) —————
-const leaderboardCache = {
-  daily:   { data: null, timestamp: 0 },
-  weekly:  { data: null, timestamp: 0 },
-  monthly: { data: null, timestamp: 0 }
-};
-const CACHE_DURATION = 60 * 1000; // 60 seconds – change to 30*1000 if you want faster refresh
 
 /* ============================================================
    TAPMASTER — FULLY WORKING, NO HANG, CLEAN VERSION
