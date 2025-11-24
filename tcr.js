@@ -541,20 +541,6 @@ function updateTipLink() {
 }
 
 
-/* ---------- User Colors ---------- */
-function setupUsersListener() {
-  onSnapshot(collection(db, "users"), snap => {
-    refs.userColors = refs.userColors || {};
-    snap.forEach(docSnap => {
-      refs.userColors[docSnap.id] = docSnap.data()?.usernameColor || "#ffffff";
-    });
-    if (lastMessagesArray.length) renderMessagesFromArray(lastMessagesArray);
-  });
-}
-setupUsersListener();
-
-
-
 // ---------------------- GLOBALS ----------------------
 let scrollPending = false;      // used to throttle scroll updates
 let tapModalEl = null;          // your tap modal reference
