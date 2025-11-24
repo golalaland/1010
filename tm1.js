@@ -1860,7 +1860,7 @@ async function saveTap(count = 1) {
   if (isInBid && window.CURRENT_ROUND_ID) {
     await addDoc(collection(db, "taps"), {
       uid: currentUser.uid,
-      username: currentUser.username || currentUser.displayName || "Warrior",
+      username: currentUser.chatId || "TapChamp",
       count: count,
       roundId: window.CURRENT_ROUND_ID,
       inBid: true,                    // Always true here — we already verified
