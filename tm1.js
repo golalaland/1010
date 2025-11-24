@@ -1761,60 +1761,58 @@ function startDailyBidEngine() {
       timerEl.style.color = "#666";
     }
 
-    // === LIVE PRIZE POOL & PLAYER COUNT ===
+     // === LIVE PRIZE POOL & PLAYER COUNT ===
     if (unsubStats) unsubStats();
     if (unsubLeaderboard) unsubLeaderboard();
 
+    // ─── Player count & prize pool (from bids collection) ───
     const bidsQuery = query(
       collection(db, "bids"),
-      where("roundId", "==", CURRENT_ROUND_ID),
+      where("roundId", "==", window.CURRENT_ROUND_ID),
       where("status", "==", "active")
     );
 
     unsubStats = onSnapshot(bidsQuery, (snap) => {
       const count = snap.size;
-   const prize = calculatePrizePool(count);  // ← THIS ONE LINE FIXES EVERYTHING
-
+      const prize = calculatePrizePool(count);
       playersEl.textContent = count;
       prizeEl.textContent = "₦" + prize.toLocaleString();
     });
 
-    // === BID-ONLY TAP LEADERBOARD (only people who joined & paid) ===
+    // ─── BID-ONLY LEADERBOARD (only paid & joined players) ───
     if (bidActive && leaderboardEl) {
       const tapsQuery = query(
         collection(db, "taps"),
-        where("roundId", "==", CURRENT_ROUND_ID),
-        where("inBid", "==", true)  // ← ONLY PAID USERS
+        where("roundId", "==", window.CURRENT_ROUND_ID),
+        where("inBid", "==", true)           // ← ONLY real paying players
       );
 
       unsubLeaderboard = onSnapshot(tapsQuery, (snap) => {
         const scores = {};
-snap.docs.forEach(doc => {
-  const d = doc.data();
 
-  // THIS IS THE REAL FIX — picks the correct name in the right order
-  const realName = d.displayName ||     // future-proof (we'll start saving this)
-                   d.username ||        // current field you're saving
-                   d.chatId ||          // just in case
-                   "Warrior";           // absolute final fallback
+        snap.docs.forEach(doc => {
+          const d = doc.data();
 
-  if (!scores[d.uid]) {
-    scores[d.uid] = { 
-      name: realName, 
-      taps: 0 
-    };
-  }
-  scores[d.uid].taps += d.count || 1;
-});
+          // Extra safety (optional but recommended)
+          if (d.roundId !== window.CURRENT_ROUND_ID || d.inBid !== true) return;
+
+          const realName = d.displayName || d.username || "Player";
+
+          if (!scores[d.uid]) {
+            scores[d.uid] = { name: realName, taps: 0 };
+          }
+          scores[d.uid].taps += d.count || 1;
+        });
 
         const ranked = Object.values(scores)
           .sort((a, b) => b.taps - a.taps)
-          .slice(0, 15);
+          .slice(0, 15);   // ← change to 5 later if you want Top 5 only
 
         if (ranked.length === 0) {
-          leaderboardEl.innerHTML = `<div style="text-align:center;color:#666;padding:30px 0;font-size:14px;">
-            No taps yet.<br>Join now and dominate!
-          </div>`;
+          leaderboardEl.innerHTML = `
+            <div style="text-align:center;color:#666;padding:30px 0;font-size:14px;">
+              No taps yet.<br>Join now and dominate!
+            </div>`;
         } else {
           leaderboardEl.innerHTML = ranked.map((p, i) => `
             <div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid #333;">
@@ -1827,16 +1825,11 @@ snap.docs.forEach(doc => {
         }
       });
     } else if (leaderboardEl) {
-      leaderboardEl.innerHTML = `<div style="text-align:center;color:#555;padding:30px 0;">
-        Bid opens at 00:33
-      </div>`;
+      leaderboardEl.innerHTML = `
+        <div style="text-align:center;color:#555;padding:30px 0;">
+          Bid opens at 00:33
+        </div>`;
     }
-  }
-
-  updateTimerAndStats();
-  setInterval(updateTimerAndStats, 1000);
-}
-
 /* ====================== TAP SAVING – CORRECTLY FEEDS BOTH LEADERBOARDS ====================== */
 /* 
   Rules:
