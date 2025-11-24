@@ -1,7 +1,7 @@
-/* ---------- Firebase Modular Imports (v10+) — FIXED & WORKING ---------- */
+/* ---------- Firebase Modular Imports (v10+) ---------- */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 
-// Firestore — all your needed functions
+// Firestore
 import {
   getFirestore,
   doc,
@@ -21,11 +21,17 @@ import {
   arrayUnion,
   writeBatch
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+// Realtime Database
 import {
-  getDatabase, ref as rtdbRef, set as rtdbSet, onDisconnect, onValue
+  getDatabase,
+  ref as rtdbRef,
+  set as rtdbSet,
+  onDisconnect,
+  onValue
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
-// Auth — CRITICAL: signInWithEmailAndPassword & signOut live HERE
+// Auth
 import {
   getAuth,
   signInWithEmailAndPassword,
@@ -42,18 +48,17 @@ const firebaseConfig = {
   messagingSenderId: "1036459652488",
   appId: "1:1036452488:web:e8910172ed16e9cac9b63d",
   measurementId: "G-NX2KWZW85V",
- databaseURL: "https://dettyverse-default-rtdb.firebaseio.com/"
+  databaseURL: "https://dettyverse-default-rtdb.firebaseio.com/"
 };
 
-/* ---------- Firebase Setup ---------- */
+/* ---------- Firebase Initialization ---------- */
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
-// Realtime Database (RTDB)
-const rtdb = getDatabase(app);
+const rtdb = getDatabase(app); // RTDB now properly initialized
 
 /* ---------- Exports for other scripts ---------- */
-export { app, db, auth };
+export { app, db, auth, rtdb };
 
 /* ---------- Global State ---------- */
 const ROOM_ID = "room5";
@@ -96,7 +101,6 @@ const pRef = rtdbRef(rtdb, `presence/${ROOM_ID}/${safeUid}`);
     console.error("Presence error:", err);
   }
 }
-
 
 // SYNC UNLOCKED VIDEOS — 100% Secure & Reliable
 async function syncUserUnlocks() {
