@@ -1466,6 +1466,15 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
+
+// ————— LEADERBOARD CACHE (MUST BE AT THE TOP!) —————
+const leaderboardCache = {
+  daily:   { data: null, timestamp: 0 },
+  weekly:  { data: null, timestamp: 0 },
+  monthly: { data: null, timestamp: 0 }
+};
+const CACHE_DURATION = 60 * 1000; // 60 seconds – change to 30*1000 if you want faster refresh
+
 /* ============================================================
    TAPMASTER — FULLY WORKING, NO HANG, CLEAN VERSION
    ============================================================ */
