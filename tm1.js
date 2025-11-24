@@ -1,53 +1,36 @@
-// firebase.js — browser ready
+// 1️⃣ Firebase imports (from your firebase.js)
+import { auth, db, onAuthStateChanged, collection, doc, getDoc, addDoc, updateDoc, 
+         query, where, orderBy, onSnapshot, serverTimestamp } from './firebase.js';
 
-// ---------- FIREBASE IMPORTS ----------
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-import { getAuth, onAuthStateChanged, setPersistence, browserLocalPersistence } 
-  from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
-import { 
-  getFirestore,
-  doc,
-  getDoc,
-  runTransaction,
-  collection,
-  addDoc,
-  serverTimestamp,
-  updateDoc,
-  getDocs,
-  setDoc,
-  query,
-  where,
-  orderBy,
-  onSnapshot
-} from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+// 2️⃣ Restore your VIP user from localStorage
+async function autoLogin() {
+  const vipUser = JSON.parse(localStorage.getItem("vipUser"));
+  if (vipUser?.email && vipUser?.phone) {
+    showLoadingBar(1000);
+    await sleep(60);
+    const success = await loginWhitelist(vipUser.email, vipUser.phone);
+    if (!success) return;
+    await sleep(400);
+    updateRedeemLink();
+    updateTipLink();
+  }
+}
 
-// ---------- FIREBASE CONFIG (replace with your keys) ----------
-const firebaseConfig = {
-  apiKey: "AIzaSyD_GjkTox5tum9o4AupO0LeWzjTocJg8RI",
-  authDomain: "dettyverse.firebaseapp.com",
-  projectId: "dettyverse",
-  storageBucket: "dettyverse.firebasestorage.app",
-  messagingSenderId: "1036459652488",
-  appId: "1:1036459652488:web:e8910172ed16e9cac9b63d",
-  measurementId: "G-NX2KWZW85V"
-};
+// 3️⃣ Call autoLogin on page load
+if (typeof window !== 'undefined') {
+  autoLogin();
+}
 
-// ---------- INITIALIZE APP ----------
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const auth = getAuth(app);
+// 4️⃣ Firebase auth listener to ensure user session persists across reloads
+onAuthStateChanged(auth, user => {
+  if (user) {
+    console.log("Firebase user is logged in:", user.email);
+    // safe to fetch Firestore game data, taps, leaderboard, etc.
+  } else {
+    console.log("No Firebase user logged in");
+  }
+});
 
-// ---------- FORCE LOCAL AUTH PERSISTENCE ----------
-setPersistence(auth, browserLocalPersistence)
-  .then(() => console.log("Firebase auth persistence set to LOCAL ✅"))
-  .catch(err => console.error("Firebase persistence error:", err));
-
-// ---------- EXPORT ----------
-export { 
-  app, auth, db,
-  doc, getDoc, runTransaction, collection, addDoc, serverTimestamp, updateDoc, getDocs, setDoc,
-  query, where, orderBy, onSnapshot, onAuthStateChanged
-};
   
 // ---------- DOM ----------
 const body = document.body;
