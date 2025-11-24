@@ -21,15 +21,15 @@ import {
   onSnapshot
 } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
-// ---------- FIREBASE CONFIG ----------
+/* ---------- Firebase Config ---------- */
 const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
-  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
+  apiKey: "AIzaSyD_GjkTox5tum9o4AupO0LeWzjTocJg8RI",
+  authDomain: "dettyverse.firebaseapp.com",
+  projectId: "dettyverse",
+  storageBucket: "dettyverse.firebasestorage.app",
+  messagingSenderId: "1036459652488",
+  appId: "1:1036452488:web:e8910172ed16e9cac9b63d",
+  measurementId: "G-NX2KWZW85V"
 };
 
 // ---------- INITIALIZE APP ----------
