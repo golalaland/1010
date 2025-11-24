@@ -14,6 +14,8 @@
     serverTimestamp,
     updateDoc,
     getDocs,
+    limit,
+    getCountFromServer,
     setDoc,
     query,
     where,
@@ -965,24 +967,43 @@ closeLeaderboard?.addEventListener("click", () => stopSlider());
 /* -------------------------------------------
    FETCH LEADERBOARD
 -------------------------------------------- */
-async function fetchLeaderboard(period = "daily", top = 33) {
-  leaderboardList.innerHTML = "<li>Loading...</li>";
+async function fetchLeaderboard(period = "daily", topToFetch = 33) {
+  const now = Date.now();
+
+  // ——— 1. Check cache first ———
+  if (leaderboardCache[period].data && (now - leaderboardCache[period].timestamp < CACHE_DURATION)) {
+    console.log("Leaderboard from cache:", period);
+    renderLeaderboardFromData(leaderboardCache[period].data, period);
+    return;
+  }
+
+  // ——— 2. Show loading only if no cache ———
+  if (!leaderboardCache[period].data) {
+    leaderboardList.innerHTML = "<li>Loading...</li>";
+  }
 
   const key = getLeaderboardKey(period);
   const usersCol = collection(db, "users");
 
+  const DEFAULT_MALE = "https://cdn.shopify.com/s/files/1/0962/6648/6067/files/9720029.jpg?v=1763635357";
+  const DEFAULT_FEMALE = "https://cdn.shopify.com/s/files/1/0962/6648/6067/files/10491827.jpg?v=1763635326";
+  const DEFAULT_NEUTRAL = DEFAULT_MALE;
+
+  const getAvatar = (data) => {
+    if (data.popupPhoto && data.popupPhoto.trim()) return data.popupPhoto.trim();
+    if (data.gender === "male") return DEFAULT_MALE;
+    if (data.gender === "female") return DEFAULT_FEMALE;
+    return DEFAULT_NEUTRAL;
+  };
+
   try {
-    // 1. Fetch only the top 33 users for this period
+    const fieldPath = period === "daily" ? `tapsDaily.${key}` :
+                     period === "weekly" ? `tapsWeekly.${key}` : `tapsMonthly.${key}`;
+
     const leaderboardQuery = query(
       usersCol,
-      where(period === "daily" ? "tapsDaily" : period === "weekly" ? "tapsWeekly" : "tapsMonthly", "!=", null),
-      orderBy(
-        period === "daily" ? `tapsDaily.${key}` :
-        period === "weekly" ? `tapsWeekly.${key}` :
-        `tapsMonthly.${key}`,
-        "desc"
-      ),
-      limit(top)  // Only 33 documents!
+      orderBy(fieldPath, "desc"),
+      limit(topToFetch)
     );
 
     const leaderboardSnap = await getDocs(leaderboardQuery);
@@ -990,132 +1011,104 @@ async function fetchLeaderboard(period = "daily", top = 33) {
 
     leaderboardSnap.forEach(docSnap => {
       const data = docSnap.data();
-      const tapsCount = 
-        period === "daily" ? data.tapsDaily?.[key] || 0 :
-        period === "weekly" ? data.tapsWeekly?.[key] || 0 :
-        data.tapsMonthly?.[key] || 0;
+      const taps = period === "daily" ? data.tapsDaily?.[key] || 0 :
+                   period === "weekly" ? data.tapsWeekly?.[key] || 0 :
+                   data.tapsMonthly?.[key] || 0;
 
-      if (tapsCount > 0) {
+      if (taps > 0) {
         topScores.push({
           uid: docSnap.id,
           chatId: data.chatId || docSnap.id.slice(0, 6),
-          taps: tapsCount,
+          taps,
           gender: data.gender,
+          popupPhoto: data.popupPhoto || "",
         });
       }
     });
 
-    // 2. Separately fetch current user's data (only if logged in)
-    let myDailyTaps = 0;
+    // Fetch current user (only once per open)
+    let myTaps = 0;
     let myRank = null;
-    let myScoreObj = null;
 
     if (currentUser) {
       const myDocRef = doc(db, "users", currentUser.uid);
-      const myDocSnap = await getDoc(myDocRef);  // Just 1 read!
+      const mySnap = await getDoc(myDocRef);
+      if (mySnap.exists()) {
+        const data = mySnap.data();
+        myTaps = period === "daily" ? data.tapsDaily?.[key] || 0 :
+                 period === "weekly" ? data.tapsWeekly?.[key] || 0 :
+                 data.tapsMonthly?.[key] || 0;
 
-      if (myDocSnap.exists()) {
-        const myData = myDocSnap.data();
-        myDailyTaps = 
-          period === "daily" ? myData.tapsDaily?.[key] || 0 :
-          period === "weekly" ? myData.tapsWeekly?.[key] || 0 :
-          myData.tapsMonthly?.[key] || 0;
-
-        myScoreObj = {
-          uid: currentUser.uid,
-          chatId: myData.chatId || currentUser.uid.slice(0, 6),
-          taps: myDailyTaps,
-          gender: myData.gender,
-        };
-
-        // Check if user is in top 33
-        const inTop = topScores.find(s => s.uid === currentUser.uid);
+        const inTop = topScores.find(u => u.uid === currentUser.uid);
         if (inTop) {
           myRank = topScores.indexOf(inTop) + 1;
-        } else if (myDailyTaps > 0) {
-          // Estimate rank: how many people have more taps than me?
-          const betterQuery = query(
-            usersCol,
-            where(
-              period === "daily" ? `tapsDaily.${key}` :
-              period === "weekly" ? `tapsWeekly.${key}` :
-              `tapsMonthly.${key}`,
-              ">", myDailyTaps
-            )
-          );
-          const betterSnap = await getCountFromServer(betterQuery);
-          myRank = betterSnap.data().count + 1;
+        } else if (myTaps > 0) {
+          const betterQuery = query(usersCol, where(fieldPath, ">", myTaps));
+          const countSnap = await getCountFromServer(betterQuery);
+          myRank = countSnap.data().count + 1;
         }
       }
     }
 
-    // Update my taps & rank display
-    const tapsEl = document.getElementById("myDailyTapsValue");
-    const rankFull = document.getElementById("myRankFull");
-    if (tapsEl) tapsEl.textContent = myDailyTaps.toLocaleString();
-    if (myRank && rankFull) {
-      const suffix = myRank === 1 ? "st" : myRank === 2 ? "nd" : myRank === 3 ? "rd" : "th";
-      rankFull.textContent = myRank + suffix;
-    } else if (rankFull) {
-      rankFull.textContent = myRank ? `${myRank}th` : "-";
-    }
+    // ——— Save to cache ———
+    const cacheData = { topScores, myTaps, myRank, timestamp: now };
+    leaderboardCache[period].data = cacheData;
+    leaderboardCache[period].timestamp = now;
 
-    // Display top 10 (or top 33 if you want)
-    const displayCount = 10;
-    const displayScores = topScores.slice(0, displayCount);
-
-    if (displayScores.length === 0) {
-      leaderboardList.innerHTML = "<li style='text-align:center;padding:20px 0;font-size:13px;color:#888;'>No taps yet — be the first!</li>";
-      return;
-    }
-
-    leaderboardList.innerHTML = displayScores
-      .map((u, i) => {
-        const isCurrent = currentUser && u.uid === currentUser.uid;
-        const maleAvatar = "https://cdn.shopify.com/s/files/1/0962/6648/6067/files/9720029.jpg?v=1763635357";
-        const femaleAvatar = "https://cdn.shopify.com/s/files/1/0962/6648/6067/files/10491827.jpg?v=1763635326";
-        const avatar = u.gender === "female" ? femaleAvatar :
-                       u.gender === "male" ? maleAvatar :
-                       Math.random() < 0.5 ? maleAvatar : femaleAvatar;
-
-        const name = u.chatId || "Anon";
-        const formattedName = name
-          .split(" ")
-          .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-          .join(" ");
-
-        let style = "";
-        if (i === 0) style = "color:#FFD700;font-weight:700;";
-        else if (i === 1) style = "color:#C0C0C0;font-weight:700;";
-        else if (i === 2) style = "color:#CD7F32;font-weight:700;";
-        else if (isCurrent) style = "background:#333;padding:4px;border-radius:4px;";
-
-        return `
-          <li class="lb-row" style="${style}">
-            <img class="lb-avatar" src="${avatar}" alt="avatar">
-            <div class="lb-info">
-              <span class="lb-name">${i + 1}. ${formattedName}</span>
-              <span class="lb-score">${u.taps.toLocaleString()} taps</span>
-            </div>
-          </li>
-        `;
-      })
-      .join("");
-
-    // Optional: Show "You're #57" below the list if outside top 10
-    if (currentUser && myRank && myRank > displayCount) {
-      const extra = document.createElement("li");
-      extra.style.textAlign = "center";
-      extra.style.padding = "12px";
-      extra.style.fontSize = "14px";
-      extra.style.color = "#aaa";
-      extra.innerHTML = `You are currently <strong>#${myRank}</strong> with ${myDailyTaps.toLocaleString()} taps`;
-      leaderboardList.appendChild(extra);
-    }
+    renderLeaderboardFromData(cacheData, period);
 
   } catch (err) {
     console.error("Leaderboard error:", err);
     leaderboardList.innerHTML = "<li>Error loading leaderboard</li>";
+  }
+}
+
+// ——— Helper: renders from cached or fresh data ———
+function renderLeaderboardFromData(cacheData, period) {
+  const { topScores, myTaps, myRank } = cacheData;
+  const displayCount = 10;
+  const toDisplay = topScores.slice(0, displayCount);
+
+  // Update header
+  const tapsEl = document.getElementById("myDailyTapsValue");
+  const rankEl = document.getElementById("myRankFull");
+  if (tapsEl) tapsEl.textContent = myTaps.toLocaleString();
+  if (myRank && rankEl) {
+    const suffix = myRank === 1 ? "st" : myRank === 2 ? "nd" : myRank === 3 ? "rd" : "th";
+    rankEl.textContent = myRank + suffix;
+  } else if (rankEl) rankEl.textContent = "-";
+
+  if (toDisplay.length === 0) {
+    leaderboardList.innerHTML = "<li style='text-align:center;padding:20px 0;font-size:13px;color:#888;'>No taps yet — be the first!</li>";
+    return;
+  }
+
+  leaderboardList.innerHTML = toDisplay.map((u, i) => {
+    const isMe = currentUser && u.uid === currentUser.uid;
+    const name = (u.chatId || "Anon").split(" ").map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ");
+
+    let style = "";
+    if (i === 0) style = "color:#FFD700;font-weight:700;";
+    else if (i === 1) style = "color:#C0C0C0;font-weight:700;";
+    else if (i === 2) style = "color:#CD7F32;font-weight:700;";
+    else if (isMe) style = "background:#333;padding:4px;border-radius:4px;";
+
+    return `
+      <li class="lb-row" style="${style}">
+        <img class="lb-avatar" src="${getAvatar(u)}" onerror="this.src='${DEFAULT_NEUTRAL}'" alt="avatar">
+        <div class="lb-info">
+          <span class="lb-name">${i + 1}. ${name}</span>
+          <span class="lb-score">${u.taps.toLocaleString()} taps</span>
+        </div>
+      </li>
+    `;
+  }).join("");
+
+  if (currentUser && myRank && myRank > displayCount) {
+    const extra = document.createElement("li");
+    extra.style.cssText = "text-align:center;padding:15px 0;font-size:14px;color:#aaa;background:#111;border-top:1px solid #333;";
+    extra.innerHTML = `You are currently <strong>#${myRank}</strong> with ${myTaps.toLocaleString()} taps`;
+    leaderboardList.appendChild(extra);
   }
 }
 
