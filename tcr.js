@@ -104,6 +104,18 @@ async function syncUserUnlocks() {
   }
 }
 
+if (rtdb) {
+  onValue(
+    rtdbRef(rtdb, `presence/${ROOM_ID}`),
+    snap => {
+      const users = snap.val() || {};
+      if (refs?.onlineCountEl) {
+        refs.onlineCountEl.innerText = `(${Object.keys(users).length} online)`;
+      }
+    }
+  );
+}
+
 
 
 /* ===============================
@@ -1204,6 +1216,33 @@ async function loginWhitelist(email) {
     return false;
   } finally {
     if (loader) loader.style.display = "none";
+  }
+}
+
+
+
+/* ---------- Presence (Realtime) ---------- */
+function setupPresence(user) {
+  try {
+    if (!rtdb || !user || !user.uid) return;
+
+   const safeUid = user.uid; // already sanitized (example_yahoo_com)
+const pRef = rtdbRef(rtdb, `presence/${ROOM_ID}/${safeUid}`);
+
+    rtdbSet(pRef, {
+      online: true,
+      chatId: user.chatId || "",
+      email: user.email || "",
+      lastSeen: Date.now()
+    }).catch(() => {});
+
+    // Auto-remove presence when user closes tab
+    onDisconnect(pRef)
+      .remove()
+      .catch(() => {});
+
+  } catch (err) {
+    console.error("Presence error:", err);
   }
 }
 
