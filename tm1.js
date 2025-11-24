@@ -1508,36 +1508,45 @@ function initRoundSystem() {
 // Start it immediately
 initRoundSystem();
 
-// ====================== NICE ALERT — BEAUTIFUL & MOBILE FRIENDLY ======================
+// ====================== NICE ALERT — UNBREAKABLE & SAFE ======================
 function showNiceAlert(message, title = "TapMaster") {
   const alertEl = document.getElementById('niceAlert');
   const titleEl = document.getElementById('niceAlertTitle');
   const msgEl = document.getElementById('niceAlertMessage');
   const btnEl = document.getElementById('niceAlertBtn');
 
+  // If wrapper missing → fallback to browser alert
   if (!alertEl) {
-    console.error("niceAlert elements not found in HTML!");
+    console.error("niceAlert element not found in HTML!");
     alert(message);
     return Promise.resolve();
   }
 
-  titleEl.textContent = title;
-  msgEl.innerHTML = message.replace(/\n/g, '<br>');
-  alertEl.style.display = 'flex';
+  // Safely set title (only if exists)
+  if (titleEl) titleEl.textContent = title;
+
+  // Safely set message
+  if (msgEl) msgEl.innerHTML = message.replace(/\n/g, "<br>");
+
+  // Show popup
+  alertEl.style.display = "flex";
 
   return new Promise(resolve => {
     const close = () => {
-      alertEl.style.display = 'none';
-      btnEl.onclick = null;
+      alertEl.style.display = "none";
+      if (btnEl) btnEl.onclick = null;
       alertEl.onclick = null;
       resolve();
     };
-    btnEl.onclick = close;
-    alertEl.onclick = (e) => {
+
+    if (btnEl) btnEl.onclick = close;
+
+    alertEl.onclick = e => {
       if (e.target === alertEl) close();
     };
   });
 }
+
 
 // ====================== HELPER: GET CURRENT PRIZE POOL (use anywhere) ======================
 function calculatePrizePool(playerCount) {
