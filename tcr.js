@@ -3872,7 +3872,7 @@ document.getElementById("hostLogoutBtn")?.addEventListener("click", async e => {
     sessionStorage.setItem("justLoggedOut", "1");
     currentUser = null;
 
-    showStarPopup("You have been logged out");
+    showStarPopup("See ya later, Aligator ✨");
 
     setTimeout(() => location.reload(), 1200);
   } catch (err) {
