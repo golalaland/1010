@@ -1113,28 +1113,26 @@ async function promptForChatID(userRef, userData) {
    FINAL VIP LOGIN SYSTEM — 100% WORKING
    Google disabled | VIP button works | Safe auto-login
 ================================= */
+document.addEventListener("DOMContentLoaded", () => {
+  const googleBtn = document.getElementById("googleSignInBtn");
+  if (!googleBtn) return;
 
-/* BLOCK GOOGLE LOGIN — looks normal, clickable, shows message */
-document.querySelectorAll(
-  "#googleLoginBtn, .google-btn, #googleSignInBtn, #googlesigninbtn, [data-google-login]"
-).forEach(btn => {
-  if (!btn) return;
+  // Reset any previous styles / states
+  googleBtn.style.cssText = "";
+  googleBtn.disabled = false;
 
-    // Make it look 100% normal
-    btn.style.cssText = "";
-    btn.disabled = false;
+  // Remove old listeners (safe way)
+  const newBtn = googleBtn.cloneNode(true);
+  googleBtn.parentNode.replaceChild(newBtn, googleBtn);
 
-    // Remove ALL old listeners (the nuclear fix)
-    const newBtn = btn.cloneNode(true);
-    btn.parentNode.replaceChild(newBtn, btn);
-
-    // Add our clean handler
-    newBtn.addEventListener("click", e => {
-      e.preventDefault();
-      e.stopPropagation();
-      showStarPopup("Google Sign-Up is not available at the moment.<br>Use VIP Email Login instead.");
-    });
+  // Add your block handler
+  newBtn.addEventListener("click", e => {
+    e.preventDefault();
+    e.stopPropagation();
+    showStarPopup("Google Sign-Up is not available at the moment.<br>Use VIP Email Login instead.");
+  });
 });
+
 
 // FINAL: WORKING LOGIN BUTTON — THIS MAKES SIGN IN ACTUALLY WORK
 document.getElementById("whitelistLoginBtn")?.addEventListener("click", async () => {
@@ -1516,33 +1514,6 @@ window.addEventListener("DOMContentLoaded", () => {
 
   if (refs.chatIDInput) refs.chatIDInput.maxLength = 12;
 
-  /* ----------------------------
-     🔐 VIP Login Setup
-  ----------------------------- */
-  const emailInput = document.getElementById("emailInput");
-  const phoneInput = document.getElementById("passwordInput");
-  const loginBtn = document.getElementById("whitelistLoginBtn");
-
-  async function handleLogin() {
-    const email = (emailInput?.value || "").trim().toLowerCase();
-    const password = (passwordInput?.value || "").trim();
-
-    if (!email || !password) {
-      return showStarPopup("Enter your email and phone to get access.");
-    }
-
-    showLoadingBar(1000);
-    await sleep(50);
-
-    const success = await loginWhitelist(email, password);
-    if (!success) return;
-
-    await sleep(400);
-    updateRedeemLink();
-    updateTipLink();
-  }
-
-  loginBtn?.addEventListener("click", handleLogin);
 
   /* ----------------------------
      🔁 Auto Login Session
