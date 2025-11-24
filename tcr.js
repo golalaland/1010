@@ -3863,16 +3863,29 @@ function playFullVideo(video) {
 document.getElementById("hostLogoutBtn")?.addEventListener("click", async e => {
   e.preventDefault();
   e.stopPropagation();
+
   const btn = e.target;
   btn.disabled = true;
 
   try {
-    await signOut(auth);                     // Firebase logout
-    localStorage.removeItem("lastVipEmail"); // stop auto-login
+    await signOut(auth);
+    localStorage.removeItem("lastVipEmail");
     sessionStorage.setItem("justLoggedOut", "1");
     currentUser = null;
 
-    showStarPopup("See ya later, Aligator ✨");
+    // Show a fun logout message
+    const logoutMessages = [
+      "See ya later, Alligator 🤩",
+      "Off you go, $STRZ ⭐️ waiting when you log back in!",
+      "Catch you on the flip side! 😎",
+      "Adios, Amigo! 👋🏼",
+      "Peace out, Player! ✌🏽",
+      "Hasta la vista, Baby! 🤠",
+      "hmmm, now why'd you do that..🤔",
+      "Off you go, Champ! 🏆"
+    ];
+    const message = logoutMessages[Math.floor(Math.random() * logoutMessages.length)];
+    showStarPopup(message);
 
     setTimeout(() => location.reload(), 1200);
   } catch (err) {
