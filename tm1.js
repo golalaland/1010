@@ -1,10 +1,9 @@
 // ---------------- Firebase imports ----------------
 import { 
-  auth, db, onAuthStateChanged, 
-  collection, doc, getDoc, getDocs, addDoc, updateDoc, setDoc,
-  query, where, orderBy, onSnapshot, serverTimestamp,
-  signInAnonymously
-} from './firebase.js'; // make sure firebase.js has setPersistence(auth, browserLocalPersistence)
+  auth, db, onAuthStateChanged, signInAnonymously,
+  collection, doc, getDoc, addDoc, updateDoc, query, where, orderBy, onSnapshot, serverTimestamp
+} from './firebase.js';
+
 
 // ---------------- Auto-login ----------------
 async function autoLogin() {
