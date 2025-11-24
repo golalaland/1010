@@ -224,16 +224,15 @@ function initializePot(){
 
 function randomInt(min,max){ return Math.floor(Math.random()*(max-min+1))+min; }
 function formatNumber(n){ return n.toLocaleString(); }
-// LOAD USER FOR GAME — FINAL 2025 VERSION (works offline, no errors, auto-creates)
+
+// ---------- LOAD USER ----------
 async function loadCurrentUserForGame() {
   try {
-    // Try to get saved VIP or Host from localStorage
     const vipRaw = localStorage.getItem("vipUser");
     const hostRaw = localStorage.getItem("hostUser");
-    const stored = vipRaw ? JSON.parse(vipRaw) : hostRaw ? JSON.parse(hostRaw) : null;
-
-    if (!stored?.email) {
-      // TRUE GUEST MODE
+    const storedUser = vipRaw ? JSON.parse(vipRaw) : hostRaw ? JSON.parse(hostRaw) : null;
+    
+    if (!storedUser?.email) {
       currentUser = null;
       profileNameEl && (profileNameEl.textContent = "GUEST 0000");
       starCountEl && (starCountEl.textContent = "50");
@@ -241,62 +240,52 @@ async function loadCurrentUserForGame() {
       return;
     }
 
-    // EXACT SAME ID AS CHATROOM (100% match!)
-    const uid = stored.email
-      .trim()
-      .toLowerCase()
-      .replace(/[@.]/g, '_')
-      .replace(/_+/g, '_')
-      .replace(/^_|_$/g, '');
+// Generate the exact same document ID as your signup page
+const uid = storedUser.email
+  .trim()
+  .toLowerCase()
+  .replace(/[@.]/g, '_')      // @ and . → _   (this is the key!)
+  .replace(/_+/g, '_')        // collapse multiple ___ → _
+  .replace(/^_|_$/g, '');     // remove leading/trailing _
 
-    const userRef = doc(db, "users", uid);
+const userRef = doc(db, "users", uid);
+const snap = await getDoc(userRef);
 
-    // Try to read from Firestore
-    let snap = await getDoc(userRef).catch(() => null);
+if (!snap.exists()) {
+  // CREATE USER AUTOMATICALLY — only once, forever
+  await setDoc(userRef, {
+    uid,                                            // safe document ID
+    chatId: storedUser.fullName || 
+            storedUser.displayName || 
+            storedUser.email.split('@')[0] || 
+            "Player",
+    email: storedUser.email,                        // original email with @ and .
+    stars: 100,
+    cash: 0,
+    totalTaps: 0,
+    createdAt: serverTimestamp(),
+    tapsDaily: {},
+    tapsWeekly: {},
+    tapsMonthly: {}
+  });
+}
 
-    // If not found → CREATE USER AUTOMATICALLY (only happens once)
-    if (!snap?.exists()) {
-      const newUser = {
-        uid,
-        chatId: stored.fullName || stored.displayName || stored.email.split('@')[0] || "Player",
-        email: stored.email,
-        stars: 100,
-        cash: 0,
-        totalTaps: 0,
-        createdAt: serverTimestamp(),
-        tapsDaily: {},
-        tapsWeekly: {},
-        tapsMonthly: {}
-      };
-      await setDoc(userRef, newUser).catch(() => console.log("Offline: user will create next time"));
-      snap = { exists: () => true, data: () => newUser };
-    }
-
-    const data = snap.data();
-
-    // SET CURRENT USER
+    const data = (await getDoc(userRef)).data();
     currentUser = {
       uid,
-      chatId: data.chatId || stored.email.split('@')[0],
-      email: stored.email,
+      chatId: data.chatId || storedUser.email.split("_")[0],
+      email: storedUser.email,
       stars: Number(data.stars || 100),
       cash: Number(data.cash || 0),
       totalTaps: Number(data.totalTaps || 0)
     };
 
-    // UPDATE UI
     profileNameEl && (profileNameEl.textContent = currentUser.chatId);
     starCountEl && (starCountEl.textContent = formatNumber(currentUser.stars));
     cashCountEl && (cashCountEl.textContent = '₦' + formatNumber(currentUser.cash));
 
-    console.log("Game user loaded:", currentUser.chatId, currentUser.stars + " stars");
-
   } catch (err) {
-    console.warn("Game user load failed (offline mode)", err);
-    // Still show something nice even offline
-    profileNameEl && (profileNameEl.textContent = "VIP Player");
-    starCountEl && (starCountEl.textContent = "100");
-    cashCountEl && (cashCountEl.textContent = "₦0");
+    console.warn("load user error", err);
   }
 }
 
@@ -974,88 +963,115 @@ startSlider();
 closeLeaderboard?.addEventListener("click", () => stopSlider());
 
 /* -------------------------------------------
-   FETCH LEADERBOARD
+   FETCH LEADERBOARD
 -------------------------------------------- */
 async function fetchLeaderboard(period = "daily", top = 10) {
-  leaderboardList.innerHTML = "<li>Loading...</li>";
-  const key = getLeaderboardKey(period);
-  const usersCol = collection(db, "users");
-  try {
-    const snap = await getDocs(usersCol);
-    const scores = [];
-    snap.forEach(docSnap => {
-      const data = docSnap.data();
-      let tapsCount = 0;
-      if (period === "daily") tapsCount = data.tapsDaily?.[key] || 0;
-      if (period === "weekly") tapsCount = data.tapsWeekly?.[key] || 0;
-      if (period === "monthly") tapsCount = data.tapsMonthly?.[key] || 0;
-      if (tapsCount > 0) {
-        scores.push({
-          uid: docSnap.id,
-          chatId: data.chatId || docSnap.id.slice(0, 6),
-          taps: tapsCount,
-        });
-      }
-    });
-      scores.sort((a, b) => b.taps - a.taps);
-    const topScores = scores.slice(0, top);
-   
-     // === YOUR TAPS TODAY – FINAL FIXED (2nd 1st 3rd joined perfectly) ===
-    let myDailyTaps = 0;
-    let myRank = null;
-    if (currentUser) {
-      const myDoc = snap.docs.find(d => d.id === currentUser.uid);
-      const myData = myDoc?.data();
-      if (period === "daily") myDailyTaps = myData?.tapsDaily?.[key] || 0;
-      if (period === "weekly") myDailyTaps = myData?.tapsWeekly?.[key] || 0;
-      if (period === "monthly") myDailyTaps = myData?.tapsMonthly?.[key] || 0;
-      const myEntry = scores.find(s => s.uid === currentUser.uid);
-      if (myEntry) myRank = scores.indexOf(myEntry) + 1;
-    }
-    const tapsEl = document.getElementById("myDailyTapsValue");
-    const rankFull = document.getElementById("myRankFull");
-    if (tapsEl) tapsEl.textContent = myDailyTaps.toLocaleString();
-    if (myRank && myRank <= 10 && rankFull) {
-      const suffix = myRank === 1 ? "st" : myRank === 2 ? "nd" : myRank === 3 ? "rd" : "th";
-      rankFull.textContent = myRank + suffix; // 2nd, 1st, 3rd, 4th — perfect!
-    } else if (rankFull) {
-      rankFull.textContent = "";
-    }
-    if (topScores.length === 0) {
-      leaderboardList.innerHTML = "<li style='text-align:center;padding:20px 0;font-size:13px;color:#888;'>No taps yet — be the first!</li>";
-      return;
-    }
+  leaderboardList.innerHTML = "<li>Loading...</li>";
+
+  const key = getLeaderboardKey(period);
+  const usersCol = collection(db, "users");
+
+  try {
+    const snap = await getDocs(usersCol);
+    const scores = [];
+
+    snap.forEach(docSnap => {
+      const data = docSnap.data();
+
+      let tapsCount = 0;
+      if (period === "daily") tapsCount = data.tapsDaily?.[key] || 0;
+      if (period === "weekly") tapsCount = data.tapsWeekly?.[key] || 0;
+      if (period === "monthly") tapsCount = data.tapsMonthly?.[key] || 0;
+
+      if (tapsCount > 0) {
+        scores.push({
+          uid: docSnap.id,
+          chatId: data.chatId || docSnap.id.slice(0, 6),
+          taps: tapsCount,
+        });
+      }
+    });
+
+      scores.sort((a, b) => b.taps - a.taps);
+    const topScores = scores.slice(0, top);
+    
+
+     // === YOUR TAPS TODAY – FINAL FIXED (2nd 1st 3rd joined perfectly) ===
+    let myDailyTaps = 0;
+    let myRank = null;
+
+    if (currentUser) {
+      const myDoc = snap.docs.find(d => d.id === currentUser.uid);
+      const myData = myDoc?.data();
+      if (period === "daily")   myDailyTaps = myData?.tapsDaily?.[key]   || 0;
+      if (period === "weekly")  myDailyTaps = myData?.tapsWeekly?.[key]  || 0;
+      if (period === "monthly") myDailyTaps = myData?.tapsMonthly?.[key] || 0;
+
+      const myEntry = scores.find(s => s.uid === currentUser.uid);
+      if (myEntry) myRank = scores.indexOf(myEntry) + 1;
+    }
+
+    const tapsEl = document.getElementById("myDailyTapsValue");
+    const rankFull = document.getElementById("myRankFull");
+
+    if (tapsEl) tapsEl.textContent = myDailyTaps.toLocaleString();
+
+    if (myRank && myRank <= 10 && rankFull) {
+      const suffix = myRank === 1 ? "st" : myRank === 2 ? "nd" : myRank === 3 ? "rd" : "th";
+      rankFull.textContent = myRank + suffix;  // 2nd, 1st, 3rd, 4th — perfect!
+    } else if (rankFull) {
+      rankFull.textContent = "";
+    }
+
+    if (topScores.length === 0) {
+      leaderboardList.innerHTML = "<li style='text-align:center;padding:20px 0;font-size:13px;color:#888;'>No taps yet — be the first!</li>";
+      return;
+    }
 leaderboardList.innerHTML = topScores
-  .map((u, i) => {
-    const isCurrent = currentUser && u.uid === currentUser.uid;
-  // ---- Avatar selection (random if no gender) ----
-    const maleAvatar = "https://cdn.shopify.com/s/files/1/0962/6648/6067/files/9720029.jpg?v=1763635357";
-    const femaleAvatar = "https://cdn.shopify.com/s/files/1/0962/6648/6067/files/10491827.jpg?v=1763635326";
-    const avatar = u.gender === "female"
-      ? femaleAvatar
-      : u.gender === "male"
-        ? maleAvatar
-        : Math.random() < 0.5 ? maleAvatar : femaleAvatar;
+  .map((u, i) => {
+    const isCurrent = currentUser && u.uid === currentUser.uid;
+
+  // ---- Avatar selection (random if no gender) ----
+    const maleAvatar = "https://cdn.shopify.com/s/files/1/0962/6648/6067/files/9720029.jpg?v=1763635357";
+    const femaleAvatar = "https://cdn.shopify.com/s/files/1/0962/6648/6067/files/10491827.jpg?v=1763635326";
+
+    const avatar = u.gender === "female"
+      ? femaleAvatar
+      : u.gender === "male"
+        ? maleAvatar
+        : Math.random() < 0.5 ? maleAvatar : femaleAvatar;
+
 // ---- Name formatting ----
 const name = u.chatId || "Anon";
 const formattedName = name
-  .split(" ")
-  .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-  .join(" ");
-    // ---- Styles for ranks ----
-    let style = "";
-    if (i === 0) style = "color:#FFD700;font-weight:700;";
-    else if (i === 1) style = "color:#C0C0C0;font-weight:700;";
-    else if (i === 2) style = "color:#CD7F32;font-weight:700;";
-    else if (isCurrent) style = "background:#333;padding:4px;border-radius:4px;";
-    return  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<li class="lb-row" style="${style}"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<img class="lb-avatar" src="${avatar}" alt="avatar"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<div class="lb-info"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="lb-name">${i + 1}. ${formattedName}</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="lb-score">${u.taps.toLocaleString()} taps</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</div> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</li> &nbsp;&nbsp;&nbsp;&nbsp;;
-  })
-  .join("");
-  } catch (err) {
-    console.error("Leaderboard error:", err);
-    leaderboardList.innerHTML = "<li>Error loading leaderboard</li>";
-  }
+  .split(" ")
+  .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+  .join(" ");
+
+    // ---- Styles for ranks ----
+    let style = "";
+    if (i === 0) style = "color:#FFD700;font-weight:700;";
+    else if (i === 1) style = "color:#C0C0C0;font-weight:700;";
+    else if (i === 2) style = "color:#CD7F32;font-weight:700;";
+    else if (isCurrent) style = "background:#333;padding:4px;border-radius:4px;";
+
+    return `
+      <li class="lb-row" style="${style}">
+        <img class="lb-avatar" src="${avatar}" alt="avatar">
+        <div class="lb-info">
+          <span class="lb-name">${i + 1}. ${formattedName}</span>
+          <span class="lb-score">${u.taps.toLocaleString()} taps</span>
+        </div>
+      </li>
+    `;
+  })
+  .join("");
+  } catch (err) {
+    console.error("Leaderboard error:", err);
+    leaderboardList.innerHTML = "<li>Error loading leaderboard</li>";
+  }
 }
+
 
 /* -------------------------------------------
    TAB SWITCHER (CLEAN + FULLY WORKING)
