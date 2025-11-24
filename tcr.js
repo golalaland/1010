@@ -1094,18 +1094,33 @@ document.getElementById("whitelistLoginBtn")?.addEventListener("click", async ()
   }
 
   try {
+    // Sign in with Firebase Auth
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
     const uid = userCredential.user.uid;
 
-    // Check whitelist collection
-    const whitelistDoc = await getDoc(doc(firestore, "whitelist", uid));
-    if (!whitelistDoc.exists()) {
-      await signOut(auth);  // immediately log out unauthorized user
-      showStarPopup("You are not whitelisted");
-      return;
-    }
+    // Show logging in message immediately
+    showStarPopup("Logging in...");
 
-    showStarPopup("Welcome, whitelisted user!");
+    // Check whitelist safely
+    getDoc(doc(firestore, "whitelist", uid))
+      .then((docSnap) => {
+        if (!docSnap.exists()) {
+          // Not whitelisted, sign out immediately
+          signOut(auth);
+          showStarPopup("You are not whitelisted");
+          return;
+        }
+
+        // Whitelisted, continue
+        showStarPopup("Welcome, whitelisted user!");
+        // You can redirect to chatroom or trigger your onAuthStateChanged logic here
+      })
+      .catch((err) => {
+        console.error("Whitelist check failed:", err);
+        signOut(auth);
+        showStarPopup("Could not verify whitelist. Try again.");
+      });
+
   } catch (err) {
     console.error("Login failed:", err.code);
     if (err.code === "auth/user-not-found" || err.code === "auth/wrong-password") {
@@ -1118,7 +1133,7 @@ document.getElementById("whitelistLoginBtn")?.addEventListener("click", async ()
   }
 });
 
-/* LOGOUT */
+// LOGOUT
 window.logoutVIP = async () => {
   await signOut(auth);
   localStorage.removeItem("lastVipEmail");
