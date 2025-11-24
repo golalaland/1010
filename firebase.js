@@ -1,7 +1,8 @@
 // ---------- FIREBASE IMPORTS ----------
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-import { getAuth, onAuthStateChanged, setPersistence, browserLocalPersistence } 
-  from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+import { 
+  getAuth, onAuthStateChanged, setPersistence, browserLocalPersistence, signInAnonymously
+} from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
 import { 
   getFirestore,
   doc,
@@ -44,5 +45,5 @@ setPersistence(auth, browserLocalPersistence)
 export { 
   app, auth, db,
   doc, getDoc, getDocs, runTransaction, collection, addDoc, serverTimestamp, updateDoc, setDoc,
-  query, where, orderBy, onSnapshot, onAuthStateChanged
+  query, where, orderBy, onSnapshot, onAuthStateChanged, signInAnonymously
 };
