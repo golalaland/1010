@@ -52,6 +52,19 @@ const auth = getAuth(app);
 // Realtime Database (RTDB)
 const rtdb = getDatabase(app);
 
+/* ---------- Exports for other scripts ---------- */
+export { app, db, auth };
+
+/* ---------- Global State ---------- */
+const ROOM_ID = "room5";
+const CHAT_COLLECTION = "messages_room5";
+const BUZZ_COST = 50;
+const SEND_COST = 1;
+
+let lastMessagesArray = [];
+let starInterval = null;
+let refs = {};
+
 
 // Make Firebase objects available globally (for debugging or reuse)
 window.app = app;
@@ -358,19 +371,6 @@ export function getCurrentUserId() {
   return currentUser ? currentUser.uid : localStorage.getItem("userId");
 }
 window.currentUser = currentUser;
-
-/* ---------- Exports for other scripts ---------- */
-export { app, db, auth };
-
-/* ---------- Global State ---------- */
-const ROOM_ID = "room5";
-const CHAT_COLLECTION = "messages_room5";
-const BUZZ_COST = 50;
-const SEND_COST = 1;
-
-let lastMessagesArray = [];
-let starInterval = null;
-let refs = {};
 
 /* ---------- Helpers ---------- */
 const generateGuestName = () => `GUEST ${Math.floor(1000 + Math.random() * 9000)}`;
