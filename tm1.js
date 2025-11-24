@@ -716,13 +716,14 @@ if (window.CURRENT_ROUND_ID && sessionTaps > 0) {
   if (!bidCheck.empty) {
     // ONLY write to bid leaderboard if they paid & joined
     await addDoc(collection(db, "taps"), {
-      uid: currentUser.uid,
-      username: currentUser.username || currentUser.displayName || "Warrior",
-      count: sessionTaps,
-      roundId: window.CURRENT_ROUND_ID,
-      inBid: true,
-      timestamp: serverTimestamp()
-    });
+  uid: currentUser.uid,
+  username: currentUser.chatId,        // ← already correct
+  displayName: currentUser.chatId,     // ← ADD THIS LINE (the golden fix)
+  count: count,
+  roundId: window.CURRENT_ROUND_ID,
+  inBid: true,
+  timestamp: serverTimestamp()
+});
   }
   // else: silently ignore — they tapped, but not in bid → only general leaderboard counts
 }
