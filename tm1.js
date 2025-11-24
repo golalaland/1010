@@ -1659,16 +1659,15 @@ document.getElementById('finalConfirmBtn')?.addEventListener('click', async () =
       await showNiceAlert("Not enough stars!\nYou need " + CONFIG.BID_COST + " STRZ to join.");
       return;
     }
-
-    // SUCCESS: OFFICIALLY JOIN THE BID
-    await addDoc(collection(db, "bids"), {
-      uid: currentUser.uid,
-      username: currentUser.username || currentUser.displayName || "Warrior",
-      roundId: window.CURRENT_ROUND_ID,
-      status: "active",
-      joinedAt: serverTimestamp()
-    });
-
+// SUCCESS: OFFICIALLY JOIN THE BID
+await addDoc(collection(db, "bids"), {
+  uid: currentUser.uid,
+  username: currentUser.chatId,           // ← CORRECT (this is your real name)
+  displayName: currentUser.chatId,        // ← ADD THIS TOO (future-proof)
+  roundId: window.CURRENT_ROUND_ID,
+  status: "active",
+  joinedAt: serverTimestamp()
+});
     // SUCCESS FLOW — EVERYTHING WORKS
     modal.style.display = 'none';
 
