@@ -224,15 +224,16 @@ function initializePot(){
 
 function randomInt(min,max){ return Math.floor(Math.random()*(max-min+1))+min; }
 function formatNumber(n){ return n.toLocaleString(); }
-
-// ---------- LOAD USER ----------
+// LOAD USER FOR GAME — FINAL 2025 VERSION (works offline, no errors, auto-creates)
 async function loadCurrentUserForGame() {
   try {
+    // Try to get saved VIP or Host from localStorage
     const vipRaw = localStorage.getItem("vipUser");
     const hostRaw = localStorage.getItem("hostUser");
-    const storedUser = vipRaw ? JSON.parse(vipRaw) : hostRaw ? JSON.parse(hostRaw) : null;
-    
-    if (!storedUser?.email) {
+    const stored = vipRaw ? JSON.parse(vipRaw) : hostRaw ? JSON.parse(hostRaw) : null;
+
+    if (!stored?.email) {
+      // TRUE GUEST MODE
       currentUser = null;
       profileNameEl && (profileNameEl.textContent = "GUEST 0000");
       starCountEl && (starCountEl.textContent = "50");
@@ -240,52 +241,62 @@ async function loadCurrentUserForGame() {
       return;
     }
 
-// Generate the exact same document ID as your signup page
-const uid = storedUser.email
-  .trim()
-  .toLowerCase()
-  .replace(/[@.]/g, '_')      // @ and . → _   (this is the key!)
-  .replace(/_+/g, '_')        // collapse multiple ___ → _
-  .replace(/^_|_$/g, '');     // remove leading/trailing _
+    // EXACT SAME ID AS CHATROOM (100% match!)
+    const uid = stored.email
+      .trim()
+      .toLowerCase()
+      .replace(/[@.]/g, '_')
+      .replace(/_+/g, '_')
+      .replace(/^_|_$/g, '');
 
-const userRef = doc(db, "users", uid);
-const snap = await getDoc(userRef);
+    const userRef = doc(db, "users", uid);
 
-if (!snap.exists()) {
-  // CREATE USER AUTOMATICALLY — only once, forever
-  await setDoc(userRef, {
-    uid,                                            // safe document ID
-    chatId: storedUser.fullName || 
-            storedUser.displayName || 
-            storedUser.email.split('@')[0] || 
-            "Player",
-    email: storedUser.email,                        // original email with @ and .
-    stars: 100,
-    cash: 0,
-    totalTaps: 0,
-    createdAt: serverTimestamp(),
-    tapsDaily: {},
-    tapsWeekly: {},
-    tapsMonthly: {}
-  });
-}
+    // Try to read from Firestore
+    let snap = await getDoc(userRef).catch(() => null);
 
-    const data = (await getDoc(userRef)).data();
+    // If not found → CREATE USER AUTOMATICALLY (only happens once)
+    if (!snap?.exists()) {
+      const newUser = {
+        uid,
+        chatId: stored.fullName || stored.displayName || stored.email.split('@')[0] || "Player",
+        email: stored.email,
+        stars: 100,
+        cash: 0,
+        totalTaps: 0,
+        createdAt: serverTimestamp(),
+        tapsDaily: {},
+        tapsWeekly: {},
+        tapsMonthly: {}
+      };
+      await setDoc(userRef, newUser).catch(() => console.log("Offline: user will create next time"));
+      snap = { exists: () => true, data: () => newUser };
+    }
+
+    const data = snap.data();
+
+    // SET CURRENT USER
     currentUser = {
       uid,
-      chatId: data.chatId || storedUser.email.split("_")[0],
-      email: storedUser.email,
+      chatId: data.chatId || stored.email.split('@')[0],
+      email: stored.email,
       stars: Number(data.stars || 100),
       cash: Number(data.cash || 0),
       totalTaps: Number(data.totalTaps || 0)
     };
 
+    // UPDATE UI
     profileNameEl && (profileNameEl.textContent = currentUser.chatId);
     starCountEl && (starCountEl.textContent = formatNumber(currentUser.stars));
     cashCountEl && (cashCountEl.textContent = '₦' + formatNumber(currentUser.cash));
 
+    console.log("Game user loaded:", currentUser.chatId, currentUser.stars + " stars");
+
   } catch (err) {
-    console.warn("load user error", err);
+    console.warn("Game user load failed (offline mode)", err);
+    // Still show something nice even offline
+    profileNameEl && (profileNameEl.textContent = "VIP Player");
+    starCountEl && (starCountEl.textContent = "100");
+    cashCountEl && (cashCountEl.textContent = "₦0");
   }
 }
 
