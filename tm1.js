@@ -1728,9 +1728,7 @@ function startDailyBidEngine() {
 
     unsubStats = onSnapshot(bidsQuery, (snap) => {
       const count = snap.size;
-      const prize = MAX_PRIZE_POOL
-        ? Math.min(BASE_PRIZE_POOL + (count * POOL_INCREASE_PER_PLAYER), MAX_PRIZE_POOL)
-        : BASE_PRIZE_POOL + (count * POOL_INCREASE_PER_PLAYER);
+   const prize = calculatePrizePool(count);  // ← THIS ONE LINE FIXES EVERYTHING
 
       playersEl.textContent = count;
       prizeEl.textContent = "₦" + prize.toLocaleString();
