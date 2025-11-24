@@ -3859,13 +3859,12 @@ function playFullVideo(video) {
   modal.onclick = () => modal.remove();
   document.body.appendChild(modal);
 }
-// Replace host settings with logout functionality
+// Logout button handler
 document.getElementById("hostLogoutBtn")?.addEventListener("click", async e => {
   e.preventDefault();
   e.stopPropagation();
-
   const btn = e.target;
-  btn.disabled = true; // prevent double-clicks
+  btn.disabled = true;
 
   try {
     await signOut(auth);                     // Firebase logout
@@ -3875,7 +3874,7 @@ document.getElementById("hostLogoutBtn")?.addEventListener("click", async e => {
 
     showStarPopup("You have been logged out");
 
-    setTimeout(() => location.reload(), 1200); // reload page after logout
+    setTimeout(() => location.reload(), 1200);
   } catch (err) {
     console.error("Logout failed:", err);
     btn.disabled = false;
