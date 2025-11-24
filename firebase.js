@@ -1,5 +1,3 @@
-// firebase.js — browser ready
-
 // ---------- FIREBASE IMPORTS ----------
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
 import { getAuth, onAuthStateChanged, setPersistence, browserLocalPersistence } 
@@ -8,12 +6,12 @@ import {
   getFirestore,
   doc,
   getDoc,
+  getDocs,
   runTransaction,
   collection,
   addDoc,
   serverTimestamp,
   updateDoc,
-  getDocs,
   setDoc,
   query,
   where,
@@ -21,7 +19,7 @@ import {
   onSnapshot
 } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
-// ---------- FIREBASE CONFIG (replace with your keys) ----------
+// ---------- FIREBASE CONFIG ----------
 const firebaseConfig = {
   apiKey: "AIzaSyD_GjkTox5tum9o4AupO0LeWzjTocJg8RI",
   authDomain: "dettyverse.firebaseapp.com",
@@ -37,14 +35,14 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-// ---------- FORCE LOCAL AUTH PERSISTENCE ----------
+// ---------- FORCE LOCAL PERSISTENCE ----------
 setPersistence(auth, browserLocalPersistence)
   .then(() => console.log("Firebase auth persistence set to LOCAL ✅"))
-  .catch(err => console.error("Firebase persistence error:", err));
+  .catch((err) => console.error("Error setting Firebase persistence:", err));
 
-// ---------- EXPORT ----------
+// ---------- EXPORT EVERYTHING ----------
 export { 
   app, auth, db,
-  doc, getDoc, runTransaction, collection, addDoc, serverTimestamp, updateDoc, getDocs, setDoc,
+  doc, getDoc, getDocs, runTransaction, collection, addDoc, serverTimestamp, updateDoc, setDoc,
   query, where, orderBy, onSnapshot, onAuthStateChanged
 };
