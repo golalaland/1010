@@ -374,8 +374,8 @@ onAuthStateChanged(auth, async (user) => {
   console.log("Firebase Auth restored user:", user.email);
 
   // THIS IS YOUR CURRENT SYSTEM — KEEP IT
-  const uid = user.email.replace(/\./g, '_').replace(/@/g, '_').toUpperCase();
-  // → example@gmail.com becomes EXAMPLE_GMAIL_COM
+ const uid = user.email.replace(/\./g, '_').replace(/@/g, '_');
+// → xoxoi@gmail.com → xoxoi_gmail_com  (EXACTLY like your Firestore docs)
 
   const userRef = doc(db, "users", uid);
 
