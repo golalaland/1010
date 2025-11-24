@@ -1083,62 +1083,7 @@ document.querySelectorAll(
     });
 });
 
-// FINAL: WORKING LOGIN BUTTON — THIS MAKES SIGN IN ACTUALLY WORK
-document.getElementById("whitelistLoginBtn")?.addEventListener("click", async () => {
-  const email = document.getElementById("emailInput")?.value.trim().toLowerCase();
-  const password = document.getElementById("passwordInput")?.value;
 
-  if (!email || !password) {
-    showStarPopup("Enter email and password");
-    return;
-  }
-
-  try {
-    // Sign in with Firebase Auth
-    const userCredential = await signInWithEmailAndPassword(auth, email, password);
-    const uid = userCredential.user.uid;
-
-    // Show logging in message immediately
-    showStarPopup("Logging in...");
-
-    // Check whitelist safely
-    getDoc(doc(firestore, "whitelist", uid))
-      .then((docSnap) => {
-        if (!docSnap.exists()) {
-          // Not whitelisted, sign out immediately
-          signOut(auth);
-          showStarPopup("You are not whitelisted");
-          return;
-        }
-
-        // Whitelisted, continue
-        showStarPopup("Welcome, whitelisted user!");
-        // You can redirect to chatroom or trigger your onAuthStateChanged logic here
-      })
-      .catch((err) => {
-        console.error("Whitelist check failed:", err);
-        signOut(auth);
-        showStarPopup("Could not verify whitelist. Try again.");
-      });
-
-  } catch (err) {
-    console.error("Login failed:", err.code);
-    if (err.code === "auth/user-not-found" || err.code === "auth/wrong-password") {
-      showStarPopup("Wrong email or password");
-    } else if (err.code === "auth/too-many-requests") {
-      showStarPopup("Too many tries. Wait a minute.");
-    } else {
-      showStarPopup("Login failed. Check console.");
-    }
-  }
-});
-
-// LOGOUT
-window.logoutVIP = async () => {
-  await signOut(auth);
-  localStorage.removeItem("lastVipEmail");
-  location.reload();
-};
 
 
 /* FINAL WORKING LOGOUT — WORKS NO MATTER WHAT YOUR BUTTON IS */
@@ -1400,30 +1345,70 @@ window.addEventListener("DOMContentLoaded", () => {
   /* ----------------------------
      🔐 VIP Login Setup
   ----------------------------- */
-  const emailInput = document.getElementById("emailInput");
-  const phoneInput = document.getElementById("phoneInput");
-  const loginBtn = document.getElementById("whitelistLoginBtn");
+  // Grab inputs and button
+const emailInput = document.getElementById("emailInput");
+const phoneInput = document.getElementById("phoneInput");
+const loginBtn = document.getElementById("whitelistLoginBtn");
 
-  async function handleLogin() {
-    const email = (emailInput?.value || "").trim().toLowerCase();
-    const phone = (phoneInput?.value || "").trim();
+// Sleep utility
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
 
-    if (!email || !phone) {
-      return showStarPopup("Enter your email and phone to get access.");
-    }
+// Full login handler
+async function handleLogin() {
+  const email = (emailInput?.value || "").trim().toLowerCase();
+  const phone = (phoneInput?.value || "").trim();
 
-    showLoadingBar(1000);
-    await sleep(50);
-
-    const success = await loginWhitelist(email, phone);
-    if (!success) return;
-
-    await sleep(400);
-    updateRedeemLink();
-    updateTipLink();
+  if (!email || !phone) {
+    return showStarPopup("Enter your email and phone to get access.");
   }
 
-  loginBtn?.addEventListener("click", handleLogin);
+  showLoadingBar(1000);
+  await sleep(50);
+
+  try {
+    // 1. Authenticate user with Firebase Auth
+    const userCredential = await signInWithEmailAndPassword(auth, email, phone);
+    const uid = userCredential.user.uid;
+
+    // 2. Check whitelist in Firestore
+    const whitelistDoc = await getDoc(doc(firestore, "whitelist", uid));
+    if (!whitelistDoc.exists()) {
+      // Not whitelisted → log out immediately
+      await signOut(auth);
+      return showStarPopup("You are not whitelisted");
+    }
+
+    // 3. User is whitelisted → proceed
+    showStarPopup("Welcome, whitelisted user!");
+    await sleep(400);
+
+    // 4. Trigger post-login updates
+    updateRedeemLink();
+    updateTipLink();
+
+  } catch (err) {
+    console.error("Login failed:", err.code);
+    if (err.code === "auth/user-not-found" || err.code === "auth/wrong-password") {
+      showStarPopup("Wrong email or phone");
+    } else if (err.code === "auth/too-many-requests") {
+      showStarPopup("Too many tries. Wait a minute.");
+    } else {
+      showStarPopup("Login failed. Check console.");
+    }
+  }
+}
+
+// Attach single listener
+loginBtn?.addEventListener("click", handleLogin);
+
+// LOGOUT
+window.logoutVIP = async () => {
+  await signOut(auth);
+  localStorage.removeItem("lastVipEmail");
+  location.reload();
+};
 
   /* ----------------------------
      🔁 Auto Login Session
