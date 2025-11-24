@@ -5,34 +5,42 @@ import {
 } from './firebase.js';
 
 
-// 2️⃣ Restore your VIP user from localStorage
+/* ----------------------------
+   🔁 Auto Login Session
+----------------------------- */
 async function autoLogin() {
   const vipUser = JSON.parse(localStorage.getItem("vipUser"));
-  if (vipUser?.email && vipUser?.phone) {
+  
+  if (!vipUser?.email || !vipUser?.phone) return; // nothing to auto-login
+
+  try {
+    // Show loading UI if needed
     showLoadingBar(1000);
     await sleep(60);
+
+    // Try Firebase email login (whitelist check)
     const success = await loginWhitelist(vipUser.email, vipUser.phone);
     if (!success) return;
+
+    // Small delay for UI updates
     await sleep(400);
+
+    // Update any game links or UI
     updateRedeemLink();
     updateTipLink();
+
+    // Re-persist user in localStorage (refresh token may change)
+    localStorage.setItem("vipUser", JSON.stringify(vipUser));
+
+    console.log("✅ Auto-login successful for:", vipUser.email);
+
+  } catch (err) {
+    console.error("Auto-login failed:", err);
   }
 }
 
-// 3️⃣ Call autoLogin on page load
-if (typeof window !== 'undefined') {
-  autoLogin();
-}
-
-// 4️⃣ Firebase auth listener to ensure user session persists across reloads
-onAuthStateChanged(auth, user => {
-  if (user) {
-    console.log("Firebase user is logged in:", user.email);
-    // safe to fetch Firestore game data, taps, leaderboard, etc.
-  } else {
-    console.log("No Firebase user logged in");
-  }
-});
+// Call on page load
+window.addEventListener("load", autoLogin);
 
   
 // ---------- DOM ----------
