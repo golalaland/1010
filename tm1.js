@@ -1789,11 +1789,23 @@ function startDailyBidEngine() {
 
       unsubLeaderboard = onSnapshot(tapsQuery, (snap) => {
         const scores = {};
-        snap.docs.forEach(doc => {
-          const d = doc.data();
-          if (!scores[d.uid]) scores[d.uid] = { name: d.username || "Player", taps: 0 };
-          scores[d.uid].taps += d.count || 1;
-        });
+snap.docs.forEach(doc => {
+  const d = doc.data();
+
+  // THIS IS THE REAL FIX — picks the correct name in the right order
+  const realName = d.displayName ||     // future-proof (we'll start saving this)
+                   d.username ||        // current field you're saving
+                   d.chatId ||          // just in case
+                   "Warrior";           // absolute final fallback
+
+  if (!scores[d.uid]) {
+    scores[d.uid] = { 
+      name: realName, 
+      taps: 0 
+    };
+  }
+  scores[d.uid].taps += d.count || 1;
+});
 
         const ranked = Object.values(scores)
           .sort((a, b) => b.taps - a.taps)
