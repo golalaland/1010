@@ -3859,3 +3859,28 @@ function playFullVideo(video) {
   modal.onclick = () => modal.remove();
   document.body.appendChild(modal);
 }
+// Minimal Logout Handler
+document.addEventListener("click", async e => {
+  if (!e.target.closest("[data-logout]")) return; // detects any element with data-logout
+
+  e.preventDefault();
+  e.stopPropagation();
+
+  // Optional: disable button to prevent double-click
+  e.target.disabled = true;
+
+  try {
+    await signOut(auth);                     // Firebase logout
+    localStorage.removeItem("lastVipEmail"); // stop auto-login
+    sessionStorage.setItem("justLoggedOut", "1");
+    currentUser = null;
+
+    showStarPopup("You have been logged out");
+
+    setTimeout(() => location.reload(), 1200); // or redirect to login page
+  } catch (err) {
+    console.error("Logout failed:", err);
+    e.target.disabled = false; // re-enable if it fails
+    showStarPopup("Logout failed. Check console.");
+  }
+});
