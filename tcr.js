@@ -1345,11 +1345,13 @@ window.addEventListener("DOMContentLoaded", () => {
   /* ----------------------------
      🔐 VIP Login Setup
   ----------------------------- */
- const emailInput = document.getElementById("emailInput");
+// Grab inputs and button
+const emailInput = document.getElementById("emailInput");
 const phoneInput = document.getElementById("phoneInput");
 const loginBtn = document.getElementById("whitelistLoginBtn");
 
-function sleep(ms) {
+// Sleep utility (renamed to avoid conflicts)
+function sleepMs(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
@@ -1364,6 +1366,7 @@ async function checkWhitelist(uid) {
   }
 }
 
+// Full login handler
 async function handleLogin() {
   const email = (emailInput?.value || "").trim().toLowerCase();
   const phone = (phoneInput?.value || "").trim();
@@ -1373,7 +1376,7 @@ async function handleLogin() {
   }
 
   showLoadingBar(1000);
-  await sleep(50);
+  await sleepMs(50);
 
   let userCredential;
   try {
@@ -1393,7 +1396,7 @@ async function handleLogin() {
   // Show logging in popup
   showStarPopup("Logging in...");
 
-  // Check whitelist asynchronously without hanging
+  // Check whitelist asynchronously
   const uid = userCredential.user.uid;
   const isWhitelisted = await checkWhitelist(uid);
 
@@ -1404,13 +1407,13 @@ async function handleLogin() {
 
   // User is whitelisted → proceed
   showStarPopup("Welcome, whitelisted user!");
-  await sleep(400);
+  await sleepMs(400);
 
   updateRedeemLink();
   updateTipLink();
 }
 
-// Attach listener once
+// Attach single listener
 loginBtn?.addEventListener("click", handleLogin);
 
 // LOGOUT
@@ -1419,6 +1422,7 @@ window.logoutVIP = async () => {
   localStorage.removeItem("lastVipEmail");
   location.reload();
 };
+
 
   /* ----------------------------
      🔁 Auto Login Session
