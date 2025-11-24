@@ -1072,9 +1072,10 @@ async function promptForChatID(userRef, userData) {
 ================================= */
 
 /* BLOCK GOOGLE LOGIN — looks normal, clickable, shows message */
-document.querySelectorAll("#googleLoginBtn, .google-btn, [data-google-login]")
-  .forEach(btn => {
-    if (!btn) return;
+document.querySelectorAll(
+  "#googleLoginBtn, .google-btn, #googleSignInBtn, #googlesigninbtn, [data-google-login]"
+).forEach(btn => {
+  if (!btn) return;
 
     // Make it look 100% normal
     btn.style.cssText = "";
