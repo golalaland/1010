@@ -1084,8 +1084,6 @@ document.querySelectorAll(
 });
 
 // FINAL: WORKING LOGIN BUTTON — THIS MAKES SIGN IN ACTUALLY WORK
-import { doc, getDoc } from "firebase/firestore";
-
 document.getElementById("whitelistLoginBtn")?.addEventListener("click", async () => {
   const email = document.getElementById("emailInput")?.value.trim().toLowerCase();
   const password = document.getElementById("passwordInput")?.value;
