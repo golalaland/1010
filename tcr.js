@@ -1345,17 +1345,25 @@ window.addEventListener("DOMContentLoaded", () => {
   /* ----------------------------
      🔐 VIP Login Setup
   ----------------------------- */
-  // Grab inputs and button
-const emailInput = document.getElementById("emailInput");
+ const emailInput = document.getElementById("emailInput");
 const phoneInput = document.getElementById("phoneInput");
 const loginBtn = document.getElementById("whitelistLoginBtn");
 
-// Sleep utility
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-// Full login handler
+// Helper: check whitelist safely
+async function checkWhitelist(uid) {
+  try {
+    const docSnap = await getDoc(doc(firestore, "whitelist", uid));
+    return docSnap.exists();
+  } catch (err) {
+    console.error("Whitelist check failed:", err);
+    return false; // fail-safe: treat as not whitelisted
+  }
+}
+
 async function handleLogin() {
   const email = (emailInput?.value || "").trim().toLowerCase();
   const phone = (phoneInput?.value || "").trim();
@@ -1367,40 +1375,42 @@ async function handleLogin() {
   showLoadingBar(1000);
   await sleep(50);
 
+  let userCredential;
   try {
-    // 1. Authenticate user with Firebase Auth
-    const userCredential = await signInWithEmailAndPassword(auth, email, phone);
-    const uid = userCredential.user.uid;
-
-    // 2. Check whitelist in Firestore
-    const whitelistDoc = await getDoc(doc(firestore, "whitelist", uid));
-    if (!whitelistDoc.exists()) {
-      // Not whitelisted → log out immediately
-      await signOut(auth);
-      return showStarPopup("You are not whitelisted");
-    }
-
-    // 3. User is whitelisted → proceed
-    showStarPopup("Welcome, whitelisted user!");
-    await sleep(400);
-
-    // 4. Trigger post-login updates
-    updateRedeemLink();
-    updateTipLink();
-
+    // Authenticate with Firebase Auth
+    userCredential = await signInWithEmailAndPassword(auth, email, phone);
   } catch (err) {
     console.error("Login failed:", err.code);
     if (err.code === "auth/user-not-found" || err.code === "auth/wrong-password") {
-      showStarPopup("Wrong email or phone");
+      return showStarPopup("Wrong email or phone");
     } else if (err.code === "auth/too-many-requests") {
-      showStarPopup("Too many tries. Wait a minute.");
+      return showStarPopup("Too many tries. Wait a minute.");
     } else {
-      showStarPopup("Login failed. Check console.");
+      return showStarPopup("Login failed. Check console.");
     }
   }
+
+  // Show logging in popup
+  showStarPopup("Logging in...");
+
+  // Check whitelist asynchronously without hanging
+  const uid = userCredential.user.uid;
+  const isWhitelisted = await checkWhitelist(uid);
+
+  if (!isWhitelisted) {
+    await signOut(auth);
+    return showStarPopup("You are not whitelisted");
+  }
+
+  // User is whitelisted → proceed
+  showStarPopup("Welcome, whitelisted user!");
+  await sleep(400);
+
+  updateRedeemLink();
+  updateTipLink();
 }
 
-// Attach single listener
+// Attach listener once
 loginBtn?.addEventListener("click", handleLogin);
 
 // LOGOUT
