@@ -1345,25 +1345,15 @@ window.addEventListener("DOMContentLoaded", () => {
   /* ----------------------------
      🔐 VIP Login Setup
   ----------------------------- */
-function waitForElement(selector, callback) {
-  const el = document.querySelector(selector);
-  if (el) return callback(el);
-
-  const observer = new MutationObserver(() => {
-    const el = document.querySelector(selector);
-    if (el) {
-      observer.disconnect();
-      callback(el);
-    }
-  });
-
-  observer.observe(document.body, { childList: true, subtree: true });
-}
-
-// Usage for whitelist login button
-waitForElement("#whitelistLoginBtn", (loginBtn) => {
+document.addEventListener("DOMContentLoaded", () => {
+  const loginBtn = document.getElementById("whitelistLoginBtn");
   const emailInput = document.getElementById("emailInput");
   const phoneInput = document.getElementById("phoneInput");
+
+  if (!loginBtn || !emailInput || !phoneInput) {
+    console.warn("Login button or inputs not found.");
+    return;
+  }
 
   function sleepMs(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
@@ -1380,8 +1370,9 @@ waitForElement("#whitelistLoginBtn", (loginBtn) => {
   }
 
   async function handleLogin() {
-    const email = (emailInput?.value || "").trim().toLowerCase();
-    const phone = (phoneInput?.value || "").trim();
+    const email = (emailInput.value || "").trim().toLowerCase();
+    const phone = (phoneInput.value || "").trim();
+
     if (!email || !phone) return showStarPopup("Enter your email and phone to get access.");
 
     showLoadingBar(1000);
@@ -1402,6 +1393,7 @@ waitForElement("#whitelistLoginBtn", (loginBtn) => {
     }
 
     showStarPopup("Logging in...");
+
     const uid = userCredential.user.uid;
     const isWhitelisted = await checkWhitelist(uid);
 
@@ -1418,6 +1410,7 @@ waitForElement("#whitelistLoginBtn", (loginBtn) => {
 
   loginBtn.addEventListener("click", handleLogin);
 });
+
 
 
   /* ----------------------------
