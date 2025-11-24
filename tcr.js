@@ -1345,19 +1345,30 @@ window.addEventListener("DOMContentLoaded", () => {
   /* ----------------------------
      🔐 VIP Login Setup
   ----------------------------- */
-document.addEventListener("DOMContentLoaded", () => {
+function waitForElement(selector, callback) {
+  const el = document.querySelector(selector);
+  if (el) return callback(el);
+
+  const observer = new MutationObserver(() => {
+    const el = document.querySelector(selector);
+    if (el) {
+      observer.disconnect();
+      callback(el);
+    }
+  });
+
+  observer.observe(document.body, { childList: true, subtree: true });
+}
+
+// Usage for whitelist login button
+waitForElement("#whitelistLoginBtn", (loginBtn) => {
   const emailInput = document.getElementById("emailInput");
   const phoneInput = document.getElementById("phoneInput");
-  const loginBtn = document.getElementById("whitelistLoginBtn");
 
-  if (!loginBtn) return; // safety check
-
-  // Sleep utility
   function sleepMs(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
   }
 
-  // Helper: check whitelist safely
   async function checkWhitelist(uid) {
     try {
       const docSnap = await getDoc(doc(firestore, "whitelist", uid));
@@ -1368,14 +1379,10 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // Full login handler
   async function handleLogin() {
     const email = (emailInput?.value || "").trim().toLowerCase();
     const phone = (phoneInput?.value || "").trim();
-
-    if (!email || !phone) {
-      return showStarPopup("Enter your email and phone to get access.");
-    }
+    if (!email || !phone) return showStarPopup("Enter your email and phone to get access.");
 
     showLoadingBar(1000);
     await sleepMs(50);
@@ -1395,7 +1402,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     showStarPopup("Logging in...");
-
     const uid = userCredential.user.uid;
     const isWhitelisted = await checkWhitelist(uid);
 
@@ -1406,22 +1412,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
     showStarPopup("Welcome, whitelisted user!");
     await sleepMs(400);
-
     updateRedeemLink();
     updateTipLink();
   }
 
-  // Attach listener
   loginBtn.addEventListener("click", handleLogin);
-
-  // LOGOUT
-  window.logoutVIP = async () => {
-    await signOut(auth);
-    localStorage.removeItem("lastVipEmail");
-    location.reload();
-  };
 });
-
 
 
   /* ----------------------------
