@@ -1382,7 +1382,7 @@ window.addEventListener("DOMContentLoaded", () => {
 
   async function handleLogin() {
     const email = (emailInput?.value || "").trim().toLowerCase();
-    const phone = (passwordInput?.value || "").trim();
+    const password = (passwordInput?.value || "").trim();
 
     if (!email || !password) {
       return showStarPopup("Enter your email and phone to get access.");
