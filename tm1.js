@@ -965,113 +965,159 @@ closeLeaderboard?.addEventListener("click", () => stopSlider());
 /* -------------------------------------------
    FETCH LEADERBOARD
 -------------------------------------------- */
-async function fetchLeaderboard(period = "daily", top = 10) {
+async function fetchLeaderboard(period = "daily", top = 33) {
   leaderboardList.innerHTML = "<li>Loading...</li>";
 
   const key = getLeaderboardKey(period);
   const usersCol = collection(db, "users");
 
   try {
-    const snap = await getDocs(usersCol);
-    const scores = [];
+    // 1. Fetch only the top 33 users for this period
+    const leaderboardQuery = query(
+      usersCol,
+      where(period === "daily" ? "tapsDaily" : period === "weekly" ? "tapsWeekly" : "tapsMonthly", "!=", null),
+      orderBy(
+        period === "daily" ? `tapsDaily.${key}` :
+        period === "weekly" ? `tapsWeekly.${key}` :
+        `tapsMonthly.${key}`,
+        "desc"
+      ),
+      limit(top)  // Only 33 documents!
+    );
 
-    snap.forEach(docSnap => {
+    const leaderboardSnap = await getDocs(leaderboardQuery);
+    const topScores = [];
+
+    leaderboardSnap.forEach(docSnap => {
       const data = docSnap.data();
-
-      let tapsCount = 0;
-      if (period === "daily") tapsCount = data.tapsDaily?.[key] || 0;
-      if (period === "weekly") tapsCount = data.tapsWeekly?.[key] || 0;
-      if (period === "monthly") tapsCount = data.tapsMonthly?.[key] || 0;
+      const tapsCount = 
+        period === "daily" ? data.tapsDaily?.[key] || 0 :
+        period === "weekly" ? data.tapsWeekly?.[key] || 0 :
+        data.tapsMonthly?.[key] || 0;
 
       if (tapsCount > 0) {
-        scores.push({
+        topScores.push({
           uid: docSnap.id,
           chatId: data.chatId || docSnap.id.slice(0, 6),
           taps: tapsCount,
+          gender: data.gender,
         });
       }
     });
 
-      scores.sort((a, b) => b.taps - a.taps);
-    const topScores = scores.slice(0, top);
-    
-
-     // === YOUR TAPS TODAY – FINAL FIXED (2nd 1st 3rd joined perfectly) ===
+    // 2. Separately fetch current user's data (only if logged in)
     let myDailyTaps = 0;
     let myRank = null;
+    let myScoreObj = null;
 
     if (currentUser) {
-      const myDoc = snap.docs.find(d => d.id === currentUser.uid);
-      const myData = myDoc?.data();
-      if (period === "daily")   myDailyTaps = myData?.tapsDaily?.[key]   || 0;
-      if (period === "weekly")  myDailyTaps = myData?.tapsWeekly?.[key]  || 0;
-      if (period === "monthly") myDailyTaps = myData?.tapsMonthly?.[key] || 0;
+      const myDocRef = doc(db, "users", currentUser.uid);
+      const myDocSnap = await getDoc(myDocRef);  // Just 1 read!
 
-      const myEntry = scores.find(s => s.uid === currentUser.uid);
-      if (myEntry) myRank = scores.indexOf(myEntry) + 1;
+      if (myDocSnap.exists()) {
+        const myData = myDocSnap.data();
+        myDailyTaps = 
+          period === "daily" ? myData.tapsDaily?.[key] || 0 :
+          period === "weekly" ? myData.tapsWeekly?.[key] || 0 :
+          myData.tapsMonthly?.[key] || 0;
+
+        myScoreObj = {
+          uid: currentUser.uid,
+          chatId: myData.chatId || currentUser.uid.slice(0, 6),
+          taps: myDailyTaps,
+          gender: myData.gender,
+        };
+
+        // Check if user is in top 33
+        const inTop = topScores.find(s => s.uid === currentUser.uid);
+        if (inTop) {
+          myRank = topScores.indexOf(inTop) + 1;
+        } else if (myDailyTaps > 0) {
+          // Estimate rank: how many people have more taps than me?
+          const betterQuery = query(
+            usersCol,
+            where(
+              period === "daily" ? `tapsDaily.${key}` :
+              period === "weekly" ? `tapsWeekly.${key}` :
+              `tapsMonthly.${key}`,
+              ">", myDailyTaps
+            )
+          );
+          const betterSnap = await getCountFromServer(betterQuery);
+          myRank = betterSnap.data().count + 1;
+        }
+      }
     }
 
+    // Update my taps & rank display
     const tapsEl = document.getElementById("myDailyTapsValue");
     const rankFull = document.getElementById("myRankFull");
-
     if (tapsEl) tapsEl.textContent = myDailyTaps.toLocaleString();
-
-    if (myRank && myRank <= 10 && rankFull) {
+    if (myRank && rankFull) {
       const suffix = myRank === 1 ? "st" : myRank === 2 ? "nd" : myRank === 3 ? "rd" : "th";
-      rankFull.textContent = myRank + suffix;  // 2nd, 1st, 3rd, 4th — perfect!
+      rankFull.textContent = myRank + suffix;
     } else if (rankFull) {
-      rankFull.textContent = "";
+      rankFull.textContent = myRank ? `${myRank}th` : "-";
     }
 
-    if (topScores.length === 0) {
+    // Display top 10 (or top 33 if you want)
+    const displayCount = 10;
+    const displayScores = topScores.slice(0, displayCount);
+
+    if (displayScores.length === 0) {
       leaderboardList.innerHTML = "<li style='text-align:center;padding:20px 0;font-size:13px;color:#888;'>No taps yet — be the first!</li>";
       return;
     }
-leaderboardList.innerHTML = topScores
-  .map((u, i) => {
-    const isCurrent = currentUser && u.uid === currentUser.uid;
 
-  // ---- Avatar selection (random if no gender) ----
-    const maleAvatar = "https://cdn.shopify.com/s/files/1/0962/6648/6067/files/9720029.jpg?v=1763635357";
-    const femaleAvatar = "https://cdn.shopify.com/s/files/1/0962/6648/6067/files/10491827.jpg?v=1763635326";
+    leaderboardList.innerHTML = displayScores
+      .map((u, i) => {
+        const isCurrent = currentUser && u.uid === currentUser.uid;
+        const maleAvatar = "https://cdn.shopify.com/s/files/1/0962/6648/6067/files/9720029.jpg?v=1763635357";
+        const femaleAvatar = "https://cdn.shopify.com/s/files/1/0962/6648/6067/files/10491827.jpg?v=1763635326";
+        const avatar = u.gender === "female" ? femaleAvatar :
+                       u.gender === "male" ? maleAvatar :
+                       Math.random() < 0.5 ? maleAvatar : femaleAvatar;
 
-    const avatar = u.gender === "female"
-      ? femaleAvatar
-      : u.gender === "male"
-        ? maleAvatar
-        : Math.random() < 0.5 ? maleAvatar : femaleAvatar;
+        const name = u.chatId || "Anon";
+        const formattedName = name
+          .split(" ")
+          .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+          .join(" ");
 
-// ---- Name formatting ----
-const name = u.chatId || "Anon";
-const formattedName = name
-  .split(" ")
-  .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-  .join(" ");
+        let style = "";
+        if (i === 0) style = "color:#FFD700;font-weight:700;";
+        else if (i === 1) style = "color:#C0C0C0;font-weight:700;";
+        else if (i === 2) style = "color:#CD7F32;font-weight:700;";
+        else if (isCurrent) style = "background:#333;padding:4px;border-radius:4px;";
 
-    // ---- Styles for ranks ----
-    let style = "";
-    if (i === 0) style = "color:#FFD700;font-weight:700;";
-    else if (i === 1) style = "color:#C0C0C0;font-weight:700;";
-    else if (i === 2) style = "color:#CD7F32;font-weight:700;";
-    else if (isCurrent) style = "background:#333;padding:4px;border-radius:4px;";
+        return `
+          <li class="lb-row" style="${style}">
+            <img class="lb-avatar" src="${avatar}" alt="avatar">
+            <div class="lb-info">
+              <span class="lb-name">${i + 1}. ${formattedName}</span>
+              <span class="lb-score">${u.taps.toLocaleString()} taps</span>
+            </div>
+          </li>
+        `;
+      })
+      .join("");
 
-    return `
-      <li class="lb-row" style="${style}">
-        <img class="lb-avatar" src="${avatar}" alt="avatar">
-        <div class="lb-info">
-          <span class="lb-name">${i + 1}. ${formattedName}</span>
-          <span class="lb-score">${u.taps.toLocaleString()} taps</span>
-        </div>
-      </li>
-    `;
-  })
-  .join("");
+    // Optional: Show "You're #57" below the list if outside top 10
+    if (currentUser && myRank && myRank > displayCount) {
+      const extra = document.createElement("li");
+      extra.style.textAlign = "center";
+      extra.style.padding = "12px";
+      extra.style.fontSize = "14px";
+      extra.style.color = "#aaa";
+      extra.innerHTML = `You are currently <strong>#${myRank}</strong> with ${myDailyTaps.toLocaleString()} taps`;
+      leaderboardList.appendChild(extra);
+    }
+
   } catch (err) {
     console.error("Leaderboard error:", err);
     leaderboardList.innerHTML = "<li>Error loading leaderboard</li>";
   }
 }
-
 
 /* -------------------------------------------
    TAB SWITCHER (CLEAN + FULLY WORKING)
