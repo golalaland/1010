@@ -1827,57 +1827,36 @@ let currentIndex = 0;
 /* ---------- SECURE + WORKING: Featured Hosts (2025 Final Version) ---------- */
 async function fetchFeaturedHosts() {
   try {
-    // CHANGE THIS: Use a SINGLE document instead of a collection
-    const mainDocRef = doc(db, "featuredHosts", "current");  // ← ONE document only
-    const snap = await getDoc(mainDocRef);
+    const docRef = doc(db, "featuredHosts", "current");
+    const snap = await getDoc(docRef);
 
-    if (!snap.exists()) {
-      console.warn("No featured hosts document found. Create one at featuredHosts/current");
-      hosts = [];
-      renderHostAvatars(); // clear carousel
-      return;
-    }
-
-    const data = snap.data();
-    const hostIds = data.hosts || []; // ← expect an array of user IDs (e.g. ["xoxoi_gmail_com", "strztoken_gmail_com"])
-
-    if (!hostIds.length) {
-      console.warn("No hosts in the list.");
+    if (!snap.exists() || !snap.data().hosts?.length) {
+      console.warn("No featured hosts found.");
       hosts = [];
       renderHostAvatars();
       return;
     }
 
-    // Fetch ALL user docs in parallel (super fast + secure)
-    const userPromises = hostIds.map(async (userId) => {
-      try {
-        const userRef = doc(db, "users", userId);
-        const userSnap = await getDoc(userRef);
-        if (userSnap.exists()) {
-          return { id: userId, ...userSnap.data() };
-        } else {
-          return { id: userId, fullName: "Unknown VIP", chatId: userId.split('_')[0] };
-        }
-      } catch (err) {
-        console.warn("Failed to load user:", userId);
-        return { id: userId, fullName: "Offline VIP", chatId: userId.split('_')[0] };
-      }
+    const hostIds = snap.data().hosts;
+    const hostPromises = hostIds.map(async (id) => {
+      const userSnap = await getDoc(doc(db, "users", id));
+      return userSnap.exists() ? { id, ...userSnap.data() } : null;
     });
 
-    hosts = await Promise.all(userPromises);
-    console.log("Loaded", hosts.length, "featured hosts");
+    hosts = (await Promise.all(hostPromises)).filter(Boolean);
+    console.log("Featured hosts loaded:", hosts.length);
 
     renderHostAvatars();
     loadHost(currentIndex >= hosts.length ? 0 : currentIndex);
 
   } catch (err) {
-    console.error("Featured hosts failed:", err);
+    console.warn("Featured hosts offline or not set up");
     hosts = [];
     renderHostAvatars();
   }
 }
 
-// Call it once on page load
+// Call it once
 fetchFeaturedHosts();
 
 /* ---------- Render Avatars ---------- */
