@@ -348,6 +348,14 @@ function showStarPopup(text) {
 }
 
 
+// Add this near the top of tcr.js (before loginWhitelist is used)
+function sanitizeKey(email) {
+  if (!email || typeof email !== "string") return "";
+  // lower-case, trim, replace @ and . and spaces with underscore
+  return email.trim().toLowerCase().replace(/[@.\s]/g, "_");
+}
+
+
 /* ========== FIX: UNIVERSAL ID FUNCTION (ADD THIS EXACTLY) ========== */
 const getUserId = (input) => {
   if (!input) return "";
