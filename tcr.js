@@ -380,7 +380,7 @@ onAuthStateChanged(auth, async (user) => {
   const userRef = doc(db, "users", uid);
 
   try {
-    const snap = await getDoc(userRef);
+    const snap = await (userRef);
 
     if (!snap.exists()) {
       console.error("Profile missing for:", uid);
