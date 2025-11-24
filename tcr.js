@@ -362,6 +362,7 @@ const getUserId = (input) => {
 
 
 /* ========== FINAL: PERSISTENT LOGIN — 100% NO SYNTAX ERROR ========== */
+// FINAL — WORKS WITH YOUR CURRENT DATABASE (EXAMPLE_GMAIL_COM DOC IDs)
 onAuthStateChanged(auth, async (user) => {
   if (!user) {
     console.log("No user — show login screen");
@@ -371,61 +372,69 @@ onAuthStateChanged(auth, async (user) => {
   }
 
   console.log("Firebase Auth restored user:", user.email);
-  const uid = getUserId(user.email);
+
+  // THIS IS YOUR CURRENT SYSTEM — KEEP IT
+  const uid = user.email.replace(/\./g, '_').replace(/@/g, '_').toUpperCase();
+  // → example@gmail.com becomes EXAMPLE_GMAIL_COM
+
   const userRef = doc(db, "users", uid);
-  const snap = await getDoc(userRef);
 
-  if (!snap.exists()) {
-    console.error("Profile missing for:", user.email);
-    showStarPopup("Profile not found. Contact admin.");
-    await signOut(auth);
-    return;
+  try {
+    const snap = await getDoc(userRef);
+
+    if (!snap.exists()) {
+      console.error("Profile missing for:", uid);
+      showStarPopup("Profile not found. Contact admin.");
+      await signOut(auth);
+      return;
+    }
+
+    const data = snap.data();
+
+    currentUser = {
+      uid: uid,                                      // ← sanitized ID (EXAMPLE_GMAIL_COM)
+      email: user.email,                             // ← real email (example@gmail.com)
+      chatId: data.chatId || user.email.split("@")[0],
+      fullName: data.fullName || "$VIP",
+      isVIP: !!data.isVIP,
+      isAdmin: !!data.isAdmin,
+      isHost: !!data.isHost,
+      stars: data.stars || 0,
+      cash: data.cash || 0,
+      usernameColor: data.usernameColor || "#ff69b4",
+      subscriptionActive: !!data.subscriptionActive,
+      hostLink: data.hostLink || null,
+      invitedBy: data.invitedBy || null,
+      unlockedVideos: data.unlockedVideos || []
+    };
+
+    console.log("FULL PROFILE RESTORED:", currentUser);
+
+    // ALL YOUR EXISTING FUNCTIONS — PASS THE RIGHT ID
+    if (typeof showChatUI === "function") showChatUI(currentUser);
+    if (typeof updateRedeemLink === "function") updateRedeemLink();
+    if (typeof updateTipLink === "function") updateTipLink();
+    if (typeof attachMessagesListener === "function") attachMessagesListener();
+    if (typeof startStarEarning === "function") startStarEarning(currentUser.uid);        // ← sanitized ID
+    if (typeof startNotificationsFor === "function") startNotificationsFor(currentUser.uid); // ← sanitized ID (most of your code expects this)
+
+    const colors = ["#FF1493","#FFD700","#00FFFF","#FF4500","#DA70D6","#FF69B4","#32CD32","#FFA500"];
+    const color = colors[Math.floor(Math.random() * colors.length)];
+    showStarPopup(`Welcome back, <span style="font-weight:bold;color:${color};">${currentUser.chatId.toUpperCase()}</span> !`);
+
+    localStorage.setItem("lastVipEmail", user.email);
+
+    // Sync unlocks (keep your existing call)
+    if (typeof syncUserUnlocks === "function") {
+      syncUserUnlocks().then(unlocks => {
+        console.log("User has access to", unlocks.length, "premium videos");
+      }).catch(err => console.warn("Unlock sync failed:", err));
+    }
+
+  } catch (err) {
+    console.error("Auth state change error:", err);
+    showStarPopup("Error loading profile.");
   }
-
-  const data = snap.data();
-
-  currentUser = {
-    uid: uid,
-    email: user.email,
-    chatId: data.chatId || user.email.split("@")[0],
-    fullName: data.fullName || "$VIP",
-    isVIP: !!data.isVIP,
-    isAdmin: !!data.isAdmin,
-    isHost: !!data.isHost,
-    stars: data.stars || 0,
-    cash: data.cash || 0,
-    usernameColor: data.usernameColor || "#ff69b4",
-    subscriptionActive: !!data.subscriptionActive,
-    hostLink: data.hostLink || null,
-    invitedBy: data.invitedBy || null,
-    unlockedVideos: data.unlockedVideos || []
-  };
-
-  console.log("FULL PROFILE RESTORED:", currentUser);
-
-  // SAFE CALLS — ALL OPTIONAL
-  if (typeof showChatUI === "function") showChatUI(currentUser);
-  if (typeof updateRedeemLink === "function") updateRedeemLink();
-  if (typeof updateTipLink === "function") updateTipLink();
-  if (typeof attachMessagesListener === "function") attachMessagesListener();
-  if (typeof startStarEarning === "function") startStarEarning(currentUser.uid);
-  if (typeof startNotificationsFor === "function") startNotificationsFor(user.email);
-
-const colors = ["#FF1493","#FFD700","#00FFFF","#FF4500","#DA70D6","#FF69B4","#32CD32","#FFA500"];
-const color = colors[Math.floor(Math.random() * colors.length)];
-
-showStarPopup(`Welcome back, <span style="font-weight:bold;color:${color};">${currentUser.chatId.toUpperCase()}</span> !`);
-
-
-
-  localStorage.setItem("lastVipEmail", user.email);
-});
-
-
-// After successful login or auth restore
-syncUserUnlocks().then(unlocks => {
-  console.log("User has access to", unlocks.length, "premium videos");
-  // Optionally update UI badges, etc.
 });
   
 
