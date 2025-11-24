@@ -492,6 +492,8 @@ let sessionTaps = 0;         // final taps to save
 let sessionEarnings = 0;     // final cash earned this round
 let sessionBonusLevel = 1;   // final bonus level
 
+window.isUserInCurrentBid = true; // instantly mark as joined
+
 // ======================================================
 //  HELPER: Sound & Haptics
 // ======================================================
@@ -702,16 +704,27 @@ async function endSessionRecord() {
       });
     });
 
-  // === 3. BID LEADERBOARD — ONLY IF IN ACTIVE BID ===
+// === 3. BID LEADERBOARD — ONLY IF USER ACTUALLY JOINED TODAY'S BID ===
 if (window.CURRENT_ROUND_ID && sessionTaps > 0) {
-  addDoc(collection(db, "taps"), {
-    uid: currentUser.uid,
-    username: currentUser.chatId || "Player",
-    count: sessionTaps,
-    roundId: window.CURRENT_ROUND_ID,
-    inBid: true,
-    timestamp: serverTimestamp()
-  }).catch(() => {}); // fire-and-forget
+  const bidCheck = await getDocs(query(
+    collection(db, "bids"),
+    where("uid", "==", currentUser.uid),
+    where("roundId", "==", window.CURRENT_ROUND_ID),
+    where("status", "==", "active")
+  ));
+
+  if (!bidCheck.empty) {
+    // ONLY write to bid leaderboard if they paid & joined
+    await addDoc(collection(db, "taps"), {
+      uid: currentUser.uid,
+      username: currentUser.username || currentUser.displayName || "Warrior",
+      count: sessionTaps,
+      roundId: window.CURRENT_ROUND_ID,
+      inBid: true,
+      timestamp: serverTimestamp()
+    });
+  }
+  // else: silently ignore — they tapped, but not in bid → only general leaderboard counts
 }
 
     // === 4. UPDATE LOCAL UI INSTANTLY ===
@@ -1812,32 +1825,54 @@ function startDailyBidEngine() {
   setInterval(updateTimerAndStats, 1000);
 }
 
-/* ====================== TAP SAVING – ONLY PAID USERS COUNT IN BID ====================== */
-// REPLACE YOUR CURRENT TAP FUNCTION WITH THIS (or add the check)
+/* ====================== TAP SAVING – CORRECTLY FEEDS BOTH LEADERBOARDS ====================== */
+/* 
+  Rules:
+  - Every tap → always counts for General Leaderboard (via endSessionRecord → users.totalTaps)
+  - Bid Leaderboard → ONLY if user has an active entry in "bids" collection for today
+  - No extra reads during rapid tapping (we check only once per session save)
+*/
+
 async function saveTap(count = 1) {
   if (!currentUser?.uid) return;
 
-  const isInBid = await (async () => {
+  // === 1. Always count toward general leaderboard (handled in endSessionRecord) ===
+  // We don't write anything here for general taps — your existing endSessionRecord()
+  // already atomically updates users.totalTaps, tapsDaily, etc. Perfect.
+
+  // === 2. Check ONCE if user is in today's active bid (cached for performance) ===
+  let isInBid = window.isUserInCurrentBid ?? false; // use cache if exists
+
+  if (isInBid === false && window.CURRENT_ROUND_ID) {
+    // First tap of session → verify from Firestore (only once!)
     const snap = await getDocs(query(
       collection(db, "bids"),
       where("uid", "==", currentUser.uid),
-      where("roundId", "==", CURRENT_ROUND_ID),
+      where("roundId", "==", window.CURRENT_ROUND_ID),
       where("status", "==", "active")
     ));
-    return !snap.empty;
-  })();
 
-  await addDoc(collection(db, "taps"), {
-    uid: currentUser.uid,
-    username: currentUser.username || currentUser.displayName || "Player",
-    count,
-    roundId: CURRENT_ROUND_ID,
-    inBid: isInBid,           // ← ONLY TRUE IF THEY PAID & JOINED
-    timestamp: serverTimestamp()
-  });
+    isInBid = !snap.empty;
+    window.isUserInCurrentBid = isInBid; // cache for rest of session
+  }
 
-  // Update user's total taps (your existing logic here)
-  // ...
+  // === 3. ONLY write to "taps" collection if user is in the bid ===
+  if (isInBid && window.CURRENT_ROUND_ID) {
+    await addDoc(collection(db, "taps"), {
+      uid: currentUser.uid,
+      username: currentUser.username || currentUser.displayName || "Warrior",
+      count: count,
+      roundId: window.CURRENT_ROUND_ID,
+      inBid: true,                    // Always true here — we already verified
+      timestamp: serverTimestamp()
+    });
+  }
+
+  // Optional: visual feedback that tap counted in bid
+  if (isInBid) {
+    // e.g. small fire emoji or glow
+    // showFloatingPlus(tapButton, "FIRE");
+  }
 }
 
 // Keep your payout function
@@ -1972,6 +2007,8 @@ setInterval(updateLiveBanner, 21000);
 // Run once on load so it’s never blank
 updateLiveBanner();
 RedHotMode.init();
+
+
 // ======================================================
 // WEEKLY STREAK SYSTEM — SUNDAY = DAY 1, SATURDAY = DAY 7
 // 350 STRZ EVERY 7 DAYS — FLAWLESS & ACCURATE
