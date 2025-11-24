@@ -1,0 +1,7 @@
+{
+  "rewrites": [
+    { "source": "/tapmaster", "destination": "/tapmaster.html" },
+    { "source": "/signup", "destination": "/signup.html" },
+    { "source": "/chatroom", "destination": "/chatroom.html" }
+  ]
+}
