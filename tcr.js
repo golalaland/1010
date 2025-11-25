@@ -816,7 +816,7 @@ function renderMessagesFromArray(messages) {
     if (!item.id) return;
     if (document.getElementById(item.id)) return;
 
-   const m = item.data ?? item;   // ← THIS IS CRITICAL
+    const m = item.data || item;
     const wrapper = document.createElement("div");
     wrapper.className = "msg";
     wrapper.id = item.id;
@@ -868,35 +868,42 @@ function renderMessagesFromArray(messages) {
       wrapper.appendChild(usernameEl);
 
       // Reply preview
-     if (m.replyTo) {
-  const replyPreview = document.createElement("div");
-  replyPreview.className = "reply-preview";
-  replyPreview.style.cssText = `
-    background: rgba(255,255,255,0.08);
-    border-left: 3px solid #FFD700;
-    padding: 6px 10px;
-    margin: 4px 0 6px;
-    border-radius: 0 6px 6px 0;
-    font-size: 13px;
-    color: #ccc;
-    cursor: pointer;
-    max-width: 100%;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  `;
-  replyPreview.innerHTML = `↳ <strong>${m.replyToChatId}</strong>: ${m.replyToContent}`;
-  
-  replyPreview.onclick = () => {
-    const target = document.getElementById(m.replyTo);
-    if (target) {
-      target.scrollIntoView({ behavior: "smooth", block: "center" });
-      target.style.background = "rgba(255, 215, 0, 0.25)";
-      setTimeout(() => target.style.background = "", 2000);
+      if (m.replyTo) {
+        const replyPreview = document.createElement("div");
+        replyPreview.className = "reply-preview";
+        replyPreview.textContent = m.replyToContent || "Original message";
+        replyPreview.style.cursor = "pointer";
+        replyPreview.onclick = () => {
+          const originalMsg = document.getElementById(m.replyTo);
+          if (originalMsg) {
+            originalMsg.scrollIntoView({ behavior: "smooth", block: "center" });
+            originalMsg.style.outline = "2px solid #FFD700";
+            setTimeout(() => originalMsg.style.outline = "", 1000);
+          }
+        };
+        wrapper.appendChild(replyPreview);
+      }
+
+      const contentEl = document.createElement("span");
+      contentEl.className = "content";
+      contentEl.textContent = " " + (m.content || "");
+      wrapper.appendChild(contentEl);
+
+      wrapper.addEventListener("click", (e) => {
+        e.stopPropagation();
+        showTapModal(wrapper, {
+          id: item.id,
+          chatId: m.chatId,
+          uid: m.uid,
+          content: m.content,
+          replyTo: m.replyTo,
+          replyToContent: m.replyToContent
+        });
+      });
     }
-  };
-  wrapper.appendChild(replyPreview);
-}
+
+    refs.messagesEl.appendChild(wrapper);
+  });
 
   // Auto-scroll
   if (!scrollPending) {
@@ -1554,68 +1561,79 @@ function clearReplyAfterSend() {
 
 // SEND REGULAR MESSAGE
 refs.sendBtn?.addEventListener("click", async () => {
-  try {
-    if (!currentUser) return showStarPopup("Sign in to chat.");
-    const txt = refs.messageInputEl?.value.trim();
-    if (!txt) return showStarPopup("Type a message first.");
-    if ((currentUser.stars || 0) < SEND_COST)
-      return showStarPopup("Not enough stars to send message.");
-    // Deduct stars locally + in Firestore
-    currentUser.stars -= SEND_COST;
-    refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
-    await updateDoc(doc(db, "users", currentUser.uid), {
-      stars: increment(-SEND_COST)
-    });
-    // Create temp message (local echo)
-    const tempId = "temp_" + Date.now();
-    const newMsg = {
-      content: txt,
-      uid: currentUser.uid || "unknown",
-      chatId: currentUser.chatId || "anon",
-      usernameColor: currentUser.usernameColor || "#ff69b4", // COLORS ARE BACK
-      timestamp: { toMillis: () => Date.now() },
-      highlight: false,
-      buzzColor: null,
-      replyTo: currentReplyTarget?.id || null,
-      replyToContent: currentReplyTarget?.content || null,
-      tempId
-    };
-    // Store temp message locally for dedupe
-    let localPendingMsgs = JSON.parse(localStorage.getItem("localPendingMsgs") || "{}");
-    localPendingMsgs[tempId] = { ...newMsg, createdAt: Date.now() };
-    localStorage.setItem("localPendingMsgs", JSON.stringify(localPendingMsgs));
-    // Reset input + scroll
-    refs.messageInputEl.value = "";
-    clearReplyAfterSend();
-    scrollToBottom(refs.messagesEl);
-    // RENDER LOCAL ECHO IMMEDIATELY
-    renderMessagesFromArray([newMsg]);
-    // SEND TO FIRESTORE — USING YOUR DYNAMIC CHAT_COLLECTION
-    const msgRef = await addDoc(collection(db, CHAT_COLLECTION), {
-      content: txt,
-      uid: currentUser.uid,
-      chatId: currentUser.chatId,
-      usernameColor: currentUser.usernameColor || "#ff69b4", // SAVED IN DB
-      timestamp: serverTimestamp(),
-      highlight: false,
-      buzzColor: null,
-      replyTo: currentReplyTarget?.id || null,
-      replyToContent: currentReplyTarget?.content || null
-      // tempId is NOT sent — clean Firestore doc
-    });
-    // Clean up pending on success
-    delete localPendingMsgs[tempId];
-    localStorage.setItem("localPendingMsgs", JSON.stringify(localPendingMsgs));
-    console.log("Message sent & saved:", msgRef.id);
-  } catch (err) {
-    console.error("Message send error:", err);
-    showStarPopup("Message failed: " + (err.message || "Network error"));
-    // Refund stars on fail
-    currentUser.stars += SEND_COST;
-    refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
-  }
+  try {
+    if (!currentUser) return showStarPopup("Sign in to chat.");
+
+    const txt = refs.messageInputEl?.value.trim();
+    if (!txt) return showStarPopup("Type a message first.");
+    if ((currentUser.stars || 0) < SEND_COST)
+      return showStarPopup("Not enough stars to send message.");
+
+    // Deduct stars locally + in Firestore
+    currentUser.stars -= SEND_COST;
+    refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
+    await updateDoc(doc(db, "users", currentUser.uid), {
+      stars: increment(-SEND_COST)
+    });
+
+    // Create temp message (local echo)
+    const tempId = "temp_" + Date.now();
+    const newMsg = {
+      content: txt,
+      uid: currentUser.uid || "unknown",
+      chatId: currentUser.chatId || "anon",
+      usernameColor: currentUser.usernameColor || "#ff69b4",  // COLORS ARE BACK
+      timestamp: { toMillis: () => Date.now() },
+      highlight: false,
+      buzzColor: null,
+      replyTo: currentReplyTarget?.id || null,
+      replyToContent: currentReplyTarget?.content || null,
+      tempId
+    };
+
+    // Store temp message locally for dedupe
+    let localPendingMsgs = JSON.parse(localStorage.getItem("localPendingMsgs") || "{}");
+    localPendingMsgs[tempId] = { ...newMsg, createdAt: Date.now() };
+    localStorage.setItem("localPendingMsgs", JSON.stringify(localPendingMsgs));
+
+    // Reset input + scroll
+    refs.messageInputEl.value = "";
+    clearReplyAfterSend();
+    scrollToBottom(refs.messagesEl);
+
+    // RENDER LOCAL ECHO IMMEDIATELY
+    renderMessagesFromArray([newMsg]);
+
+    // SEND TO FIRESTORE — USING YOUR DYNAMIC CHAT_COLLECTION
+    const msgRef = await addDoc(collection(db, CHAT_COLLECTION), {
+      content: txt,
+      uid: currentUser.uid,
+      chatId: currentUser.chatId,
+      usernameColor: currentUser.usernameColor || "#ff69b4",   // SAVED IN DB
+      timestamp: serverTimestamp(),
+      highlight: false,
+      buzzColor: null,
+      replyTo: currentReplyTarget?.id || null,
+      replyToContent: currentReplyTarget?.content || null
+      // tempId is NOT sent — clean Firestore doc
+    });
+
+    // Clean up pending on success
+    delete localPendingMsgs[tempId];
+    localStorage.setItem("localPendingMsgs", JSON.stringify(localPendingMsgs));
+
+    console.log("Message sent & saved:", msgRef.id);
+
+  } catch (err) {
+    console.error("Message send error:", err);
+    showStarPopup("Message failed: " + (err.message || "Network error"));
+
+    // Refund stars on fail
+    currentUser.stars += SEND_COST;
+    refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
+  }
 });
-  
+
 // BUZZ MESSAGE (EPIC GLOW EFFECT)
 refs.buzzBtn?.addEventListener("click", async () => {
   if (!currentUser?.email) return showStarPopup("Sign in to BUZZ.");
