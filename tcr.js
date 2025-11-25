@@ -1293,7 +1293,7 @@ document.addEventListener('pointerdown', e => {
   showSocialCard(userId);
 });
 
-// --- SEND STARS FUNCTION — FINAL 100% WORKING VERSION (NO SYNTAX ERRORS) ---
+// --- SEND STARS FUNCTION — 100% SYNTAX-CORRECT FINAL VERSION ---
 async function sendStarsToUser(targetUser, amt) {
   if (!currentUser?.uid || !targetUser?.chatId || amt < 100) {
     showGoldAlert("Invalid gift", 3000);
@@ -1363,13 +1363,11 @@ async function sendStarsToUser(targetUser, amt) {
     document.getElementById('socialCard')?.remove();
 
     console.log("Gift sent successfully!");
-
   } catch (err) {
     console.error("sendStarsToUser failed:", err);
     showGoldAlert("Gift failed — try again", 4000);
   }
 }
-
 // --- 6.5️⃣ Create notification for receiver ---
 const notifRef = collection(db, "notifications");
 await addDoc(notifRef, {
