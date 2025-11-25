@@ -1315,11 +1315,23 @@ async function sendStarsToUser(targetUser, amt) {
     const toRef = doc(db, "users", receiverId);
     const glowColor = randomColor();
 
-    await runTransaction(db, async (transaction) => {
+       await runTransaction(db, async (transaction) => {
       const senderSnap = await transaction.get(fromRef);
-      if (!senderSnap.exists()) throw new Error("Sender not found");
+      const receiverSnap = await transaction.get(toRef);
+
+      if (!senderSnap.exists()) throw new Error("Your profile not found");
       if ((senderSnap.data()?.stars || 0) < amt) throw new Error("Not enough stars");
 
+      // Auto-create receiver if missing (EXACTLY like your sendGift() does)
+      if (!receiverSnap.exists()) {
+        transaction.set(toRef, {
+          chatId: targetUser.chatId || "NewVIP",
+          stars: 0,
+          createdAt: serverTimestamp()
+        }, { merge: true });
+      }
+
+      // Now safe to update both
       transaction.update(fromRef, {
         stars: increment(-amt),
         starsGifted: increment(amt)
@@ -1334,7 +1346,6 @@ async function sendStarsToUser(targetUser, amt) {
         }
       });
     });
-
     const bannerMsg = {
       content: `${currentUser.chatId} gifted ${amt} stars to ${targetUser.chatId}!`,
       timestamp: serverTimestamp(),
