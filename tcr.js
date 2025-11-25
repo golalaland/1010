@@ -3999,14 +3999,18 @@ function playFullVideo(video) {
   modal.onclick = () => modal.remove();
   document.body.appendChild(modal);
 }
-// SOCIAL CARD TAP LISTENER — ADD ONLY ONCE!
+// SOCIAL CARD TAP LISTENER — PUT THIS ONCE, AT THE VERY END OF YOUR JS FILE
+// (after showSocialCard and renderMessagesFromArray are defined!)
 document.body.addEventListener('click', e => {
   const el = e.target.closest('[data-user-id]');
   if (!el) return;
+
   const userId = el.dataset.userId;
   if (!userId || userId === currentUser?.uid) return;
 
   e.preventDefault();
   e.stopPropagation();
+
+  // This will now work because showSocialCard is already defined above
   showSocialCard(userId);
 }, { capture: true, passive: false });
