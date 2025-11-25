@@ -832,36 +832,51 @@ function renderMessagesFromArray(messages) {
   if (!refs.messagesEl) return;
 
   messages.forEach(item => {
-    // === EXTRACT ID ONCE AND FOR ALL (supports tempId + real id) ===
+    // === EXTRACT ID ONCE AND FOR ALL ===
     const id = item.id || item.tempId || item.data?.id;
-    if (!id) return;
-
-    // === THIS LINE KILLS ALL DOUBLE RENDERS FOREVER ===
-    if (document.getElementById(id)) return;
-    // ================================================
+    if (!id || document.getElementById(id)) return;
 
     const m = item.data ?? item;
-
     const wrapper = document.createElement("div");
     wrapper.className = "msg";
-    wrapper.id = id;                      // ← critical: use same ID for temp + real
+    wrapper.id = id;
 
-    // === BANNER (keep your existing banner code here if you have it) ===
+    // === BANNER MESSAGES ===
     if (m.systemBanner || m.isBanner || m.type === "banner") {
-      // ... your banner code ...
+      // Keep your existing banner code here if any
       refs.messagesEl.appendChild(wrapper);
       return;
     }
 
-    // === REPLY PREVIEW – NOW DIM & CLASSY (no more blinding yellow) ===
+    // === USERNAME — NOW TAPABLE & OPENS SOCIAL CARD ===
+    const metaEl = document.createElement("span");
+    metaEl.className = "meta";
+    metaEl.style.color = refs.userColors?.[m.uid] || "#fff";
+
+    const tapableName = document.createElement("span");
+    tapableName.className = "chat-username";
+    tapableName.textContent = m.chatId || "Guest";
+    tapableName.dataset.userId = m.uid; // THIS MAKES SOCIAL CARD WORK
+    tapableName.style.cssText = "cursor:pointer; font-weight:700; padding:0 4px; border-radius:4px; user-select:none;";
+
+    // Visual feedback on tap
+    tapableName.addEventListener("pointerdown", () => {
+      tapableName.style.background = "rgba(255,204,0,0.4)";
+    });
+    tapableName.addEventListener("pointerup", () => {
+      setTimeout(() => tapableName.style.background = "", 200);
+    });
+
+    metaEl.append(tapableName, document.createTextNode(": "));
+    wrapper.appendChild(metaEl);
+
+    // === REPLY PREVIEW ===
     if (m.replyTo) {
       const replyPreview = document.createElement("div");
       replyPreview.className = "reply-preview";
-
-      // Dim, elegant colors that actually fit dark themes
       replyPreview.style.cssText = `
         background: rgba(255,255,255,0.06);
-        border-left: 3px solid #b3b3b3;        /* dim gray instead of #FFD700 */
+        border-left: 3px solid #b3b3b3;
         padding: 6px 10px;
         margin: 6px 0 4px 0;
         border-radius: 0 6px 6px 0;
@@ -871,9 +886,7 @@ function renderMessagesFromArray(messages) {
         line-height: 1.4;
       `.replace(/\s+/g, " ").trim();
 
-      const replyText = (m.replyToContent || "Original message")
-        .replace(/\n/g, " ")
-        .trim();
+      const replyText = (m.replyToContent || "Original message").replace(/\n/g, " ").trim();
       const shortText = replyText.length > 80 ? replyText.substring(0, 80) + "..." : replyText;
 
       replyPreview.innerHTML = `
@@ -889,34 +902,16 @@ function renderMessagesFromArray(messages) {
           setTimeout(() => target.style.background = "", 2000);
         }
       };
-
       wrapper.appendChild(replyPreview);
     }
 
-        // === NORMAL MESSAGE — FIXED & TAPABLE 2025 ===
-    const usernameEl = document.createElement("span");
-    usernameEl.className = "meta";
-    usernameEl.style.color = refs.userColors?.[m.uid] || "#fff";
+    // === MESSAGE CONTENT ===
+    const contentEl = document.createElement("span");
+    contentEl.className = "content";
+    contentEl.textContent = " " + (m.content || "");
+    wrapper.appendChild(contentEl);
 
-    // THIS IS THE MAGIC LINE THAT MAKES THE CARD WORK AGAIN
-    const tapableName = document.createElement("span");
-    tapableName.className = "chat-username";
-    tapableName.textContent = m.chatId || "Guest";
-    tapableName.dataset.userId = m.uid;                    // CRITICAL
-    tapableName.style.cssText = "cursor:pointer; font-weight:700; padding:0 4px; border-radius:4px; user-select:none;";
-    
-
-    // Visual feedback on tap (feels alive again)
-    tapableName.addEventListener("pointerdown", () => {
-      tapableName.style.background = "rgba(255,204,0,0.4)";
-    });
-    tapableName.addEventListener("pointerup", () => {
-      setTimeout(() => tapableName.style.background = "", 200);
-    });
-
-    usernameEl.append(tapableName, ": ");
-
-    // === TAP MODAL (reply/report) ===
+    // === LONG TAP FOR REPLY/REPORT ===
     wrapper.addEventListener("click", e => {
       e.stopPropagation();
       showTapModal(wrapper, {
@@ -4004,3 +3999,14 @@ function playFullVideo(video) {
   modal.onclick = () => modal.remove();
   document.body.appendChild(modal);
 }
+// SOCIAL CARD TAP LISTENER — ADD ONLY ONCE!
+document.body.addEventListener('click', e => {
+  const el = e.target.closest('[data-user-id]');
+  if (!el) return;
+  const userId = el.dataset.userId;
+  if (!userId || userId === currentUser?.uid) return;
+
+  e.preventDefault();
+  e.stopPropagation();
+  showSocialCard(userId);
+}, { capture: true, passive: false });
