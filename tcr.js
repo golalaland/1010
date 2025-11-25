@@ -76,6 +76,12 @@ window.app = app;
 window.db = db;
 window.auth = auth;
 
+// Optional: Add this at the top of your JS file to detect "just logged out" on login page
+if (sessionStorage.getItem("justLoggedOut") === "true") {
+  sessionStorage.removeItem("justLoggedOut");
+  showStarPopup("Welcome back, legend!");
+}
+
 
 /* ---------- Presence (Realtime) ---------- */
 function setupPresence(user) {
@@ -1260,49 +1266,6 @@ window.logoutVIP = async () => {
   localStorage.removeItem("lastVipEmail");
   location.reload();
 };
-
-
-/* FINAL WORKING LOGOUT — WORKS NO MATTER WHAT YOUR BUTTON IS */
-document.addEventListener("click", async function(e) {
-  // Detect ANY logout click — by text, class, id, or data attribute
-  const target = e.target;
-  const isLogout = 
-    target.id === "logoutBtn" ||
-    target.classList.contains("logout-btn") ||
-    target.closest("[data-logout]") ||
-    target.textContent.toLowerCase().includes("log out") ||
-    target.textContent.toLowerCase().includes("sign out") ||
-    target.getAttribute("onclick")?.includes("signOut");
-
-  if (!isLogout) return;
-
-  e.preventDefault();
-  e.stopPropagation();
-
-  console.log("LOGOUT DETECTED — cleaning everything");
-
-  try {
-    await signOut(auth);
-    localStorage.removeItem("lastVipEmail");     // THIS STOPS AUTO-RELOGIN
-    sessionStorage.setItem("justLoggedOut", "1");
-    currentUser = null;
-
-    showStarPopup("You have been logged out");
-
-    setTimeout(() => location.reload(), 1200);
-  } catch (err) {
-    console.error("Logout failed:", err);
-  }
-});
-
-/* ALSO — block auto-login right after logout */
-window.addEventListener("DOMContentLoaded", () => {
-  if (sessionStorage.getItem("justLoggedOut")) {
-    console.log("User just logged out — blocking auto-login");
-    sessionStorage.removeItem("justLoggedOut");
-    // Do NOT run tryAutoLogin() here
-    return;
-  }
 
   // Only run auto-login if not just logged out
   setTimeout(tryAutoLogin, 1000);
@@ -3977,38 +3940,54 @@ function playFullVideo(video) {
   modal.onclick = () => modal.remove();
   document.body.appendChild(modal);
 }
-// Logout button handler
-document.getElementById("hostLogoutBtn")?.addEventListener("click", async e => {
+// BEST-IN-CLASS LOGOUT HANDLER (2025 edition)
+document.getElementById("hostLogoutBtn")?.addEventListener("click", async (e) => {
   e.preventDefault();
   e.stopPropagation();
 
-  const btn = e.target;
+  const btn = e.target.closest("button") || e.target; // super safe
+  if (btn.disabled) return; // prevent double-click chaos
+
+  const originalText = btn.innerHTML;
   btn.disabled = true;
+  btn.innerHTML = `Logging out... <span style="opacity:0.7">👋</span>`;
 
   try {
+    // Firebase sign out
     await signOut(auth);
-    localStorage.removeItem("lastVipEmail");
-    sessionStorage.setItem("justLoggedOut", "1");
-    currentUser = null;
 
-    // Show a fun logout message
+    // Clean everything
+    localStorage.removeItem("lastVipEmail");
+    sessionStorage.setItem("justLoggedOut", "true");
+
+    // Global user reset (if you have it)
+    window.currentUser = null;
+
+    // FUN LOGOUT MESSAGES (you nailed this)
     const logoutMessages = [
-      "See ya later, Alligator 🤩",
-      "Off you go, $STRZ ⭐️ waiting when you log back in!",
-      "Catch you on the flip side! 😎",
-      "Adios, Amigo! 👋🏼",
-      "Peace out, Player! ✌🏽",
-      "Hasta la vista, Baby! 🤠",
-      "hmmm, now why'd you do that..🤔",
-      "Off you go, Champ! 🏆"
+      "See ya later, Alligator",
+      "Off you go, $STRZ waiting when you return!",
+      "Catch you on the flip side!",
+      "Adios, Amigo!",
+      "Peace out, Player!",
+      "Hasta la vista, Baby!",
+      "hmmm, now why'd you do that..",
+      "Off you go, Champ!"
     ];
     const message = logoutMessages[Math.floor(Math.random() * logoutMessages.length)];
+
+    // Show the popup
     showStarPopup(message);
 
-    setTimeout(() => location.reload(), 1200);
+    // Smooth redirect after popup (give user time to read the joke)
+    setTimeout(() => {
+      window.location.href = "login.html"; // or index.html — whatever your login page is
+    }, 1800);
+
   } catch (err) {
     console.error("Logout failed:", err);
     btn.disabled = false;
-    showStarPopup("Logout failed. Check console.");
+    btn.innerHTML = originalText;
+    showStarPopup("Logout failed — try again!");
   }
 });
