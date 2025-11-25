@@ -814,89 +814,97 @@ function renderMessagesFromArray(messages) {
   if (!refs.messagesEl) return;
 
   messages.forEach(item => {
-    // === EXTRACT ID SAFELY (supports tempId, real id, and Firestore snapshots) ===
-    const id = item.id || item.tempId || (item.data?.id) || null;
-    if (!id) return; // No ID = skip
+    // === EXTRACT ID ONCE AND FOR ALL (supports tempId + real id) ===
+    const id = item.id || item.tempId || item.data?.id;
+    if (!id) return;
 
-    // === PREVENT DOUBLE RENDERING (THIS IS THE MAGIC) ===
+    // === THIS LINE KILLS ALL DOUBLE RENDERS FOREVER ===
     if (document.getElementById(id)) return;
+    // ================================================
 
-    // === GET MESSAGE DATA (works for local echo AND real docs) ===
     const m = item.data ?? item;
 
-    // === CREATE MESSAGE WRAPPER ===
     const wrapper = document.createElement("div");
     wrapper.className = "msg";
-    wrapper.id = id; // Use the real or temp ID
+    wrapper.id = id;                      // ← critical: use same ID for temp + real
 
-    // === BANNER MESSAGES (unchanged) ===
+    // === BANNER (keep your existing banner code here if you have it) ===
     if (m.systemBanner || m.isBanner || m.type === "banner") {
-      // ... your existing banner code ...
-    } else {
-      // === REGULAR MESSAGE ===
-
-      // Username
-      const usernameEl = document.createElement("span");
-      usernameEl.className = "meta";
-      usernameEl.innerHTML = `<span class="chat-username">${m.chatId || "Guest"}</span>:`;
-      usernameEl.style.color = refs.userColors?.[m.uid] || "#fff";
-      wrapper.appendChild(usernameEl);
-
-      // === REPLY PREVIEW (beautiful & safe) ===
-      if (m.replyTo) {
-        const replyPreview = document.createElement("div");
-        replyPreview.className = "reply-preview";
-        replyPreview.style.cssText = "background:rgba(255,255,255,0.08);border-left:3px solid #FFD700;padding:6px 10px;margin:6px 0 4px;border-radius:0 6px 6px 0;font-size:13px;cursor:pointer;";
-
-        const replyText = (m.replyToContent || "Original message").replace(/\n/g, " ").trim();
-        const shortText = replyText.length > 80 ? replyText.substring(0, 80) + "..." : replyText;
-
-        replyPreview.innerHTML = `
-          <strong style="color:#FFD700;">↳ ${m.replyToChatId || "someone"}:</strong>
-          <span style="color:#ccc;">${shortText}</span>
-        `;
-
-        replyPreview.onclick = () => {
-          const target = document.getElementById(m.replyTo);
-          if (target) {
-            target.scrollIntoView({ behavior: "smooth", block: "center" });
-            target.style.outline = "3px solid #FFD700";
-            target.style.background = "rgba(255,215,0,0.2)";
-            setTimeout(() => {
-              target.style.outline = "";
-              target.style.background = "";
-            }, 2000);
-          }
-        };
-
-        wrapper.appendChild(replyPreview);
-      }
-
-      // Message content
-      const contentEl = document.createElement("span");
-      contentEl.className = "content";
-      contentEl.textContent = " " + (m.content || "");
-      wrapper.appendChild(contentEl);
-
-      // Tap-to-reply/report modal
-      wrapper.addEventListener("click", (e) => {
-        e.stopPropagation();
-        showTapModal(wrapper, {
-          id: id,
-          chatId: m.chatId,
-          uid: m.uid,
-          content: m.content,
-          replyTo: m.replyTo,
-          replyToContent: m.replyToContent
-        });
-      });
+      // ... your banner code ...
+      refs.messagesEl.appendChild(wrapper);
+      return;
     }
 
-    // Append to chat
+    // === NORMAL MESSAGE ===
+    const usernameEl = document.createElement("span");
+    usernameEl.className = "meta";
+    usernameEl.innerHTML = `<span class="chat-username">${m.chatId || "Guest"}</span>:`;
+    usernameEl.style.color = refs.userColors?.[m.uid] || "#fff";
+    wrapper.appendChild(usernameEl);
+
+    // === REPLY PREVIEW – NOW DIM & CLASSY (no more blinding yellow) ===
+    if (m.replyTo) {
+      const replyPreview = document.createElement("div");
+      replyPreview.className = "reply-preview";
+
+      // Dim, elegant colors that actually fit dark themes
+      replyPreview.style.cssText = `
+        background: rgba(255,255,255,0.06);
+        border-left: 3px solid #b3b3b3;        /* dim gray instead of #FFD700 */
+        padding: 6px 10px;
+        margin: 6px 0 4px 0;
+        border-radius: 0 6px 6px 0;
+        font-size: 13px;
+        color: #aaa;
+        cursor: pointer;
+        line-height: 1.4;
+      `.replace(/\s+/g, " ").trim();
+
+      const replyText = (m.replyToContent || "Original message")
+        .replace(/\n/g, " ")
+        .trim();
+      const shortText = replyText.length > 80 ? replyText.substring(0, 80) + "..." : replyText;
+
+      replyPreview.innerHTML = `
+        <strong style="color:#999;">↳ ${m.replyToChatId || "someone"}:</strong>
+        <span style="color:#aaa;">${shortText}</span>
+      `;
+
+      replyPreview.onclick = () => {
+        const target = document.getElementById(m.replyTo);
+        if (target) {
+          target.scrollIntoView({ behavior: "smooth", block: "center" });
+          target.style.background = "rgba(180,180,180,0.15)";
+          setTimeout(() => target.style.background = "", 2000);
+        }
+      };
+
+      wrapper.appendChild(replyPreview);
+    }
+
+    // === MESSAGE CONTENT ===
+    const contentEl = document.createElement("span");
+    contentEl.className = "content";
+    contentEl.textContent = " " + (m.content || "");
+    wrapper.appendChild(contentEl);
+
+    // === TAP MODAL (reply/report) ===
+    wrapper.addEventListener("click", e => {
+      e.stopPropagation();
+      showTapModal(wrapper, {
+        id: id,
+        chatId: m.chatId,
+        uid: m.uid,
+        content: m.content,
+        replyTo: m.replyTo,
+        replyToContent: m.replyToContent
+      });
+    });
+
     refs.messagesEl.appendChild(wrapper);
   });
 
-  // Smooth auto-scroll
+  // === AUTO-SCROLL ===
   if (!scrollPending) {
     scrollPending = true;
     requestAnimationFrame(() => {
