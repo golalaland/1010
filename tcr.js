@@ -2174,6 +2174,7 @@ const usernameEl = document.getElementById("featuredHostUsername");
 const detailsEl = document.getElementById("featuredHostDetails");
 const hostListEl = document.getElementById("featuredHostList");
 const giftSlider = document.getElementById("giftSlider");
+const giftBtn = document.getElementById("featuredGiftBtn");
 const giftAmountEl = document.getElementById("giftAmount");
 const prevBtn = document.getElementById("prevHost");
 const nextBtn = document.getElementById("nextHost");
