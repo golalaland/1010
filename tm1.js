@@ -938,14 +938,6 @@ let currentSlide = 0;
 let slideInterval = null;
 const slideCount = slides.length;
 
-// ——— CACHE SYSTEM ———
-const CACHE_DURATION = 60_000; // 60 seconds
-const leaderboardCache = {
-  daily: { data: null, time: 0 },
-  weekly: { data: null, time: 0 },
-  monthly: { data: null, time: 0 }
-};
-
 // ——— OPEN LEADERBOARD ———
 leaderboardBtn?.addEventListener("click", () => {
   leaderboardModal.style.display = "block";
