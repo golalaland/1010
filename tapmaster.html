@@ -290,10 +290,30 @@ body {display:flex;justify-content:center;align-items:flex-start;padding:18px 0 
 /* small helpers */
 .hidden { display:none!important; }
 button, input { font-size:16px; } /* prevents iOS zoom on tap */
-.active-tab {
-  background: linear-gradient(90deg,#FF1493,#FF8C00);
-  color: #fff;
-  font-weight: bold;
+
+/* GOLD ACTIVE TAB — THIS IS THE ONE YOU HAVE NOW (KEEP IT!) */
+.lb-tab.active {
+  background: linear-gradient(135deg, #1a1a1a, #2a2a2a) !important;
+  border-bottom: 4px solid #FFD700 !important;     /* ← thick gold underline */
+  color: #fff !important;
+  font-weight: 700 !important;
+  box-shadow: 0 4px 20px rgba(255, 215, 0, 0.35) !important;
+  position: relative;
+}
+
+/* Optional extra glow (this is what makes it look expensive) */
+.lb-tab.active::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,215,0,0.15), transparent);
+  animation: goldShine 4s infinite;
+  pointer-events: none;
+}
+
+@keyframes goldShine {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
 }
 body {
   height: 100%;
