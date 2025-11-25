@@ -1092,26 +1092,28 @@ function renderLeaderboardFromData({ topScores, myTaps, myRank }) {
     `);
   }
 }
-
-// ——— TAB SWITCHER — NOW WORKS 100% ———
+/* ——————————————————————————
+   TAB SWITCHER — FINAL FIX (WORKS NO MATTER WHAT)
+   —————————————————————————— */
 periodTabs.forEach(tab => {
   tab.addEventListener("click", () => {
-    // Remove active from all
-    periodTabs.forEach(t => t.classList.remove("active"));
-    // Add to clicked
+    const period = tab.dataset.period;
+
+    // 1. FORCE remove .active from EVERY tab
+    periodTabs.forEach(t => {
+      t.classList.remove("active");
+      // Kill any leftover inline styles that break the gold design
+      t.removeAttribute("style");
+    });
+
+    // 2. FORCE add .active ONLY to the clicked tab
     tab.classList.add("active");
 
-    // Show/hide daily timer
-    dailyTimerContainer.style.display = tab.dataset.period === "daily" ? "block" : "none";
+    // 3. Timer visibility
+    dailyTimerContainer.style.display = period === "daily" ? "block" : "none";
 
-    // Update description (optional)
-    leaderboardDescription && (leaderboardDescription.textContent = 
-      tab.dataset.period === "daily" ? "Top tappers today" :
-      tab.dataset.period === "weekly" ? "This week's champions" : "Monthly legends"
-    );
-
-    // Fetch new data
-    requestAnimationFrame(() => fetchLeaderboard(tab.dataset.period));
+    // 4. Load leaderboard
+    fetchLeaderboard(period);
   });
 });
 
