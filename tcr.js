@@ -868,43 +868,36 @@ function renderMessagesFromArray(messages) {
       wrapper.appendChild(usernameEl);
 
       // Reply preview
-      if (m.replyTo) {
-        const replyPreview = document.createElement("div");
-        replyPreview.className = "reply-preview";
-        replyPreview.textContent = m.replyToContent || "Original message";
-        replyPreview.style.cursor = "pointer";
-        replyPreview.onclick = () => {
-          const originalMsg = document.getElementById(m.replyTo);
-          if (originalMsg) {
-            originalMsg.scrollIntoView({ behavior: "smooth", block: "center" });
-            originalMsg.style.outline = "2px solid #FFD700";
-            setTimeout(() => originalMsg.style.outline = "", 1000);
-          }
-        };
-        wrapper.appendChild(replyPreview);
-      }
-
-      const contentEl = document.createElement("span");
-      contentEl.className = "content";
-      contentEl.textContent = " " + (m.content || "");
-      wrapper.appendChild(contentEl);
-
-      wrapper.addEventListener("click", (e) => {
-        e.stopPropagation();
-        showTapModal(wrapper, {
-          id: item.id,
-          chatId: m.chatId,
-          uid: m.uid,
-          content: m.content,
-          replyTo: m.replyTo,
-          replyToContent: m.replyToContent
-        });
-      });
+     if (m.replyTo) {
+  const replyPreview = document.createElement("div");
+  replyPreview.className = "reply-preview";
+  replyPreview.style.cssText = `
+    background: rgba(255,255,255,0.08);
+    border-left: 3px solid #FFD700;
+    padding: 6px 10px;
+    margin: 4px 0 6px;
+    border-radius: 0 6px 6px 0;
+    font-size: 13px;
+    color: #ccc;
+    cursor: pointer;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  `;
+  replyPreview.innerHTML = `↳ <strong>${m.replyToChatId}</strong>: ${m.replyToContent}`;
+  
+  replyPreview.onclick = () => {
+    const target = document.getElementById(m.replyTo);
+    if (target) {
+      target.scrollIntoView({ behavior: "smooth", block: "center" });
+      target.style.background = "rgba(255, 215, 0, 0.25)";
+      setTimeout(() => target.style.background = "", 2000);
     }
-
-    refs.messagesEl.appendChild(wrapper);
-  });
-
+  };
+  wrapper.appendChild(replyPreview);
+}
+      
   // Auto-scroll
   if (!scrollPending) {
     scrollPending = true;
