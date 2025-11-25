@@ -2173,7 +2173,6 @@ const videoFrame = document.getElementById("featuredHostVideo");
 const usernameEl = document.getElementById("featuredHostUsername");
 const detailsEl = document.getElementById("featuredHostDetails");
 const hostListEl = document.getElementById("featuredHostList");
-const giftBtn = document.getElementById("featuredGiftBtn");
 const giftSlider = document.getElementById("giftSlider");
 const giftAmountEl = document.getElementById("giftAmount");
 const prevBtn = document.getElementById("prevHost");
