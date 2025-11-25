@@ -910,7 +910,8 @@ const leaderboardBtn = document.getElementById("leaderboardBtn");
 const leaderboardModal = document.getElementById("leaderboardModal");
 const closeLeaderboard = document.getElementById("closeLeaderboard");
 const leaderboardList = document.getElementById("leaderboardList");
-const leaderboardDescription = document.getElementByElementById("leaderboardDescription");
+const leaderboardDescription = document.getElementById
+("leaderboardDescription");
 const periodTabs = document.querySelectorAll(".lb-tab");
 const dailyTimerContainer = document.getElementById("dailyTimer");
 
