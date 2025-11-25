@@ -1262,18 +1262,17 @@ giftBtn.onclick = async () => {
   if ((currentUser?.stars || 0) < amt) return showStarPopup("Not enough stars");
 
   // THIS IS THE FINAL NUCLEAR FIX — NO EXCUSES
-  const receiverUid = user.uid || user._docId || user.email?.replace(/[.@]/g, '_') || user.chatId;
-  if (!receiverUid) return showStarPopup("User ID missing");
+  giftBtn.onclick = async () => {
+  const amt = parseInt(slider.value);
+  if (amt < 100 || (currentUser?.stars || 0) < amt) return showStarPopup("No");
 
-  console.log("SENDING GIFT TO UID:", receiverUid);  // ← CHECK THIS IN CONSOLE
+  await sendStarsToUser({
+    chatId: user.chatId,
+    email: user.email,        // ← THIS IS KEY
+    uid: user.uid             // fallback
+  }, amt);
 
-  try {
-    await sendStarsToUser({
-      chatId: user.chatId || "Unknown",
-      uid: receiverUid.replace(/[.@/\\]/g, '_')  // FINAL CLEAN
-    }, amt);
-
-    card.remove();
+  card.remove();
     showStarPopup("Gift sent!");
   } catch (e) {
     console.error("GIFT FAILED:", e);
@@ -1313,15 +1312,23 @@ document.addEventListener('pointerdown', e => {
 
 // --- SEND STARS FUNCTION — 100% SYNTAX-CORRECT FINAL VERSION ---
 async function sendStarsToUser(targetUser, amt) {
-  const senderId = (currentUser.uid || currentUser.email)?.replace(/[.@/\\]/g, '_');
-  const receiverId = String(targetUser.uid || targetUser.chatId || "").replace(/[.@/\\]/g, '_');
+  // FORCE BOTH SENDER AND RECEIVER TO USE SANITIZED EMAIL ID — THIS IS YOUR REAL USER ID
+  const getRealDocId = (u) => {
+    if (u.email) return u.email.replace(/[.@/\\]/g, '_');
+    if (u.uid && u.uid.includes('@')) return u.uid.replace(/[.@/\\]/g, '_');
+    if (u.chatId) return u.chatId; // fallback — only if you store chatId as doc ID
+    return null;
+  };
+
+  const senderId = getRealDocId(currentUser);
+  const receiverId = getRealDocId(targetUser);
 
   if (!senderId || !receiverId || senderId === receiverId) {
     return showStarPopup("Invalid user");
   }
 
-  console.log("Sender ID:", senderId);
-  console.log("Receiver ID:", receiverId);
+  console.log("FINAL SENDER ID:", senderId);
+  console.log("FINAL RECEIVER ID:", receiverId);
 
   try {
     const fromRef = doc(db, "users", senderId);
@@ -1331,30 +1338,30 @@ async function sendStarsToUser(targetUser, amt) {
       const senderSnap = await tx.get(fromRef);
       const receiverSnap = await tx.get(toRef);
 
-      if (!senderSnap.exists()) throw "Sender missing";
+      if (!senderSnap.exists()) throw "Your profile missing";
       if ((senderSnap.data()?.stars || 0) < amt) throw "Not enough stars";
 
       if (!receiverSnap.exists()) {
-        tx.set(toRef, { chatId: targetUser.chatId || "New", stars: 0 }, { merge: true });
+        tx.set(toRef, { chatId: targetUser.chatId || "VIP", stars: 0 }, { merge: true });
       }
 
       tx.update(fromRef, { stars: increment(-amt), starsGifted: increment(amt) });
       tx.update(toRef, { stars: increment(amt) });
     });
 
-    // BANNER
+    // Banner
     await addDoc(collection(db, "messages_room5"), {
-      content: `${currentUser.chatId} sent ${amt} stars to ${targetUser.chatId}!`,
+      content: `${currentUser.chatId} gifted ${amt} stars to ${targetUser.chatId}!`,
       timestamp: serverTimestamp(),
-      systemBanner: true,
-      type: "banner"
+      systemBanner: true, type: "banner", highlight: true
     });
 
-    showStarPopup("SUCCESS — STARS DELIVERED");
-    console.log("STARS ACTUALLY SENT TO:", receiverId);
+    showStarPopup(`Sent ${amt} stars!`);
+    document.getElementById('socialCard')?.remove();
+
   } catch (err) {
-    console.error("FINAL FAIL:", err);
-    showStarPopup("Failed — open console");
+    console.error("FAILED:", err);
+    showStarPopup("Failed");
   }
 }
 /* ===============================
