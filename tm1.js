@@ -976,16 +976,6 @@ sliderWrapper?.addEventListener("touchend", e => {
 });
 
 /* ============================================================
-   FIRESTORE DATA CACHE
-============================================================ */
-const leaderboardCache = {
-  daily: { data: null, time: 0 },
-  weekly: { data: null, time: 0 },
-  monthly: { data: null, time: 0 }
-};
-const CACHE_DURATION = 25000; // 25 seconds
-
-/* ============================================================
    PERIOD KEY HELPERS
 ============================================================ */
 function getLeaderboardKey(period) {
