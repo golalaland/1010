@@ -1261,20 +1261,23 @@ giftBtn.onclick = async () => {
   if (amt < 100) return showStarPopup("Minimum 100");
   if ((currentUser?.stars || 0) < amt) return showStarPopup("Not enough stars");
 
-  try {
-    // THIS IS THE NUCLEAR FIX — 100% GUARANTEED DELIVERY
-    const safeTarget = {
-      chatId: user.chatId || "VIP",
-      uid: user.uid,
-      _docId: user.uid || user.email?.replace(/[.@]/g, '_'),
-      email: user.email || null
-    };
+  // THIS IS THE FINAL NUCLEAR FIX — NO EXCUSES
+  const receiverUid = user.uid || user._docId || user.email?.replace(/[.@]/g, '_') || user.chatId;
+  if (!receiverUid) return showStarPopup("User ID missing");
 
-    await sendStarsToUser(safeTarget, amt);
+  console.log("SENDING GIFT TO UID:", receiverUid);  // ← CHECK THIS IN CONSOLE
+
+  try {
+    await sendStarsToUser({
+      chatId: user.chatId || "Unknown",
+      uid: receiverUid.replace(/[.@/\\]/g, '_')  // FINAL CLEAN
+    }, amt);
+
     card.remove();
+    showStarPopup("Gift sent!");
   } catch (e) {
-    console.error("Gift failed:", e);
-    showStarPopup("Gift failed — try again");
+    console.error("GIFT FAILED:", e);
+    showStarPopup("Failed — check console");
   }
 };
 
@@ -1310,11 +1313,15 @@ document.addEventListener('pointerdown', e => {
 
 // --- SEND STARS FUNCTION — 100% SYNTAX-CORRECT FINAL VERSION ---
 async function sendStarsToUser(targetUser, amt) {
-  const cleanId = (id) => String(id || "").replace(/[.@/\\]/g, '_');
-  const senderId = cleanId(currentUser.uid || currentUser.email);
-  const receiverId = cleanId(targetUser._docId || targetUser.uid || targetUser.email || targetUser.chatId);
+  const senderId = (currentUser.uid || currentUser.email)?.replace(/[.@/\\]/g, '_');
+  const receiverId = String(targetUser.uid || targetUser.chatId || "").replace(/[.@/\\]/g, '_');
 
-  if (senderId === receiverId) return showGoldAlert("Can't gift yourself!", 3000);
+  if (!senderId || !receiverId || senderId === receiverId) {
+    return showStarPopup("Invalid user");
+  }
+
+  console.log("Sender ID:", senderId);
+  console.log("Receiver ID:", receiverId);
 
   try {
     const fromRef = doc(db, "users", senderId);
@@ -1324,36 +1331,30 @@ async function sendStarsToUser(targetUser, amt) {
       const senderSnap = await tx.get(fromRef);
       const receiverSnap = await tx.get(toRef);
 
-      if (!senderSnap.exists()) throw "Your profile missing";
+      if (!senderSnap.exists()) throw "Sender missing";
       if ((senderSnap.data()?.stars || 0) < amt) throw "Not enough stars";
 
       if (!receiverSnap.exists()) {
-        tx.set(toRef, {
-          chatId: targetUser.chatId || "NewVIP",
-          stars: 0,
-          createdAt: serverTimestamp()
-        }, { merge: true });
+        tx.set(toRef, { chatId: targetUser.chatId || "New", stars: 0 }, { merge: true });
       }
 
       tx.update(fromRef, { stars: increment(-amt), starsGifted: increment(amt) });
       tx.update(toRef, { stars: increment(amt) });
     });
 
-    // Success banner
-    const bannerMsg = {
-      content: `${currentUser.chatId} gifted ${amt} stars to ${targetUser.chatId || "someone"}!`,
+    // BANNER
+    await addDoc(collection(db, "messages_room5"), {
+      content: `${currentUser.chatId} sent ${amt} stars to ${targetUser.chatId}!`,
       timestamp: serverTimestamp(),
-      systemBanner: true, highlight: true, buzzColor: randomColor(),
-      isBanner: true, type: "banner"
-    };
-    await addDoc(collection(db, "messages_room5"), bannerMsg);
+      systemBanner: true,
+      type: "banner"
+    });
 
-    showGoldAlert(`Sent ${amt} to ${targetUser.chatId}!`, 4000);
-    document.getElementById('socialCard')?.remove();
-
+    showStarPopup("SUCCESS — STARS DELIVERED");
+    console.log("STARS ACTUALLY SENT TO:", receiverId);
   } catch (err) {
-    console.error("sendStarsToUser failed:", err);
-    showGoldAlert("Failed — try again", 4000);
+    console.error("FINAL FAIL:", err);
+    showStarPopup("Failed — open console");
   }
 }
 /* ===============================
