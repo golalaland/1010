@@ -1268,24 +1268,22 @@ window.logoutVIP = async () => {
 };
 
 // FINAL LOGOUT — SAFE, FUN, AND WORKS WITH YOUR ANTI-AUTO-LOGIN SYSTEM
+// FINAL LOGOUT — Clean, fun, and 100% yours
 document.getElementById("hostLogoutBtn")?.addEventListener("click", async (e) => {
   e.preventDefault();
   e.stopPropagation();
 
   const btn = e.target.closest("button") || e.target;
-  if (btn.disabled) return;
+  if (btn.disabled) return; // prevent double-click
 
-  const originalText = btn.innerHTML;
-  btn.disabled = true;
-  btn.innerHTML = `Logging out... <span style="opacity:0.7">Bye</span>`;
+  btn.disabled = true; // just disable, no text change
 
   try {
     await signOut(auth);
     localStorage.removeItem("lastVipEmail");
-    sessionStorage.setItem("justLoggedOut", "true");  // ← THIS IS KEY
+    sessionStorage.setItem("justLoggedOut", "true");
     window.currentUser = null;
 
-    // FUN RANDOM MESSAGE
     const messages = [
       "See ya later, Alligator",
       "Off you go, $STRZ waiting when you return!",
