@@ -1038,31 +1038,32 @@ async function createLeaderboardAggregate(period, key) {
   }
 }
 /* -------------------------------------------
-   TAB SWITCHER (CLEAN + FULLY WORKING)
+   TAB SWITCHER — NOW 100% WORKING WITH GOLD DESIGN
 -------------------------------------------- */
 periodTabs.forEach(tab => {
   tab.addEventListener("click", () => {
     const period = tab.dataset.period;
 
-    // Highlight active tab
+    // ——— REMOVE active class + reset styles from ALL tabs ———
     periodTabs.forEach(t => {
       t.classList.remove("active");
-      t.style.background = "#222";
-      t.style.color = "#ccc";
+      // Remove any leftover inline styles from old code
+      t.style.background = "";
+      t.style.color = "";
+      t.style.border = "";
+      t.style.boxShadow = "";
     });
 
+    // ——— ONLY ADD .active CLASS TO CLICKED TAB ———
     tab.classList.add("active");
-    tab.style.background = "#ff1493";
-    tab.style.color = "#fff";
 
-    // Toggle timer
+    // ——— Show/hide daily timer ———
     dailyTimerContainer.style.display = period === "daily" ? "block" : "none";
 
-    // Fetch leaderboard
+    // ——— Fetch new leaderboard ———
     fetchLeaderboard(period);
   });
 });
-
 /* -------------------------------------------
    DAILY COUNTDOWN
 -------------------------------------------- */
