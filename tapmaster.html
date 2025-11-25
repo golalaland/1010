@@ -460,16 +460,19 @@ body.game-mode {
 
 .lb-tabs {
   display: flex;
-  gap: 4px;
+  gap: 6px;
   padding: 8px;
   background: #111;
   border-radius: 12px;
   justify-content: center;
-  margin: 15px 0;
+  margin: 16px auto;
+  width: fit-content;
 }
 
 .lb-tab {
-  padding: 12px 20px;
+  position: relative;
+  overflow: hidden;
+  padding: 11px 18px;
   border: none;
   border-radius: 10px;
   font-size: 14px;
@@ -477,8 +480,8 @@ body.game-mode {
   background: #222;
   color: #999;
   cursor: pointer;
-  transition: all 0.3s ease;
-  min-width: 100px;
+  transition: all 0.25s ease;
+  min-width: 96px;
 }
 
 /* THIS IS YOUR ORIGINAL ACTIVE STYLE — JUST CHANGED COLOR TO GOLD */
