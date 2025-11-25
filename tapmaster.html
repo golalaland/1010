@@ -339,35 +339,117 @@ body.game-mode {
   background-size: cover;
 }
 
+/* ———————————————————————
+   LEADERBOARD ROWS — PREMIUM GOLD EDITION
+   ——————————————————————— */
 .lb-row {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 6px;
-  padding: 8px 10px;
-  border-radius: 8px;
+  gap: 14px;
+  padding: 12px 16px;
+  margin: 8px 12px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(30,30,30,0.6), rgba(20,20,20,0.8));
+  border: 1px solid rgba(80,80,80,0.3);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
 }
 
+/* Hover glow effect */
+.lb-row:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(255,215,0,0.15);
+  border-color: rgba(255,215,0,0.3);
+}
+
+/* TOP 3 — ROYAL TREATMENT */
+.lb-row:nth-child(1) { /* 1st place */
+  background: linear-gradient(135deg, #2c2400, #4a3800);
+  border: 2px solid #FFD700;
+  box-shadow: 0 0 30px rgba(255,215,0,0.4);
+}
+.lb-row:nth-child(2) { /* 2nd */
+  background: linear-gradient(135deg, #2c2c35, #3a3a45);
+  border: 2px solid #C0C0C0;
+  box-shadow: 0 0 25px rgba(192,192,192,0.3);
+}
+.lb-row:nth-child(3) { /* 3rd */
+  background: linear-gradient(135deg, #352020, #453030);
+  border: 2px solid #CD7F32;
+  box-shadow: 0 0 25px rgba(205,127,50,0.3);
+}
+
+/* Golden shimmer animation for top 3 */
+.lb-row:nth-child(-n+3)::before {
+  content: '';
+  position: absolute;
+  top: 0; left: -100%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+  animation: shimmer 4s infinite;
+  pointer-events: none;
+}
+
+@keyframes shimmer {
+  0% { left: -100%; }
+  100% { left: 100%; }
+}
+
+/* Avatar — premium circular glow */
 .lb-avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
   object-fit: cover;
+  border: 3px solid #333;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.6);
+  transition: all 0.3s ease;
 }
 
+/* Top 3 avatars get colored borders */
+.lb-row:nth-child(1) .lb-avatar { border-color: #FFD700; box-shadow: 0 0 20px rgba(255,215,0,0.6); }
+.lb-row:nth-child(2) .lb-avatar { border-color: #C0C0C0; box-shadow: 0 0 20px rgba(192,192,192,0.5); }
+.lb-row:nth-child(3) .lb-avatar { border-color: #CD7F32; box-shadow: 0 0 20px rgba(205,127,50,0.5); }
+
+.lb-row:hover .lb-avatar {
+  transform: scale(1.1);
+}
+
+/* Text */
 .lb-info {
+  flex: 1;
   display: flex;
   flex-direction: column;
+  gap: 2px;
 }
 
 .lb-name {
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.6);
 }
 
 .lb-score {
-  font-size: 12px;
-  opacity: 0.7;
+  font-size: 13px;
+  color: #00ff9d;
+  font-weight: 600;
+  opacity: 1;
+}
+
+/* Your rank highlight when outside top 10 */
+.lb-row[style*="background:#111"] {
+  background: linear-gradient(90deg, #0a2e1f, #003322) !important;
+  border: 2px dashed #00ff9d !important;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.9; }
+  50% { opacity: 1; }
 }
 
 /* iOS Haptic Fallback - Shake Effect */
