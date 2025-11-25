@@ -200,6 +200,10 @@ function pushNotificationTx(tx, userId, message) {
 }
 
 
+/* ---------- Assign gift button click ---------- */
+giftBtn.onclick = sendGift;
+
+
 /* ========== SHARED UTILS ========== */
 let currentUser = null;
 let notificationsUnsubscribe = null;  // Single global unsubscribe
@@ -1252,16 +1256,11 @@ function renderSocialCard(user) {
 
   slider.oninput = () => label.textContent = `${slider.value} ⭐️`;
 
-  const giftBtn = document.createElement('button');
+  // GIFT BUTTON — FINAL WORKING VERSION (NO DUPLICATE DECLARATION)
 giftBtn.textContent = 'Gift';
 giftBtn.style.cssText = 'padding:7px 14px; border-radius:6px; border:none; font-weight:600; background:linear-gradient(90deg,#ff0099,#ff0066); color:#fff; cursor:pointer;';
 
-giftBtn.onclick = async () => {
-  const amt = parseInt(slider.value);
-  if (amt < 100) return showStarPopup("Minimum 100");
-  if ((currentUser?.stars || 0) < amt) return showStarPopup("Not enough stars");
-
-  // GIFT BUTTON — FINAL WORKING VERSION (NO DUPLICATE DECLARATION)
+// GIFT BUTTON — REUSING THE ONE FROM DOM (NO "const" = NO REDECLARE ERROR)
 giftBtn.textContent = 'Gift';
 giftBtn.style.cssText = 'padding:7px 14px; border-radius:6px; border:none; font-weight:600; background:linear-gradient(90deg,#ff0099,#ff0066); color:#fff; cursor:pointer;';
 
@@ -1273,8 +1272,8 @@ giftBtn.onclick = async () => {
   try {
     await sendStarsToUser({
       chatId: user.chatId || "VIP",
-      email: user.email,     // MAIN ID
-      uid: user.uid          // fallback
+      email: user.email,
+      uid: user.uid
     }, amt);
 
     showStarPopup("Gift sent successfully!");
