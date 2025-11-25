@@ -1561,14 +1561,14 @@ refs.sendBtn?.addEventListener("click", async () => {
     if ((currentUser.stars || 0) < SEND_COST)
       return showStarPopup("Not enough stars to send message.");
 
-    // Deduct stars (optimistic UI)
+    // Deduct stars
     currentUser.stars -= SEND_COST;
     refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
     await updateDoc(doc(db, "users", currentUser.uid), {
       stars: increment(-SEND_COST)
     });
 
-    // PREPARE REPLY DATA (clean & beautiful)
+    // REPLY DATA (clean & safe)
     const replyData = currentReplyTarget
       ? {
           replyTo: currentReplyTarget.id,
@@ -1581,7 +1581,7 @@ refs.sendBtn?.addEventListener("click", async () => {
         }
       : { replyTo: null, replyToContent: null, replyToChatId: null };
 
-    // Local echo (instant feedback)
+    // Local echo
     const tempId = "temp_" + Date.now();
     const tempMsg = {
       id: tempId,
@@ -1590,21 +1590,21 @@ refs.sendBtn?.addEventListener("click", async () => {
       chatId: currentUser.chatId,
       usernameColor: currentUser.usernameColor || "#ff69b4",
       timestamp: { toMillis: () => Date.now() },
-      ...replyData, // replyTo, replyToContent, replyToChatId
+      ...replyData,
       tempId
     };
 
-    // Save pending message locally (for reconnect recovery)
+    // Save pending locally
     const pending = JSON.parse(localStorage.getItem("localPendingMsgs") || "{}");
     pending[tempId] = { ...tempMsg, createdAt: Date.now() };
     localStorage.setItem("localPendingMsgs", JSON.stringify(pending));
 
-    // UI Reset
+    // Reset UI
     refs.messageInputEl.value = "";
-    cancelReply(); // This runs your clean cancelReply() function
+    cancelReply();
     scrollToBottom(refs.messagesEl);
 
-    // RENDER INSTANTLY
+    // Render instantly
     renderMessagesFromArray([tempMsg]);
 
     // SEND TO FIRESTORE
@@ -1616,10 +1616,10 @@ refs.sendBtn?.addEventListener("click", async () => {
       timestamp: serverTimestamp(),
       highlight: false,
       buzzColor: null,
-      ...replyData // replyTo, replyToContent, replyToChatId
+      ...replyData
     });
 
-    // Cleanup on success
+    // Cleanup
     delete pending[tempId];
     localStorage.setItem("localPendingMsgs", JSON.stringify(pending));
     console.log("Message sent:", msgRef.id);
@@ -1632,7 +1632,9 @@ refs.sendBtn?.addEventListener("click", async () => {
     currentUser.stars += SEND_COST;
     refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
   }
-});
+}); // ← THIS ONE WAS MISSING
+
+  
 // BUZZ MESSAGE (EPIC GLOW EFFECT)
 refs.buzzBtn?.addEventListener("click", async () => {
   if (!currentUser?.email) return showStarPopup("Sign in to BUZZ.");
