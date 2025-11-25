@@ -1388,6 +1388,7 @@ const sleep = ms => new Promise(res => setTimeout(res, ms));
 ================================= */
 function updateUIAfterAuth(user) {
   const subtitle = document.getElementById("roomSubtitle");
+   const hostsBtn = document.getElementById("openHostsBtn");
   const helloText = document.getElementById("helloText");
   const roomDescText = document.querySelector(".room-desc .text");
   const loginBar = document.getElementById("loginBar"); // adjust if different ID
