@@ -583,21 +583,40 @@ const handleNormalTap = debounce(async () => {
 // ======================================================
 //  MAIN TAP LISTENER — ONE CLEAN VERSION ONLY
 // ======================================================
-tapButton?.addEventListener(tapEvent, debounce(async (e) => {
+// === ULTRA-OPTIMIZED TAP HANDLER ===
+let tapQueue = 0;
+let processingTaps = false;
+
+tapButton?.addEventListener(tapEvent, (e) => {
   if (!running || tapLocked) return;
 
-  // RED HOT MODE
-  if (RedHotMode.active) {
-    RedHotMode.punish();
-    tapLocked = true;
-    setTimeout(() => tapLocked = false, 300);
-    return;
+  tapQueue++;
+  processTapQueue();
+});
+
+async function processTapQueue() {
+  if (processingTaps || tapQueue === 0) return;
+  processingTaps = true;
+
+  while (tapQueue > 0) {
+    tapQueue--;
+
+    // --- LIGHT LOGIC ONLY ---
+    if (RedHotMode.active) {
+      RedHotMode.punish();
+      tapLocked = true;
+      setTimeout(() => tapLocked = false, 300);
+    } else {
+      tapLocked = true;
+      setTimeout(() => tapLocked = false, 50);
+
+      // Run the heavy logic OUTSIDE the event
+      await Promise.resolve().then(handleNormalTap);
+    }
   }
 
-  tapLocked = true;
-  setTimeout(() => tapLocked = false, 50);
-  await handleNormalTap();
-}));
+  processingTaps = false;
+}
 
 // ======================================================
 //  START SESSION — FULL RESET
