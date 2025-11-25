@@ -1268,15 +1268,19 @@ window.logoutVIP = async () => {
 };
 
 // FINAL LOGOUT — SAFE, FUN, AND WORKS WITH YOUR ANTI-AUTO-LOGIN SYSTEM
-// FINAL LOGOUT — Clean, fun, and 100% yours
 document.getElementById("hostLogoutBtn")?.addEventListener("click", async (e) => {
   e.preventDefault();
   e.stopPropagation();
 
   const btn = e.target.closest("button") || e.target;
-  if (btn.disabled) return; // prevent double-click
+  if (btn.disabled) return;
 
-  btn.disabled = true; // just disable, no text change
+  // Save original text + hide it
+  const originalHTML = btn.innerHTML;
+  btn.disabled = true;
+
+  // Replace content with spinner only
+  btn.innerHTML = `<span class="btn-spinner visible"></span>`;
 
   try {
     await signOut(auth);
@@ -1297,15 +1301,12 @@ document.getElementById("hostLogoutBtn")?.addEventListener("click", async (e) =>
     const message = messages[Math.floor(Math.random() * messages.length)];
     showStarPopup(message);
 
-    // RELOAD = SMART. Triggers DOMContentLoaded → blocks auto-login
-    setTimeout(() => {
-      location.reload();  // ← KEEP THIS. IT'S PERFECT.
-    }, 1800);
+    setTimeout(() => location.reload(), 1800);
 
   } catch (err) {
     console.error("Logout failed:", err);
     btn.disabled = false;
-    btn.innerHTML = originalText;
+    btn.innerHTML = originalHTML;  // restore original text
     showStarPopup("Logout failed — try again!");
   }
 });
