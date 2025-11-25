@@ -301,43 +301,6 @@ button, input { font-size:16px; } /* prevents iOS zoom on tap */
   position: relative;
   overflow: hidden;
 }
-
-/* Keep your beautiful shimmer — now with cold gold tint */
-.lb-tab.active::after {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: linear-gradient(90deg, 
-    transparent, 
-    rgba(255, 215, 0, 0.15),   /* ← cold gold shimmer */
-    transparent
-  );
-  animation: goldShine 3.5s infinite;
-  pointer-events: none;
-}
-
-@keyframes goldShine {
-  0%   { transform: translateX(-100%); }
-  100% { transform: translateX(100%); }
-}
-body {
-  height: 100%;
-  margin: 0;
-  font-family: 'Montserrat', sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
-  padding: 18px 0 120px;
-  touch-action: manipulation;
-  -webkit-tap-highlight-color: transparent;
-  overflow-x: hidden;
-
-  /* blur effect */
-  position: relative;
-}
-
 body::before {
   content: '';
   position: fixed;
@@ -475,6 +438,37 @@ body.game-mode {
 @keyframes pulse {
   0%, 100% { opacity: 0.9; }
   50% { opacity: 1; }
+}
+
+.lb-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 8px;
+  background: #111;
+  border-radius: 12px;
+  justify-content: center;
+  margin: 15px 0;
+}
+
+.lb-tab {
+  padding: 12px 20px;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  background: #222;
+  color: #999;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  min-width: 100px;
+}
+
+/* THIS IS YOUR ORIGINAL ACTIVE STYLE — JUST CHANGED COLOR TO GOLD */
+.lb-tab.active {
+  background: #FFD700 !important;   /* ← your gold */
+  color: #000 !important;
+  font-weight: bold !important;
+  box-shadow: 0 4px 15px rgba(255,215,0,0.4);
 }
 
 /* iOS Haptic Fallback - Shake Effect */
