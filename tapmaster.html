@@ -458,10 +458,11 @@ body.game-mode {
   50% { opacity: 1; }
 }
 
+/* ——— TAB CONTAINER — tighter & perfectly centered ——— */
 .lb-tabs {
   display: flex;
-  gap: 6px;
-  padding: 8px;
+  gap: 4px;                    /* reduced from 6px */
+  padding: 7px;                /* reduced from 8px */
   background: #111;
   border-radius: 12px;
   justify-content: center;
@@ -469,24 +470,29 @@ body.game-mode {
   width: fit-content;
 }
 
+/* ——— TAB BUTTONS — smaller, tighter, perfectly balanced ——— */
 .lb-tab {
   position: relative;
   overflow: hidden;
-  padding: 11px 18px;
+  padding: 9px 14px;           /* ← reduced from 11px 18px → much tighter */
   border: none;
   border-radius: 10px;
-  font-size: 9px;
+  font-size: 13.5px;           /* ← slightly smaller font */
   font-weight: 600;
   background: #222;
   color: #999;
   cursor: pointer;
   transition: all 0.25s ease;
-  min-width: 96px;
+  min-width: unset;            /* ← remove forced width */
+  flex: 1;                     /* ← all tabs same width automatically */
+  max-width: 110px;            /* ← prevents "This Month" from being too wide */
+  text-align: center;
+  white-space: nowrap;
 }
 
-/* THIS IS YOUR ORIGINAL ACTIVE STYLE — JUST CHANGED COLOR TO GOLD */
+/* ——— ACTIVE TAB — your exact gold style, no change ——— */
 .lb-tab.active {
-  background: #FFD700 !important;   /* ← your gold */
+  background: #FFD700 !important;
   color: #000 !important;
   font-weight: bold !important;
   box-shadow: 0 4px 15px rgba(255,215,0,0.4);
