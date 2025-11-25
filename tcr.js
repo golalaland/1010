@@ -1267,18 +1267,49 @@ window.logoutVIP = async () => {
   location.reload();
 };
 
+// FINAL LOGOUT — SAFE, FUN, AND WORKS WITH YOUR ANTI-AUTO-LOGIN SYSTEM
+document.getElementById("hostLogoutBtn")?.addEventListener("click", async (e) => {
+  e.preventDefault();
+  e.stopPropagation();
 
-/* ALSO — block auto-login right after logout */
-window.addEventListener("DOMContentLoaded", () => {
-  if (sessionStorage.getItem("justLoggedOut")) {
-    console.log("User just logged out — blocking auto-login");
-    sessionStorage.removeItem("justLoggedOut");
-    // Do NOT run tryAutoLogin() here
-    return;
+  const btn = e.target.closest("button") || e.target;
+  if (btn.disabled) return;
+
+  const originalText = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = `Logging out... <span style="opacity:0.7">Bye</span>`;
+
+  try {
+    await signOut(auth);
+    localStorage.removeItem("lastVipEmail");
+    sessionStorage.setItem("justLoggedOut", "true");  // ← THIS IS KEY
+    window.currentUser = null;
+
+    // FUN RANDOM MESSAGE
+    const messages = [
+      "See ya later, Alligator",
+      "Off you go, $STRZ waiting when you return!",
+      "Catch you on the flip side!",
+      "Adios, Amigo!",
+      "Peace out, Player!",
+      "Hasta la vista, Baby!",
+      "hmmm, now why'd you do that..",
+      "Off you go, Champ!"
+    ];
+    const message = messages[Math.floor(Math.random() * messages.length)];
+    showStarPopup(message);
+
+    // RELOAD = SMART. Triggers DOMContentLoaded → blocks auto-login
+    setTimeout(() => {
+      location.reload();  // ← KEEP THIS. IT'S PERFECT.
+    }, 1800);
+
+  } catch (err) {
+    console.error("Logout failed:", err);
+    btn.disabled = false;
+    btn.innerHTML = originalText;
+    showStarPopup("Logout failed — try again!");
   }
-
-  // Only run auto-login if not just logged out
-  setTimeout(tryAutoLogin, 1000);
 });
 
 /* ===============================
@@ -3950,54 +3981,3 @@ function playFullVideo(video) {
   modal.onclick = () => modal.remove();
   document.body.appendChild(modal);
 }
-// BEST-IN-CLASS LOGOUT HANDLER (2025 edition)
-document.getElementById("hostLogoutBtn")?.addEventListener("click", async (e) => {
-  e.preventDefault();
-  e.stopPropagation();
-
-  const btn = e.target.closest("button") || e.target; // super safe
-  if (btn.disabled) return; // prevent double-click chaos
-
-  const originalText = btn.innerHTML;
-  btn.disabled = true;
-  btn.innerHTML = `Logging out... <span style="opacity:0.7">👋</span>`;
-
-  try {
-    // Firebase sign out
-    await signOut(auth);
-
-    // Clean everything
-    localStorage.removeItem("lastVipEmail");
-    sessionStorage.setItem("justLoggedOut", "true");
-
-    // Global user reset (if you have it)
-    window.currentUser = null;
-
-    // FUN LOGOUT MESSAGES (you nailed this)
-    const logoutMessages = [
-      "See ya later, Alligator",
-      "Off you go, $STRZ waiting when you return!",
-      "Catch you on the flip side!",
-      "Adios, Amigo!",
-      "Peace out, Player!",
-      "Hasta la vista, Baby!",
-      "hmmm, now why'd you do that..",
-      "Off you go, Champ!"
-    ];
-    const message = logoutMessages[Math.floor(Math.random() * logoutMessages.length)];
-
-    // Show the popup
-    showStarPopup(message);
-
-    // Smooth redirect after popup (give user time to read the joke)
-    setTimeout(() => {
-      window.location.href = "login.html"; // or index.html — whatever your login page is
-    }, 1800);
-
-  } catch (err) {
-    console.error("Logout failed:", err);
-    btn.disabled = false;
-    btn.innerHTML = originalText;
-    showStarPopup("Logout failed — try again!");
-  }
-});
