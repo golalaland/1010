@@ -868,48 +868,48 @@ function renderMessagesFromArray(messages) {
       wrapper.appendChild(usernameEl);
 
       // Reply preview
-  if (m.replyTo) {
-  const replyPreview = document.createElement("div");
-  replyPreview.className = "reply-preview";
-  
-  // Clean & safe content
-  const replyText = (m.replyToContent || "Original message").replace(/\n/g, " ").trim();
-  const shortText = replyText.length > 80 ? replyText.substring(0, 80) + "..." : replyText;
-  
-  replyPreview.innerHTML = `
-    <strong style="color:#FFD700;">↳ ${m.replyToChatId || "someone"}:</strong> 
-    <span style="color:#ccc;">${shortText}</span>
-  `;
-
-  // Style it sexy but safe (no multiline cssText = no crash)
-  replyPreview.style.cssText = "background:rgba(255,255,255,0.08);border-left:3px solid #FFD700;padding:6px 10px;margin:6px 0 4px;border-radius:0 6px 6px 0;font-size:13px;cursor:pointer;";
-
-  replyPreview.onclick = () => {
-    const originalMsg = document.getElementById(m.replyTo);
-    if (originalMsg) {
-      originalMsg.scrollIntoView({ behavior: "smooth", block: "center" });
-      originalMsg.style.outline = "3px solid #FFD700";
-      originalMsg.style.background = "rgba(255,215,0,0.2)";
-      setTimeout(() => {
-        originalMsg.style.outline = "";
-        originalMsg.style.background = "";
-      }, 2000);
-    }
-  };
-
-  wrapper.appendChild(replyPreview);
+if (m.replyTo) {
+        const replyPreview = document.createElement("div");
+        replyPreview.className = "reply-preview";
+        replyPreview.textContent = m.replyToContent || "Original message";
+        replyPreview.style.cursor = "pointer";
+        replyPreview.onclick = () => {
+          const originalMsg = document.getElementById(m.replyTo);
+          if (originalMsg) {
+            originalMsg.scrollIntoView({ behavior: "smooth", block: "center" });
+            originalMsg.style.outline = "2px solid #FFD700";
+            setTimeout(() => originalMsg.style.outline = "", 1000);
+          }
+        };
+        wrapper.appendChild(replyPreview);
+      }
+      const contentEl = document.createElement("span");
+      contentEl.className = "content";
+      contentEl.textContent = " " + (m.content || "");
+      wrapper.appendChild(contentEl);
+      wrapper.addEventListener("click", (e) => {
+        e.stopPropagation();
+        showTapModal(wrapper, {
+          id: item.id,
+          chatId: m.chatId,
+          uid: m.uid,
+          content: m.content,
+          replyTo: m.replyTo,
+          replyToContent: m.replyToContent
+        });
+      });
+    }
+    refs.messagesEl.appendChild(wrapper);
+  });
+  // Auto-scroll
+  if (!scrollPending) {
+    scrollPending = true;
+    requestAnimationFrame(() => {
+      refs.messagesEl.scrollTop = refs.messagesEl.scrollHeight;
+      scrollPending = false;
+    });
+  }
 }
-      
-  // Auto-scroll
-  if (!scrollPending) {
-    scrollPending = true;
-    requestAnimationFrame(() => {
-      refs.messagesEl.scrollTop = refs.messagesEl.scrollHeight;
-      scrollPending = false;
-    });
-  }
-}
-
 /* ---------- 🔔 Messages Listener (Final Optimized Version) ---------- */
 function attachMessagesListener() {
   const q = query(collection(db, CHAT_COLLECTION), orderBy("timestamp", "asc"));
