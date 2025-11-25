@@ -868,25 +868,19 @@ function renderMessagesFromArray(messages) {
       wrapper.appendChild(usernameEl);
 
       // Reply preview
-     if (m.replyTo) {
+   if (m.replyTo) {
   const replyPreview = document.createElement("div");
   replyPreview.className = "reply-preview";
-  replyPreview.style.cssText = `
-    background: rgba(255,255,255,0.08);
-    border-left: 3px solid #FFD700;
-    padding: 6px 10px;
-    margin: 4px 0 6px;
-    border-radius: 0 6px 6px 0;
-    font-size: 13px;
-    color: #ccc;
-    cursor: pointer;
-    max-width: 100%;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  `;
-  replyPreview.innerHTML = `↳ <strong>${m.replyToChatId}</strong>: ${m.replyToContent}`;
-  
+
+  // ← All on one line OR properly escaped = no more SyntaxError
+  replyPreview.style.cssText = "background:rgba(255,255,255,0.08);border-left:3px solid #FFD700;padding:6px 10px;margin:4px 0 6px;border-radius:0 6px 6px 0;font-size:13px;color:#ccc;cursor:pointer;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;";
+
+  // Safe fallback if fields are missing
+  const chatId = m.replyToChatId || "someone";
+  const content = m.replyToContent || "Original message";
+
+  replyPreview.innerHTML = `↳ <strong>${chatId}</strong>: ${content}`;
+
   replyPreview.onclick = () => {
     const target = document.getElementById(m.replyTo);
     if (target) {
@@ -895,6 +889,7 @@ function renderMessagesFromArray(messages) {
       setTimeout(() => target.style.background = "", 2000);
     }
   };
+
   wrapper.appendChild(replyPreview);
 }
       
