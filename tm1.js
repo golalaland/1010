@@ -921,19 +921,16 @@ setTimeout(() => {
 }, 500);
 
 /* ============================================================
-   OPTIMIZED LEADERBOARD SYSTEM — SUPER FAST + NON-BLOCKING
+   LEADERBOARD SYSTEM — FULLY FIXED + TAB HIGHLIGHTER WORKS
 ============================================================ */
 
-/* ---------- DOM ---------- */
 const leaderboardBtn = document.getElementById("leaderboardBtn");
 const leaderboardModal = document.getElementById("leaderboardModal");
 const closeLeaderboard = document.getElementById("closeLeaderboard");
 const leaderboardList = document.getElementById("leaderboardList");
-const leaderboardDescription = document.getElementById
-("leaderboardDescription");
+const leaderboardDescription = document.getElementById("leaderboardDescription");
 const periodTabs = document.querySelectorAll(".lb-tab");
 const dailyTimerContainer = document.getElementById("dailyTimer");
-
 const sliderWrapper = document.getElementById("leaderboardImageSlider");
 const sliderTrack = sliderWrapper?.querySelector(".slider-track");
 const slides = sliderWrapper?.querySelectorAll(".leaderboard-slide") || [];
@@ -941,71 +938,65 @@ let currentSlide = 0;
 let slideInterval = null;
 const slideCount = slides.length;
 
-/* ============================================================
-   NON-BLOCKING CLICK HANDLER (FIXES INP)
-============================================================ */
+// ——— CACHE SYSTEM ———
+const CACHE_DURATION = 60_000; // 60 seconds
+const leaderboardCache = {
+  daily: { data: null, time: 0 },
+  weekly: { data: null, time: 0 },
+  monthly: { data: null, time: 0 }
+};
+
+// ——— OPEN LEADERBOARD ———
 leaderboardBtn?.addEventListener("click", () => {
   leaderboardModal.style.display = "block";
 
-  // Offload heavy work
+  // Auto-select first active tab or default to daily
+  const activeTab = document.querySelector(".lb-tab.active") || periodTabs[0];
+  if (activeTab) {
+    periodTabs.forEach(t => t.classList.remove("active"));
+    activeTab.classList.add("active");
+    dailyTimerContainer.style.display = activeTab.dataset.period === "daily" ? "block" : "none";
+  }
+
   queueMicrotask(() => {
-    fetchLeaderboard("daily");
+    fetchLeaderboard(activeTab?.dataset.period || "daily");
     startSlider();
+    startDailyCountdown(); // start timer
   });
 });
 
-/* Close = instant */
 closeLeaderboard?.addEventListener("click", () => {
   leaderboardModal.style.display = "none";
   stopSlider();
 });
 
-/* ============================================================
-   SLIDER — GPU ACCELERATED + NON BLOCKING
-============================================================ */
+// ——— SLIDER ———
 function showSlide(index) {
-  currentSlide = index;
-  // Force GPU acceleration
-  sliderTrack.style.transform = `translate3d(-${index * 100}%, 0, 0)`;
+  currentSlide = (index + slideCount) % slideCount;
+  sliderTrack.style.transform = `translate3d(-${currentSlide * 100}%, 0, 0)`;
 }
-
 function startSlider() {
-  if (slideInterval) return; // prevent duplicates
-  slideInterval = setInterval(() => {
-    showSlide((currentSlide + 1) % slideCount);
-  }, 5000);
+  if (slideInterval || slideCount <= 1) return;
+  slideInterval = setInterval(() => showSlide(currentSlide + 1), 5000);
 }
-
 function stopSlider() {
   clearInterval(slideInterval);
   slideInterval = null;
 }
 
-// Swipe
+// Touch swipe
 let startX = 0;
-sliderWrapper?.addEventListener("touchstart", e => {
-  startX = e.touches[0].clientX;
-  stopSlider();
-});
-
+sliderWrapper?.addEventListener("touchstart", e => { startX = e.touches[0].clientX; stopSlider(); }, { passive: true });
 sliderWrapper?.addEventListener("touchend", e => {
-  let endX = e.changedTouches[0].clientX;
-  if (endX - startX > 50) showSlide((currentSlide - 1 + slideCount) % slideCount);
-  if (startX - endX > 50) showSlide((currentSlide + 1) % slideCount);
+  const endX = e.changedTouches[0].clientX;
+  if (Math.abs(endX - startX) > 50) {
+    showSlide(endX > startX ? currentSlide - 1 : currentSlide + 1);
+  }
   startSlider();
 });
 
-/* ============================================================
-   PERIOD KEY HELPERS
-============================================================ */
-function getLeaderboardKey(period) {
-  const now = new Date();
-  if (period === "daily") return now.toISOString().split("T")[0];
-  if (period === "weekly") return `${now.getFullYear()}-W${getWeek(now)}`;
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-}
-
-function getWeek(date) {
+// ——— WEEK HELPER (FIXED) ———
+function getWeek(date = new Date()) {
   const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
   const dayNum = d.getUTCDay() || 7;
   d.setUTCDate(d.getUTCDate() + 4 - dayNum);
@@ -1013,39 +1004,40 @@ function getWeek(date) {
   return Math.ceil(((d - yearStart) / 86400000 + 1) / 7);
 }
 
-/* ============================================================
-   ASYNC FIRESTORE FETCH (NON BLOCKING)
-============================================================ */
+// ——— KEY GENERATOR ———
+function getLeaderboardKey(period) {
+  const now = new Date();
+  if (period === "daily") return now.toISOString().split("T")[0];
+  if (period === "weekly") return `${now.getFullYear()}-W${getWeek(now)}`;
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+}
+
+// ——— FETCH LEADERBOARD ———
 async function fetchLeaderboard(period = "daily") {
   const now = Date.now();
-
-  // serve from cache
   if (leaderboardCache[period].data && now - leaderboardCache[period].time < CACHE_DURATION) {
     renderLeaderboardFromData(leaderboardCache[period].data);
     return;
   }
 
-  leaderboardList.innerHTML = "<li>Loading…</li>";
+  leaderboardList.innerHTML = `<li style="text-align:center;padding:20px;color:#888;">Loading…</li>`;
 
   try {
     const key = getLeaderboardKey(period);
-    const usersCol = collection(db, "users");
     const fieldPath = period === "daily" ? `tapsDaily.${key}` :
-                      period === "weekly" ? `tapsWeekly.${key}` :
-                                            `tapsMonthly.${key}`;
+                     period === "weekly" ? `tapsWeekly.${key}` : `tapsMonthly.${key}`;
 
-    // Top 33 fetch
-    const q = query(usersCol, orderBy(fieldPath, "desc"), limit(33));
+    const q = query(collection(db, "users"), orderBy(fieldPath, "desc"), limit(33));
     const snap = await getDocs(q);
 
     const topScores = [];
     snap.forEach(doc => {
       const d = doc.data();
-      const taps = d?.[period === "daily" ? "tapsDaily" : period === "weekly" ? "tapsWeekly" : "tapsMonthly"]?.[key] || 0;
+      const taps = d.tapsDaily?.[key] ?? d.tapsWeekly?.[key] ?? d.tapsMonthly?.[key] ?? 0;
       if (taps > 0) {
         topScores.push({
           uid: doc.id,
-          chatId: d.chatId || doc.id.slice(0, 6),
+          chatId: d.chatId || "Player",
           taps,
           gender: d.gender,
           popupPhoto: d.popupPhoto || ""
@@ -1053,131 +1045,100 @@ async function fetchLeaderboard(period = "daily") {
       }
     });
 
-    // My rank (computed async, non-blocking)
-    let myTaps = 0;
-    let myRank = null;
-
-    if (currentUser) {
+    // My rank (non-blocking)
+    let myTaps = 0, myRank = null;
+    if (currentUser?.uid) {
       const myDoc = await getDoc(doc(db, "users", currentUser.uid));
       if (myDoc.exists()) {
         const d = myDoc.data();
-        myTaps = d?.[period === "daily" ? "tapsDaily" : period === "weekly" ? "tapsWeekly" : "tapsMonthly"]?.[key] || 0;
+        myTaps = d.tapsDaily?.[key] ?? d.tapsWeekly?.[key] ?? d.tapsMonthly?.[key] ?? 0;
 
-        const inTop = topScores.find(u => u.uid === currentUser.uid);
-        if (inTop) {
-          myRank = topScores.indexOf(inTop) + 1;
-        } else if (myTaps > 0) {
-          // Offload heavy rank count
-          const countSnap = await getCountFromServer(query(usersCol, where(fieldPath, ">", myTaps)));
-          myRank = countSnap.data().count + 1;
-        }
+        const inTop = topScores.findIndex(u => u.uid === currentUser.uid);
+        myRank = inTop !== -1 ? inTop + 1 : myTaps > 0 ? (await getCountFromServer(
+          query(collection(db, "users"), where(fieldPath, ">", myTaps))
+        )).data().count + 1 : null;
       }
     }
 
     const payload = { topScores, myTaps, myRank };
-    leaderboardCache[period].data = payload;
-    leaderboardCache[period].time = now;
-
+    leaderboardCache[period] = { data: payload, time: now };
     renderLeaderboardFromData(payload);
 
-  } catch (e) {
-    console.error(e);
-    leaderboardList.innerHTML = "<li>Error loading leaderboard</li>";
+  } catch (err) {
+    console.error("Leaderboard fetch failed:", err);
+    leaderboardList.innerHTML = `<li style="color:#f66;text-align:center;">Error loading leaderboard</li>`;
   }
 }
 
-/* ============================================================
-   NON-BLOCKING RENDERER (INP SAFE)
-============================================================ */
-function renderLeaderboardFromData(data) {
-  const { topScores, myTaps, myRank } = data;
+// ——— RENDER ———
+function renderLeaderboardFromData({ topScores, myTaps, myRank }) {
   const display = topScores.slice(0, 10);
-
-  const tapsEl = document.getElementById("myDailyTapsValue");
-  const rankEl = document.getElementById("myRankFull");
-
-  if (tapsEl) tapsEl.textContent = myTaps.toLocaleString();
-  if (rankEl) rankEl.textContent = myRank ? `#${myRank}` : "-";
+  document.getElementById("myDailyTapsValue")?.replaceChildren(myTaps.toLocaleString());
+  document.getElementById("myRankFull")?.replaceChildren(myRank ? `#${myRank}` : "—");
 
   if (display.length === 0) {
-    leaderboardList.innerHTML = "<li>No taps yet — be the first!</li>";
+    leaderboardList.innerHTML = `<li style="text-align:center;padding:30px;color:#888;">No taps yet — be the first!</li>`;
     return;
   }
 
-  const html = display.map((u, i) => {
-    const name = (u.chatId || "Anon")
-      .split(" ")
-      .map(w => w[0].toUpperCase() + w.slice(1).toLowerCase())
-      .join(" ");
-
-    const colors = ["#FFD700", "#C0C0C0", "#CD7F32"];
-    const style = i < 3 ? `color:${colors[i]};font-weight:700;` : "";
-
-    return `
-      <li class="lb-row" style="${style}">
-        <img class="lb-avatar" loading="lazy"
-             src="${getAvatar(u)}"
-             onerror="this.src='${DEFAULT_NEUTRAL}'" />
-        <div class="lb-info">
-          <span class="lb-name">${i + 1}. ${name}</span>
-          <span class="lb-score">${u.taps.toLocaleString()} taps</span>
-        </div>
-      </li>
-    `;
-  }).join("");
-
-  leaderboardList.innerHTML = html;
+  const colors = ["#FFD700", "#C0C0C0", "#CD7F32"];
+  leaderboardList.innerHTML = display.map((u, i) => `
+    <li class="lb-row" style="color:${i < 3 ? colors[i] : '#fff'};font-weight:${i < 3 ? '700' : '500'};">
+      <img class="lb-avatar" loading="lazy" src="${getAvatar(u)}" onerror="this.src='assets/avatars/neutral.png'">
+      <div class="lb-info">
+        <span class="lb-name">${i + 1}. ${u.chatId}</span>
+        <span class="lb-score">${u.taps.toLocaleString()} taps</span>
+      </div>
+    </li>
+  `).join("");
 
   if (currentUser && myRank > 10) {
     leaderboardList.insertAdjacentHTML("beforeend", `
-      <li class="lb-row" style="text-align:center;color:#aaa;padding:10px;">
-        You’re <strong>#${myRank}</strong> with ${myTaps.toLocaleString()} taps
+      <li class="lb-row" style="text-align:center;color:#00ff9d;background:rgba(0,255,157,0.1);margin:10px 0;padding:12px;border-radius:8px;">
+        <strong>You → #${myRank}</strong> with ${myTaps.toLocaleString()} taps
       </li>
     `);
   }
 }
 
-/* ============================================================
-   TAB SWITCHER — FAST + NON-BLOCKING
-============================================================ */
+// ——— TAB SWITCHER — NOW WORKS 100% ———
 periodTabs.forEach(tab => {
   tab.addEventListener("click", () => {
+    // Remove active from all
     periodTabs.forEach(t => t.classList.remove("active"));
+    // Add to clicked
     tab.classList.add("active");
 
-    dailyTimerContainer.style.display =
-      tab.dataset.period === "daily" ? "block" : "none";
+    // Show/hide daily timer
+    dailyTimerContainer.style.display = tab.dataset.period === "daily" ? "block" : "none";
 
-    // Offload heavy fetch
-    requestAnimationFrame(() => {
-      fetchLeaderboard(tab.dataset.period);
-    });
+    // Update description (optional)
+    leaderboardDescription && (leaderboardDescription.textContent = 
+      tab.dataset.period === "daily" ? "Top tappers today" :
+      tab.dataset.period === "weekly" ? "This week's champions" : "Monthly legends"
+    );
+
+    // Fetch new data
+    requestAnimationFrame(() => fetchLeaderboard(tab.dataset.period));
   });
 });
 
-/* ============================================================
-   DAILY TIMER
-============================================================ */
+// ——— DAILY TIMER ———
 function startDailyCountdown() {
-  const countdownEl = document.getElementById("dailyTimerValue");
-
-  function tick() {
+  const el = document.getElementById("dailyTimerValue");
+  if (!el) return;
+  const tick = () => {
     const now = new Date();
-    const next = new Date();
-    next.setHours(24, 0, 0, 0);
-
-    const diff = (next - now) / 1000;
+    const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+    const diff = (tomorrow - now) / 1000;
     const h = String(Math.floor(diff / 3600)).padStart(2, "0");
     const m = String(Math.floor((diff % 3600) / 60)).padStart(2, "0");
     const s = String(Math.floor(diff % 60)).padStart(2, "0");
-
-    countdownEl.textContent = `${h}:${m}:${s}`;
-  }
-
+    el.textContent = `${h}:${m}:${s}`;
+  };
   tick();
   setInterval(tick, 1000);
 }
-
 
 /* -------------------------------------------
    MODAL OPEN/CLOSE
