@@ -291,16 +291,34 @@ body {display:flex;justify-content:center;align-items:flex-start;padding:18px 0 
 .hidden { display:none!important; }
 button, input { font-size:16px; } /* prevents iOS zoom on tap */
 
-/* ——— YOUR EXACT TAB DESIGN — JUST PURE COLD GOLD ——— */
+/* ——— ACTIVE TAB: COLD GOLD UNDERLINE + SHIMMER ——— */
 .lb-tab.active {
-  background: linear-gradient(135deg, #1a1a1a, #2a2a2a) !important;
-  border-bottom: 4px solid #FFD700 !important;     /* ← COLD GOLD (this is the real #FFD700) */
-  color: #ffffff !important;
+  background: #222 !important;
+  color: #fff !important;
   font-weight: 700 !important;
-  box-shadow: 0 4px 20px rgba(255, 215, 0, 0.35) !important;
-  position: relative;
-  overflow: hidden;
+  border-bottom: 4px solid #FFD700 !important;
+  border-top: 4px solid transparent !important;
+  padding-bottom: 7px !important;
+  box-shadow: 0 4px 16px rgba(255,215,0,0.3) !important;
 }
+
+/* ——— THE SHIMMER YOU ASKED FOR ——— */
+.lb-tab.active::before {
+  content: '';
+  position: absolute;
+  top: 0; left: -100%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,215,0,0.25), transparent);
+  animation: shimmer 3s infinite;
+  pointer-events: none;
+}
+
+@keyframes shimmer {
+  0%   { left: -100%; }
+  100% { left: 100%; }
+}
+
 body::before {
   content: '';
   position: fixed;
