@@ -901,31 +901,98 @@ setTimeout(() => {
   }
 }, 500);
 
-/* ------------------------------
-   LEADERBOARD SETUP (FIXED + CLEAN)
-------------------------------- */
+/* ============================================================
+   OPTIMIZED LEADERBOARD SYSTEM — SUPER FAST + NON-BLOCKING
+============================================================ */
 
 /* ---------- DOM ---------- */
 const leaderboardBtn = document.getElementById("leaderboardBtn");
 const leaderboardModal = document.getElementById("leaderboardModal");
 const closeLeaderboard = document.getElementById("closeLeaderboard");
 const leaderboardList = document.getElementById("leaderboardList");
-const leaderboardSlides = document.querySelectorAll(".leaderboard-slide");
-const leaderboardDescription = document.getElementById("leaderboardDescription");
+const leaderboardDescription = document.getElementByElementById("leaderboardDescription");
 const periodTabs = document.querySelectorAll(".lb-tab");
-const dailyTimerContainer = document.getElementById("dailyTimer"); // FIXED
+const dailyTimerContainer = document.getElementById("dailyTimer");
 
+const sliderWrapper = document.getElementById("leaderboardImageSlider");
+const sliderTrack = sliderWrapper?.querySelector(".slider-track");
+const slides = sliderWrapper?.querySelectorAll(".leaderboard-slide") || [];
+let currentSlide = 0;
+let slideInterval = null;
+const slideCount = slides.length;
 
-/* -------------------------------------------
-   LEADERBOARD KEY HELPERS
--------------------------------------------- */
+/* ============================================================
+   NON-BLOCKING CLICK HANDLER (FIXES INP)
+============================================================ */
+leaderboardBtn?.addEventListener("click", () => {
+  leaderboardModal.style.display = "block";
+
+  // Offload heavy work
+  queueMicrotask(() => {
+    fetchLeaderboard("daily");
+    startSlider();
+  });
+});
+
+/* Close = instant */
+closeLeaderboard?.addEventListener("click", () => {
+  leaderboardModal.style.display = "none";
+  stopSlider();
+});
+
+/* ============================================================
+   SLIDER — GPU ACCELERATED + NON BLOCKING
+============================================================ */
+function showSlide(index) {
+  currentSlide = index;
+  // Force GPU acceleration
+  sliderTrack.style.transform = `translate3d(-${index * 100}%, 0, 0)`;
+}
+
+function startSlider() {
+  if (slideInterval) return; // prevent duplicates
+  slideInterval = setInterval(() => {
+    showSlide((currentSlide + 1) % slideCount);
+  }, 5000);
+}
+
+function stopSlider() {
+  clearInterval(slideInterval);
+  slideInterval = null;
+}
+
+// Swipe
+let startX = 0;
+sliderWrapper?.addEventListener("touchstart", e => {
+  startX = e.touches[0].clientX;
+  stopSlider();
+});
+
+sliderWrapper?.addEventListener("touchend", e => {
+  let endX = e.changedTouches[0].clientX;
+  if (endX - startX > 50) showSlide((currentSlide - 1 + slideCount) % slideCount);
+  if (startX - endX > 50) showSlide((currentSlide + 1) % slideCount);
+  startSlider();
+});
+
+/* ============================================================
+   FIRESTORE DATA CACHE
+============================================================ */
+const leaderboardCache = {
+  daily: { data: null, time: 0 },
+  weekly: { data: null, time: 0 },
+  monthly: { data: null, time: 0 }
+};
+const CACHE_DURATION = 25000; // 25 seconds
+
+/* ============================================================
+   PERIOD KEY HELPERS
+============================================================ */
 function getLeaderboardKey(period) {
   const now = new Date();
   if (period === "daily") return now.toISOString().split("T")[0];
   if (period === "weekly") return `${now.getFullYear()}-W${getWeek(now)}`;
-  if (period === "monthly")
-    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-  return null;
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
 }
 
 function getWeek(date) {
@@ -936,97 +1003,35 @@ function getWeek(date) {
   return Math.ceil(((d - yearStart) / 86400000 + 1) / 7);
 }
 
-
-/* ------------------------------
-   LEADERBOARD IMAGE SLIDER (FADE)
-------------------------------- */
-const sliderWrapper = document.getElementById("leaderboardImageSlider");
-const sliderTrack = sliderWrapper.querySelector(".slider-track");
-const slides = sliderWrapper.querySelectorAll(".leaderboard-slide");
-
-let currentSlide = 0;
-let slideInterval = null;
-const slideCount = slides.length;
-
-// Move slider to a given index
-function showSlide(index) {
-  currentSlide = index;
-  sliderTrack.style.transform = `translateX(-${index * 100}%)`;
-}
-
-// Auto-slide every 3 seconds
-function startSlider() {
-  slideInterval = setInterval(() => {
-    let next = (currentSlide + 1) % slideCount;
-    showSlide(next);
-  }, 21000);
-}
-
-function stopSlider() {
-  clearInterval(slideInterval);
-}
-
-// Mobile swipe support
-let startX = 0;
-
-sliderWrapper.addEventListener("touchstart", e => {
-  startX = e.touches[0].clientX;
-  stopSlider();
-});
-
-sliderWrapper.addEventListener("touchend", e => {
-  let endX = e.changedTouches[0].clientX;
-  if (endX - startX > 50) {
-    // swipe right
-    let prev = (currentSlide - 1 + slideCount) % slideCount;
-    showSlide(prev);
-  }
-  if (startX - endX > 50) {
-    // swipe left
-    let next = (currentSlide + 1) % slideCount;
-    showSlide(next);
-  }
-  startSlider();
-});
-
-// Init
-showSlide(0);
-startSlider();
-
-// Optional: stop when closing leaderboard modal
-closeLeaderboard?.addEventListener("click", () => stopSlider());
-
-/* -------------------------------------------
-   FETCH LEADERBOARD
--------------------------------------------- */
+/* ============================================================
+   ASYNC FIRESTORE FETCH (NON BLOCKING)
+============================================================ */
 async function fetchLeaderboard(period = "daily") {
   const now = Date.now();
 
-  // Use cache if fresh
-  if (leaderboardCache[period].data && (now - leaderboardCache[period].timestamp < CACHE_DURATION)) {
+  // serve from cache
+  if (leaderboardCache[period].data && now - leaderboardCache[period].time < CACHE_DURATION) {
     renderLeaderboardFromData(leaderboardCache[period].data);
     return;
   }
 
-  leaderboardList.innerHTML = "<li>Loading...</li>";
-
-  const key = getLeaderboardKey(period);
-  const usersCol = collection(db, "users");
-  const fieldPath = period === "daily" ? `tapsDaily.${key}` :
-                    period === "weekly" ? `tapsWeekly.${key}` : `tapsMonthly.${key}`;
+  leaderboardList.innerHTML = "<li>Loading…</li>";
 
   try {
-    // Fetch top 33
+    const key = getLeaderboardKey(period);
+    const usersCol = collection(db, "users");
+    const fieldPath = period === "daily" ? `tapsDaily.${key}` :
+                      period === "weekly" ? `tapsWeekly.${key}` :
+                                            `tapsMonthly.${key}`;
+
+    // Top 33 fetch
     const q = query(usersCol, orderBy(fieldPath, "desc"), limit(33));
     const snap = await getDocs(q);
-    const topScores = [];
 
+    const topScores = [];
     snap.forEach(doc => {
       const d = doc.data();
-      const taps = period === "daily" ? d.tapsDaily?.[key] || 0 :
-                   period === "weekly" ? d.tapsWeekly?.[key] || 0 :
-                   d.tapsMonthly?.[key] || 0;
-
+      const taps = d?.[period === "daily" ? "tapsDaily" : period === "weekly" ? "tapsWeekly" : "tapsMonthly"]?.[key] || 0;
       if (taps > 0) {
         topScores.push({
           uid: doc.id,
@@ -1038,7 +1043,7 @@ async function fetchLeaderboard(period = "daily") {
       }
     });
 
-    // Current user data
+    // My rank (computed async, non-blocking)
     let myTaps = 0;
     let myRank = null;
 
@@ -1046,67 +1051,63 @@ async function fetchLeaderboard(period = "daily") {
       const myDoc = await getDoc(doc(db, "users", currentUser.uid));
       if (myDoc.exists()) {
         const d = myDoc.data();
-        myTaps = period === "daily" ? d.tapsDaily?.[key] || 0 :
-                 period === "weekly" ? d.tapsWeekly?.[key] || 0 :
-                 d.tapsMonthly?.[key] || 0;
+        myTaps = d?.[period === "daily" ? "tapsDaily" : period === "weekly" ? "tapsWeekly" : "tapsMonthly"]?.[key] || 0;
 
         const inTop = topScores.find(u => u.uid === currentUser.uid);
         if (inTop) {
           myRank = topScores.indexOf(inTop) + 1;
         } else if (myTaps > 0) {
+          // Offload heavy rank count
           const countSnap = await getCountFromServer(query(usersCol, where(fieldPath, ">", myTaps)));
           myRank = countSnap.data().count + 1;
         }
       }
     }
 
-    // Cache it
-    const cacheData = { topScores, myTaps, myRank };
-    leaderboardCache[period].data = cacheData;
-    leaderboardCache[period].timestamp = now;
+    const payload = { topScores, myTaps, myRank };
+    leaderboardCache[period].data = payload;
+    leaderboardCache[period].time = now;
 
-    renderLeaderboardFromData(cacheData);
+    renderLeaderboardFromData(payload);
 
-  } catch (err) {
-    console.error("Leaderboard error:", err);
+  } catch (e) {
+    console.error(e);
     leaderboardList.innerHTML = "<li>Error loading leaderboard</li>";
   }
 }
 
-// ——————————————————————————————————————————————
-// 3. RENDER FUNCTION (uses global getAvatar)
-// ——————————————————————————————————————————————
+/* ============================================================
+   NON-BLOCKING RENDERER (INP SAFE)
+============================================================ */
 function renderLeaderboardFromData(data) {
   const { topScores, myTaps, myRank } = data;
-  const displayCount = 10;
-  const toDisplay = topScores.slice(0, displayCount);
+  const display = topScores.slice(0, 10);
 
-  // Update header
   const tapsEl = document.getElementById("myDailyTapsValue");
   const rankEl = document.getElementById("myRankFull");
-  if (tapsEl) tapsEl.textContent = myTaps.toLocaleString();
-  if (rankEl) {
-    rankEl.textContent = myRank ? `${myRank}${myRank === 1 ? "st" : myRank === 2 ? "nd" : myRank === 3 ? "rd" : "th"}` : "-";
-  }
 
-  if (toDisplay.length === 0) {
-    leaderboardList.innerHTML = "<li style='text-align:center;padding:20px 0;font-size:13px;color:#888;'>No taps yet — be the first!</li>";
+  if (tapsEl) tapsEl.textContent = myTaps.toLocaleString();
+  if (rankEl) rankEl.textContent = myRank ? `#${myRank}` : "-";
+
+  if (display.length === 0) {
+    leaderboardList.innerHTML = "<li>No taps yet — be the first!</li>";
     return;
   }
 
-  leaderboardList.innerHTML = toDisplay.map((u, i) => {
-    const isMe = currentUser && u.uid === currentUser.uid;
-    const name = (u.chatId || "Anon").split(" ").map(w => w[0].toUpperCase() + w.slice(1).toLowerCase()).join(" ");
+  const html = display.map((u, i) => {
+    const name = (u.chatId || "Anon")
+      .split(" ")
+      .map(w => w[0].toUpperCase() + w.slice(1).toLowerCase())
+      .join(" ");
 
-    let style = "";
-    if (i === 0) style = "color:#FFD700;font-weight:700;";
-    else if (i === 1) style = "color:#C0C0C0;font-weight:700;";
-    else if (i === 2) style = "color:#CD7F32;font-weight:700;";
-    else if (isMe) style = "background:#333;padding:4px;border-radius:4px;";
+    const colors = ["#FFD700", "#C0C0C0", "#CD7F32"];
+    const style = i < 3 ? `color:${colors[i]};font-weight:700;` : "";
 
     return `
       <li class="lb-row" style="${style}">
-        <img class="lb-avatar" src="${getAvatar(u)}" onerror="this.src='${DEFAULT_NEUTRAL}'" alt="avatar">
+        <img class="lb-avatar" loading="lazy"
+             src="${getAvatar(u)}"
+             onerror="this.src='${DEFAULT_NEUTRAL}'" />
         <div class="lb-info">
           <span class="lb-name">${i + 1}. ${name}</span>
           <span class="lb-score">${u.taps.toLocaleString()} taps</span>
@@ -1115,65 +1116,57 @@ function renderLeaderboardFromData(data) {
     `;
   }).join("");
 
-  // Show rank if outside top 10
-  if (currentUser && myRank && myRank > displayCount) {
-    const el = document.createElement("li");
-    el.style.cssText = "text-align:center;padding:15px;font-size:14px;color:#aaa;background:#111;border-top:1px solid #333;";
-    el.innerHTML = `You are currently <strong>#${myRank}</strong> with ${myTaps.toLocaleString()} taps`;
-    leaderboardList.appendChild(el);
+  leaderboardList.innerHTML = html;
+
+  if (currentUser && myRank > 10) {
+    leaderboardList.insertAdjacentHTML("beforeend", `
+      <li class="lb-row" style="text-align:center;color:#aaa;padding:10px;">
+        You’re <strong>#${myRank}</strong> with ${myTaps.toLocaleString()} taps
+      </li>
+    `);
   }
 }
 
-/* -------------------------------------------
-   TAB SWITCHER (CLEAN + FULLY WORKING)
--------------------------------------------- */
+/* ============================================================
+   TAB SWITCHER — FAST + NON-BLOCKING
+============================================================ */
 periodTabs.forEach(tab => {
   tab.addEventListener("click", () => {
-    const period = tab.dataset.period;
-
-    // Highlight active tab
-    periodTabs.forEach(t => {
-      t.classList.remove("active");
-      t.style.background = "#222";
-      t.style.color = "#ccc";
-    });
-
+    periodTabs.forEach(t => t.classList.remove("active"));
     tab.classList.add("active");
-    tab.style.background = "#ff1493";
-    tab.style.color = "#fff";
 
-    // Toggle timer
-    dailyTimerContainer.style.display = period === "daily" ? "block" : "none";
+    dailyTimerContainer.style.display =
+      tab.dataset.period === "daily" ? "block" : "none";
 
-    // Fetch leaderboard
-    fetchLeaderboard(period);
+    // Offload heavy fetch
+    requestAnimationFrame(() => {
+      fetchLeaderboard(tab.dataset.period);
+    });
   });
 });
 
-/* -------------------------------------------
-   DAILY COUNTDOWN
--------------------------------------------- */
+/* ============================================================
+   DAILY TIMER
+============================================================ */
 function startDailyCountdown() {
   const countdownEl = document.getElementById("dailyTimerValue");
 
-  function updateCountdown() {
+  function tick() {
     const now = new Date();
-    const nextReset = new Date();
-    nextReset.setHours(24, 0, 0, 0);
+    const next = new Date();
+    next.setHours(24, 0, 0, 0);
 
-    const diff = Math.max(0, Math.floor((nextReset - now) / 1000));
-
+    const diff = (next - now) / 1000;
     const h = String(Math.floor(diff / 3600)).padStart(2, "0");
     const m = String(Math.floor((diff % 3600) / 60)).padStart(2, "0");
-    const s = String(diff % 60).padStart(2, "0");
+    const s = String(Math.floor(diff % 60)).padStart(2, "0");
 
     countdownEl.textContent = `${h}:${m}:${s}`;
   }
 
-  updateCountdown();
-  setInterval(updateCountdown, 1000);
+  tick();
+  setInterval(tick, 1000);
 }
-
 
 
 /* -------------------------------------------
