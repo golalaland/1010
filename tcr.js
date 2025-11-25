@@ -1293,14 +1293,13 @@ document.addEventListener('pointerdown', e => {
   showSocialCard(userId);
 });
 
-// --- SEND STARS FUNCTION — FINAL 2025 BULLETPROOF VERSION ---
+// --- SEND STARS FUNCTION — FINAL 100% WORKING VERSION (NO SYNTAX ERRORS) ---
 async function sendStarsToUser(targetUser, amt) {
   if (!currentUser?.uid || !targetUser?.chatId || amt < 100) {
     showGoldAlert("Invalid gift", 3000);
     return;
   }
 
-  // Clean Firestore document IDs (removes @ . / \ that break paths)
   const cleanId = (id) => (id ? String(id).replace(/[.@/\\]/g, '_') : null);
 
   const senderId = cleanId(currentUser.uid || currentUser.email);
@@ -1316,7 +1315,6 @@ async function sendStarsToUser(targetUser, amt) {
     const toRef = doc(db, "users", receiverId);
     const glowColor = randomColor();
 
-    // 1. Safe transaction — no race conditions
     await runTransaction(db, async (transaction) => {
       const senderSnap = await transaction.get(fromRef);
       if (!senderSnap.exists()) throw new Error("Sender not found");
@@ -1326,6 +1324,7 @@ async function sendStarsToUser(targetUser, amt) {
         stars: increment(-amt),
         starsGifted: increment(amt)
       });
+
       transaction.update(toRef, {
         stars: increment(amt),
         lastGift: {
@@ -1336,7 +1335,6 @@ async function sendStarsToUser(targetUser, amt) {
       });
     });
 
-    // 2. Ephemeral banner in chat
     const bannerMsg = {
       content: `${currentUser.chatId} gifted ${amt} stars to ${targetUser.chatId}!`,
       timestamp: serverTimestamp(),
@@ -1351,7 +1349,6 @@ async function sendStarsToUser(targetUser, amt) {
     const docRef = await addDoc(collection(db, "messages_room5"), bannerMsg);
     renderMessagesFromArray([{ id: docRef.id, data: bannerMsg }], true);
 
-    // 3. Glow animation
     setTimeout(() => {
       const msgEl = document.getElementById(docRef.id);
       if (msgEl) {
@@ -1362,7 +1359,6 @@ async function sendStarsToUser(targetUser, amt) {
       }
     }, 100);
 
-    // 4. Success feedback
     showGoldAlert(`You sent ${amt} to ${targetUser.chatId}!`, 4000);
     document.getElementById('socialCard')?.remove();
 
