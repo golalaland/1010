@@ -900,7 +900,7 @@ function renderMessagesFromArray(messages) {
       wrapper.appendChild(replyPreview);
     }
 
-       // === NORMAL MESSAGE — FIXED & TAPABLE 2025 ===
+        // === NORMAL MESSAGE — FIXED & TAPABLE 2025 ===
     const usernameEl = document.createElement("span");
     usernameEl.className = "meta";
     usernameEl.style.color = refs.userColors?.[m.uid] || "#fff";
