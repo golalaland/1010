@@ -853,13 +853,6 @@ function renderMessagesFromArray(messages) {
       return;
     }
 
-    // === NORMAL MESSAGE ===
-    const usernameEl = document.createElement("span");
-    usernameEl.className = "meta";
-    usernameEl.innerHTML = `<span class="chat-username">${m.chatId || "Guest"}</span>:`;
-    usernameEl.style.color = refs.userColors?.[m.uid] || "#fff";
-    wrapper.appendChild(usernameEl);
-
     // === REPLY PREVIEW – NOW DIM & CLASSY (no more blinding yellow) ===
     if (m.replyTo) {
       const replyPreview = document.createElement("div");
