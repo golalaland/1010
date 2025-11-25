@@ -900,11 +900,28 @@ function renderMessagesFromArray(messages) {
       wrapper.appendChild(replyPreview);
     }
 
-    // === MESSAGE CONTENT ===
-    const contentEl = document.createElement("span");
-    contentEl.className = "content";
-    contentEl.textContent = " " + (m.content || "");
-    wrapper.appendChild(contentEl);
+       // === NORMAL MESSAGE — FIXED & TAPABLE 2025 ===
+    const usernameEl = document.createElement("span");
+    usernameEl.className = "meta";
+    usernameEl.style.color = refs.userColors?.[m.uid] || "#fff";
+
+    // THIS IS THE MAGIC LINE THAT MAKES THE CARD WORK AGAIN
+    const tapableName = document.createElement("span");
+    tapableName.className = "chat-username";
+    tapableName.textContent = m.chatId || "Guest";
+    tapableName.dataset.userId = m.uid;                    // CRITICAL
+    tapableName.style.cssText = "cursor:pointer; font-weight:700; padding:0 4px; border-radius:4px; user-select:none;";
+    
+
+    // Visual feedback on tap (feels alive again)
+    tapableName.addEventListener("pointerdown", () => {
+      tapableName.style.background = "rgba(255,204,0,0.4)";
+    });
+    tapableName.addEventListener("pointerup", () => {
+      setTimeout(() => tapableName.style.background = "", 200);
+    });
+
+    usernameEl.append(tapableName, ": ");
 
     // === TAP MODAL (reply/report) ===
     wrapper.addEventListener("click", e => {
