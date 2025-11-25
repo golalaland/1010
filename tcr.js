@@ -3975,3 +3975,12 @@ function playFullVideo(video) {
   modal.onclick = () => modal.remove();
   document.body.appendChild(modal);
 }
+/* SCROLL DETECTION – MAGIC HAPPENS HERE */
+  const container = document.getElementBypx;
+  container.addEventListener('scroll', () => {
+    if (container.scrollTop > 150) {
+      container.classList.add('scrolled');
+    } else {
+      container.classList.remove('scrolled');
+    }
+  });
