@@ -1139,7 +1139,6 @@ function startDailyCountdown() {
   tick();
   setInterval(tick, 1000);
 }
-
 /* -------------------------------------------
    MODAL OPEN/CLOSE
 -------------------------------------------- */
