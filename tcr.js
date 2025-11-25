@@ -1573,44 +1573,23 @@ refs.sendBtn?.addEventListener("click", async () => {
       stars: increment(-SEND_COST)
     });
 
-    // REPLY DATA (clean & safe)
+    // REPLY DATA
     const replyData = currentReplyTarget
       ? {
           replyTo: currentReplyTarget.id,
-          replyToContent:
-            (currentReplyTarget.content || "Original message")
-              .replace(/\n/g, " ")
-              .trim()
-              .substring(0, 80) + (currentReplyTarget.content.length > 80 ? "..." : ""),
+          replyToContent: (currentReplyTarget.content || "Original message")
+            .replace(/\n/g, " ").trim().substring(0, 80) + "...",
           replyToChatId: currentReplyTarget.chatId || "someone"
         }
       : { replyTo: null, replyToContent: null, replyToChatId: null };
 
- // NEW — predictable ID so real message can replace temp one
-const predictableId = `${Date.now()}_${currentUser.uid.substring(0, 8)}`;
-const tempMsg = {
-  id: predictableId,           // ← use same ID for temp AND real
-  content: txt,
-  uid: currentUser.uid,
-  chatId: currentUser.chatId,
-  usernameColor: currentUser.usernameColor || "#ff69b4",
-  timestamp: { toMillis: () => Date.now() },
-  ...replyData
-};
-
-// Save it so real message can match
-localStorage.setItem(`pending_${predictableId}`, JSON.stringify(tempMsg));
-
-    // Reset UI
+    // RESET INPUT + CANCEL REPLY
     refs.messageInputEl.value = "";
     cancelReply();
     scrollToBottom(refs.messagesEl);
 
-    // Render instantly
-    renderMessagesFromArray([tempMsg]);
-
-    // SEND TO FIRESTORE
-    const msgRef = await addDoc(collection(db, CHAT_COLLECTION), {
+    // SEND TO FIRESTORE (NO LOCAL ECHO = NO DOUBLES)
+    await addDoc(collection(db, CHAT_COLLECTION), {
       content: txt,
       uid: currentUser.uid,
       chatId: currentUser.chatId,
@@ -1621,10 +1600,8 @@ localStorage.setItem(`pending_${predictableId}`, JSON.stringify(tempMsg));
       ...replyData
     });
 
-    // Cleanup
-    delete pending[tempId];
-    localStorage.setItem("localPendingMsgs", JSON.stringify(pending));
-    console.log("Message sent:", msgRef.id);
+    // SUCCESS — DO NOTHING. onSnapshot will render it once and perfectly
+    console.log("Message sent to Firestore");
 
   } catch (err) {
     console.error("Send failed:", err);
@@ -1634,7 +1611,7 @@ localStorage.setItem(`pending_${predictableId}`, JSON.stringify(tempMsg));
     currentUser.stars += SEND_COST;
     refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
   }
-}); // ← THIS ONE WAS MISSING
+});
   
 // BUZZ MESSAGE (EPIC GLOW EFFECT)
 refs.buzzBtn?.addEventListener("click", async () => {
