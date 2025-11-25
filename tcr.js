@@ -2676,8 +2676,6 @@ async function sendGift() {
   }
 }
 
-/* ---------- Assign gift button click ---------- */
-giftBtn.onclick = sendGift;
 
 /* ---------- Navigation ---------- */
 prevBtn.addEventListener("click", e => {
