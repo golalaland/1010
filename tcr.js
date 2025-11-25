@@ -331,6 +331,24 @@ onAuthStateChanged(auth, async (user) => {
   }
 });
 
+// FINAL 2025+ TAP DETECTION — ONE LISTENER TO RULE THEM ALL
+document.body.addEventListener('click', e => {
+  const el = e.target.closest('[data-user-id]');
+  if (!el) return;
+
+  const userId = el.dataset.userId;
+  if (!userId || userId === currentUser?.uid) return;
+
+  e.preventDefault();
+  e.stopPropagation();
+
+  // Flash feedback
+  el.style.transition = 'background 0.2s';
+  el.style.background = 'rgba(255,204,0,0.35)';
+  setTimeout(() => el.style.background = '', 200);
+
+  showSocialCard(userId);
+}, { capture: true, passive: false });
 
 /* ===============================
    Manual Notification Starter (for whitelist / debug login)
@@ -1615,20 +1633,20 @@ refs.sendBtn?.addEventListener("click", async () => {
   
 // BUZZ MESSAGE (EPIC GLOW EFFECT)
 refs.buzzBtn?.addEventListener("click", async () => {
-  // === BASIC CHECKS ===
   if (!currentUser?.uid) return showStarPopup("Sign in to BUZZ.");
   const text = refs.messageInputEl?.value.trim();
   if (!text) return showStarPopup("Type a message to BUZZ");
 
-  // === STAR COST CHECK ===
   if ((currentUser.stars || 0) < BUZZ_COST) {
     return showStarPopup(`Need ${BUZZ_COST} stars to BUZZ!`, { type: "error" });
   }
 
   try {
-    const buzzColor = randomColor(); // your existing function
+    const buzzColor = randomColor();
 
-    // === ATOMIC TRANSACTION: deduct stars + send buzz ===
+    // THIS IS THE ONLY CORRECT WAY TO ADD A DOC INSIDE A TRANSACTION
+    const newMessageRef = doc(collection(db, CHAT_COLLECTION));  // ← generate ref first
+
     await runTransaction(db, async (transaction) => {
       const userRef = doc(db, "users", currentUser.uid);
 
@@ -1638,7 +1656,7 @@ refs.buzzBtn?.addEventListener("click", async () => {
       });
 
       // Send buzz message
-      transaction.set(addDoc(collection(db, CHAT_COLLECTION)), {
+      transaction.set(newMessageRef, {
         content: text,
         uid: currentUser.uid,
         chatId: currentUser.chatId || "BUZZER",
@@ -1646,31 +1664,23 @@ refs.buzzBtn?.addEventListener("click", async () => {
         timestamp: serverTimestamp(),
         highlight: true,
         buzzColor: buzzColor,
-        type: "buzz" // optional: helps rendering
+        type: "buzz"
       });
     });
 
-    // === SUCCESS UI ===
+    // SUCCESS UI
     currentUser.stars -= BUZZ_COST;
     refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
-
     refs.messageInputEl.value = "";
-    cancelReply(); // use your clean cancel function
+    cancelReply();
     scrollToBottom(refs.messagesEl);
 
-    showStarPopup("BUZZ SENT! Chat is SHAKING", { type: "success" });
-    console.log("BUZZ sent!", buzzColor);
-
-    // Optional: trigger screen shake or confetti here
-    // triggerBuzzEffect(); // you can add this later
+    showStarPopup("BUZZ SENT — CHAT IS QUAKING", { type: "success" });
+    console.log("BUZZ sent perfectly!", buzzColor);
 
   } catch (err) {
     console.error("BUZZ failed:", err);
     showStarPopup("BUZZ failed — try again", { type: "error" });
-
-    // Optional: refund stars on fail (if transaction failed early)
-    // currentUser.stars += BUZZ_COST;
-    // refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
   }
 });
   /* ----------------------------
@@ -2066,11 +2076,25 @@ async function loadHost(idx) {
     videoEl.play().catch(() => {});
   });
 
-/* ---------- Host Info ---------- */
+/* ---------- Host Info — FIXED 2025 ---------- */
+const usernameEl = document.createElement('span');
 usernameEl.textContent = (host.chatId || "Unknown Host")
   .toLowerCase()
   .replace(/\b\w/g, char => char.toUpperCase());
 
+// THESE 3 LINES ARE THE MAGIC
+usernameEl.className = 'tapable-username';           // any class you like
+usernameEl.dataset.userId = host.uid;                // CRITICAL — your Firestore doc ID
+usernameEl.style.cssText = 'cursor:pointer; font-weight:600; color:#ff69b4; user-select:none;';
+
+// Optional: nice little hover/tap feedback
+usernameEl.addEventListener('pointerdown', () => {
+  usernameEl.style.opacity = '0.7';
+});
+usernameEl.addEventListener('pointerup', () => {
+  usernameEl.style.opacity = '1';
+});
+  
 const gender = (host.gender || "person").toLowerCase();
 const pronoun = gender === "male" ? "his" : "her";
 const ageGroup = !host.age ? "20s" : host.age >= 30 ? "30s" : "20s";
