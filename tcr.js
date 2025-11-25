@@ -1586,23 +1586,20 @@ refs.sendBtn?.addEventListener("click", async () => {
         }
       : { replyTo: null, replyToContent: null, replyToChatId: null };
 
-    // Local echo
-    const tempId = "temp_" + Date.now();
-    const tempMsg = {
-      id: tempId,
-      content: txt,
-      uid: currentUser.uid,
-      chatId: currentUser.chatId,
-      usernameColor: currentUser.usernameColor || "#ff69b4",
-      timestamp: { toMillis: () => Date.now() },
-      ...replyData,
-      tempId
-    };
+ // NEW — predictable ID so real message can replace temp one
+const predictableId = `${Date.now()}_${currentUser.uid.substring(0, 8)}`;
+const tempMsg = {
+  id: predictableId,           // ← use same ID for temp AND real
+  content: txt,
+  uid: currentUser.uid,
+  chatId: currentUser.chatId,
+  usernameColor: currentUser.usernameColor || "#ff69b4",
+  timestamp: { toMillis: () => Date.now() },
+  ...replyData
+};
 
-    // Save pending locally
-    const pending = JSON.parse(localStorage.getItem("localPendingMsgs") || "{}");
-    pending[tempId] = { ...tempMsg, createdAt: Date.now() };
-    localStorage.setItem("localPendingMsgs", JSON.stringify(pending));
+// Save it so real message can match
+localStorage.setItem(`pending_${predictableId}`, JSON.stringify(tempMsg));
 
     // Reset UI
     refs.messageInputEl.value = "";
