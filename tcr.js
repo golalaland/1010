@@ -1390,7 +1390,6 @@ function updateUIAfterAuth(user) {
   const subtitle = document.getElementById("roomSubtitle");
   const helloText = document.getElementById("helloText");
   const roomDescText = document.querySelector(".room-desc .text");
-  const hostsBtn = document.getElementById("openHostsBtn");
   const loginBar = document.getElementById("loginBar"); // adjust if different ID
 
   // Keep Star Hosts button always visible
@@ -1615,46 +1614,62 @@ refs.sendBtn?.addEventListener("click", async () => {
   
 // BUZZ MESSAGE (EPIC GLOW EFFECT)
 refs.buzzBtn?.addEventListener("click", async () => {
-  if (!currentUser?.email) return showStarPopup("Sign in to BUZZ.");
-
+  // === BASIC CHECKS ===
+  if (!currentUser?.uid) return showStarPopup("Sign in to BUZZ.");
   const text = refs.messageInputEl?.value.trim();
   if (!text) return showStarPopup("Type a message to BUZZ");
 
-  const userRef = doc(db, "users", getUserId(currentUser.email));
-  const snap = await getDoc(userRef);
-  const stars = snap.data()?.stars || 0;
-
-  if (stars < BUZZ_COST) 
-    return showStarPopup(`Need ${BUZZ_COST} stars for BUZZ.`);
+  // === STAR COST CHECK ===
+  if ((currentUser.stars || 0) < BUZZ_COST) {
+    return showStarPopup(`Need ${BUZZ_COST} stars to BUZZ!`, { type: "error" });
+  }
 
   try {
-    const buzzColor = randomColor();
+    const buzzColor = randomColor(); // your existing function
 
-    // Deduct + send in one go
+    // === ATOMIC TRANSACTION: deduct stars + send buzz ===
     await runTransaction(db, async (transaction) => {
-      transaction.update(userRef, { stars: increment(-BUZZ_COST) });
-      transaction.set(addDoc(collection(db, "chats", "main", "messages")), {
+      const userRef = doc(db, "users", currentUser.uid);
+
+      // Deduct stars
+      transaction.update(userRef, {
+        stars: increment(-BUZZ_COST)
+      });
+
+      // Send buzz message
+      transaction.set(addDoc(collection(db, CHAT_COLLECTION)), {
         content: text,
-        senderId: getUserId(currentUser.email),
-        chatId: currentUser.chatId || currentUser.email.split("@")[0],
+        uid: currentUser.uid,
+        chatId: currentUser.chatId || "BUZZER",
+        usernameColor: currentUser.usernameColor || "#ff69b4",
         timestamp: serverTimestamp(),
         highlight: true,
-        buzzColor
+        buzzColor: buzzColor,
+        type: "buzz" // optional: helps rendering
       });
     });
 
+    // === SUCCESS UI ===
     currentUser.stars -= BUZZ_COST;
     refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
+
     refs.messageInputEl.value = "";
-    clearReplyAfterSend();
+    cancelReply(); // use your clean cancel function
     scrollToBottom(refs.messagesEl);
 
-    showStarPopup("BUZZ SENT! Everyone felt that!");
-    console.log("BUZZ sent with color:", buzzColor);
+    showStarPopup("BUZZ SENT! Chat is SHAKING", { type: "success" });
+    console.log("BUZZ sent!", buzzColor);
+
+    // Optional: trigger screen shake or confetti here
+    // triggerBuzzEffect(); // you can add this later
 
   } catch (err) {
     console.error("BUZZ failed:", err);
-    showStarPopup("BUZZ failed. Try again.");
+    showStarPopup("BUZZ failed — try again", { type: "error" });
+
+    // Optional: refund stars on fail (if transaction failed early)
+    // currentUser.stars += BUZZ_COST;
+    // refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
   }
 });
   /* ----------------------------
