@@ -1261,25 +1261,26 @@ giftBtn.onclick = async () => {
   if (amt < 100) return showStarPopup("Minimum 100");
   if ((currentUser?.stars || 0) < amt) return showStarPopup("Not enough stars");
 
-  // THIS IS THE FINAL NUCLEAR FIX — NO EXCUSES
   giftBtn.onclick = async () => {
   const amt = parseInt(slider.value);
-  if (amt < 100 || (currentUser?.stars || 0) < amt) return showStarPopup("No");
+  if (amt < 100) return showStarPopup("Minimum 100");
+  if ((currentUser?.stars || 0) < amt) return showStarPopup("Not enough stars");
 
-  await sendStarsToUser({
-    chatId: user.chatId,
-    email: user.email,        // ← THIS IS KEY
-    uid: user.uid             // fallback
-  }, amt);
+  try {
+    // FINAL NUCLEAR FIX — ALWAYS SENDS TO CORRECT USER
+    await sendStarsToUser({
+      chatId: user.chatId || "VIP",
+      email: user.email,     // MAIN ID SOURCE
+      uid: user.uid          // fallback if no email
+    }, amt);
 
-  card.remove();
-    showStarPopup("Gift sent!");
+    showStarPopup("Gift sent successfully!");
+    card.remove();
   } catch (e) {
     console.error("GIFT FAILED:", e);
     showStarPopup("Failed — check console");
   }
 };
-
   sliderPanel.append(slider, label);
   btnWrap.append(sliderPanel, giftBtn);
   card.append(btnWrap);
