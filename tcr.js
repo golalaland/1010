@@ -1261,17 +1261,20 @@ giftBtn.onclick = async () => {
   if (amt < 100) return showStarPopup("Minimum 100");
   if ((currentUser?.stars || 0) < amt) return showStarPopup("Not enough stars");
 
-  giftBtn.onclick = async () => {
+  // GIFT BUTTON — FINAL WORKING VERSION (NO DUPLICATE DECLARATION)
+giftBtn.textContent = 'Gift';
+giftBtn.style.cssText = 'padding:7px 14px; border-radius:6px; border:none; font-weight:600; background:linear-gradient(90deg,#ff0099,#ff0066); color:#fff; cursor:pointer;';
+
+giftBtn.onclick = async () => {
   const amt = parseInt(slider.value);
   if (amt < 100) return showStarPopup("Minimum 100");
   if ((currentUser?.stars || 0) < amt) return showStarPopup("Not enough stars");
 
   try {
-    // FINAL NUCLEAR FIX — ALWAYS SENDS TO CORRECT USER
     await sendStarsToUser({
       chatId: user.chatId || "VIP",
-      email: user.email,     // MAIN ID SOURCE
-      uid: user.uid          // fallback if no email
+      email: user.email,     // MAIN ID
+      uid: user.uid          // fallback
     }, amt);
 
     showStarPopup("Gift sent successfully!");
@@ -1281,6 +1284,7 @@ giftBtn.onclick = async () => {
     showStarPopup("Failed — check console");
   }
 };
+  
   sliderPanel.append(slider, label);
   btnWrap.append(sliderPanel, giftBtn);
   card.append(btnWrap);
