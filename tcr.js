@@ -1293,18 +1293,15 @@ document.addEventListener('pointerdown', e => {
   showSocialCard(userId);
 });
 
-// --- SEND STARS FUNCTION — FULLY FIXED 2025 (NO MORE PATH ERRORS + WORKS EVERY TIME) ---
+// --- SEND STARS FUNCTION — FINAL 2025 BULLETPROOF VERSION ---
 async function sendStarsToUser(targetUser, amt) {
   if (!currentUser?.uid || !targetUser?.chatId || amt < 100) {
     showGoldAlert("Invalid gift", 3000);
     return;
   }
 
-  // CRITICAL FIX: Clean user IDs (removes @ . / etc. that break Firestore paths)
-  const cleanId = (id) => {
-    if (!id) return null;
-    return String(id).replace(/[.@/\\]/g, '_');  // Firestore-safe
-  };
+  // Clean Firestore document IDs (removes @ . / \ that break paths)
+  const cleanId = (id) => (id ? String(id).replace(/[.@/\\]/g, '_') : null);
 
   const senderId = cleanId(currentUser.uid || currentUser.email);
   const receiverId = cleanId(targetUser._docId || targetUser.uid || targetUser.email || targetUser.chatId);
@@ -1319,11 +1316,11 @@ async function sendStarsToUser(targetUser, amt) {
     const toRef = doc(db, "users", receiverId);
     const glowColor = randomColor();
 
-    // 1. Update balances in a transaction (safe from race conditions)
+    // 1. Safe transaction — no race conditions
     await runTransaction(db, async (transaction) => {
       const senderSnap = await transaction.get(fromRef);
-      if (!senderSnap.exists()) throw "Sender not found";
-      if ((senderSnap.data().stars || 0) < amt) throw "Not enough stars";
+      if (!senderSnap.exists()) throw new Error("Sender not found");
+      if ((senderSnap.data()?.stars || 0) < amt) throw new Error("Not enough stars");
 
       transaction.update(fromRef, {
         stars: increment(-amt),
@@ -1333,13 +1330,13 @@ async function sendStarsToUser(targetUser, amt) {
         stars: increment(amt),
         lastGift: {
           from: currentUser.chatId,
-          amt,
+          amt: amt,
           at: serverTimestamp()
         }
       });
     });
 
-    // 2. Create beautiful ephemeral banner
+    // 2. Ephemeral banner in chat
     const bannerMsg = {
       content: `${currentUser.chatId} gifted ${amt} stars to ${targetUser.chatId}!`,
       timestamp: serverTimestamp(),
@@ -1354,7 +1351,7 @@ async function sendStarsToUser(targetUser, amt) {
     const docRef = await addDoc(collection(db, "messages_room5"), bannerMsg);
     renderMessagesFromArray([{ id: docRef.id, data: bannerMsg }], true);
 
-    // 3. Epic glow animation
+    // 3. Glow animation
     setTimeout(() => {
       const msgEl = document.getElementById(docRef.id);
       if (msgEl) {
@@ -1365,10 +1362,8 @@ async function sendStarsToUser(targetUser, amt) {
       }
     }, 100);
 
-    // 4. Success alerts
+    // 4. Success feedback
     showGoldAlert(`You sent ${amt} to ${targetUser.chatId}!`, 4000);
-
-    // Close social card
     document.getElementById('socialCard')?.remove();
 
     console.log("Gift sent successfully!");
@@ -1378,6 +1373,7 @@ async function sendStarsToUser(targetUser, amt) {
     showGoldAlert("Gift failed — try again", 4000);
   }
 }
+
 // --- 6.5️⃣ Create notification for receiver ---
 const notifRef = collection(db, "notifications");
 await addDoc(notifRef, {
