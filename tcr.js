@@ -816,7 +816,7 @@ function renderMessagesFromArray(messages) {
     if (!item.id) return;
     if (document.getElementById(item.id)) return;
 
-    const m = item.data || item;
+   const m = item.data ?? item;
     const wrapper = document.createElement("div");
     wrapper.className = "msg";
     wrapper.id = item.id;
