@@ -331,25 +331,6 @@ onAuthStateChanged(auth, async (user) => {
   }
 });
 
-// FINAL 2025+ TAP DETECTION — ONE LISTENER TO RULE THEM ALL
-document.body.addEventListener('click', e => {
-  const el = e.target.closest('[data-user-id]');
-  if (!el) return;
-
-  const userId = el.dataset.userId;
-  if (!userId || userId === currentUser?.uid) return;
-
-  e.preventDefault();
-  e.stopPropagation();
-
-  // Flash feedback
-  el.style.transition = 'background 0.2s';
-  el.style.background = 'rgba(255,204,0,0.35)';
-  setTimeout(() => el.style.background = '', 200);
-
-  showSocialCard(userId);
-}, { capture: true, passive: false });
-
 /* ===============================
    Manual Notification Starter (for whitelist / debug login)
 ================================= */
@@ -1137,6 +1118,257 @@ async function promptForChatID(userRef, userData) {
       }
     };
   });
+}
+
+
+/* ========== SOCIAL CARD + GIFT SYSTEM — FINAL 2025 SECURE VERSION ========== */
+const socialCardCache = new Map(); // caches loaded profiles
+
+// MAIN FUNCTION — CALL THIS WHEN USER TAPS A USERNAME
+async function showSocialCard(userId) {
+  if (!userId) return;
+
+  // Return cached version instantly
+  if (socialCardCache.has(userId)) {
+    renderSocialCard(socialCardCache.get(userId));
+    return;
+  }
+
+  try {
+    const userRef = doc(db, "users", userId);
+    const snap = await getDoc(userRef);
+
+    let profile = {
+      fullName: "Mystery VIP",
+      chatId: userId.split('_')[0],
+      bioPick: "✨ Nothing shared yet...",
+      gender: "person",
+      age: 25,
+      location: "Lagos",
+      country: "Nigeria",
+      fruitPick: "strawberry",
+      naturePick: "cool",
+      isHost: false,
+      isVIP: true,
+      usernameColor: "#ff69b4",
+      stars: 0
+    };
+
+    if (snap.exists()) {
+      const data = snap.data();
+      Object.assign(profile, data);
+      profile.chatId = data.chatId || userId.split('_')[0];
+    }
+
+    socialCardCache.set(userId, profile);
+    renderSocialCard(profile);
+
+  } catch (err) {
+    console.log("Social card: user offline/private");
+    renderSocialCard(profile); // show mystery VIP
+  }
+}
+
+// RENDERS THE ACTUAL CARD (your beautiful design — unchanged!)
+function renderSocialCard(user) {
+  document.getElementById('socialCard')?.remove();
+  const card = document.createElement('div');
+  card.id = 'socialCard';
+  Object.assign(card.style, {
+    position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+    background: 'linear-gradient(135deg, rgba(20,20,22,0.9), rgba(25,25,27,0.9))',
+    backdropFilter: 'blur(10px)', borderRadius: '14px', padding: '12px 16px',
+    color: '#fff', width: '230px', maxWidth: '90%', zIndex: '999999',
+    textAlign: 'center', boxShadow: '0 6px 24px rgba(0,0,0,0.5)',
+    fontFamily: 'Poppins, sans-serif', opacity: '0',
+    transition: 'opacity .18s ease, transform .18s ease'
+  });
+
+  // Close button
+  const closeBtn = document.createElement('div');
+  closeBtn.innerHTML = '×';
+  Object.assign(closeBtn.style, { position: 'absolute', top: '6px', right: '10px', fontSize: '16px', fontWeight: '700', color: '#fff', cursor: 'pointer', opacity: '0.6' });
+  closeBtn.onmouseenter = () => closeBtn.style.opacity = '1';
+  closeBtn.onmouseleave = () => closeBtn.style.opacity = '0.6';
+  closeBtn.onclick = e => { e.stopPropagation(); card.remove(); };
+  card.appendChild(closeBtn);
+
+  // Header
+  const header = document.createElement('h3');
+  header.textContent = (user.chatId || "VIP").charAt(0).toUpperCase() + (user.chatId || "VIP").slice(1);
+  const color = user.isHost ? '#ff6600' : user.isVIP ? '#ff0099' : '#cccccc';
+  header.style.cssText = `margin:0 0 8px; font-size:18px; font-weight:700; background: linear-gradient(90deg, ${color}, #ff33cc); -webkit-background-clip: text; -webkit-text-fill-color: transparent;`;
+  card.appendChild(header);
+
+  // Details
+  const details = document.createElement('p');
+  details.style.cssText = 'margin:0 0 10px; font-size:14px; line-height:1.4;';
+  const gender = (user.gender || "person").toLowerCase();
+  const pronoun = gender === "male" ? "his" : "her";
+  const ageGroup = !user.age ? "20s" : user.age >= 30 ? "30s" : "20s";
+  const flair = gender === "male" ? "cool" : "kiss";
+  const fruit = user.fruitPick || "grape";
+  const nature = user.naturePick || "cool";
+  const city = user.location || user.city || "Lagos";
+  const country = user.country || "Nigeria";
+
+  if (user.isHost) {
+    details.innerHTML = `A ${fruit} ${nature} ${gender} in ${pronoun} ${ageGroup}, currently in ${city}, ${country}. ${flair}`;
+  } else {
+    details.innerHTML = `A ${gender} in ${pronoun} ${ageGroup}, currently in ${city}, ${country}. ${flair}`;
+  }
+  card.appendChild(details);
+
+  // Bio
+  const bioEl = document.createElement('div');
+  bioEl.style.cssText = 'margin:6px 0 12px; font-style:italic; font-weight:600; font-size:13px;';
+  bioEl.style.color = ['#ff99cc','#ffcc33','#66ff99','#66ccff','#ff6699','#ff9966','#ccccff','#f8b500'][Math.floor(Math.random()*8)];
+  card.appendChild(bioEl);
+  let i = 0;
+  const text = user.bioPick || 'Nothing shared yet...';
+  const iv = setInterval(() => {
+    bioEl.textContent += text.charAt(i++) || '';
+    if (i >= text.length) clearInterval(iv);
+  }, 35);
+
+  // Gift button + slider (same as yours — just cleaned up)
+  const btnWrap = document.createElement('div');
+  btnWrap.style.cssText = 'display:flex; flex-direction:column; gap:8px; align-items:center; margin-top:4px;';
+
+  const sliderPanel = document.createElement('div');
+  sliderPanel.style.cssText = 'width:100%; padding:6px 8px; border-radius:8px; background:rgba(255,255,255,0.06); backdrop-filter:blur(8px); display:flex; align-items:center; gap:8px; justify-content:space-between;';
+  
+  const slider = document.createElement('input');
+  slider.type = 'range'; slider.min = 0; slider.max = 999; slider.value = 100;
+  slider.style.flex = '1'; slider.style.height = '4px'; slider.style.borderRadius = '4px'; slider.style.outline = 'none'; slider.style.cursor = 'pointer'; slider.style.appearance = 'none';
+  const grad = ['#ff0000','#ff8c00','#ff4500','#ffd700','#ff1493','#ff6347','#ff5500','#ffcc00','#ff3300','#ff0066'][Math.floor(Math.random()*10)];
+  slider.style.background = `linear-gradient(90deg, ${grad}, #fff)`;
+
+  const label = document.createElement('span');
+  label.textContent = '100 ⭐️';
+  label.style.fontSize = '13px';
+
+  slider.oninput = () => label.textContent = `${slider.value} ⭐️`;
+
+  const giftBtn = document.createElement('button');
+  giftBtn.textContent = 'Gift ⭐️';
+  giftBtn.style.cssText = 'padding:7px 14px; border-radius:6px; border:none; font-weight:600; background:linear-gradient(90deg,#ff0099,#ff0066); color:#fff; cursor:pointer;';
+  giftBtn.onclick = async () => {
+    const amt = parseInt(slider.value);
+    if (amt < 100) return showStarPopup("Minimum 100 ⭐️");
+    if ((currentUser?.stars || 0) < amt) return showStarPopup("Not enough stars");
+    try {
+      await sendStarsToUser(user, amt);
+      card.remove();
+    } catch (e) { console.error(e); }
+  };
+
+  sliderPanel.append(slider, label);
+  btnWrap.append(sliderPanel, giftBtn);
+  card.append(btnWrap);
+  document.body.appendChild(card);
+
+  requestAnimationFrame(() => {
+    card.style.opacity = '1';
+    card.style.transform = 'translate(-50%, -50%) scale(1.02)';
+    setTimeout(() => card.style.transform = 'translate(-50%, -50%) scale(1)', 120);
+  });
+
+  const closeOutside = e => { if (!card.contains(e.target)) card.remove(); document.removeEventListener('click', closeOutside); };
+  setTimeout(() => document.addEventListener('click', closeOutside), 10);
+}
+
+// TAP DETECTION — ADD THIS ONCE
+document.addEventListener('pointerdown', e => {
+  const usernameEl = e.target.closest('.username');
+  if (!usernameEl) return;
+  const userId = usernameEl.dataset.userId;
+  if (!userId || userId === getUserId(currentUser?.email)) return;
+
+  // Visual feedback
+  const orig = usernameEl.style.backgroundColor;
+  usernameEl.style.backgroundColor = '#ffcc00';
+  setTimeout(() => usernameEl.style.backgroundColor = orig, 180);
+
+  showSocialCard(userId);
+});
+
+// --- SEND STARS FUNCTION (Ephemeral Banner + Dual showGiftAlert + Receiver Sync + Notification) ---
+async function sendStarsToUser(targetUser, amt) {
+  try {
+    const fromRef = doc(db, "users", currentUser.uid);
+    const toRef = doc(db, "users", targetUser._docId);
+    const glowColor = randomColor();
+
+    // --- 1️⃣ Update Firestore balances ---
+    await Promise.all([
+      updateDoc(fromRef, { stars: increment(-amt), starsGifted: increment(amt) }),
+      updateDoc(toRef, { stars: increment(amt) })
+    ]);
+
+    // --- 2️⃣ Create ephemeral banner inside main messages collection ---
+    const bannerMsg = {
+      content: `💫 ${currentUser.chatId} gifted ${amt} stars ⭐️ to ${targetUser.chatId}!`,
+      timestamp: serverTimestamp(),
+      systemBanner: true,
+      highlight: true,
+      buzzColor: glowColor,
+      isBanner: true,           // ✅ tag for admin cleanup
+      bannerShown: false,       // ✅ ephemeral display
+      senderId: currentUser.uid,
+      type: "banner"
+    };
+
+    const docRef = await addDoc(collection(db, "messages_room5"), bannerMsg);
+
+    // --- 3️⃣ Render instantly for sender ---
+    renderMessagesFromArray([{ id: docRef.id, data: bannerMsg }], true);
+
+    // --- 4️⃣ Glow pulse for banner ---
+    setTimeout(() => {
+      const msgEl = document.getElementById(docRef.id);
+      if (!msgEl) return;
+      const contentEl = msgEl.querySelector(".content") || msgEl;
+      contentEl.style.setProperty("--pulse-color", glowColor);
+      contentEl.classList.add("baller-highlight");
+      setTimeout(() => {
+        contentEl.classList.remove("baller-highlight");
+        contentEl.style.boxShadow = "none";
+      }, 21000);
+    }, 80);
+
+// --- 5️⃣ Sender popup (using Gold Alert for consistency) ---
+showGoldAlert(`✅ You sent ${amt} ⭐ to ${targetUser.chatId}!`, 4000);
+
+// --- 6️⃣ Receiver quick sync marker ---
+await updateDoc(toRef, {
+  lastGift: {
+    from: currentUser.chatId,
+    amt,
+    at: Date.now(),
+  },
+});
+
+// --- 6.5️⃣ Create notification for receiver ---
+const notifRef = collection(db, "notifications");
+await addDoc(notifRef, {
+  userId: targetUser._docId, // 🔥 link the notification to the receiver
+  message: `💫 ${currentUser.chatId} gifted you ${amt} ⭐!`,
+  read: false,
+  timestamp: serverTimestamp(),
+  type: "starGift",
+  fromUserId: currentUser.uid,
+});
+
+    // --- 7️⃣ Mark banner as shown ---
+    await updateDoc(doc(db, "messages_room5", docRef.id), {
+      bannerShown: true
+    });
+
+  } catch (err) {
+    console.error("❌ sendStarsToUser failed:", err);
+    showGiftAlert(`⚠️ Error: ${err.message}`, 4000);
+  }
 }
 
 
@@ -2879,257 +3111,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 
-/* ========== SOCIAL CARD + GIFT SYSTEM — FINAL 2025 SECURE VERSION ========== */
-const socialCardCache = new Map(); // caches loaded profiles
-
-// MAIN FUNCTION — CALL THIS WHEN USER TAPS A USERNAME
-async function showSocialCard(userId) {
-  if (!userId) return;
-
-  // Return cached version instantly
-  if (socialCardCache.has(userId)) {
-    renderSocialCard(socialCardCache.get(userId));
-    return;
-  }
-
-  try {
-    const userRef = doc(db, "users", userId);
-    const snap = await getDoc(userRef);
-
-    let profile = {
-      fullName: "Mystery VIP",
-      chatId: userId.split('_')[0],
-      bioPick: "✨ Nothing shared yet...",
-      gender: "person",
-      age: 25,
-      location: "Lagos",
-      country: "Nigeria",
-      fruitPick: "strawberry",
-      naturePick: "cool",
-      isHost: false,
-      isVIP: true,
-      usernameColor: "#ff69b4",
-      stars: 0
-    };
-
-    if (snap.exists()) {
-      const data = snap.data();
-      Object.assign(profile, data);
-      profile.chatId = data.chatId || userId.split('_')[0];
-    }
-
-    socialCardCache.set(userId, profile);
-    renderSocialCard(profile);
-
-  } catch (err) {
-    console.log("Social card: user offline/private");
-    renderSocialCard(profile); // show mystery VIP
-  }
-}
-
-// RENDERS THE ACTUAL CARD (your beautiful design — unchanged!)
-function renderSocialCard(user) {
-  document.getElementById('socialCard')?.remove();
-  const card = document.createElement('div');
-  card.id = 'socialCard';
-  Object.assign(card.style, {
-    position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
-    background: 'linear-gradient(135deg, rgba(20,20,22,0.9), rgba(25,25,27,0.9))',
-    backdropFilter: 'blur(10px)', borderRadius: '14px', padding: '12px 16px',
-    color: '#fff', width: '230px', maxWidth: '90%', zIndex: '999999',
-    textAlign: 'center', boxShadow: '0 6px 24px rgba(0,0,0,0.5)',
-    fontFamily: 'Poppins, sans-serif', opacity: '0',
-    transition: 'opacity .18s ease, transform .18s ease'
-  });
-
-  // Close button
-  const closeBtn = document.createElement('div');
-  closeBtn.innerHTML = '×';
-  Object.assign(closeBtn.style, { position: 'absolute', top: '6px', right: '10px', fontSize: '16px', fontWeight: '700', color: '#fff', cursor: 'pointer', opacity: '0.6' });
-  closeBtn.onmouseenter = () => closeBtn.style.opacity = '1';
-  closeBtn.onmouseleave = () => closeBtn.style.opacity = '0.6';
-  closeBtn.onclick = e => { e.stopPropagation(); card.remove(); };
-  card.appendChild(closeBtn);
-
-  // Header
-  const header = document.createElement('h3');
-  header.textContent = (user.chatId || "VIP").charAt(0).toUpperCase() + (user.chatId || "VIP").slice(1);
-  const color = user.isHost ? '#ff6600' : user.isVIP ? '#ff0099' : '#cccccc';
-  header.style.cssText = `margin:0 0 8px; font-size:18px; font-weight:700; background: linear-gradient(90deg, ${color}, #ff33cc); -webkit-background-clip: text; -webkit-text-fill-color: transparent;`;
-  card.appendChild(header);
-
-  // Details
-  const details = document.createElement('p');
-  details.style.cssText = 'margin:0 0 10px; font-size:14px; line-height:1.4;';
-  const gender = (user.gender || "person").toLowerCase();
-  const pronoun = gender === "male" ? "his" : "her";
-  const ageGroup = !user.age ? "20s" : user.age >= 30 ? "30s" : "20s";
-  const flair = gender === "male" ? "cool" : "kiss";
-  const fruit = user.fruitPick || "grape";
-  const nature = user.naturePick || "cool";
-  const city = user.location || user.city || "Lagos";
-  const country = user.country || "Nigeria";
-
-  if (user.isHost) {
-    details.innerHTML = `A ${fruit} ${nature} ${gender} in ${pronoun} ${ageGroup}, currently in ${city}, ${country}. ${flair}`;
-  } else {
-    details.innerHTML = `A ${gender} in ${pronoun} ${ageGroup}, currently in ${city}, ${country}. ${flair}`;
-  }
-  card.appendChild(details);
-
-  // Bio
-  const bioEl = document.createElement('div');
-  bioEl.style.cssText = 'margin:6px 0 12px; font-style:italic; font-weight:600; font-size:13px;';
-  bioEl.style.color = ['#ff99cc','#ffcc33','#66ff99','#66ccff','#ff6699','#ff9966','#ccccff','#f8b500'][Math.floor(Math.random()*8)];
-  card.appendChild(bioEl);
-  let i = 0;
-  const text = user.bioPick || 'Nothing shared yet...';
-  const iv = setInterval(() => {
-    bioEl.textContent += text.charAt(i++) || '';
-    if (i >= text.length) clearInterval(iv);
-  }, 35);
-
-  // Gift button + slider (same as yours — just cleaned up)
-  const btnWrap = document.createElement('div');
-  btnWrap.style.cssText = 'display:flex; flex-direction:column; gap:8px; align-items:center; margin-top:4px;';
-
-  const sliderPanel = document.createElement('div');
-  sliderPanel.style.cssText = 'width:100%; padding:6px 8px; border-radius:8px; background:rgba(255,255,255,0.06); backdrop-filter:blur(8px); display:flex; align-items:center; gap:8px; justify-content:space-between;';
-  
-  const slider = document.createElement('input');
-  slider.type = 'range'; slider.min = 0; slider.max = 999; slider.value = 100;
-  slider.style.flex = '1'; slider.style.height = '4px'; slider.style.borderRadius = '4px'; slider.style.outline = 'none'; slider.style.cursor = 'pointer'; slider.style.appearance = 'none';
-  const grad = ['#ff0000','#ff8c00','#ff4500','#ffd700','#ff1493','#ff6347','#ff5500','#ffcc00','#ff3300','#ff0066'][Math.floor(Math.random()*10)];
-  slider.style.background = `linear-gradient(90deg, ${grad}, #fff)`;
-
-  const label = document.createElement('span');
-  label.textContent = '100 ⭐️';
-  label.style.fontSize = '13px';
-
-  slider.oninput = () => label.textContent = `${slider.value} ⭐️`;
-
-  const giftBtn = document.createElement('button');
-  giftBtn.textContent = 'Gift ⭐️';
-  giftBtn.style.cssText = 'padding:7px 14px; border-radius:6px; border:none; font-weight:600; background:linear-gradient(90deg,#ff0099,#ff0066); color:#fff; cursor:pointer;';
-  giftBtn.onclick = async () => {
-    const amt = parseInt(slider.value);
-    if (amt < 100) return showStarPopup("Minimum 100 ⭐️");
-    if ((currentUser?.stars || 0) < amt) return showStarPopup("Not enough stars");
-    try {
-      await sendStarsToUser(user, amt);
-      card.remove();
-    } catch (e) { console.error(e); }
-  };
-
-  sliderPanel.append(slider, label);
-  btnWrap.append(sliderPanel, giftBtn);
-  card.append(btnWrap);
-  document.body.appendChild(card);
-
-  requestAnimationFrame(() => {
-    card.style.opacity = '1';
-    card.style.transform = 'translate(-50%, -50%) scale(1.02)';
-    setTimeout(() => card.style.transform = 'translate(-50%, -50%) scale(1)', 120);
-  });
-
-  const closeOutside = e => { if (!card.contains(e.target)) card.remove(); document.removeEventListener('click', closeOutside); };
-  setTimeout(() => document.addEventListener('click', closeOutside), 10);
-}
-
-// TAP DETECTION — ADD THIS ONCE
-document.addEventListener('pointerdown', e => {
-  const usernameEl = e.target.closest('.username');
-  if (!usernameEl) return;
-  const userId = usernameEl.dataset.userId;
-  if (!userId || userId === getUserId(currentUser?.email)) return;
-
-  // Visual feedback
-  const orig = usernameEl.style.backgroundColor;
-  usernameEl.style.backgroundColor = '#ffcc00';
-  setTimeout(() => usernameEl.style.backgroundColor = orig, 180);
-
-  showSocialCard(userId);
-});
-
-// --- SEND STARS FUNCTION (Ephemeral Banner + Dual showGiftAlert + Receiver Sync + Notification) ---
-async function sendStarsToUser(targetUser, amt) {
-  try {
-    const fromRef = doc(db, "users", currentUser.uid);
-    const toRef = doc(db, "users", targetUser._docId);
-    const glowColor = randomColor();
-
-    // --- 1️⃣ Update Firestore balances ---
-    await Promise.all([
-      updateDoc(fromRef, { stars: increment(-amt), starsGifted: increment(amt) }),
-      updateDoc(toRef, { stars: increment(amt) })
-    ]);
-
-    // --- 2️⃣ Create ephemeral banner inside main messages collection ---
-    const bannerMsg = {
-      content: `💫 ${currentUser.chatId} gifted ${amt} stars ⭐️ to ${targetUser.chatId}!`,
-      timestamp: serverTimestamp(),
-      systemBanner: true,
-      highlight: true,
-      buzzColor: glowColor,
-      isBanner: true,           // ✅ tag for admin cleanup
-      bannerShown: false,       // ✅ ephemeral display
-      senderId: currentUser.uid,
-      type: "banner"
-    };
-
-    const docRef = await addDoc(collection(db, "messages_room5"), bannerMsg);
-
-    // --- 3️⃣ Render instantly for sender ---
-    renderMessagesFromArray([{ id: docRef.id, data: bannerMsg }], true);
-
-    // --- 4️⃣ Glow pulse for banner ---
-    setTimeout(() => {
-      const msgEl = document.getElementById(docRef.id);
-      if (!msgEl) return;
-      const contentEl = msgEl.querySelector(".content") || msgEl;
-      contentEl.style.setProperty("--pulse-color", glowColor);
-      contentEl.classList.add("baller-highlight");
-      setTimeout(() => {
-        contentEl.classList.remove("baller-highlight");
-        contentEl.style.boxShadow = "none";
-      }, 21000);
-    }, 80);
-
-// --- 5️⃣ Sender popup (using Gold Alert for consistency) ---
-showGoldAlert(`✅ You sent ${amt} ⭐ to ${targetUser.chatId}!`, 4000);
-
-// --- 6️⃣ Receiver quick sync marker ---
-await updateDoc(toRef, {
-  lastGift: {
-    from: currentUser.chatId,
-    amt,
-    at: Date.now(),
-  },
-});
-
-// --- 6.5️⃣ Create notification for receiver ---
-const notifRef = collection(db, "notifications");
-await addDoc(notifRef, {
-  userId: targetUser._docId, // 🔥 link the notification to the receiver
-  message: `💫 ${currentUser.chatId} gifted you ${amt} ⭐!`,
-  read: false,
-  timestamp: serverTimestamp(),
-  type: "starGift",
-  fromUserId: currentUser.uid,
-});
-
-    // --- 7️⃣ Mark banner as shown ---
-    await updateDoc(doc(db, "messages_room5", docRef.id), {
-      bannerShown: true
-    });
-
-  } catch (err) {
-    console.error("❌ sendStarsToUser failed:", err);
-    showGiftAlert(`⚠️ Error: ${err.message}`, 4000);
-  }
-}
-
-
 // ---------- DEBUGGABLE HOST INIT (drop-in) ----------
 (function () {
   // Toggle this dynamically in your app
@@ -3999,18 +3980,19 @@ function playFullVideo(video) {
   modal.onclick = () => modal.remove();
   document.body.appendChild(modal);
 }
-// SOCIAL CARD TAP LISTENER — PUT THIS ONCE, AT THE VERY END OF YOUR JS FILE
-// (after showSocialCard and renderMessagesFromArray are defined!)
+// ————————————————————————————————————————————————————————
+// FINAL LINE — THIS MUST BE THE VERY LAST THING IN tcr.js
+// ————————————————————————————————————————————————————————
 document.body.addEventListener('click', e => {
   const el = e.target.closest('[data-user-id]');
   if (!el) return;
-
   const userId = el.dataset.userId;
   if (!userId || userId === currentUser?.uid) return;
 
   e.preventDefault();
   e.stopPropagation();
-
-  // This will now work because showSocialCard is already defined above
-  showSocialCard(userId);
+  showSocialCard(userId);   // now it works — function exists above!
 }, { capture: true, passive: false });
+
+// OPTIONAL: tiny confirmation it loaded
+console.log("Social card tap system READY");
