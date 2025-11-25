@@ -1368,29 +1368,6 @@ async function sendStarsToUser(targetUser, amt) {
     showGoldAlert("Gift failed — try again", 4000);
   }
 }
-// --- 6.5️⃣ Create notification for receiver ---
-const notifRef = collection(db, "notifications");
-await addDoc(notifRef, {
-  userId: targetUser._docId, // 🔥 link the notification to the receiver
-  message: `💫 ${currentUser.chatId} gifted you ${amt} ⭐!`,
-  read: false,
-  timestamp: serverTimestamp(),
-  type: "starGift",
-  fromUserId: currentUser.uid,
-});
-
-    // --- 7️⃣ Mark banner as shown ---
-    await updateDoc(doc(db, "messages_room5", docRef.id), {
-      bannerShown: true
-    });
-
-  } catch (err) {
-    console.error("❌ sendStarsToUser failed:", err);
-    showGiftAlert(`⚠️ Error: ${err.message}`, 4000);
-  }
-}
-
-
 /* ===============================
    FINAL VIP LOGIN SYSTEM — 100% WORKING
    Google disabled | VIP button works | Safe auto-login
