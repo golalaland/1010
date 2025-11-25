@@ -1267,20 +1267,16 @@ window.logoutVIP = async () => {
   location.reload();
 };
 
+
 // FINAL LOGOUT — SAFE, FUN, AND WORKS WITH YOUR ANTI-AUTO-LOGIN SYSTEM
 document.getElementById("hostLogoutBtn")?.addEventListener("click", async (e) => {
   e.preventDefault();
   e.stopPropagation();
 
   const btn = e.target.closest("button") || e.target;
-  if (btn.disabled) return;
+  if (btn.disabled) return; // prevent double-click
 
-  // Save original text + hide it
-  const originalHTML = btn.innerHTML;
-  btn.disabled = true;
-
-  // Replace content with spinner only
-  btn.innerHTML = `<span class="btn-spinner visible"></span>`;
+  btn.disabled = true; // just disable, no text change
 
   try {
     await signOut(auth);
@@ -1301,16 +1297,15 @@ document.getElementById("hostLogoutBtn")?.addEventListener("click", async (e) =>
     const message = messages[Math.floor(Math.random() * messages.length)];
     showStarPopup(message);
 
+    // Smart reload — triggers your anti-auto-login perfectly
     setTimeout(() => location.reload(), 1800);
 
   } catch (err) {
     console.error("Logout failed:", err);
     btn.disabled = false;
-    btn.innerHTML = originalHTML;  // restore original text
     showStarPopup("Logout failed — try again!");
   }
 });
-
 /* ===============================
    💫 Auto Star Earning System
 ================================= */
