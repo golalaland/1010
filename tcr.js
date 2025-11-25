@@ -1267,6 +1267,16 @@ window.logoutVIP = async () => {
   location.reload();
 };
 
+
+/* ALSO — block auto-login right after logout */
+window.addEventListener("DOMContentLoaded", () => {
+  if (sessionStorage.getItem("justLoggedOut")) {
+    console.log("User just logged out — blocking auto-login");
+    sessionStorage.removeItem("justLoggedOut");
+    // Do NOT run tryAutoLogin() here
+    return;
+  }
+
   // Only run auto-login if not just logged out
   setTimeout(tryAutoLogin, 1000);
 });
