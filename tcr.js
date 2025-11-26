@@ -1256,8 +1256,8 @@ function renderSocialCard(user) {
 
   slider.oninput = () => label.textContent = `${slider.value} ⭐️`;
 
-// === GIFT BUTTON — DYNAMICALLY CREATED (CORRECT WAY) ===
-// === GIFT BUTTON — DYNAMICALLY CREATED (PERFECT) ===
+
+// === GIFT BUTTON — DYNAMICALLY CREATED (FINAL) ===
 const giftBtn = document.createElement('button');
 giftBtn.textContent = 'Gift';
 giftBtn.style.cssText = 'padding:8px 16px; border-radius:8px; border:none; font-weight:700; background:linear-gradient(90deg,#ff0099,#ff0066); color:#fff; cursor:pointer; box-shadow:0 4px 15px rgba(255,0,153,0.4); transition:all 0.2s;';
@@ -1285,7 +1285,7 @@ giftBtn.onclick = async () => {
 giftBtn.onmouseenter = () => giftBtn.style.transform = 'translateY(-2px)';
 giftBtn.onmouseleave = () => giftBtn.style.transform = '';
 
-// === APPEND EVERYTHING ===
+// === BUILD CARD ===
 sliderPanel.append(slider, label);
 btnWrap.append(sliderPanel, giftBtn);
 card.append(btnWrap);
@@ -1298,7 +1298,7 @@ requestAnimationFrame(() => {
   setTimeout(() => card.style.transform = 'translate(-50%, -50%) scale(1)', 120);
 });
 
-// === CLOSE WHEN CLICKING OUTSIDE (NO REDECLARATION EVER) ===
+// === CLOSE ON OUTSIDE CLICK (NO REDECLARATION) ===
 const handleOutsideClick = (e) => {
   if (card && !card.contains(e.target)) {
     card.remove();
@@ -1306,6 +1306,9 @@ const handleOutsideClick = (e) => {
   }
 };
 setTimeout(() => document.addEventListener('click', handleOutsideClick), 10);
+
+// ← THIS IS THE FINAL CLOSING BRACE OF renderSocialCard() FUNCTION
+}
 
 // TAP DETECTION — ADD THIS ONCE
 document.addEventListener('pointerdown', e => {
