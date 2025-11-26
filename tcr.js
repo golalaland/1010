@@ -200,10 +200,6 @@ function pushNotificationTx(tx, userId, message) {
 }
 
 
-/* ---------- Assign gift button click ---------- */
-giftBtn.onclick = sendGift;
-
-
 /* ========== SHARED UTILS ========== */
 let currentUser = null;
 let notificationsUnsubscribe = null;  // Single global unsubscribe
