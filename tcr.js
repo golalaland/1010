@@ -331,6 +331,12 @@ onAuthStateChanged(auth, async (user) => {
   }
 });
 
+const sliderLabel = document.createElement('span');
+sliderLabel.textContent = `${slider.value}`;
+sliderLabel.style.fontSize = '14px';
+sliderLabel.style.fontWeight = '600';
+sliderPanel.append(slider, sliderLabel);
+
 /* ===============================
    Manual Notification Starter (for whitelist / debug login)
 ================================= */
@@ -1301,8 +1307,12 @@ giftBtnLocal.onclick = async () => {
     }, amt);
 
     showStarPopup(`Sent ${amt} stars!`);
+
+    // FIX: Find the label safely — no more "not defined"
+    const label = sliderPanel.querySelector('span') || document.querySelector('#socialCard span');
+    if (label) label.textContent = "100";
+
     slider.value = 100;
-    sliderLabel.textContent = "100";
 
     // Scroll chat
     const chatBox = document.getElementById("messages") || document.body;
