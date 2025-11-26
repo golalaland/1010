@@ -1256,8 +1256,7 @@ function renderSocialCard(user) {
 
   slider.oninput = () => label.textContent = `${slider.value} ⭐️`;
 
-
-// === GIFT BUTTON — DYNAMICALLY CREATED (FINAL) ===
+// === GIFT BUTTON + FINAL CARD SETUP (INSIDE renderSocialCard) ===
 const giftBtn = document.createElement('button');
 giftBtn.textContent = 'Gift';
 giftBtn.style.cssText = 'padding:8px 16px; border-radius:8px; border:none; font-weight:700; background:linear-gradient(90deg,#ff0099,#ff0066); color:#fff; cursor:pointer; box-shadow:0 4px 15px rgba(255,0,153,0.4); transition:all 0.2s;';
@@ -1285,27 +1284,27 @@ giftBtn.onclick = async () => {
 giftBtn.onmouseenter = () => giftBtn.style.transform = 'translateY(-2px)';
 giftBtn.onmouseleave = () => giftBtn.style.transform = '';
 
-// === BUILD CARD ===
+// === APPEND TO CARD ===
 sliderPanel.append(slider, label);
 btnWrap.append(sliderPanel, giftBtn);
 card.append(btnWrap);
 document.body.appendChild(card);
 
-// === OPEN ANIMATION ===
+// === ANIMATION IN ===
 requestAnimationFrame(() => {
   card.style.opacity = '1';
   card.style.transform = 'translate(-50%, -50%) scale(1.02)';
   setTimeout(() => card.style.transform = 'translate(-50%, -50%) scale(1)', 120);
 });
 
-// === CLOSE ON OUTSIDE CLICK (NO REDECLARATION) ===
-const handleOutsideClick = (e) => {
+// === CLOSE ON OUTSIDE CLICK ===
+const handleClickOutside = (e) => {
   if (card && !card.contains(e.target)) {
     card.remove();
-    document.removeEventListener('click', handleOutsideClick);
+    document.removeEventListener('click', handleClickOutside);
   }
 };
-setTimeout(() => document.addEventListener('click', handleOutsideClick), 10);
+setTimeout(() => document.addEventListener('click', handleClickOutside), 10);
 
 // ← THIS IS THE FINAL CLOSING BRACE OF renderSocialCard() FUNCTION
 }
