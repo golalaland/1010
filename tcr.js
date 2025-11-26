@@ -331,12 +331,6 @@ onAuthStateChanged(auth, async (user) => {
   }
 });
 
-const sliderLabel = document.createElement('span');
-sliderLabel.textContent = `${slider.value}`;
-sliderLabel.style.fontSize = '14px';
-sliderLabel.style.fontWeight = '600';
-sliderPanel.append(slider, sliderLabel);
-
 /* ===============================
    Manual Notification Starter (for whitelist / debug login)
 ================================= */
