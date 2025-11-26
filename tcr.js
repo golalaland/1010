@@ -1256,13 +1256,10 @@ function renderSocialCard(user) {
 
   slider.oninput = () => label.textContent = `${slider.value} ⭐️`;
 
-  // GIFT BUTTON — FINAL WORKING VERSION (NO DUPLICATE DECLARATION)
+// === GIFT BUTTON — DYNAMICALLY CREATED (CORRECT WAY) ===
+const giftBtn = document.createElement('button');
 giftBtn.textContent = 'Gift';
-giftBtn.style.cssText = 'padding:7px 14px; border-radius:6px; border:none; font-weight:600; background:linear-gradient(90deg,#ff0099,#ff0066); color:#fff; cursor:pointer;';
-
-// GIFT BUTTON — REUSING THE ONE FROM DOM (NO "const" = NO REDECLARE ERROR)
-giftBtn.textContent = 'Gift';
-giftBtn.style.cssText = 'padding:7px 14px; border-radius:6px; border:none; font-weight:600; background:linear-gradient(90deg,#ff0099,#ff0066); color:#fff; cursor:pointer;';
+giftBtn.style.cssText = 'padding:8px 16px; border-radius:8px; border:none; font-weight:700; background:linear-gradient(90deg,#ff0099,#ff0066); color:#fff; cursor:pointer; box-shadow:0 4px 15px rgba(255,0,153,0.4); transition:all 0.2s;';
 
 giftBtn.onclick = async () => {
   const amt = parseInt(slider.value);
@@ -1276,28 +1273,48 @@ giftBtn.onclick = async () => {
       uid: user.uid
     }, amt);
 
-    showStarPopup("Gift sent successfully!");
+    showStarPopup(`Sent ${amt} stars!`);
     card.remove();
   } catch (e) {
     console.error("GIFT FAILED:", e);
-    showStarPopup("Failed — check console");
+    showStarPopup("Failed — try again");
   }
 };
-  
-  sliderPanel.append(slider, label);
-  btnWrap.append(sliderPanel, giftBtn);
-  card.append(btnWrap);
-  document.body.appendChild(card);
 
-  requestAnimationFrame(() => {
-    card.style.opacity = '1';
-    card.style.transform = 'translate(-50%, -50%) scale(1.02)';
-    setTimeout(() => card.style.transform = 'translate(-50%, -50%) scale(1)', 120);
-  });
+// Add hover effect (feels premium)
+giftBtn.onmouseenter = () => giftBtn.style.transform = 'translateY(-2px)';
+giftBtn.onmouseleave = () => giftBtn.style.transform = '';
 
-  const closeOutside = e => { if (!card.contains(e.target)) card.remove(); document.removeEventListener('click', closeOutside); };
-  setTimeout(() => document.addEventListener('click', closeOutside), 10);
-}
+// === APPEND TO CARD ===
+sliderPanel.append(slider, label);
+btnWrap.append(sliderPanel, giftBtn);
+card.append(btnWrap);
+document.body.appendChild(card);
+
+// === CARD ANIMATION ===
+requestAnimationFrame(() => {
+  card.style.opacity = '1';
+  card.style.transform = 'translate(-50%, -50%) scale(1.02)';
+  setTimeout(() => card.style.transform = 'translate(-50%, -50%) scale(1)', 120);
+});
+
+// === CLOSE ON OUTSIDE CLICK ===
+const closeOutside = e => {
+  if (!card.contains(e.target)) {
+    card.remove();
+    document.removeEventListener('click', closeOutside);
+  }
+};
+setTimeout(() => document.addEventListener('click', closeOutside), 10);
+
+// === CLOSE ON OUTSIDE CLICK ===
+const closeOutside = e => {
+  if (!card.contains(e.target)) {
+    card.remove();
+    document.removeEventListener('click', closeOutside);
+  }
+};
+setTimeout(() => document.addEventListener('click', closeOutside), 10);
 
 // TAP DETECTION — ADD THIS ONCE
 document.addEventListener('pointerdown', e => {
@@ -2173,7 +2190,8 @@ const usernameEl = document.getElementById("featuredHostUsername");
 const detailsEl = document.getElementById("featuredHostDetails");
 const hostListEl = document.getElementById("featuredHostList");
 const giftSlider = document.getElementById("giftSlider");
-const giftBtn = document.getElementById("featuredGiftBtn");
+// For modal only — different name!
+const modalGiftBtn = document.getElementById("featuredGiftBtn");
 const giftAmountEl = document.getElementById("giftAmount");
 const prevBtn = document.getElementById("prevHost");
 const nextBtn = document.getElementById("nextHost");
