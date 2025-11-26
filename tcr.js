@@ -1202,15 +1202,37 @@ async function promptForChatID(userRef, userData) {
     header.style.cssText = "margin:0 0 10px; font-size:19px; font-weight:800; background:linear-gradient(90deg,#ff0099,#ff6600);-webkit-background-clip:text;-webkit-text-fill-color:transparent;";
     card.appendChild(header);
 
-    // Details
-    const details = document.createElement("p");
-    details.style.cssText = "margin:8px 0; font-size:14px; opacity:0.9; line-height:1.5;";
-    const gender = (user.gender || "person").toLowerCase();
-    const age = user.age >= 30 ? "30s" : "20s";
-    const city = user.location || user.city || "Lagos";
-    const emoji = gender === "male" ? "Cool" : "Kiss";
-    details.innerHTML = `${gender === "male" ? "Male" : "Female"} in ${age} • ${city}, ${user.country || "NG"} ${emoji}`;
-    card.appendChild(details);
+    // ——— DETAILS — YOUR ORIGINAL MASTERPIECE (RESTORED & UPGRADED) ———
+const detailsEl = document.createElement('p');
+Object.assign(detailsEl.style, {
+  margin: '0 0 12px',
+  fontSize: '14.5px',
+  lineHeight: '1.5',
+  opacity: '0.95',
+  fontWeight: '500'
+});
+
+const gender = (user.gender || "person").toLowerCase();
+const pronoun = gender === "male" ? "his" : "her";
+const ageGroup = !user.age ? "20s" : user.age >= 30 ? "30s" : "20s";
+const flair = gender === "male" ? "Cool" : "Kiss";
+const fruit = user.fruitPick || "Grape";
+const nature = user.naturePick || "cool";
+const city = user.location || user.city || "Lagos";
+const country = user.country || "Nigeria";
+
+let detailText = "";
+
+if (user.isHost) {
+  detailText = `A ${fruit} ${nature} ${gender} in ${pronoun} ${ageGroup}, currently in ${city}, ${country}. ${flair}`;
+} else if (user.isVIP) {
+  detailText = `A ${gender} in ${pronoun} ${ageGroup}, currently in ${city}, ${country}. ${flair}`;
+} else {
+  detailText = `A ${gender} from ${city}, ${country}. ${flair}`;
+}
+
+detailsEl.innerHTML = detailText;
+card.appendChild(detailsEl);
 
     // Bio with typewriter
     const bio = document.createElement("div");
