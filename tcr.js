@@ -1339,42 +1339,48 @@ btnWrap.appendChild(giftBtnLocal);
 card.appendChild(btnWrap);
 document.body.appendChild(card);
 
-// ANIMATE IN
-requestAnimationFrame(() => {
-  card.style.opacity = '1';
-  card.style.transform = 'translate(-50%, -50%) scale(1)';
-});
+    // ANIMATE IN
+    requestAnimationFrame(() => {
+      card.style.opacity = '1';
+      card.style.transform = 'translate(-50%, -50%) scale(1)';
+    });
 
-// CLOSE ON OUTSIDE CLICK
-const closeHandler = (e) => {
-  if (card && !card.contains(e.target)) {
-    card.remove();
-    document.removeEventListener('click', closeHandler);
-  }
-};
-setTimeout(() => document.addEventListener('click', closeHandler), 10);
-    
-  // Typewriter effect
+    // CLOSE ON OUTSIDE CLICK
+    const closeHandler = (e) => {
+      if (card && !card.contains(e.target)) {
+        card.remove();
+        document.removeEventListener('click', closeHandler);
+      }
+    };
+    setTimeout(() => document.addEventListener('click', closeHandler), 10);
+
+  } // ← THIS CLOSES showSocialCard FUNCTION
+
+  // ——— TYPEWRITER EFFECT ———
   function typeWriterEffect(el, text, speed = 40) {
     el.textContent = "";
     let i = 0;
     const timer = setInterval(() => {
-      el.textContent += text[i++] || "";
-      if (i > text.length) clearInterval(timer);
+      if (i < text.length) {
+        el.textContent += text.charAt(i);
+        i++;
+      } else {
+        clearInterval(timer);
+      }
     }, speed);
   }
 
-  // TAP TO OPEN SOCIAL CARD
+  // ——— TAP TO OPEN SOCIAL CARD ———
   document.addEventListener("pointerdown", (e) => {
     const el = e.target.closest("[data-user-id]");
     if (!el) return;
-    
+
     const uid = el.dataset.userId;
     if (!uid || uid === currentUser?.uid) return;
 
-    const foundUser = allUsers.find(u => 
-      u._docId === uid || 
-      (u.email && u.email.replace(/[.@]/g,"_") === uid) ||
+    const foundUser = allUsers.find(u =>
+      u._docId === uid ||
+      (u.email && u.email.replace(/[.@]/g, "_") === uid) ||
       u.chatIdLower === el.textContent.trim().toLowerCase()
     );
 
@@ -1385,8 +1391,14 @@ setTimeout(() => document.addEventListener('click', closeHandler), 10);
     }
   });
 
-  console.log("Social Card System READY — 2025 EDITION");
-})();
+  console.log("Social Card System READY — 2025 FINAL EDITION");
+
+  // Make functions globally available if needed
+  window.showSocialCard = showSocialCard;
+  window.typeWriterEffect = typeWriterEffect;
+
+})(); // ← THIS IS THE ONE AND ONLY FINAL CLOSING OF THE ENTIRE IIFE
+
 
 // --- SEND STARS FUNCTION — FINAL 2025 BULLETPROOF EDITION (WORKS EVERY TIME) ---
 async function sendStarsToUser(targetUser, amt) {
