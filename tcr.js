@@ -1127,257 +1127,328 @@ async function promptForChatID(userRef, userData) {
 }
 
 
-/* ========== SOCIAL CARD + GIFT SYSTEM — FINAL 2025 SECURE VERSION ========== */
-const socialCardCache = new Map(); // caches loaded profiles
+/* ======================================================
+  Social Card + Gift Stars System — FINAL 2025 BULLETPROOF
+====================================================== */
+(async function initSocialCardSystem() {
+  const allUsers = [];
+  const usersByChatId = {};
 
-// MAIN FUNCTION — CALL THIS WHEN USER TAPS A USERNAME
-async function showSocialCard(userId) {
-  if (!userId) return;
+  // Load all users once
+  try {
+    const snaps = await getDocs(collection(db, "users"));
+    snaps.forEach(doc => {
+      const data = doc.data();
+      data._docId = doc.id;
+      data.chatIdLower = (data.chatId || "").toString().toLowerCase();
+      allUsers.push(data);
+      usersByChatId[data.chatIdLower] = data;
+    });
+    console.log("Social card: loaded", allUsers.length, "users");
+  } catch (err) {
+    console.error("Failed to load users:", err);
+  }
 
-  // Return cached version instantly
-  if (socialCardCache.has(userId)) {
-    renderSocialCard(socialCardCache.get(userId));
+  // Inject spinner animation once
+  if (!document.getElementById("gift-spinner-style")) {
+    const style = document.createElement("style");
+    style.id = "gift-spinner-style";
+    style.textContent = `
+      @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    `;
+    document.head.appendChild(style);
+  }
+
+  window.showSocialCard = function(user) {
+    if (!user) return;
+
+    // Remove old card
+    document.getElementById("socialCard")?.remove();
+
+    const card = document.createElement("div");
+    card.id = "socialCard";
+    Object.assign(card.style, {
+      position: "fixed",
+      top: "50%",
+      left: "50%",
+      transform: "translate(-50%, -50%) scale(0.95)",
+      background: "linear-gradient(135deg, rgba(20,20,22,0.95), rgba(25,25,27,0.95))",
+      backdropFilter: "blur(16px)",
+      borderRadius: "16px",
+      padding: "16px",
+      color: "#fff",
+      width: "260px",
+      maxWidth: "92%",
+      zIndex: "999999",
+      textAlign: "center",
+      boxShadow: "0 10px 40px rgba(0,0,0,0.6)",
+      fontFamily: "Poppins, sans-serif",
+      opacity: "0",
+      transition: "all 0.2s ease"
+    });
+
+    // Close button
+    const closeBtn = document.createElement("div");
+    closeBtn.innerHTML = "×";
+    Object.assign(closeBtn.style, {
+      position: "absolute", top: "8px", right: "12px",
+      fontSize: "20px", fontWeight: "700", cursor: "pointer",
+      opacity: "0.7", transition: "opacity 0.2s"
+    });
+    closeBtn.onmouseenter = () => closeBtn.style.opacity = "1";
+    closeBtn.onmouseleave = () => closeBtn.style.opacity = "0.7";
+    closeBtn.onclick = (e) => { e.stopPropagation(); card.remove(); };
+    card.appendChild(closeBtn);
+
+    // Header
+    const header = document.createElement("h3");
+    header.textContent = (user.chatId || "VIP").charAt(0).toUpperCase() + (user.chatId || "VIP").slice(1);
+    header.style.cssText = "margin:0 0 10px; font-size:19px; font-weight:800; background:linear-gradient(90deg,#ff0099,#ff6600);-webkit-background-clip:text;-webkit-text-fill-color:transparent;";
+    card.appendChild(header);
+
+    // Details
+    const details = document.createElement("p");
+    details.style.cssText = "margin:8px 0; font-size:14px; opacity:0.9; line-height:1.5;";
+    const gender = (user.gender || "person").toLowerCase();
+    const age = user.age >= 30 ? "30s" : "20s";
+    const city = user.location || user.city || "Lagos";
+    const emoji = gender === "male" ? "Cool" : "Kiss";
+    details.innerHTML = `${gender === "male" ? "Male" : "Female"} in ${age} • ${city}, ${user.country || "NG"} ${emoji}`;
+    card.appendChild(details);
+
+    // Bio with typewriter
+    const bio = document.createElement("div");
+    bio.style.cssText = "margin:12px 0; font-style:italic; font-weight:600; font-size:13.5px; min-height:20px;";
+    bio.style.color = ["#ff99cc","#ffcc33","#66ff99","#66ccff","#ff6699","#ccccff"][Math.floor(Math.random()*6)];
+    card.appendChild(bio);
+    typeWriterEffect(bio, user.bioPick || "Nothing shared yet...");
+
+    // Buttons wrapper
+    const btnWrap = document.createElement("div");
+    btnWrap.style.cssText = "margin-top:12px; display:flex; flex-direction:column; gap:10px; align-items:center;";
+
+    // Slider Panel
+    const sliderPanel = document.createElement("div");
+    sliderPanel.style.cssText = "width:100%; padding:8px; border-radius:10px; background:rgba(255,255,255,0.08); backdrop-filter:blur(8px); display:flex; align-items:center; gap:10px;";
+
+    const slider = document.createElement("input");
+    slider.type = "range"; slider.min = 0; slider.max = 999; slider.value = 100;
+    slider.style.cssText = "flex:1; height:5px; border-radius:5px; outline:none; cursor:pointer; appearance:none; background:linear-gradient(90deg,#ff3300,#ffcc00);";
+    
+    const label = document.createElement("span");
+    label.textContent = "100";
+    label.style.fontSize = "14px";
+
+    // Custom thumb
+    const thumbStyle = document.createElement("style");
+    thumbStyle.textContent = `
+      input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none; width:16px; height:16px; border-radius:50%;
+        background:#fff; box-shadow:0 0 12px #ff6600; cursor:pointer;
+      }
+    `;
+    document.head.appendChild(thumbStyle);
+
+    slider.oninput = () => {
+      label.textContent = slider.value + "";
+      slider.style.background = `linear-gradient(90deg, #ff3300 ${slider.value/9.99}%, #333 ${slider.value/9.99}%)`;
+    };
+
+    sliderPanel.append(slider, label);
+    btnWrap.appendChild(sliderPanel);
+
+    // GIFT BUTTON — FINAL WORKING
+    const giftBtn = document.createElement("button");
+    giftBtn.textContent = "Gift";
+    giftBtn.style.cssText = "padding:9px 18px; border-radius:8px; border:none; font-weight:700; background:linear-gradient(90deg,#ff0099,#ff0066); color:#fff; cursor:pointer; box-shadow:0 4px 15px rgba(255,0,153,0.5); transition:all 0.2s;";
+    
+    giftBtn.onclick = async () => {
+      const amt = parseInt(slider.value);
+      if (amt < 100) return showStarPopup("Minimum 100");
+      if ((currentUser?.stars || 0) < amt) return showStarPopup("Not enough stars");
+
+      const orig = giftBtn.textContent;
+      giftBtn.textContent = "";
+      const spin = document.createElement("div");
+      spin.style.cssText = "width:18px;height:18px;border:2px solid #fff3;border-top:2px solid white;border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto;";
+      giftBtn.appendChild(spin);
+
+      try {
+        await sendStarsToUser({
+          chatId: user.chatId,
+          email: user.email,
+          uid: user.uid || user._docId
+        }, amt);
+
+        showStarPopup(`Sent ${amt} stars!`);
+        slider.value = 100;
+        label.textContent = "100";
+        setTimeout(() => card.remove(), 800);
+      } catch (e) {
+        console.error("Gift failed:", e);
+        showStarPopup("Failed — try again");
+      } finally {
+        giftBtn.textContent = orig;
+      }
+    };
+
+    btnWrap.appendChild(giftBtn);
+    card.appendChild(btnWrap);
+    document.body.appendChild(card);
+
+    // Animate in
+    requestAnimationFrame(() => {
+      card.style.opacity = "1";
+      card.style.transform = "translate(-50%, -50%) scale(1)";
+    });
+
+    // Close on outside click
+    const closeOut = (e) => {
+      if (!card.contains(e.target)) {
+        card.remove();
+        document.removeEventListener("click", closeOut);
+      }
+    };
+    setTimeout(() => document.addEventListener("click", closeOut), 10);
+  };
+
+  // Typewriter effect
+  function typeWriterEffect(el, text, speed = 40) {
+    el.textContent = "";
+    let i = 0;
+    const timer = setInterval(() => {
+      el.textContent += text[i++] || "";
+      if (i > text.length) clearInterval(timer);
+    }, speed);
+  }
+
+  // TAP TO OPEN SOCIAL CARD
+  document.addEventListener("pointerdown", (e) => {
+    const el = e.target.closest("[data-user-id]");
+    if (!el) return;
+    
+    const uid = el.dataset.userId;
+    if (!uid || uid === currentUser?.uid) return;
+
+    const foundUser = allUsers.find(u => 
+      u._docId === uid || 
+      (u.email && u.email.replace(/[.@]/g,"_") === uid) ||
+      u.chatIdLower === el.textContent.trim().toLowerCase()
+    );
+
+    if (foundUser) {
+      el.style.background = "#ffcc00";
+      setTimeout(() => el.style.background = "", 200);
+      showSocialCard(foundUser);
+    }
+  });
+
+  console.log("Social Card System READY — 2025 EDITION");
+})();
+
+// --- SEND STARS FUNCTION — FINAL 2025 BULLETPROOF EDITION (WORKS EVERY TIME) ---
+async function sendStarsToUser(targetUser, amt) {
+  if (!currentUser?.uid || amt < 100) {
+    showGoldAlert("Invalid gift", 3000);
+    return;
+  }
+
+  // GET THE REAL FIRESTORE DOCUMENT ID (THIS WAS THE BUG!)
+  const getDocId = (u) => {
+    if (u._docId) return u._docId;
+    if (u.email) return u.email.replace(/[.@/\\]/g, '_');
+    if (u.uid && u.uid.includes('@')) return u.uid.replace(/[.@/\\]/g, '_');
+    return null;
+  };
+
+  const senderId = currentUser.uid || currentUser.email?.replace(/[.@/\\]/g, '_');
+  const receiverId = getDocId(targetUser);
+
+  if (!receiverId || senderId === receiverId) {
+    showGoldAlert("Can't gift yourself!", 3000);
     return;
   }
 
   try {
-    const userRef = doc(db, "users", userId);
-    const snap = await getDoc(userRef);
-
-    let profile = {
-      fullName: "Mystery VIP",
-      chatId: userId.split('_')[0],
-      bioPick: "✨ Nothing shared yet...",
-      gender: "person",
-      age: 25,
-      location: "Lagos",
-      country: "Nigeria",
-      fruitPick: "strawberry",
-      naturePick: "cool",
-      isHost: false,
-      isVIP: true,
-      usernameColor: "#ff69b4",
-      stars: 0
-    };
-
-    if (snap.exists()) {
-      const data = snap.data();
-      Object.assign(profile, data);
-      profile.chatId = data.chatId || userId.split('_')[0];
-    }
-
-    socialCardCache.set(userId, profile);
-    renderSocialCard(profile);
-
-  } catch (err) {
-    console.log("Social card: user offline/private");
-    renderSocialCard(profile); // show mystery VIP
-  }
-}
-
-// RENDERS THE ACTUAL CARD (your beautiful design — unchanged!)
-function renderSocialCard(user) {
-  document.getElementById('socialCard')?.remove();
-  const card = document.createElement('div');
-  card.id = 'socialCard';
-  Object.assign(card.style, {
-    position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
-    background: 'linear-gradient(135deg, rgba(20,20,22,0.9), rgba(25,25,27,0.9))',
-    backdropFilter: 'blur(10px)', borderRadius: '14px', padding: '12px 16px',
-    color: '#fff', width: '230px', maxWidth: '90%', zIndex: '999999',
-    textAlign: 'center', boxShadow: '0 6px 24px rgba(0,0,0,0.5)',
-    fontFamily: 'Poppins, sans-serif', opacity: '0',
-    transition: 'opacity .18s ease, transform .18s ease'
-  });
-
-  // Close button
-  const closeBtn = document.createElement('div');
-  closeBtn.innerHTML = '×';
-  Object.assign(closeBtn.style, { position: 'absolute', top: '6px', right: '10px', fontSize: '16px', fontWeight: '700', color: '#fff', cursor: 'pointer', opacity: '0.6' });
-  closeBtn.onmouseenter = () => closeBtn.style.opacity = '1';
-  closeBtn.onmouseleave = () => closeBtn.style.opacity = '0.6';
-  closeBtn.onclick = e => { e.stopPropagation(); card.remove(); };
-  card.appendChild(closeBtn);
-
-  // Header
-  const header = document.createElement('h3');
-  header.textContent = (user.chatId || "VIP").charAt(0).toUpperCase() + (user.chatId || "VIP").slice(1);
-  const color = user.isHost ? '#ff6600' : user.isVIP ? '#ff0099' : '#cccccc';
-  header.style.cssText = `margin:0 0 8px; font-size:18px; font-weight:700; background: linear-gradient(90deg, ${color}, #ff33cc); -webkit-background-clip: text; -webkit-text-fill-color: transparent;`;
-  card.appendChild(header);
-
-  // Details
-  const details = document.createElement('p');
-  details.style.cssText = 'margin:0 0 10px; font-size:14px; line-height:1.4;';
-  const gender = (user.gender || "person").toLowerCase();
-  const pronoun = gender === "male" ? "his" : "her";
-  const ageGroup = !user.age ? "20s" : user.age >= 30 ? "30s" : "20s";
-  const flair = gender === "male" ? "cool" : "kiss";
-  const fruit = user.fruitPick || "grape";
-  const nature = user.naturePick || "cool";
-  const city = user.location || user.city || "Lagos";
-  const country = user.country || "Nigeria";
-
-  if (user.isHost) {
-    details.innerHTML = `A ${fruit} ${nature} ${gender} in ${pronoun} ${ageGroup}, currently in ${city}, ${country}. ${flair}`;
-  } else {
-    details.innerHTML = `A ${gender} in ${pronoun} ${ageGroup}, currently in ${city}, ${country}. ${flair}`;
-  }
-  card.appendChild(details);
-
-  // Bio
-  const bioEl = document.createElement('div');
-  bioEl.style.cssText = 'margin:6px 0 12px; font-style:italic; font-weight:600; font-size:13px;';
-  bioEl.style.color = ['#ff99cc','#ffcc33','#66ff99','#66ccff','#ff6699','#ff9966','#ccccff','#f8b500'][Math.floor(Math.random()*8)];
-  card.appendChild(bioEl);
-  let i = 0;
-  const text = user.bioPick || 'Nothing shared yet...';
-  const iv = setInterval(() => {
-    bioEl.textContent += text.charAt(i++) || '';
-    if (i >= text.length) clearInterval(iv);
-  }, 35);
-
-  // Gift button + slider (same as yours — just cleaned up)
-  const btnWrap = document.createElement('div');
-  btnWrap.style.cssText = 'display:flex; flex-direction:column; gap:8px; align-items:center; margin-top:4px;';
-
-  const sliderPanel = document.createElement('div');
-  sliderPanel.style.cssText = 'width:100%; padding:6px 8px; border-radius:8px; background:rgba(255,255,255,0.06); backdrop-filter:blur(8px); display:flex; align-items:center; gap:8px; justify-content:space-between;';
-  
-  const slider = document.createElement('input');
-  slider.type = 'range'; slider.min = 0; slider.max = 999; slider.value = 100;
-  slider.style.flex = '1'; slider.style.height = '4px'; slider.style.borderRadius = '4px'; slider.style.outline = 'none'; slider.style.cursor = 'pointer'; slider.style.appearance = 'none';
-  const grad = ['#ff0000','#ff8c00','#ff4500','#ffd700','#ff1493','#ff6347','#ff5500','#ffcc00','#ff3300','#ff0066'][Math.floor(Math.random()*10)];
-  slider.style.background = `linear-gradient(90deg, ${grad}, #fff)`;
-
-  const label = document.createElement('span');
-  label.textContent = '100 ⭐️';
-  label.style.fontSize = '13px';
-
-  slider.oninput = () => label.textContent = `${slider.value} ⭐️`;
-
-// === GIFT BUTTON + FINAL CARD SETUP (INSIDE renderSocialCard) ===
-const giftBtn = document.createElement('button');
-giftBtn.textContent = 'Gift';
-giftBtn.style.cssText = 'padding:8px 16px; border-radius:8px; border:none; font-weight:700; background:linear-gradient(90deg,#ff0099,#ff0066); color:#fff; cursor:pointer; box-shadow:0 4px 15px rgba(255,0,153,0.4); transition:all 0.2s;';
-
-giftBtn.onclick = async () => {
-  const amt = parseInt(slider.value);
-  if (amt < 100) return showStarPopup("Minimum 100");
-  if ((currentUser?.stars || 0) < amt) return showStarPopup("Not enough stars");
-
-  try {
-    await sendStarsToUser({
-      chatId: user.chatId || "VIP",
-      email: user.email,
-      uid: user.uid
-    }, amt);
-
-    showStarPopup(`Sent ${amt} stars!`);
-    card.remove();
-  } catch (e) {
-    console.error("GIFT FAILED:", e);
-    showStarPopup("Failed — try again");
-  }
-};
-
-giftBtn.onmouseenter = () => giftBtn.style.transform = 'translateY(-2px)';
-giftBtn.onmouseleave = () => giftBtn.style.transform = '';
-
-// === APPEND TO CARD ===
-sliderPanel.append(slider, label);
-btnWrap.append(sliderPanel, giftBtn);
-card.append(btnWrap);
-document.body.appendChild(card);
-
-// === ANIMATION IN ===
-requestAnimationFrame(() => {
-  card.style.opacity = '1';
-  card.style.transform = 'translate(-50%, -50%) scale(1.02)';
-  setTimeout(() => card.style.transform = 'translate(-50%, -50%) scale(1)', 120);
-});
-
-// === CLOSE ON OUTSIDE CLICK ===
-const handleClickOutside = (e) => {
-  if (card && !card.contains(e.target)) {
-    card.remove();
-    document.removeEventListener('click', handleClickOutside);
-  }
-};
-setTimeout(() => document.addEventListener('click', handleClickOutside), 10);
-
-// ← THIS IS THE FINAL CLOSING BRACE OF renderSocialCard() FUNCTION
-}
-
-// TAP DETECTION — ADD THIS ONCE
-document.addEventListener('pointerdown', e => {
-  const usernameEl = e.target.closest('.username');
-  if (!usernameEl) return;
-  const userId = usernameEl.dataset.userId;
-  if (!userId || userId === getUserId(currentUser?.email)) return;
-
-  // Visual feedback
-  const orig = usernameEl.style.backgroundColor;
-  usernameEl.style.backgroundColor = '#ffcc00';
-  setTimeout(() => usernameEl.style.backgroundColor = orig, 180);
-
-  showSocialCard(userId);
-});
-
-// --- SEND STARS FUNCTION — 100% SYNTAX-CORRECT FINAL VERSION ---
-async function sendStarsToUser(targetUser, amt) {
-  // FORCE BOTH SENDER AND RECEIVER TO USE SANITIZED EMAIL ID — THIS IS YOUR REAL USER ID
-  const getRealDocId = (u) => {
-    if (u.email) return u.email.replace(/[.@/\\]/g, '_');
-    if (u.uid && u.uid.includes('@')) return u.uid.replace(/[.@/\\]/g, '_');
-    if (u.chatId) return u.chatId; // fallback — only if you store chatId as doc ID
-    return null;
-  };
-
-  const senderId = getRealDocId(currentUser);
-  const receiverId = getRealDocId(targetUser);
-
-  if (!senderId || !receiverId || senderId === receiverId) {
-    return showStarPopup("Invalid user");
-  }
-
-  console.log("FINAL SENDER ID:", senderId);
-  console.log("FINAL RECEIVER ID:", receiverId);
-
-  try {
     const fromRef = doc(db, "users", senderId);
     const toRef = doc(db, "users", receiverId);
+    const glowColor = randomColor();
 
+    // ATOMIC TRANSACTION — SAFE + AUTO-CREATES RECEIVER
     await runTransaction(db, async (tx) => {
       const senderSnap = await tx.get(fromRef);
-      const receiverSnap = await tx.get(toRef);
-
-      if (!senderSnap.exists()) throw "Your profile missing";
+      if (!senderSnap.exists()) throw "Your profile not found";
       if ((senderSnap.data()?.stars || 0) < amt) throw "Not enough stars";
 
+      const receiverSnap = await tx.get(toRef);
       if (!receiverSnap.exists()) {
-        tx.set(toRef, { chatId: targetUser.chatId || "VIP", stars: 0 }, { merge: true });
+        tx.set(toRef, {
+          chatId: targetUser.chatId || "NewVIP",
+          stars: 0,
+          createdAt: serverTimestamp()
+        }, { merge: true });
       }
 
-      tx.update(fromRef, { stars: increment(-amt), starsGifted: increment(amt) });
-      tx.update(toRef, { stars: increment(amt) });
+      tx.update(fromRef, {
+        stars: increment(-amt),
+        starsGifted: increment(amt)
+      });
+
+      tx.update(toRef, {
+        stars: increment(amt),
+        lastGift: {
+          from: currentUser.chatId,
+          amt: amt,
+          at: serverTimestamp()
+        }
+      });
     });
 
-    // Banner
-    await addDoc(collection(db, "messages_room5"), {
-      content: `${currentUser.chatId} gifted ${amt} stars to ${targetUser.chatId}!`,
+    // EPHEMERAL BANNER
+    const bannerMsg = {
+      content: `${currentUser.chatId} gifted ${amt} stars to ${targetUser.chatId || "someone"}!`,
       timestamp: serverTimestamp(),
-      systemBanner: true, type: "banner", highlight: true
+      systemBanner: true,
+      highlight: true,
+      buzzColor: glowColor,
+      isBanner: true,
+      senderId: currentUser.uid,
+      type: "banner"
+    };
+
+    const docRef = await addDoc(collection(db, "messages_room5"), bannerMsg);
+    renderMessagesFromArray([{ id: docRef.id, data: bannerMsg }], true);
+
+    // GLOW ANIMATION
+    setTimeout(() => {
+      const el = document.getElementById(docRef.id);
+      if (el) {
+        const c = el.querySelector(".content") || el;
+        c.style.setProperty("--pulse-color", glowColor);
+        c.classList.add("baller-highlight");
+        setTimeout(() => c.classList.remove("baller-highlight"), 21000);
+      }
+    }, 100);
+
+    // NOTIFICATION
+    await addDoc(collection(db, "notifications"), {
+      userId: receiverId,
+      message: `${currentUser.chatId} gifted you ${amt} stars!`,
+      read: false,
+      timestamp: serverTimestamp(),
+      type: "starGift",
+      fromUserId: currentUser.uid
     });
 
-    showStarPopup(`Sent ${amt} stars!`);
-    document.getElementById('socialCard')?.remove();
+    // SUCCESS
+    showGoldAlert(`You sent ${amt} stars to ${targetUser.chatId}!`, 4000);
 
   } catch (err) {
-    console.error("FAILED:", err);
-    showStarPopup("Failed");
+    console.error("sendStarsToUser failed:", err);
+    showGoldAlert("Gift failed — try again", 4000);
   }
 }
+
 /* ===============================
    FINAL VIP LOGIN SYSTEM — 100% WORKING
    Google disabled | VIP button works | Safe auto-login
