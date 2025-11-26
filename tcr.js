@@ -1257,6 +1257,7 @@ function renderSocialCard(user) {
   slider.oninput = () => label.textContent = `${slider.value} ⭐️`;
 
 // === GIFT BUTTON — DYNAMICALLY CREATED (CORRECT WAY) ===
+// === GIFT BUTTON — DYNAMICALLY CREATED (PERFECT) ===
 const giftBtn = document.createElement('button');
 giftBtn.textContent = 'Gift';
 giftBtn.style.cssText = 'padding:8px 16px; border-radius:8px; border:none; font-weight:700; background:linear-gradient(90deg,#ff0099,#ff0066); color:#fff; cursor:pointer; box-shadow:0 4px 15px rgba(255,0,153,0.4); transition:all 0.2s;';
@@ -1281,40 +1282,30 @@ giftBtn.onclick = async () => {
   }
 };
 
-// Add hover effect (feels premium)
 giftBtn.onmouseenter = () => giftBtn.style.transform = 'translateY(-2px)';
 giftBtn.onmouseleave = () => giftBtn.style.transform = '';
 
-// === APPEND TO CARD ===
+// === APPEND EVERYTHING ===
 sliderPanel.append(slider, label);
 btnWrap.append(sliderPanel, giftBtn);
 card.append(btnWrap);
 document.body.appendChild(card);
 
-// === CARD ANIMATION ===
+// === OPEN ANIMATION ===
 requestAnimationFrame(() => {
   card.style.opacity = '1';
   card.style.transform = 'translate(-50%, -50%) scale(1.02)';
   setTimeout(() => card.style.transform = 'translate(-50%, -50%) scale(1)', 120);
 });
 
-// === CLOSE ON OUTSIDE CLICK ===
-const closeOutside = e => {
-  if (!card.contains(e.target)) {
+// === CLOSE WHEN CLICKING OUTSIDE (NO REDECLARATION EVER) ===
+const handleOutsideClick = (e) => {
+  if (card && !card.contains(e.target)) {
     card.remove();
-    document.removeEventListener('click', closeOutside);
+    document.removeEventListener('click', handleOutsideClick);
   }
 };
-setTimeout(() => document.addEventListener('click', closeOutside), 10);
-
-// === CLOSE ON OUTSIDE CLICK ===
-const closeOutside = e => {
-  if (!card.contains(e.target)) {
-    card.remove();
-    document.removeEventListener('click', closeOutside);
-  }
-};
-setTimeout(() => document.addEventListener('click', closeOutside), 10);
+setTimeout(() => document.addEventListener('click', handleOutsideClick), 10);
 
 // TAP DETECTION — ADD THIS ONCE
 document.addEventListener('pointerdown', e => {
