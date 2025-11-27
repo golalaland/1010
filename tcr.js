@@ -1241,110 +1241,140 @@ async function promptForChatID(userRef, userData) {
       btnWrap.appendChild(meetBtn);
     }
 
- // ——— PERFECT SLIDER THUMB — CENTERED FOREVER ———
-// PERFECT SLIDER — REPLACE YOUR OLD STYLE BLOCK
-const sliderStyle = document.createElement('style');
-sliderStyle.textContent = `
-  #socialCard input[type="range"] {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 100%;
-    height: 6px;
-    border-radius: 6px;
-    background: ${randomFieryGradient()};
-    outline: none;
-    margin: 12px 0;
-  }
-  #socialCard input[type="range"]::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    background: white;
-    border: 3px solid #ff3300;
-    cursor: pointer;
-    box-shadow: 0 0 15px #ff6600;
-  }
-  #socialCard input[type="range"]::-moz-range-thumb {
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    background: white;
-    border: 3px solid #ff3300;
-    cursor: pointer;
-    box-shadow: 0 0 15px #ff6600;
-  }
-`;
-document.head.appendChild(sliderStyle);
+    // ——— SLIDER PANEL — MUST COME BEFORE GIFT BUTTON ———
+    const sliderPanel = document.createElement('div');
+    Object.assign(sliderPanel.style, {
+      width: '100%',
+      padding: '8px 10px',
+      borderRadius: '10px',
+      background: 'rgba(255,255,255,0.08)',
+      backdropFilter: 'blur(10px)',
+      display: 'flex',
+      alignItems: 'center',
+      gap: '12px',
+      margin: '10px 0'
+    });
 
-// Update gradient on move
-slider.oninput = () => {
-  sliderLabel.textContent = slider.value;
-  const grad = randomFieryGradient();
-  slider.style.background = grad;
-};
-
-giftBtnLocal.onclick = async () => {
-  const amt = parseInt(slider.value);
-  if (amt < 100) return showStarPopup("Minimum gift is 100");
-  if ((currentUser?.stars || 0) < amt) return showStarPopup("Not enough stars");
-
-  // FIXED: Can't gift yourself — by chatId (100% accurate)
-  if (user.chatId?.toLowerCase() === currentUser?.chatId?.toLowerCase()) {
-    return showStarPopup("You can't gift yourself!");
-  }
-
-  const originalText = giftBtnLocal.textContent;
-  giftBtnLocal.textContent = '';
-  const spinner = document.createElement('div');
-  Object.assign(spinner.style, {
-    width: '20px',
-    height: '20px',
-    border: '3px solid rgba(255,255,255,0.3)',
-    borderTop: '3px solid white',
-    borderRadius: '50%',
-    animation: 'spin 0.8s linear infinite',
-    margin: '0 auto'
-  });
-  giftBtnLocal.appendChild(spinner);
-
-  try {
-    await sendStarsToUser({
-      chatId: user.chatId,
-      email: user.email,
-      uid: user.uid || user._docId
-    }, amt);
-
-    showStarPopup(`Sent ${amt} stars to ${user.chatId}!`);
-
-    // FIXED: Safe scroll to bottom — NO SYNTAX ERROR
-    const chatBox = document.getElementById("messages") || document.body;
-    if (chatBox) {
-      chatBox.scrollTop = chatBox.scrollHeight;
+    const fieryColors = [["#ff3300","#ff9900"],["#ff0066","#ff3399"],["#ff0000","#ff6600"],["#ff1493","#ff66cc"],["#ff5500","#ffdd00"]];
+    function randomFieryGradient() {
+      const [c1,c2] = fieryColors[Math.floor(Math.random()*fieryColors.length)];
+      return `linear-gradient(90deg, ${c1}, ${c2})`;
     }
 
+    const slider = document.createElement('input');
+    slider.type = 'range';
+    slider.min = 100;
+    slider.max = 999;
     slider.value = 100;
+    slider.style.cssText = 'flex:1; height:7px; border-radius:7px; outline:none; cursor:pointer; -webkit-appearance:none; background:' + randomFieryGradient();
+
+    const sliderLabel = document.createElement('span');
     sliderLabel.textContent = "100";
+    sliderLabel.style.cssText = 'font-size:15px; font-weight:700; min-width:60px; text-align:right; color:#fff';
 
-    setTimeout(() => card.remove(), 700);
+    // PERFECT CENTERED GLOWING THUMB — WORKS EVERYWHERE
+    const thumbStyle = document.createElement('style');
+    thumbStyle.textContent = `
+      #socialCard input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        width: 22px; height: 22px;
+        border-radius: 50%;
+        background: white;
+        border: 3px solid #ff3300;
+        box-shadow: 0 0 16px #ff6600;
+        cursor: pointer;
+      }
+      #socialCard input[type="range"]::-moz-range-thumb {
+        width: 22px; height: 22px;
+        border-radius: 50%;
+        background: white;
+        border: 3px solid #ff3300;
+        box-shadow: 0 0 16px #ff6600;
+        cursor: pointer;
+      }
+    `;
+    document.head.appendChild(thumbStyle);
 
-  } catch (err) {
-    console.error("Gift failed:", err);
-    showStarPopup("Failed — try again");
-  } finally {
-    giftBtnLocal.textContent = originalText;
-  }
-};
-    btnWrap.appendChild(giftBtnLocal);
+    // Update label + gradient on slide
+    slider.oninput = () => {
+      sliderLabel.textContent = slider.value;
+      slider.style.background = randomFieryGradient();
+    };
+
+    sliderPanel.append(slider, sliderLabel);
+    btnWrap.appendChild(sliderPanel);
+
+    // ——— GIFT BUTTON — NOW COMES AFTER SLIDER (so slider & sliderLabel exist!) ———
+    const giftBtnLocal = document.createElement('button');
+    giftBtnLocal.textContent = 'Gift';
+    Object.assign(giftBtnLocal.style, {
+      padding: '10px 20px',
+      borderRadius: '10px',
+      border: 'none',
+      fontWeight: '700',
+      fontSize: '16px',
+      background: 'linear-gradient(90deg,#ff0099,#ff0066)',
+      color: '#fff',
+      cursor: 'pointer',
+      boxShadow: '0 6px 20px rgba(255,0,153,0.5)',
+      transition: 'all 0.2s'
+    });
+
+    giftBtnLocal.onmouseenter = () => giftBtnLocal.style.transform = 'translateY(-4px)';
+    giftBtnLocal.onmouseleave = () => giftBtnLocal.style.transform = '';
+
+    giftBtnLocal.onclick = async () => {
+      const amt = parseInt(slider.value);
+      if (amt < 100) return showStarPopup("Minimum 100");
+      if ((currentUser?.stars || 0) < amt) return showStarPopup("Not enough stars");
+
+      if (user.chatId?.toLowerCase() === currentUser?.chatId?.toLowerCase()) {
+        return showStarPopup("You can't gift yourself silly!");
+      }
+
+      const orig = giftBtnLocal.textContent;
+      giftBtnLocal.textContent = '';
+      const spin = document.createElement('div');
+      Object.assign(spin.style, {
+        width:'22px', height:'22px', border:'4px solid #fff3', borderTop:'4px solid white',
+        borderRadius:'50%', animation:'spin 0.7s linear infinite', margin:'0 auto'
+      });
+      giftBtnLocal.appendChild(spin);
+
+      try {
+        await sendStarsToUser({
+          chatId: user.chatId,
+          email: user.email,
+          uid: user.uid || user._docId
+        }, amt);
+
+        showStarPopup(`Sent ${amt} stars to ${user.chatId}!`);
+        slider.value = 100;
+        sliderLabel.textContent = "100";
+
+        const chat = document.getElementById("messages");
+        if (chat) chat.scrollTop = chat.scrollHeight;
+
+        setTimeout(() => card.remove(), 800);
+      } catch (e) {
+        console.error(e);
+        showStarPopup("Failed — try again");
+      } finally {
+        giftBtnLocal.textContent = orig;
+      }
+    };
+       btnWrap.appendChild(giftBtnLocal);  // ← ONE TIME ONLY — PERFECT
+
     card.appendChild(btnWrap);
     document.body.appendChild(card);
 
+    // ANIMATE IN — BEAUTIFUL
     requestAnimationFrame(() => {
       card.style.opacity = '1';
       card.style.transform = 'translate(-50%, -50%) scale(1)';
     });
 
-     // CLOSE ON OUTSIDE CLICK — FIXED!
+    // CLOSE ON OUTSIDE CLICK
     const closeOut = (e) => {
       if (card && !card.contains(e.target)) {
         card.remove();
@@ -1352,8 +1382,7 @@ giftBtnLocal.onclick = async () => {
       }
     };
     setTimeout(() => document.addEventListener('click', closeOut), 10);
-
-  } // ← CLOSES showSocialCard FUNCTION
+  } // ← closes showSocialCard
 
   // ——— TYPEWRITER EFFECT ———
   function typeWriterEffect(el, text, speed = 40) {
