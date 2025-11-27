@@ -3786,31 +3786,41 @@ function showHighlightsModal(videos) {
       };
 
       const videoContainer = document.createElement("div");
-      videoContainer.style.cssText = "height:320px;overflow:hidden;position:relative;";
+      videoContainer.style.cssText = "height:320px;overflow:hidden;position:relative;background:#000;";
 
       const videoEl = document.createElement("video");
-      videoEl.muted = true; videoEl.loop = true; videoEl.preload = "metadata";
-      videoEl.style.cssText = `width:100%;height:100%;object-fit:cover;transition:filter 0.4s ease;`;
+      videoEl.muted = true;
+      videoEl.loop = true;
+      videoEl.preload = "metadata";
+      videoEl.style.cssText = "width:100%;height:100%;object-fit:cover;";
 
       if (isUnlocked) {
-        // Fully playable
+        // UNLOCKED → show & play preview immediately
         videoEl.src = video.previewClip || video.highlightVideo;
-        videoEl.poster = video.thumbnail;
-        videoContainer.onmouseenter = () => videoEl.play().catch(() => {});
-        videoContainer.onmouseleave = () => { videoEl.pause(); videoEl.currentTime = 0; };
-      } else {
-        // LOCKED: NO SOURCE, NO PLAYBACK
-        videoEl.removeAttribute("src");
-        videoEl.poster = video.thumbnail || `https://image-thumbnails-service/?video=${encodeURIComponent(video.highlightVideo)}&blur=20`;
-        videoEl.style.filter = "blur(6px)";
+        videoEl.poster = ""; // no poster needed
+        videoEl.play().catch(() => {}); // auto-play preview
 
-        const lockOverlay = document.createElement("div");
-        lockOverlay.innerHTML = `<div style="position:absolute;inset:0;background:linear-gradient(135deg,rgba(0,0,0,0.65),rgba(255,0,110,0.25));
-          display:flex;align-items:center;justify-content:center;z-index:2;">
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M12 2C9.2 2 7 4.2 7 7V11H6C4.9 11 4 11.9 4 13V20C4 21.1 4.9 22 6 22H18C19.1 22 20 21.1 20 20V13C20 11.9 19.1 11 18 11H17V7C17 4.2 14.8 2 12 2ZM12 4C13.7 4 15 5.3 15 7V11H9V7C9 5.3 10.3 4 12 4Z" fill="#ff006e"/>
-          </svg></div>`;
-        videoContainer.appendChild(lockOverlay);
+        videoContainer.onmouseenter = () => videoEl.play().catch(() => {});
+        videoContainer.onmouseleave = () => videoEl.pause();
+      } else {
+        // LOCKED → pure black + big lock, ZERO preview
+        videoEl.removeAttribute("src");
+        videoEl.poster = ""; // no thumbnail at all
+
+        const lockedOverlay = document.createElement("div");
+        lockedOverlay.innerHTML = `
+          <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+                      background:rgba(0,0,0,0.92);z-index:2;">
+            <div style="text-align:center;">
+              <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 2C9.2 2 7 4.2 7 7V11H6C4.9 11 4 11.9 4 13V20C4 21.1 4.9 22 6 22H18C19.1 22 20 21.1 20 20V13C20 11.9 19.1 11 18 11H17V7C17 4.2 14.8 2 12 2ZM12 4C13.7 4 15 5.3 15 7V11H9V7C9 5.3 10.3 4 12 4Z" fill="#ff006e"/>
+              </svg>
+              <div style="color:#ff006e;font-size:13px;margin-top:8px;font-weight:600;">
+                Unlock ${video.highlightVideoPrice || 100} Stars
+              </div>
+            </div>
+          </div>`;
+        videoContainer.appendChild(lockedOverlay);
       }
 
       videoContainer.onclick = (e) => {
