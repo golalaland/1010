@@ -1242,6 +1242,7 @@ async function promptForChatID(userRef, userData) {
     }
 
  // ——— PERFECT SLIDER THUMB — CENTERED FOREVER ———
+// PERFECT SLIDER — REPLACE YOUR OLD STYLE BLOCK
 const sliderStyle = document.createElement('style');
 sliderStyle.textContent = `
   #socialCard input[type="range"] {
@@ -1252,45 +1253,44 @@ sliderStyle.textContent = `
     border-radius: 6px;
     background: ${randomFieryGradient()};
     outline: none;
-    margin: 10px 0;
+    margin: 12px 0;
   }
   #socialCard input[type="range"]::-webkit-slider-thumb {
     -webkit-appearance: none;
-    appearance: none;
-    width: 18px;
-    height: 18px;
+    width: 20px;
+    height: 20px;
     border-radius: 50%;
-    background: #fff;
-    cursor: pointer;
-    box-shadow: 0 0 12px #ff6600, 0 0 20px rgba(255,102,0,0.6);
+    background: white;
     border: 3px solid #ff3300;
+    cursor: pointer;
+    box-shadow: 0 0 15px #ff6600;
   }
   #socialCard input[type="range"]::-moz-range-thumb {
-    width: 18px;
-    height: 18px;
+    width: 20px;
+    height: 20px;
     border-radius: 50%;
-    background: #fff;
-    cursor: pointer;
+    background: white;
     border: 3px solid #ff3300;
-    box-shadow: 0 0 12px #ff6600;
+    cursor: pointer;
+    box-shadow: 0 0 15px #ff6600;
   }
 `;
 document.head.appendChild(sliderStyle);
 
-// Update gradient on slide
+// Update gradient on move
 slider.oninput = () => {
-  sliderLabel.textContent = `${slider.value}`;
+  sliderLabel.textContent = slider.value;
   const grad = randomFieryGradient();
   slider.style.background = grad;
 };
 
- giftBtnLocal.onclick = async () => {
+giftBtnLocal.onclick = async () => {
   const amt = parseInt(slider.value);
   if (amt < 100) return showStarPopup("Minimum gift is 100");
   if ((currentUser?.stars || 0) < amt) return showStarPopup("Not enough stars");
 
-  // THIS IS THE FIX — COMPARE CHATID, NOT UID!
-  if (user.chatId && currentUser?.chatId && user.chatId.toLowerCase() === currentUser.chatId.toLowerCase()) {
+  // FIXED: Can't gift yourself — by chatId (100% accurate)
+  if (user.chatId?.toLowerCase() === currentUser?.chatId?.toLowerCase()) {
     return showStarPopup("You can't gift yourself!");
   }
 
@@ -1298,8 +1298,13 @@ slider.oninput = () => {
   giftBtnLocal.textContent = '';
   const spinner = document.createElement('div');
   Object.assign(spinner.style, {
-    width: '20px', height: '20px', border: '3px solid #fff3', borderTop: '3px solid white',
-    borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto'
+    width: '20px',
+    height: '20px',
+    border: '3px solid rgba(255,255,255,0.3)',
+    borderTop: '3px solid white',
+    borderRadius: '50%',
+    animation: 'spin 0.8s linear infinite',
+    margin: '0 auto'
   });
   giftBtnLocal.appendChild(spinner);
 
@@ -1311,14 +1316,20 @@ slider.oninput = () => {
     }, amt);
 
     showStarPopup(`Sent ${amt} stars to ${user.chatId}!`);
+
+    // FIXED: Safe scroll to bottom — NO SYNTAX ERROR
+    const chatBox = document.getElementById("messages") || document.body;
+    if (chatBox) {
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
     slider.value = 100;
     sliderLabel.textContent = "100";
-    document.getElementById("messages")?.scrollToBottom?.() || 
-      (document.getElementById("messages")?.scrollTop = 999999);
 
     setTimeout(() => card.remove(), 700);
-  } catch (e) {
-    console.error(e);
+
+  } catch (err) {
+    console.error("Gift failed:", err);
     showStarPopup("Failed — try again");
   } finally {
     giftBtnLocal.textContent = originalText;
