@@ -3785,34 +3785,33 @@ function showHighlightsModal(videos) {
         card.style.boxShadow = "0 4px 16px rgba(255,0,110,0.15)";
       };
 
-            const videoContainer = document.createElement("div");
+                  const videoContainer = document.createElement("div");
       videoContainer.style.cssText = "height:320px;overflow:hidden;position:relative;background:#000;cursor:pointer;";
 
       const videoEl = document.createElement("video");
       videoEl.muted = true;
       videoEl.loop = true;
       videoEl.preload = "metadata";
-      videoEl.style.cssText = "width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity 0.4s ease;";
+      videoEl.style.cssText = "width:100%;height:100%;object-fit:cover;";
 
       if (isUnlocked) {
-        // UNLOCKED → preview ONLY on hover, tap = full video
+        // UNLOCKED → visible immediately, plays on hover only
         videoEl.src = video.previewClip || video.highlightVideo;
 
-        // Show video + play on hover
-        videoContainer.onmouseenter = () => {
-          videoEl.style.opacity = "1";
-          videoEl.play().catch(() => {});
-        };
+        // Show right away (no fade, no black)
+        videoEl.poster = ""; // ensures no poster delay
+
+        // Play only on hover
+        videoContainer.onmouseenter = () => videoEl.play().catch(() => {});
         videoContainer.onmouseleave = () => {
-          videoEl.style.opacity = "0";
           videoEl.pause();
           videoEl.currentTime = 0;
         };
 
-        // Initial state: hidden until hover
-        videoEl.style.opacity = "0";
+        // Optional: start paused but loaded and visible
+        videoEl.load(); // ensures it's ready
       } else {
-        // LOCKED → pure black + big lock overlay
+        // LOCKED → pure black + sexy lock overlay
         videoEl.removeAttribute("src");
 
         const lockedOverlay = document.createElement("div");
@@ -3828,11 +3827,11 @@ function showHighlightsModal(videos) {
         videoContainer.appendChild(lockedOverlay);
       }
 
-      // CLICK BEHAVIOR (same for both)
+      // CLICK → full video or unlock modal
       videoContainer.onclick = (e) => {
         e.stopPropagation();
         if (isUnlocked) {
-          playFullVideo(video);  // your existing full-screen/modal player
+          playFullVideo(video);
         } else {
           showUnlockConfirm(video, () => renderCards(videos));
         }
