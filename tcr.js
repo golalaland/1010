@@ -3785,34 +3785,42 @@ function showHighlightsModal(videos) {
         card.style.boxShadow = "0 4px 16px rgba(255,0,110,0.15)";
       };
 
-      const videoContainer = document.createElement("div");
-      videoContainer.style.cssText = "height:320px;overflow:hidden;position:relative;background:#000;";
+            const videoContainer = document.createElement("div");
+      videoContainer.style.cssText = "height:320px;overflow:hidden;position:relative;background:#000;cursor:pointer;";
 
       const videoEl = document.createElement("video");
       videoEl.muted = true;
       videoEl.loop = true;
       videoEl.preload = "metadata";
-      videoEl.style.cssText = "width:100%;height:100%;object-fit:cover;";
+      videoEl.style.cssText = "width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity 0.4s ease;";
 
       if (isUnlocked) {
-        // UNLOCKED → show & play preview immediately
+        // UNLOCKED → preview ONLY on hover, tap = full video
         videoEl.src = video.previewClip || video.highlightVideo;
-        videoEl.poster = ""; // no poster needed
-        videoEl.play().catch(() => {}); // auto-play preview
 
-        videoContainer.onmouseenter = () => videoEl.play().catch(() => {});
-        videoContainer.onmouseleave = () => videoEl.pause();
+        // Show video + play on hover
+        videoContainer.onmouseenter = () => {
+          videoEl.style.opacity = "1";
+          videoEl.play().catch(() => {});
+        };
+        videoContainer.onmouseleave = () => {
+          videoEl.style.opacity = "0";
+          videoEl.pause();
+          videoEl.currentTime = 0;
+        };
+
+        // Initial state: hidden until hover
+        videoEl.style.opacity = "0";
       } else {
-        // LOCKED → pure black + big lock, ZERO preview
+        // LOCKED → pure black + big lock overlay
         videoEl.removeAttribute("src");
-        videoEl.poster = ""; // no thumbnail at all
 
         const lockedOverlay = document.createElement("div");
         lockedOverlay.innerHTML = `
           <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
-                      background:rgba(0,0,0,0.92);z-index:2;">
+                      background:rgba(0,0,0,0.96);z-index:2;">
             <div style="text-align:center;">
-              <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <svg width="68" height="68" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M12 2C9.2 2 7 4.2 7 7V11H6C4.9 11 4 11.9 4 13V20C4 21.1 4.9 22 6 22H18C19.1 22 20 21.1 20 20V13C20 11.9 19.1 11 18 11H17V7C17 4.2 14.8 2 12 2ZM12 4C13.7 4 15 5.3 15 7V11H9V7C9 5.3 10.3 4 12 4Z" fill="#ff006e"/>
               </svg>
             </div>
@@ -3820,14 +3828,17 @@ function showHighlightsModal(videos) {
         videoContainer.appendChild(lockedOverlay);
       }
 
+      // CLICK BEHAVIOR (same for both)
       videoContainer.onclick = (e) => {
         e.stopPropagation();
-        if (isUnlocked) playFullVideo(video);
-        else showUnlockConfirm(video, () => renderCards(videos));
+        if (isUnlocked) {
+          playFullVideo(video);  // your existing full-screen/modal player
+        } else {
+          showUnlockConfirm(video, () => renderCards(videos));
+        }
       };
 
       videoContainer.appendChild(videoEl);
-
       // Info Panel
       const infoPanel = document.createElement("div");
       infoPanel.style.cssText = "background:#111;padding:10px;display:flex;flex-direction:column;gap:4px;";
