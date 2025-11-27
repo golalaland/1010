@@ -1326,12 +1326,18 @@ async function promptForChatID(userRef, userData) {
       card.style.transform = 'translate(-50%, -50%) scale(1)';
     });
 
-    const closeOut = e => {
-      if (!card.contains(e.target)) { card.remove(); document.removeEventListener('click', closeOut); };
+     // CLOSE ON OUTSIDE CLICK — FIXED!
+    const closeOut = (e) => {
+      if (card && !card.contains(e.target)) {
+        card.remove();
+        document.removeEventListener('click', closeOut);
+      }
+    };
     setTimeout(() => document.addEventListener('click', closeOut), 10);
-  }
 
-  // Typewriter
+  } // ← CLOSES showSocialCard FUNCTION
+
+  // ——— TYPEWRITER EFFECT ———
   function typeWriterEffect(el, text, speed = 40) {
     el.textContent = "";
     let i = 0;
@@ -1341,14 +1347,19 @@ async function promptForChatID(userRef, userData) {
     }, speed);
   }
 
-  // Tap to open
+  // ——— TAP TO OPEN CARD ———
   document.addEventListener("pointerdown", e => {
     const el = e.target.closest("[data-user-id]");
     if (!el) return;
     const uid = el.dataset.userId;
     if (!uid || uid === currentUser?.uid) return;
 
-    const u = allUsers.find(u => u._docId === uid || (u.email && u.email.replace(/[.@]/g,"_") === uid) || u.chatIdLower === el.textContent.trim().toLowerCase());
+    const u = allUsers.find(user =>
+      user._docId === uid ||
+      (user.email && user.email.replace(/[.@]/g, "_") === uid) ||
+      user.chatIdLower === el.textContent.trim().toLowerCase()
+    );
+
     if (u) {
       el.style.background = "#ffcc00";
       setTimeout(() => el.style.background = "", 200);
@@ -1356,11 +1367,13 @@ async function promptForChatID(userRef, userData) {
     }
   });
 
+  console.log("Social Card System READY — 2025 FINAL BULLETPROOF EDITION");
+
+  // Make available globally
   window.showSocialCard = showSocialCard;
-  console.log("Social Card System READY — 2025 FINAL EDITION");
+  window.typeWriterEffect = typeWriterEffect;
 
-})(); // END IIFE
-
+})(); // ← FINAL CLOSING OF THE ENTIRE IIFE — ONLY ONE!
 
 // ——— FINAL BULLETPROOF sendStarsToUser — STARS ALWAYS ARRIVE ———
 async function sendStarsToUser(targetUser, amt) {
