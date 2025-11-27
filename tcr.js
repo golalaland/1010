@@ -3657,9 +3657,9 @@ function showHighlightsModal(videos) {
       box-shadow:0 0 16px rgba(255,0,110,0.15);border-radius:12px;">
       <p style="margin:0;">
         <span style="background:linear-gradient(90deg,#ff006e,#ff8c00);-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-weight:700;">
-          Highlights
+          Highlights 🎬
         </span> are exclusive creator moments.<br>
-        Unlock premium clips with Stars to support your favorite creators.
+        Unlock premium clips with STRZ ⭐️ to support your favorite creators.
       </p>
     </div>`;
   Object.assign(intro.style, { position: "sticky", top: "10px", zIndex: "1001", marginBottom: "12px" });
@@ -3834,7 +3834,7 @@ function showHighlightsModal(videos) {
       uploader.style.cssText = "font-size:12px;color:#ff006e;";
 
       const unlockBtn = document.createElement("button");
-      unlockBtn.textContent = isUnlocked ? "Unlocked" : `Unlock ${video.highlightVideoPrice || 100} Stars`;
+      unlockBtn.textContent = isUnlocked ? "Unlocked" : `Unlock ${video.highlightVideoPrice || 100} ⭐️`;
       Object.assign(unlockBtn.style, {
         background: isUnlocked ? "#333" : "linear-gradient(135deg, #ff006e, #ff4500)",
         border: "none", borderRadius: "6px", padding: "8px 0", fontWeight: "600",
