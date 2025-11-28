@@ -3530,8 +3530,8 @@ function showHighlightsModal(videos) {
       box-shadow:0 0 16px rgba(255,0,110,0.15);border-radius:12px;">
       <p style="margin:0;">
         <span style="background:linear-gradient(90deg,#ff006e,#ff8c00);-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-weight:700;">
-          Highlights 🎬
-        </span> are exclusive creator moments.<br>
+          Highlights 
+        </span> 🎬 are exclusive creator moments.<br>
         Unlock premium clips with STRZ ⭐️ to support your favorite creators.
       </p>
     </div>`;
@@ -3765,7 +3765,7 @@ function showHighlightsModal(videos) {
     toggleBtn.textContent = "Show Unlocked";
     toggleBtn.style.background = "linear-gradient(135deg, #333, #222)";
     trendingBtn.textContent = "Trending";
-    trendingBtn.style.background = "linear-gradient(135deg, #8B00FF, #FF1493)";
+    trendingBtn.style.background = "linear-gradient(135deg, #c31432, #ff006e)";
     trendingBtn.style.boxShadow = "0 2px 8px rgba(139,0,255,0.3)";
 
     if (filterMode === "unlocked") {
