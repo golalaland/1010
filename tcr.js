@@ -3919,28 +3919,6 @@ async function handleUnlockVideo(video) {
     showGoldAlert(`⚠️ ${err.message}`);
   }
 }
-// ---------- Play Full Video Modal ----------
-function playFullVideo(video) {
-  const modal = document.createElement("div");
-  Object.assign(modal.style, {
-    position: "fixed", top: 0, left: 0, width: "90vw", height: "90vh",
-    background: "rgba(0,0,0,0.95)",
-    display: "flex", alignItems: "center", justifyContent: "center",
-    zIndex: "1000002"
-  });
-
-  const vid = document.createElement("video");
-  vid.src = video.highlightVideo;
-  vid.controls = true;
-  vid.autoplay = true;
-  vid.style.maxWidth = "90%";
-  vid.style.maxHeight = "90%";
-  vid.style.borderRadius = "12px";
-
-  modal.appendChild(vid);
-  modal.onclick = () => modal.remove();
-  document.body.appendChild(modal);
-}
 // ————————————————————————————————————————————————————————
 // FINAL LINE — THIS MUST BE THE VERY LAST THING IN tcr.js
 // ————————————————————————————————————————————————————————
