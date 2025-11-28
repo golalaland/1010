@@ -3657,86 +3657,54 @@ function showHighlightsModal(videos) {
         card.style.boxShadow = "0 4px 16px rgba(255,0,110,0.15)";
       };
 
-                              const videoContainer = document.createElement("div");
-                              videoContainer.style.cssText = "height:320px;overflow:hidden;position:relative;background:#000;cursor:pointer;";
+                                    const videoContainer = document.createElement("div");
+      videoContainer.style.cssText = "height:320px;overflow:hidden;position:relative;background:#000;cursor:pointer;";
 
-                              const videoEl = document.createElement("video");
-                              videoEl.muted = true;
-                              videoEl.loop = true;
-                              videoEl.controls = false;
-                              videoEl.preload = "metadata";
-                              videoEl.playsInline = true;
-                              videoEl.style.cssText = "width:100%;height:100%;object-fit:cover;pointer-events:none;";
+      const videoEl = document.createElement("video");
+      videoEl.muted = true;
+      videoEl.loop = true;
+      videoEl.preload = "metadata";
+      videoEl.style.cssText = "width:100%;height:100%;object-fit:cover;pointer-events:none;"; // ← THIS IS KEY
 
-                              let lastTap = 0;
-                              let isPlaying = false;
+      if (isUnlocked) {
+        videoEl.src = video.previewClip || video.highlightVideo;
 
-                              if (isUnlocked) {
-                                videoEl.src = video.previewClip || video.highlightVideo;
-                                videoEl.load();
+        videoContainer.onmouseenter = () => videoEl.play().catch(() => {});
+        videoContainer.onmouseleave = () => {
+          videoEl.pause();
+          videoEl.currentTime = 0;
+        };
+      } else {
+        videoEl.removeAttribute("src");
 
-                                // Hover play (desktop)
-                                videoContainer.onmouseenter = () => {
-                                  if (!isPlaying) videoEl.play().catch(() => {});
-                                };
-                                videoContainer.onmouseleave = () => {
-                                  videoEl.pause();
-                                  videoEl.currentTime = 0;
-                                  isPlaying = false;
-                                };
+        const lockedOverlay = document.createElement("div");
+        lockedOverlay.innerHTML = `
+          <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+                      background:rgba(0,0,0,0.96);z-index:2;">
+            <div style="text-align:center;">
+              <svg width="68" height="68" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 2C9.2 2 7 4.2 7 7V11H6C4.9 11 4 11.9 4 13V20C4 21.1 4.9 22 6 22H18C19.1 22 20 21.1 20 20V13C20 11.9 19.1 11 18 11H17V7C17 4.2 14.8 2 12 2ZM12 4C13.7 4 15 5.3 15 7V11H9V7C9 5.3 10.3 4 12 4Z" fill="#ff006e"/>
+              </svg>
+              
+            </div>
+          </div>`;
+        videoContainer.appendChild(lockedOverlay);
+      }
 
-                                // SINGLE TAP = Play/Pause inside card
-                                // DOUBLE TAP = Native fullscreen
-                                videoContainer.ontouchstart = videoContainer.onclick = (e) => {
-                                  e.stopPropagation();
+      // ONLY the container handles clicks — video element is untouchable
+      videoContainer.onclick = (e) => {
+        e.stopPropagation();
+        e.preventDefault();
 
-                                  const now = Date.now();
-                                  const DOUBLE_TAP_DELAY = 300;
+        if (isUnlocked) {
+          playFullVideo(video);  // ← your beautiful modal
+        } else {
+          showUnlockConfirm(video, () => renderCards(videos));
+        }
+      };
 
-                                  if (now - lastTap < DOUBLE_TAP_DELAY) {
-                                    // DOUBLE TAP → Native fullscreen
-                                    e.preventDefault();
-                                    enterNativeFullscreen(videoEl, video.highlightVideo || video.previewClip);
-                                    lastTap = 0;
-                                    return;
-                                  }
-
-                                  lastTap = now;
-
-                                  // SINGLE TAP → toggle play/pause inside card
-                                  if (videoEl.paused) {
-                                    videoEl.play().catch(() => {});
-                                    isPlaying = true;
-                                  } else {
-                                    videoEl.pause();
-                                    videoEl.currentTime = 0;
-                                    isPlaying = false;
-                                  }
-                                };
-
-                              } else {
-                                // LOCKED → pure black + lock
-                                videoEl.removeAttribute("src");
-
-                                const lockedOverlay = document.createElement("div");
-                                lockedOverlay.innerHTML = `
-                                  <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.96);z-index:2;">
-                                    <div style="text-align:center;">
-                                      <svg width="68" height="68" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M12 2C9.2 2 7 4.2 7 7V11H6C4.9 11 4 11.9 4 13V20C4 21.1 4.9 22 6 22H18C19.1 22 20 21.1 20 20V13C20 11.9 19.1 11 18 11H17V7C17 4.2 14.8 2 12 2ZM12 4C13.7 4 15 5.3 15 7V11H9V7C9 5.3 10.3 4 12 4Z" fill="#ff006e"/>
-                                      </svg>
-                                    
-                                    </div>
-                                  </div>`;
-                                videoContainer.appendChild(lockedOverlay);
-
-                                videoContainer.onclick = (e) => {
-                                  e.stopPropagation();
-                                  showUnlockConfirm(video, () => renderCards(videos));
-                                };
-                              }
-
-                              videoContainer.appendChild(videoEl);
+      videoContainer.appendChild(videoEl);
+      
       // Info Panel
       const infoPanel = document.createElement("div");
       infoPanel.style.cssText = "background:#111;padding:10px;display:flex;flex-direction:column;gap:4px;";
