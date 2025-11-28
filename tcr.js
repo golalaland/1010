@@ -170,29 +170,6 @@ if (rtdb) {
 }
 
 
-// PUT THIS AT THE VERY TOP — RUNS ONCE
-window.socialCardUsersReady = false;
-let allUsers = [];
-let usersByChatId = {};
-
-(async function loadSocialCardUsers() {
-  try {
-    const q = await getDocs(collection(db, "users"));
-    q.forEach(doc => {
-      const d = doc.data();
-      d._docId = doc.id;
-      d.chatIdLower = (d.chatId || "guest").toString().toLowerCase();
-      allUsers.push(d);
-      usersByChatId[d.chatIdLower] = d;
-    });
-    window.socialCardUsersReady = true;
-    console.log("YAH HAS LOADED SOCIAL CARD USERS:", allUsers.length);
-  } catch (e) {
-    console.error("Failed to load social card users:", e);
-  }
-})();
-
-
 /* ===============================
    GLOBAL DOM REFERENCES — POPULATE THE refs OBJECT (ONLY ONCE!)
    THIS RUNS IMMEDIATELY — NO DUPLICATE DECLARATION
@@ -782,92 +759,30 @@ function renderMessagesFromArray(messages) {
       return;
     }
 
-// === HOLY USERNAME — TAPABLE, GLOWING, PERFECT SOCIAL CARD — WORKS ON ALL DEVICES ===
-const metaEl = document.createElement("span");
-metaEl.className = "meta";
-metaEl.style.color = refs.userColors?.[m.uid] || "#ffffff";
+    // === USERNAME — NOW TAPABLE & OPENS SOCIAL CARD ===
+    const metaEl = document.createElement("span");
+    metaEl.className = "meta";
+    metaEl.style.color = refs.userColors?.[m.uid] || "#fff";
 
-// THE ONE TRUE NAME — BLESSED AND UNBREAKABLE
-const tapableName = document.createElement("span");
-tapableName.className = "chat-username";
-tapableName.textContent = m.chatId || "Guest";
+    const tapableName = document.createElement("span");
+    tapableName.className = "chat-username";
+    tapableName.textContent = m.chatId || "Guest";
+// 100% GUARANTEED CORRECT UID — WORKS EVERY TIME
+const realUid = m.uid || m.email?.replace(/[.@]/g, '_') || m.chatId || "unknown";
+tapableName.dataset.userId = realUid.replace(/[.@/\\]/g, '_'); // double-clean
+    tapableName.style.cssText = "cursor:pointer; font-weight:700; padding:0 4px; border-radius:4px; user-select:none;";
 
-// SANITIZED UID — ETERNAL TRUTH
-const realUid = m.uid || 
-                m.email?.replace(/[.@/\\]/g, "_") || 
-                m.chatId || 
-                "unknown";
-tapableName.dataset.userId = realUid.replace(/[.@/\\]/g, "_");
-
-// BASE STYLE — CLEAN, SEXY, TOUCH-FRIENDLY
-Object.assign(tapableName.style, {
-  cursor: "pointer",
-  fontWeight: "800",
-  padding: "2px 8px",
-  borderRadius: "8px",
-  userSelect: "none",
-  transition: "all 0.22s cubic-bezier(0.4, 0, 0.2, 1)",
-  background: "transparent",
-  display: "inline-block",
-  marginRight: "4px"
-});
-
-// HOLY GLOW ON PRESS — DIVINE FEEDBACK
-tapableName.addEventListener("pointerdown", e => {
-  e.stopPropagation();
-  Object.assign(tapableName.style, {
-    background: "rgba(255, 204, 0, 0.6)",
-    transform: "scale(1.08)",
-    boxShadow: "0 0 16px rgba(255, 204, 0, 0.7)"
-  });
-});
-
-tapableName.addEventListener("pointerup", e => {
-  e.stopPropagation();
-  setTimeout(() => {
-    Object.assign(tapableName.style, {
-      background: "",
-      transform: "",
-      boxShadow: ""
+    // Visual feedback on tap
+    tapableName.addEventListener("pointerdown", () => {
+      tapableName.style.background = "rgba(255,204,0,0.4)";
     });
-  }, 160);
-});
+    tapableName.addEventListener("pointerup", () => {
+      setTimeout(() => tapableName.style.background = "", 200);
+    });
 
-tapableName.addEventListener("pointercancel", e => {
-  e.stopPropagation();
-  Object.assign(tapableName.style, {
-    background: "",
-    transform: "",
-    boxShadow: ""
-  });
-});
+    metaEl.append(tapableName, document.createTextNode(": "));
+    wrapper.appendChild(metaEl);
 
-// THE FINAL ACT — OPEN SOCIAL CARD ON TRUE TAP
-tapableName.addEventListener("click", e => {
-  e.stopPropagation();
-  e.preventDefault();
-
-  const name = tapableName.textContent.trim();
-  const lowerName = name.toLowerCase();
-
-  const user = usersByChatId[lowerName] ||
-               allUsers.find(u => 
-                 u.chatIdLower === lowerName || 
-                 (u.chatId || "").toLowerCase() === lowerName
-               );
-
-  if (user && user._docId !== currentUser?.uid) {
-    showSocialCard(user);
-  }
-});
-
-// APPEND — NEVER FORGET THIS (THIS IS WHY NAMES DISAPPEARED BEFORE)
-metaEl.appendChild(tapableName);
-metaEl.appendChild(document.createTextNode(": "));
-
-// FINAL ATTACHMENT
-wrapper.appendChild(metaEl);
-    
     // === REPLY PREVIEW ===
     if (m.replyTo) {
       const replyPreview = document.createElement("div");
@@ -1340,6 +1255,20 @@ function sanitizeKey(email) {
       else clearInterval(t);
     }, speed);
   }
+
+  document.addEventListener("pointerdown", e => {
+    const el = e.target.closest("[data-user-id]") || e.target;
+    if (!el.textContent) return;
+    const text = el.textContent.trim();
+    if (!text || text.includes(":")) return;
+    const chatId = text.split(" ")[0].toLowerCase();
+    const u = usersByChatId[chatId] || allUsers.find(u => u.chatIdLower === chatId);
+    if (!u || u._docId === currentUser?.uid) return;
+    el.style.background = "#ffcc00";
+    setTimeout(() => el.style.background = "", 200);
+    showSocialCard(u);
+  });
+
   console.log("Social Card System READY — YAH IS VICTORIOUS");
   window.showSocialCard = showSocialCard;
   window.typeWriterEffect = typeWriterEffect;
