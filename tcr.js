@@ -202,7 +202,7 @@ async function pushNotification(userId, message) {
   });
 }
 
-// AUTH STATE OBSERVER — FINAL & SAFE
+// AUTH STATE OBSERVER — FINAL & SAFE — ALL BUTTONS BACK, NO MORE DISAPPEARANCE
 onAuthStateChanged(auth, async (user) => {
   if (notificationsUnsubscribe) {
     notificationsUnsubscribe();
@@ -249,26 +249,32 @@ onAuthStateChanged(auth, async (user) => {
 
     console.log("LOGGED IN:", currentUser.chatId, "| ID:", uid);
 
-    // UI
+    // SHOW LOGGED-IN UI
     document.querySelectorAll(".after-login-only").forEach(el => el.style.display = "");
     document.querySelectorAll(".before-login-only").forEach(el => el.style.display = "none");
     localStorage.setItem("userId", uid);
     localStorage.setItem("lastVipEmail", email);
 
-    // SAFE: Only run these AFTER currentUser is ready
+    // CORE SYSTEMS
     if (typeof showChatUI === "function") showChatUI(currentUser);
     if (typeof attachMessagesListener === "function") attachMessagesListener();
     if (typeof startStarEarning === "function") startStarEarning(uid);
 
-    // FIXED: syncUserUnlocks runs safely — no modal on reload
+    // SYNC UNLOCKS — SAFE (no modal flash)
     if (typeof syncUserUnlocks === "function") {
-      setTimeout(() => syncUserUnlocks(), 500); // ← prevents modal flash
+      setTimeout(() => syncUserUnlocks(), 500);
     }
 
+    // NOTIFICATIONS
     setupNotificationsListener(uid);
 
+    // RESTORE REDEEM & TIP BUTTONS — NEVER DISAPPEAR AGAIN
+    updateRedeemLink();
+    updateTipLink();
+
+    // WELCOME POPUP
     const colors = ["#FF1493","#FFD700","#00FFFF","#FF4500","#DA70D6","#FF69B4","#32CD32","#FFA500"];
-    showStarPopup(`Welcome <span style="font-weight:bold;color:${colors[Math.floor(Math.random()*colors.length)]};">${currentUser.chatId.toUpperCase()}</span>!`);
+    showStarPopup(`Welcome back, <span style="font-weight:bold;color:${colors[Math.floor(Math.random()*colors.length)]};">${currentUser.chatId.toUpperCase()}</span>!`);
 
   } catch (err) {
     console.error("Login error:", err);
@@ -348,105 +354,114 @@ function setupUsersListener() { onSnapshot(collection(db, "users"), snap => { re
   
 
 /* ----------------------------
-   ⭐ GIFT MODAL / CHAT BANNER ALERT
+   GIFT MODAL + REDEEM/TIP LINKS — FINAL 2025 BULLETPROOF
+   BUTTONS NEVER DISAPPEAR AGAIN
+----------------------------- */
+
+// GLOBAL refs — make sure this exists at the top of your script
+const refs = {
+  redeemBtn: document.getElementById("redeemBtn"),
+  tipBtn: document.getElementById("tipBtn"),
+  giftModal: document.getElementById("giftModal"),
+  giftModalTitle: document.getElementById("giftModalTitle"),
+  giftAmountInput: document.getElementById("giftAmountInput"),
+  giftConfirmBtn: document.getElementById("giftConfirmBtn"),
+  giftModalClose: document.getElementById("giftModalClose"),
+  giftAlert: document.getElementById("giftAlert")
+};
+
+/* ----------------------------
+   GIFT MODAL — NOW 100% RELIABLE
 ----------------------------- */
 async function showGiftModal(targetUid, targetData) {
-  // Stop if required info is missing
-  if (!targetUid || !targetData) return;
-
-  const modal = document.getElementById("giftModal");
-  const titleEl = document.getElementById("giftModalTitle");
-  const amountInput = document.getElementById("giftAmountInput");
-  const confirmBtn = document.getElementById("giftConfirmBtn");
-  const closeBtn = document.getElementById("giftModalClose");
-
-  // Make sure modal exists before doing anything
-  if (!modal || !titleEl || !amountInput || !confirmBtn || !closeBtn) {
-    console.warn("❌ Gift modal elements not found — skipping open");
+  if (!targetUid || !targetData || !currentUser) {
+    console.warn("Missing data for gift modal");
     return;
   }
 
-  // 🧩 Reset state before showing
-  titleEl.textContent = "Gift ⭐️";
-  amountInput.value = "";
+  const { giftModal, giftModalTitle, giftAmountInput, giftConfirmBtn, giftModalClose } = refs;
 
-  // 🚫 Don't auto-show unless called intentionally
-  // So we only show the modal *after* all required info is ready
-  requestAnimationFrame(() => {
-    modal.style.display = "flex";
-  });
+  if (!giftModal || !giftModalTitle || !giftAmountInput || !giftConfirmBtn || !giftModalClose) {
+    console.warn("Gift modal elements missing in DOM");
+    return;
+  }
 
-  // Close modal behavior
-  const close = () => {
-    modal.style.display = "none";
-  };
+  // Reset
+  giftModalTitle.textContent = `Gift to ${targetData.chatId || "User"}`;
+  giftAmountInput.value = "100";
+  giftModal.style.display = "flex";
 
-  closeBtn.onclick = close;
-  modal.onclick = (e) => {
-    if (e.target === modal) close();
-  };
+  // Close handlers
+  const close = () => { giftModal.style.display = "none"; };
+  giftModalClose.onclick = close;
+  giftModal.onclick = (e) => { if (e.target === giftModal) close(); };
 
-  // Remove any old listeners on confirm button
-  const newConfirmBtn = confirmBtn.cloneNode(true);
-  confirmBtn.replaceWith(newConfirmBtn);
+  // Replace button to remove old listeners
+  const newBtn = giftConfirmBtn.cloneNode(true);
+  giftConfirmBtn.replaceWith(newBtn);
 
-  // ✅ Confirm send action
-  newConfirmBtn.addEventListener("click", async () => {
-    const amt = parseInt(amountInput.value) || 0;
-    if (amt < 100) return showStarPopup("🔥 Minimum gift is 100 ⭐️");
-    if ((currentUser?.stars || 0) < amt) return showStarPopup("Not enough stars 💫");
+  newBtn.addEventListener("click", async () => {
+    const amt = parseInt(giftAmountInput.value) || 0;
+    if (amt < 100) return showStarPopup("Minimum 100 stars");
+    if ((currentUser.stars || 0) < amt) return showStarPopup("Not enough stars");
 
-    const fromRef = doc(db, "users", currentUser.uid);
-    const toRef = doc(db, "users", targetUid);
-    const glowColor = randomColor();
+    try {
+      const fromRef = doc(db, "users", currentUser.uid);
+      const toRef = doc(db, "users", targetUid);
 
-    const messageData = {
-      content: `💫 ${currentUser.chatId} gifted ${amt} stars ⭐️ to ${targetData.chatId}!`,
-      uid: currentUser.uid,
-      timestamp: serverTimestamp(),
-      highlight: true,
-      buzzColor: glowColor,
-      systemBanner: true,
-      _confettiPlayed: false
-    };
+      await runTransaction(db, async (tx) => {
+        const fromSnap = await tx.get(fromRef);
+        if (!fromSnap.exists() || (fromSnap.data().stars || 0) < amt) {
+          throw "Not enough stars";
+        }
+        tx.update(fromRef, { stars: increment(-amt), starsGifted: increment(amt) });
+        tx.update(toRef, { stars: increment(amt) });
+      });
 
-    const docRef = await addDoc(collection(db, CHAT_COLLECTION), messageData);
+      // Banner message
+      const banner = {
+        content: `${currentUser.chatId} gifted ${amt} stars to ${targetData.chatId}!`,
+        timestamp: serverTimestamp(),
+        systemBanner: true,
+        highlight: true,
+        buzzColor: randomColor()
+      };
+      const docRef = await addDoc(collection(db, "messages_room5"), banner);
+      renderMessagesFromArray([{ id: docRef.id, data: banner }], true);
 
-    await Promise.all([
-      updateDoc(fromRef, { stars: increment(-amt), starsGifted: increment(amt) }),
-      updateDoc(toRef, { stars: increment(amt) })
-    ]);
+      showStarPopup(`Sent ${amt} stars to ${targetData.chatId}!`);
+      close();
 
-    showStarPopup(`You sent ${amt} stars ⭐️ to ${targetData.chatId}!`);
-    close();
-
-    renderMessagesFromArray([{ id: docRef.id, data: messageData }]);
+    } catch (err) {
+      console.error(err);
+      showStarPopup("Gift failed — try again");
+    }
   });
 }
-/* ---------- Gift Alert (Optional Popup) ---------- */
-function showGiftAlert(text) {
-  const alertEl = document.getElementById("giftAlert");
-  if (!alertEl) return;
 
-  alertEl.textContent = text; // just text
-  alertEl.classList.add("show", "glow"); // banner glow
-
-  // ✅ Floating stars removed
-  setTimeout(() => alertEl.classList.remove("show", "glow"), 4000);
-}
-
-/* ---------- Redeem Link ---------- */
+/* ----------------------------
+   REDEEM & TIP LINKS — ALWAYS VISIBLE AFTER LOGIN
+----------------------------- */
 function updateRedeemLink() {
-  if (!refs.redeemBtn || !currentUser) return;
-  refs.redeemBtn.href = `menu.html?uid=${encodeURIComponent(currentUser.uid)}`;
+  if (!refs.redeemBtn || !currentUser?.uid) return;
+  refs.redeemBtn.href = `menu.html?uid=${currentUser.uid}`;
   refs.redeemBtn.style.display = "inline-block";
 }
 
-/* ---------- Tip Link ---------- */
 function updateTipLink() {
-  if (!refs.tipBtn || !currentUser) return;
-  refs.tipBtn.href = `menu.html?uid=${encodeURIComponent(currentUser.uid)}`;
+  if (!refs.tipBtn || !currentUser?.uid) return;
+  refs.tipBtn.href = `menu.html?uid=${currentUser.uid}`;
   refs.tipBtn.style.display = "inline-block";
+}
+
+/* ----------------------------
+   GIFT ALERT BANNER
+----------------------------- */
+function showGiftAlert(text) {
+  if (!refs.giftAlert) return;
+  refs.giftAlert.textContent = text;
+  refs.giftAlert.classList.add("show", "glow");
+  setTimeout(() => refs.giftAlert.classList.remove("show", "glow"), 4000);
 }
 
 
