@@ -1,3 +1,20 @@
+/* ===============================
+   GLOBAL DOM REFERENCES — ONLY ONE TIME!
+   PLACE THIS AT THE VERY TOP OF tcr.js
+================================= */
+const refs = {
+  redeemBtn: document.getElementById("redeemBtn"),
+  tipBtn: document.getElementById("tipBtn"),
+  giftModal: document.getElementById("giftModal"),
+  giftModalTitle: document.getElementById("giftModalTitle"),
+  giftAmountInput: document.getElementById("giftAmountInput"),
+  giftConfirmBtn: document.getElementById("giftConfirmBtn"),
+  giftModalClose: document.getElementById("giftModalClose"),
+  giftAlert: document.getElementById("giftAlert"),
+  starPopup: document.getElementById("starPopup"),
+  starText: document.getElementById("starText")
+};
+
 /* ---------- Firebase Modular Imports (v10+) ---------- */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 
@@ -81,23 +98,6 @@ if (sessionStorage.getItem("justLoggedOut") === "true") {
   sessionStorage.removeItem("justLoggedOut");
   showStarPopup("Welcome back, legend!");
 }
-
-/* ===============================
-   GLOBAL DOM REFERENCES — ONLY ONE TIME!
-   PLACE THIS AT THE VERY TOP OF tcr.js
-================================= */
-const refs = {
-  redeemBtn: document.getElementById("redeemBtn"),
-  tipBtn: document.getElementById("tipBtn"),
-  giftModal: document.getElementById("giftModal"),
-  giftModalTitle: document.getElementById("giftModalTitle"),
-  giftAmountInput: document.getElementById("giftAmountInput"),
-  giftConfirmBtn: document.getElementById("giftConfirmBtn"),
-  giftModalClose: document.getElementById("giftModalClose"),
-  giftAlert: document.getElementById("giftAlert"),
-  starPopup: document.getElementById("starPopup"),
-  starText: document.getElementById("starText")
-};
 
 /* ---------- Presence (Realtime) ---------- */
 function setupPresence(user) {
