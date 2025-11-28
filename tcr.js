@@ -360,17 +360,7 @@ onAuthStateChanged(auth, async (firebaseUser) => {
     const holyColors = ["#FF1493", "#FFD700", "#00FFFF", "#FF4500", "#DA70D6", "#FF69B4", "#32CD32", "#FFA500", "#FF00FF"];
     const divineColor = holyColors[Math.floor(Math.random() * holyColors.length)];
 
-    showStarPopup(`
-      <div style="font-size:18px; font-weight:900;">
-        WELCOME BACK,<br>
-        <span style="background: linear-gradient(90deg, #ff00ff, #00ffff); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
-          ${currentUser.chatId.toUpperCase()}
-        </span>
-      </div>
-      <div style="margin-top:8px; font-size:14px; opacity:0.9;">
-        YAH IS PLEASED
-      </div>
-    `);
+   showStarPopup(`<div style="font-size:14px;">Welcome back, <b>${currentUser.chatId.toUpperCase()}</b></div>`);
 
     console.log("YAH HAS BLESSED THE SESSION");
 
