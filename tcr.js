@@ -1013,169 +1013,192 @@ async function promptForChatID(userRef, userData) {
   });
 }
 
-
 /* ======================================================
   Social Card + Gift Stars System — FINAL 2025 BULLETPROOF EDITION
-  YOUR ORIGINAL SOUL — FULLY RESTORED & FIXED
+  FULLY RESTORED SOUL — SANITIZED IDs — WORKS FOREVER
 ====================================================== */
-function showSocialCard(user) {
-  if (!user) return;
-  document.getElementById('socialCard')?.remove();
+(async function initSocialCardSystem() {
+  const allUsers = [];
+  const usersByChatId = {};
 
-  const card = document.createElement('div');
-  card.id = 'socialCard';
-  Object.assign(card.style, {
-    position: 'fixed', top: '50%', left: '50%',
-    transform: 'translate(-50%, -50%)',
-    background: 'linear-gradient(135deg, rgba(20,20,22,0.9), rgba(25,25,27,0.9))',
-    backdropFilter: 'blur(10px)', borderRadius: '14px',
-    padding: '12px 16px', color: '#fff', width: '230px', maxWidth: '90%',
-    zIndex: '999999', textAlign: 'center',
-    boxShadow: '0 6px 24px rgba(0,0,0,0.5)',
-    fontFamily: 'Poppins, sans-serif', opacity: '0',
-    transition: 'opacity .18s ease, transform .18s ease'
-  });
-
-  // Close ×
-  const closeBtn = document.createElement('div');
-  closeBtn.innerHTML = '×';
-  Object.assign(closeBtn.style, { position: 'absolute', top: '6px', right: '10px', fontSize: '16px', fontWeight: '700', cursor: 'pointer', opacity: '0.6' });
-  closeBtn.onmouseenter = () => closeBtn.style.opacity = '1';
-  closeBtn.onmouseleave = () => closeBtn.style.opacity = '0.6';
-  closeBtn.onclick = e => { e.stopPropagation(); card.remove(); };
-  card.appendChild(closeBtn);
-
-  // Header
-  const header = document.createElement('h3');
-  header.textContent = user.chatId ? user.chatId.charAt(0).toUpperCase() + user.chatId.slice(1) : 'Unknown';
-  const color = user.isHost ? '#ff6600' : user.isVIP ? '#ff0099' : '#cccccc';
-  header.style.cssText = `margin:0 0 8px; font-size:18px; font-weight:700; background:linear-gradient(90deg,${color},#ff33cc); -webkit-background-clip:text; -webkit-text-fill-color:transparent;`;
-  card.appendChild(header);
-
-  // Legendary Details — FULLY RESTORED
-  const detailsEl = document.createElement('p');
-  detailsEl.style.cssText = 'margin:0 0 10px; font-size:14px; line-height:1.4';
-  const gender = (user.gender || "person").toLowerCase();
-  const pronoun = gender === "male" ? "his" : "her";
-  const ageGroup = !user.age ? "20s" : user.age >= 30 ? "30s" : "20s";
-  const flair = gender === "male" ? "Cool" : "Kiss";
-  const fruit = user.fruitPick || "Grape";
-  const nature = user.naturePick || "cool";
-  const city = user.location || user.city || "Lagos";
-  const country = user.country || "Nigeria";
-  if (user.isHost) {
-    detailsEl.innerHTML = `A ${fruit} ${nature} ${gender} in ${pronoun} ${ageGroup}, currently in ${city}, ${country}. ${flair}`;
-  } else if (user.isVIP) {
-    detailsEl.innerHTML = `A ${gender} in ${pronoun} ${ageGroup}, currently in ${city}, ${country}. ${flair}`;
-  } else {
-    detailsEl.innerHTML = `A ${gender} from ${city}, ${country}. ${flair}`;
-  }
-  card.appendChild(detailsEl);
-
-  // Bio
-  const bioEl = document.createElement('div');
-  bioEl.style.cssText = 'margin:6px 0 12px; font-style:italic; font-weight:600; font-size:13px';
-  bioEl.style.color = ['#ff99cc','#ffcc33','#66ff99','#66ccff','#ff6699','#ff9966','#ccccff','#f8b500'][Math.floor(Math.random()*8)];
-  card.appendChild(bioEl);
-  typeWriterEffect(bioEl, user.bioPick || 'Nothing shared yet...');
-
-  // Buttons wrapper
-  const btnWrap = document.createElement('div');
-  btnWrap.style.cssText = 'display:flex; flex-direction:column; gap:8px; align-items:center; margin-top:4px';
-
-  // Meet button (hosts only)
-  if (user.isHost) {
-    const meetBtn = document.createElement('button');
-    meetBtn.textContent = 'Meet';
-    meetBtn.style.cssText = 'padding:7px 14px; border-radius:6px; border:none; font-weight:600; background:linear-gradient(90deg,#ff6600,#ff0099); color:#fff; cursor:pointer';
-    meetBtn.onclick = () => { if (typeof showMeetModal === 'function') showMeetModal(user); };
-    btnWrap.appendChild(meetBtn);
+  // Load all users
+  try {
+    const snaps = await getDocs(collection(db, "users"));
+    snaps.forEach(doc => {
+      const data = doc.data();
+      data._docId = doc.id;
+      data.chatIdLower = (data.chatId || "").toString().toLowerCase();
+      allUsers.push(data);
+      usersByChatId[data.chatIdLower] = data;
+    });
+    console.log("Social card: loaded", allUsers.length, "users");
+  } catch (err) {
+    console.error("Failed to load users:", err);
   }
 
-  // ORIGINAL COMPACT CUTE SLIDER — RESTORED TO ORIGINAL GLORY
-  const sliderPanel = document.createElement('div');
-  sliderPanel.style.cssText = 'width:100%; padding:6px 8px; border-radius:8px; background:rgba(255,255,255,0.06); backdrop-filter:blur(8px); display:flex; align-items:center; gap:8px';
+  // Inject spinner animation once
+  if (!document.getElementById("gift-spinner-style")) {
+    const s = document.createElement("style");
+    s.id = "gift-spinner-style";
+    s.textContent = `@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`;
+    document.head.appendChild(s);
+  }
 
-  const fieryColors = [["#ff0000","#ff8c00"],["#ff4500","#ffd700"],["#ff1493","#ff6347"],["#ff0055","#ff7a00"],["#ff5500","#ffcc00"],["#ff3300","#ff0066"]];
-  const randomFieryGradient = () => `linear-gradient(90deg, ${fieryColors[Math.floor(Math.random()*fieryColors.length)].join(', ')})`;
+  function showSocialCard(user) {
+    if (!user) return;
+    document.getElementById('socialCard')?.remove();
 
-  const slider = document.createElement('input');
-  slider.type = 'range'; slider.min = 100; slider.max = 999; slider.value = 100;
-  slider.style.cssText = `flex:1; height:5px; border-radius:5px; outline:none; cursor:pointer; -webkit-appearance:none; background:${randomFieryGradient()}`;
+    const card = document.createElement('div');
+    card.id = 'socialCard';
+    Object.assign(card.style, {
+      position: 'fixed', top: '50%', left: '50%',
+      transform: 'translate(-50%, -50%)',
+      background: 'linear-gradient(135deg, rgba(20,20,22,0.9), rgba(25,25,27,0.9))',
+      backdropFilter: 'blur(10px)', borderRadius: '14px',
+      padding: '12px 16px', color: '#fff', width: '230px', maxWidth: '90%',
+      zIndex: '999999', textAlign: 'center',
+      boxShadow: '0 6px 24px rgba(0,0,0,0.5)',
+      fontFamily: 'Poppins, sans-serif', opacity: '0',
+      transition: 'opacity .18s ease, transform .18s ease'
+    });
 
-  const thumbStyle = document.createElement('style');
-  thumbStyle.textContent = `
-    #socialCard input[type="range"]::-webkit-slider-thumb {
-      -webkit-appearance:none; width:16px; height:16px; border-radius:50%;
-      background:white; border:2px solid #ff3300; box-shadow:0 0 10px #ff6600; cursor:pointer;
+    // Close X
+    const closeBtn = document.createElement('div');
+    closeBtn.innerHTML = '×';
+    Object.assign(closeBtn.style, { position: 'absolute', top: '6px', right: '10px', fontSize: '16px', fontWeight: '700', cursor: 'pointer', opacity: '0.6' });
+    closeBtn.onmouseenter = () => closeBtn.style.opacity = '1';
+    closeBtn.onmouseleave = () => closeBtn.style.opacity = '0.6';
+    closeBtn.onclick = e => { e.stopPropagation(); card.remove(); };
+    card.appendChild(closeBtn);
+
+    // Header
+    const header = document.createElement('h3');
+    header.textContent = user.chatId ? user.chatId.charAt(0).toUpperCase() + user.chatId.slice(1) : 'Unknown';
+    const color = user.isHost ? '#ff6600' : user.isVIP ? '#ff0099' : '#cccccc';
+    header.style.cssText = `margin:0 0 8px; font-size:18px; font-weight:700; background:linear-gradient(90deg,${color},#ff33cc); -webkit-background-clip:text; -webkit-text-fill-color:transparent;`;
+    card.appendChild(header);
+
+    // Legendary Details
+    const detailsEl = document.createElement('p');
+    detailsEl.style.cssText = 'margin:0 0 10px; font-size:14px; line-height:1.4';
+    const gender = (user.gender || "person").toLowerCase();
+    const pronoun = gender === "male" ? "his" : "her";
+    const ageGroup = !user.age ? "20s" : user.age >= 30 ? "30s" : "20s";
+    const flair = gender === "male" ? "Cool" : "Kiss";
+    const fruit = user.fruitPick || "Grape";
+    const nature = user.naturePick || "cool";
+    const city = user.location || user.city || "Lagos";
+    const country = user.country || "Nigeria";
+    if (user.isHost) {
+      detailsEl.innerHTML = `A ${fruit} ${nature} ${gender} in ${pronoun} ${ageGroup}, currently in ${city}, ${country}. ${flair}`;
+    } else if (user.isVIP) {
+      detailsEl.innerHTML = `A ${gender} in ${pronoun} ${ageGroup}, currently in ${city}, ${country}. ${flair}`;
+    } else {
+      detailsEl.innerHTML = `A ${gender} from ${city}, ${country}. ${flair}`;
     }
-    #socialCard input[type="range"]::-moz-range-thumb {
-      width:16px; height:16px; border-radius:50%; background:white;
-      border:2px solid #ff3300; box-shadow:0 0 10px #ff6600; cursor:pointer; border:none;
+    card.appendChild(detailsEl);
+
+    // Bio
+    const bioEl = document.createElement('div');
+    bioEl.style.cssText = 'margin:6px 0 12px; font-style:italic; font-weight:600; font-size:13px';
+    bioEl.style.color = ['#ff99cc','#ffcc33','#66ff99','#66ccff','#ff6699','#ff9966','#ccccff','#f8b500'][Math.floor(Math.random()*8)];
+    card.appendChild(bioEl);
+    typeWriterEffect(bioEl, user.bioPick || 'Nothing shared yet...');
+
+    // Buttons wrapper
+    const btnWrap = document.createElement('div');
+    btnWrap.style.cssText = 'display:flex; flex-direction:column; gap:8px; align-items:center; margin-top:4px';
+
+    // Meet button
+    if (user.isHost) {
+      const meetBtn = document.createElement('button');
+      meetBtn.textContent = 'Meet';
+      meetBtn.style.cssText = 'padding:7px 14px; border-radius:6px; border:none; font-weight:600; background:linear-gradient(90deg,#ff6600,#ff0099); color:#fff; cursor:pointer';
+      meetBtn.onclick = () => { if (typeof showMeetModal === 'function') showMeetModal(user); };
+      btnWrap.appendChild(meetBtn);
     }
-  `;
-  document.head.appendChild(thumbStyle);
 
-  const sliderLabel = document.createElement('span');
-  sliderLabel.textContent = "100";
-  sliderLabel.style.cssText = 'font-size:13px; font-weight:700; min-width:50px; text-align:right; color:#fff';
+    // COMPACT CUTE SLIDER
+    const sliderPanel = document.createElement('div');
+    sliderPanel.style.cssText = 'width:100%; padding:6px 8px; border-radius:8px; background:rgba(255,255,255,0.06); backdrop-filter:blur(8px); display:flex; align-items:center; gap:8px';
 
-  slider.oninput = () => {
-    sliderLabel.textContent = slider.value;
-    slider.style.background = randomFieryGradient();
-  };
+    const fieryColors = [["#ff0000","#ff8c00"],["#ff4500","#ffd700"],["#ff1493","#ff6347"],["#ff0055","#ff7a00"],["#ff5500","#ffcc00"],["#ff3300","#ff0066"]];
+    const randomFieryGradient = () => `linear-gradient(90deg, ${fieryColors[Math.floor(Math.random()*fieryColors.length)].join(', ')})`;
 
-  sliderPanel.append(slider, sliderLabel);
-  btnWrap.appendChild(sliderPanel);
+    const slider = document.createElement('input');
+    slider.type = 'range'; slider.min = 100; slider.max = 999; slider.value = 100;
+    slider.style.cssText = `flex:1; height:5px; border-radius:5px; outline:none; cursor:pointer; -webkit-appearance:none; background:${randomFieryGradient()}`;
 
-  // ORIGINAL TINY GIFT BUTTON — RESTORED
-  const giftBtnLocal = document.createElement('button');
-  giftBtnLocal.textContent = 'Gift';
-  giftBtnLocal.style.cssText = 'padding:8px 16px; border-radius:10px; border:none; font-weight:700; font-size:14px; background:linear-gradient(90deg,#ff0099,#ff0066); color:#fff; cursor:pointer; box-shadow:0 4px 12px rgba(255,0,153,0.4); transition:all 0.2s';
-  giftBtnLocal.onmouseenter = () => giftBtnLocal.style.transform = 'translateY(-3px)';
-  giftBtnLocal.onmouseleave = () => giftBtnLocal.style.transform = '';
+    const thumbStyle = document.createElement('style');
+    thumbStyle.textContent = `
+      #socialCard input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance:none; width:16px; height:16px; border-radius:50%;
+        background:white; border:2px solid #ff3300; box-shadow:0 0 10px #ff6600; cursor:pointer;
+      }
+      #socialCard input[type="range"]::-moz-range-thumb {
+        width:16px; height:16px; border-radius:50%; background:white;
+        border:2px solid #ff3300; box-shadow:0 0 10px #ff6600; cursor:pointer; border:none;
+      }
+    `;
+    document.head.appendChild(thumbStyle);
 
-  giftBtnLocal.onclick = async () => {
-    const amt = parseInt(slider.value);
-    if (amt < 100) return showStarPopup("Minimum 100 stars");
-    if ((currentUser?.stars || 0) < amt) return showStarPopup("Not enough stars");
-    if (user.chatId?.toLowerCase() === currentUser?.chatId?.toLowerCase()) return showStarPopup("You can't gift yourself silly!");
+    const sliderLabel = document.createElement('span');
+    sliderLabel.textContent = "100";
+    sliderLabel.style.cssText = 'font-size:13px; font-weight:700; min-width:50px; text-align:right; color:#fff';
 
-    const orig = giftBtnLocal.textContent;
-    giftBtnLocal.textContent = '';
-    const spin = document.createElement('div');
-    spin.style.cssText = 'width:18px; height:18px; border:3px solid #fff3; border-top:3px solid white; border-radius:50%; animation:spin 0.7s linear infinite; margin:0 auto';
-    giftBtnLocal.appendChild(spin);
+    slider.oninput = () => {
+      sliderLabel.textContent = slider.value;
+      slider.style.background = randomFieryGradient();
+    };
 
-    try {
-      await sendStarsToUser(user, amt);
-      showStarPopup(`Sent ${amt} stars to ${user.chatId}!`);
-      slider.value = 100; sliderLabel.textContent = "100";
-      setTimeout(() => card.remove(), 800);
-    } catch (e) {
-      console.error(e);
-      showStarPopup("Failed — try again");
-    } finally {
-      giftBtnLocal.textContent = orig;
-    }
-  };
+    sliderPanel.append(slider, sliderLabel);
+    btnWrap.appendChild(sliderPanel);
 
-  btnWrap.appendChild(giftBtnLocal);
-  card.appendChild(btnWrap);
-  document.body.appendChild(card);
+    // TINY GIFT BUTTON
+    const giftBtnLocal = document.createElement('button');
+    giftBtnLocal.textContent = 'Gift';
+    giftBtnLocal.style.cssText = 'padding:8px 16px; border-radius:10px; border:none; font-weight:700; font-size:14px; background:linear-gradient(90deg,#ff0099,#ff0066); color:#fff; cursor:pointer; box-shadow:0 4px 12px rgba(255,0,153,0.4); transition:all 0.2s';
+    giftBtnLocal.onmouseenter = () => giftBtnLocal.style.transform = 'translateY(-3px)';
+    giftBtnLocal.onmouseleave = () => giftBtnLocal.style.transform = '';
 
-  // Animate in
-  requestAnimationFrame(() => {
-    card.style.opacity = '1';
-    card.style.transform = 'translate(-50%, -50%) scale(1)';
-  });
+    giftBtnLocal.onclick = async () => {
+      const amt = parseInt(slider.value);
+      if (amt < 100) return showStarPopup("Minimum 100 stars");
+      if ((currentUser?.stars || 0) < amt) return showStarPopup("Not enough stars");
+      if (user.chatId?.toLowerCase() === currentUser?.chatId?.toLowerCase()) return showStarPopup("You can't gift yourself silly!");
 
-  // Close on outside click
-  const closeOut = e => { if (!card.contains(e.target)) { card.remove(); document.removeEventListener('click', closeOut); } };
-  setTimeout(() => document.addEventListener('click', closeOut), 10);
-}
+      const orig = giftBtnLocal.textContent;
+      giftBtnLocal.textContent = '';
+      const spin = document.createElement('div');
+      spin.style.cssText = 'width:18px; height:18px; border:3px solid #fff3; border-top:3px solid white; border-radius:50%; animation:spin 0.7s linear infinite; margin:0 auto';
+      giftBtnLocal.appendChild(spin);
 
-  // ——— TYPEWRITER EFFECT ———
+      try {
+        await sendStarsToUser(user, amt);
+        showStarPopup(`Sent ${amt} stars to ${user.chatId}!`);
+        slider.value = 100; sliderLabel.textContent = "100";
+        setTimeout(() => card.remove(), 800);
+      } catch (e) {
+        console.error(e);
+        showStarPopup("Failed — try again");
+      } finally {
+        giftBtnLocal.textContent = orig;
+      }
+    };
+
+    btnWrap.appendChild(giftBtnLocal);
+    card.appendChild(btnWrap);
+    document.body.appendChild(card);
+
+    requestAnimationFrame(() => {
+      card.style.opacity = '1';
+      card.style.transform = 'translate(-50%, -50%) scale(1)';
+    });
+
+    const closeOut = e => { if (!card.contains(e.target)) { card.remove(); document.removeEventListener('click', closeOut); } };
+    setTimeout(() => document.addEventListener('click', closeOut), 10);
+  }
+
   function typeWriterEffect(el, text, speed = 40) {
     el.textContent = "";
     let i = 0;
@@ -1185,33 +1208,25 @@ function showSocialCard(user) {
     }, speed);
   }
 
-  // ——— TAP TO OPEN CARD ———
   document.addEventListener("pointerdown", e => {
-    const el = e.target.closest("[data-user-id]");
-    if (!el) return;
-    const uid = el.dataset.userId;
-    if (!uid || uid === currentUser?.uid) return;
-
-    const u = allUsers.find(user =>
-      user._docId === uid ||
-      (user.email && user.email.replace(/[.@]/g, "_") === uid) ||
-      user.chatIdLower === el.textContent.trim().toLowerCase()
-    );
-
-    if (u) {
-      el.style.background = "#ffcc00";
-      setTimeout(() => el.style.background = "", 200);
-      showSocialCard(u);
-    }
+    const el = e.target.closest("[data-user-id]") || e.target;
+    if (!el.textContent) return;
+    const text = el.textContent.trim();
+    if (!text || text.includes(":")) return;
+    const chatId = text.split(" ")[0].toLowerCase();
+    const u = usersByChatId[chatId] || allUsers.find(u => u.chatIdLower === chatId);
+    if (!u || u._docId === currentUser?.uid) return;
+    el.style.background = "#ffcc00";
+    setTimeout(() => el.style.background = "", 200);
+    showSocialCard(u);
   });
 
-  console.log("Social Card System READY — 2025 FINAL BULLETPROOF EDITION");
-
-  // Make available globally
+  console.log("Social Card System READY — YAH IS VICTORIOUS");
   window.showSocialCard = showSocialCard;
   window.typeWriterEffect = typeWriterEffect;
 
-})(); // ← FINAL CLOSING OF THE ENTIRE IIFE — ONLY ONE!
+})(); 
+// ← ONLY ONE OF THESE — THE FINAL SEAL
 
 // ——— FINAL BULLETPROOF sendStarsToUser — STARS ALWAYS ARRIVE ———
 async function sendStarsToUser(targetUser, amt) {
