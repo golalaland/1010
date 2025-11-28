@@ -3659,58 +3659,58 @@ function showHighlightsModal(videos) {
       };
 
                               const videoContainer = document.createElement("div");
-      videoContainer.style.cssText = "height:320px;overflow:hidden;position:relative;background:#000;cursor:pointer;";
+                              videoContainer.style.cssText = "height:320px;overflow:hidden;position:relative;background:#000;cursor:pointer;";
 
-      const videoEl = document.createElement("video");
-      videoEl.muted = true;
-      videoEl.loop = true;
-      videoEl.preload = "metadata";
-      videoEl.style.cssText = "width:100%;height:100%;object-fit:cover;";
+                              const videoEl = document.createElement("video");
+                              videoEl.muted = true;
+                              videoEl.loop = true;
+                              videoEl.controls = false;           // ← NO browser controls in card
+                              videoEl.preload = "metadata";
+                              videoEl.playsInline = true;
+                              videoEl.style.cssText = "width:100%;height:100%;object-fit:cover;pointer-events:none;"; // ← prevents direct interaction
 
-      if (isUnlocked) {
-        // UNLOCKED → visible immediately, plays on hover only
-        videoEl.src = video.previewClip || video.highlightVideo;
+                              if (isUnlocked) {
+                                // UNLOCKED → clean preview, hover to play
+                                videoEl.src = video.previewClip || video.highlightVideo;
 
-        // Show right away (no fade, no black)
-        videoEl.poster = ""; // ensures no poster delay
+                                videoContainer.onmouseenter = () => videoEl.play().catch(() => {});
+                                videoContainer.onmouseleave = () => {
+                                  videoEl.pause();
+                                  videoEl.currentTime = 0;
+                                };
 
-        // Play only on hover
-        videoContainer.onmouseenter = () => videoEl.play().catch(() => {});
-        videoContainer.onmouseleave = () => {
-          videoEl.pause();
-          videoEl.currentTime = 0;
-        };
+                                // Load and show immediately
+                                videoEl.load();
+                              } else {
+                                // LOCKED → pure black + sexy lock
+                                videoEl.removeAttribute("src");
 
-        // Optional: start paused but loaded and visible
-        videoEl.load(); // ensures it's ready
-      } else {
-        // LOCKED → pure black + sexy lock overlay
-        videoEl.removeAttribute("src");
+                                const lockedOverlay = document.createElement("div");
+                                lockedOverlay.innerHTML = `
+                                  <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+                                              background:rgba(0,0,0,0.96);z-index:2;">
+                                    <div style="text-align:center;">
+                                      <svg width="68" height="68" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M12 2C9.2 2 7 4.2 7 7V11H6C4.9 11 4 11.9 4 13V20C4 21.1 4.9 22 6 22H18C19.1 22 20 21.1 20 20V13C20 11.9 19.1 11 18 11H17V7C17 4.2 14.8 2 12 2ZM12 4C13.7 4 15 5.3 15 7V11H9V7C9 5.3 10.3 4 12 4Z" fill="#ff006e"/>
+                                      </svg>
+                                     
+                                    </div>
+                                  </div>`;
+                                videoContainer.appendChild(lockedOverlay);
+                              }
 
-        const lockedOverlay = document.createElement("div");
-        lockedOverlay.innerHTML = `
-          <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
-                      background:rgba(0,0,0,0.96);z-index:2;">
-            <div style="text-align:center;">
-              <svg width="68" height="68" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 2C9.2 2 7 4.2 7 7V11H6C4.9 11 4 11.9 4 13V20C4 21.1 4.9 22 6 22H18C19.1 22 20 21.1 20 20V13C20 11.9 19.1 11 18 11H17V7C17 4.2 14.8 2 12 2ZM12 4C13.7 4 15 5.3 15 7V11H9V7C9 5.3 10.3 4 12 4Z" fill="#ff006e"/>
-              </svg>
-            </div>
-          </div>`;
-        videoContainer.appendChild(lockedOverlay);
-      }
+                              // TAP → Native Fullscreen (or unlock modal)
+                              videoContainer.onclick = (e) => {
+                                e.stopPropagation();
 
-      // CLICK → full video or unlock modal
-      videoContainer.onclick = (e) => {
-        e.stopPropagation();
-        if (isUnlocked) {
-          playFullVideo(video);
-        } else {
-          showUnlockConfirm(video, () => renderCards(videos));
-        }
-      };
+                                if (isUnlocked) {
+                                  playFullVideo(video, videoEl); // pass the preview element so we can resume it later
+                                } else {
+                                  showUnlockConfirm(video, () => renderCards(videos));
+                                }
+                              };
 
-      videoContainer.appendChild(videoEl);
+                              videoContainer.appendChild(videoEl);
       // Info Panel
       const infoPanel = document.createElement("div");
       infoPanel.style.cssText = "background:#111;padding:10px;display:flex;flex-direction:column;gap:4px;";
@@ -3920,59 +3920,42 @@ async function handleUnlockVideo(video) {
   }
 }
 // ---------- Play Full Video → Native Fullscreen (Perfect Hybrid) ----------
-function playFullVideo(video) {
-  const previewVideo = event.target.closest(".videoCard").querySelector("video");
-
-  // Pause the small preview
-  previewVideo.pause();
+function playFullVideo(video, previewEl) {
+  previewEl.pause();
 
   const fullVideo = document.createElement("video");
   fullVideo.src = video.highlightVideo;
   fullVideo.controls = true;
-  fullVideo.playsInline = false;  // This allows real fullscreen on iOS
   fullVideo.autoplay = true;
-  fullVideo.style.cssText = "width:100%; height:100%; object-fit:contain; background:#000;";
+  fullVideo.playsInline = false;
+  fullVideo.style.cssText = "width:100%;height:100%;object-fit:contain;background:#000;";
 
-  // Create invisible fullscreen container
   const container = document.createElement("div");
-  container.style.cssText = `
-    position:fixed; top:0; left:0; width:100vw; height:100vh;
-    background:#000; z-index:1000002; display:flex; align-items:center; justify-content:center;
-  `;
+  container.style.cssText = "position:fixed;top:0;left:0;width:100vw;height:100vh;background:#000;z-index:1000002;display:flex;align-items:center;justify-content:center;";
   container.appendChild(fullVideo);
   document.body.appendChild(container);
 
-  // When user exits fullscreen → clean up and resume preview
   const cleanup = () => {
     fullVideo.pause();
     container.remove();
-    document.removeEventListener("fullscreenchange", onFullscreenChange);
-    // Resume hover preview in card
-    previewVideo.play().catch(() => {});
+    document.removeEventListener("fullscreenchange", onFsChange);
+    document.removeEventListener("webkitfullscreenchange", onFsChange);
+    previewEl.play().catch(() => {}); // resume hover preview
   };
 
-  const onFullscreenChange = () => {
+  const onFsChange = () => {
     if (!document.fullscreenElement && !document.webkitFullscreenElement) {
       cleanup();
     }
   };
 
-  document.addEventListener("fullscreenchange", onFullscreenChange);
-  document.addEventListener("webkitfullscreenchange", onFullscreenChange);
+  document.addEventListener("fullscreenchange", onFsChange);
+  document.addEventListener("webkitfullscreenchange", onFsChange);
 
-  // Enter fullscreen
-  if (container.requestFullscreen) {
-    container.requestFullscreen();
-  } else if (container.webkitRequestFullscreen) {
-    container.webkitRequestFullscreen();
-  }
-
-  // ESC or back button also cleans up
-  const escHandler = (e) => {
-    if (e.key === "Escape") cleanup();
-  };
-  document.addEventListener("keydown", escHandler);
+  if (container.requestFullscreen) container.requestFullscreen();
+  else if (container.webkitRequestFullscreen) container.webkitRequestFullscreen();
 }
+
 // ————————————————————————————————————————————————————————
 // FINAL LINE — THIS MUST BE THE VERY LAST THING IN tcr.js
 // ————————————————————————————————————————————————————————
