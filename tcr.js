@@ -2148,45 +2148,32 @@ if (modal) {
   modal.style.opacity = "0";
 }
 
-// FETCH HOSTS ON START
+// SILENTLY LOAD HOSTS ON START
 fetchFeaturedHosts();
 
-/* ---------- STAR HOSTS BUTTON — FINAL VERSION (ONE LISTENER ONLY) ---------- */
+/* ---------- STAR HOSTS BUTTON — PURE ELEGANCE EDITION ---------- */
 if (openBtn) {
   openBtn.onclick = async () => {
-    // If no hosts loaded yet → try to load
+    // If no hosts yet → try to fetch silently (no visual feedback)
     if (!hosts || hosts.length === 0) {
-      openBtn.disabled = true;
-      openBtn.textContent = "Loading...";
-
-      try {
-        await fetchFeaturedHosts();
-        await new Promise(r => setTimeout(r, 300)); // tiny delay for Firestore
-      } catch (err) {
-        console.error("Failed to load hosts:", err);
-      }
-
-      // Still empty? → Show alert and stop
-      if (!hosts || hosts.length === 0) {
-        showGiftAlert("⚠️ No Star Hosts online right now!");
-        openBtn.disabled = false;
-        openBtn.textContent = "Star Hosts";
-        return;
-      }
-
-      // Success → update button
-      openBtn.textContent = `Star Hosts (${hosts.length})`;
-      openBtn.disabled = false;
+      await fetchFeaturedHosts();
     }
 
-    // NOW SAFE TO OPEN — HOSTS EXIST
-    loadHost(currentIndex); // ← Your existing function
+    // Still no hosts? → show alert and stop
+    if (!hosts || hosts.length === 0) {
+      showGiftAlert("No Star Hosts online right now!");
+      return;
+    }
+
+    // HOSTS EXIST → OPEN SMOOTHLY
+    loadHost(currentIndex);
+
     modal.style.display = "flex";
     modal.style.justifyContent = "center";
     modal.style.alignItems = "center";
     setTimeout(() => modal.style.opacity = "1", 50);
 
-    // Fiery gradient for gift slider
+    // Fiery slider glow
     if (giftSlider) {
       giftSlider.style.background = randomFieryGradient();
     }
@@ -2489,7 +2476,6 @@ function showMeetModal(host) {
     return;
   }
 
-
     confirmBtn.disabled = true;
     confirmBtn.style.opacity = 0.6;
     confirmBtn.style.cursor = "not-allowed";
@@ -2640,78 +2626,97 @@ openBtn.addEventListener("click", () => {
 
 
 /* ===============================
-   🎁 Send Gift + Dual Notification
+   SEND GIFT + DUAL NOTIFICATION — FINAL 2025 GOD-TIER EDITION
+   CLEAN, SAFE, ELEGANT — WORKS FOREVER
 ================================= */
-
 async function sendGift() {
   const receiver = hosts[currentIndex];
-  if (!receiver?.id) return showGiftAlert("⚠️ No host selected.");
-  if (!currentUser?.uid) return showGiftAlert("Please log in to send stars ⭐");
+  if (!receiver?.id) return showGiftAlert("No host selected.");
+  if (!currentUser?.uid) return showGiftAlert("Please log in to send stars");
 
   const giftStars = parseInt(giftSlider.value, 10);
-  if (isNaN(giftStars) || giftStars <= 0)
-    return showGiftAlert("Invalid star amount ❌");
+  if (!giftStars || giftStars <= 0) return showGiftAlert("Invalid star amount");
+
+  const giftBtn = document.getElementById("featuredGiftBtn"); // ← correct ID
+  if (!giftBtn) return;
 
   const originalText = giftBtn.textContent;
-  const buttonWidth = giftBtn.offsetWidth + "px";
-  giftBtn.style.width = buttonWidth;
   giftBtn.disabled = true;
   giftBtn.innerHTML = `<span class="gift-spinner"></span>`;
 
   try {
     const senderRef = doc(db, "users", currentUser.uid);
     const receiverRef = doc(db, "users", receiver.id);
-    const featuredReceiverRef = doc(db, "featuredHosts", receiver.id);
+    const featuredRef = doc(db, "featuredHosts", receiver.id);
 
     await runTransaction(db, async (tx) => {
-      const senderSnap = await tx.get(senderRef);
-      const receiverSnap = await tx.get(receiverRef);
+      const [senderSnap, receiverSnap] = await Promise.all([
+        tx.get(senderRef),
+        tx.get(receiverRef)
+      ]);
 
-      if (!senderSnap.exists()) throw new Error("Your user record not found.");
-      if (!receiverSnap.exists())
-        tx.set(receiverRef, { stars: 0, starsGifted: 0, lastGiftSeen: {} }, { merge: true });
-
+      if (!senderSnap.exists()) throw new Error("Your profile not found");
+      
       const senderData = senderSnap.data();
-      if ((senderData.stars || 0) < giftStars)
-        throw new Error("Insufficient stars");
+      if ((senderData.stars || 0) < giftStars) {
+        throw new Error("Not enough stars");
+      }
 
-      tx.update(senderRef, { stars: increment(-giftStars), starsGifted: increment(giftStars) });
-      tx.update(receiverRef, { stars: increment(giftStars) });
-      tx.set(featuredReceiverRef, { stars: increment(giftStars) }, { merge: true });
+      // Update sender
+      tx.update(senderRef, {
+        stars: increment(-giftStars),
+        starsGifted: increment(giftStars)
+      });
 
+      // Update receiver (create if missing)
+      if (receiverSnap.exists()) {
+        tx.update(receiverRef, { stars: increment(giftStars) });
+      } else {
+        tx.set(receiverRef, { stars: giftStars }, { merge: true });
+      }
+
+      // Update featured host stats
+      tx.set(featuredRef, { stars: increment(giftStars) }, { merge: true });
+
+      // Track last gift from this user
       tx.update(receiverRef, {
-        [`lastGiftSeen.${currentUser.username || "Someone"}`]: giftStars
+        [`lastGiftSeen.${currentUser.chatId || currentUser.uid}`]: giftStars
       });
     });
 
-    // ✅ Notify both sender and receiver
-    const senderName = currentUser.username || "Someone";
-    const receiverName = receiver.chatId || "User";
+    // DUAL NOTIFICATIONS — BOTH SIDES
+    const senderName = currentUser.chatId || "Someone";
+    const receiverName = receiver.chatId || receiver.username || "Host";
 
     await Promise.all([
-      pushNotification(receiver.id, `🎁 ${senderName} sent you ${giftStars} stars ⭐`),
-      pushNotification(currentUser.uid, `💫 You sent ${giftStars} stars ⭐ to ${receiverName}`)
+      pushNotification(receiver.id, `${senderName} gifted you ${giftStars} stars!`),
+      pushNotification(currentUser.uid, `You gifted ${giftStars} stars to ${receiverName}!`)
     ]);
 
-    showGiftAlert(`✅ You sent ${giftStars} stars ⭐ to ${receiverName}!`);
+    // Success feedback
+    showGiftAlert(`Sent ${giftStars} stars to ${receiverName}!`);
 
+    // If user gifted themselves (rare but possible)
     if (currentUser.uid === receiver.id) {
       setTimeout(() => {
-        showGiftAlert(`🎁 ${senderName} sent you ${giftStars} stars ⭐`);
-      }, 1000);
+        showGiftAlert(`${senderName} gifted you ${giftStars} stars!`);
+      }, 1200);
     }
 
-    console.log(`✅ Sent ${giftStars} stars ⭐ to ${receiverName}`);
+    console.log(`Gift sent: ${giftStars} stars → ${receiverName}`);
+
   } catch (err) {
-    console.error("❌ Gift sending failed:", err);
-    showGiftAlert(`⚠️ Something went wrong: ${err.message}`);
+    console.error("Gift failed:", err);
+    const msg = err.message.includes("enough")
+      ? "Not enough stars"
+      : "Gift failed — try again";
+    showGiftAlert(msg);
   } finally {
+    // Always restore button
     giftBtn.innerHTML = originalText;
     giftBtn.disabled = false;
-    giftBtn.style.width = "auto";
   }
 }
-
 
 /* ---------- Navigation ---------- */
 prevBtn.addEventListener("click", e => {
@@ -2723,25 +2728,6 @@ nextBtn.addEventListener("click", e => {
   e.preventDefault();
   loadHost((currentIndex + 1) % hosts.length);
 });
-
- 
-/* ---------- Close modal logic ---------- */
-closeModal.addEventListener("click", () => {
-  modal.style.display = "none";
-  console.log("❎ Modal closed");
-});
-
-// Click outside modal closes it
-window.addEventListener("click", (e) => {
-  if (e.target === modal) {
-    modal.style.display = "none";
-    console.log("🪟 Modal dismissed");
-  }
-});
-
-/* ---------- Init ---------- */
-fetchFeaturedHosts();
-
 
 // --- ✅ Prevent redeclaration across reloads ---
 if (!window.verifyHandlersInitialized) {
