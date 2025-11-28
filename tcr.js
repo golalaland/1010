@@ -80,6 +80,38 @@ if (sessionStorage.getItem("justLoggedOut") === "true") {
   showStarPopup("Welcome back, legend!");
 }
 
+// GLOBAL USER LOOKUP — REQUIRED FOR SOCIAL CARD (must be at the very top)
+let allUsers = [];
+let usersByChatId = {};
+
+
+// LOAD ALL USERS ONCE — SO SOCIAL CARD WORKS INSTANTLY
+async function loadSocialCardUsers() {
+  if (allUsers.length > 0) return; // already loaded
+
+  try {
+    const q = await getDocs(collection(db, "users"));
+    allUsers = [];
+    usersByChatId = {};
+
+    q.forEach(doc => {
+      const data = doc.data();
+      data._docId = doc.id;
+      data.chatIdLower = (data.chatId || "guest").toString().toLowerCase().trim();
+
+      allUsers.push(data);
+      usersByChatId[data.chatIdLower] = data;
+    });
+
+    console.log(`Social card ready — ${allUsers.length} users loaded`);
+  } catch (err) {
+    console.error("Failed to load users for social card:", err);
+  }
+}
+
+// Run it now (and also after login if you prefer)
+loadSocialCardUsers();
+
 /* ---------- Presence (Realtime) ---------- */
 function setupPresence(user) {
   try {
