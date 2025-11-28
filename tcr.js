@@ -1,19 +1,3 @@
-/* ===============================
-   GLOBAL DOM REFERENCES — ONLY ONE TIME!
-   PLACE THIS AT THE VERY TOP OF tcr.js
-================================= */
-const refs = {
-  redeemBtn: document.getElementById("redeemBtn"),
-  tipBtn: document.getElementById("tipBtn"),
-  giftModal: document.getElementById("giftModal"),
-  giftModalTitle: document.getElementById("giftModalTitle"),
-  giftAmountInput: document.getElementById("giftAmountInput"),
-  giftConfirmBtn: document.getElementById("giftConfirmBtn"),
-  giftModalClose: document.getElementById("giftModalClose"),
-  giftAlert: document.getElementById("giftAlert"),
-  starPopup: document.getElementById("starPopup"),
-  starText: document.getElementById("starText")
-};
 
 /* ---------- Firebase Modular Imports (v10+) ---------- */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -186,6 +170,62 @@ if (rtdb) {
       }
     }
   );
+}
+
+
+/* ===============================
+   GLOBAL DOM REFERENCES — THE ONE AND ONLY TRUTH (2025 FINAL)
+   PLACE THIS AT THE VERY TOP OF tcr.js — DELETE ALL OTHER refs = {}
+================================= */
+const refs = {
+  // Auth & Core
+  authBox: document.getElementById("authBox"),
+  messagesEl: document.getElementById("messages"),
+  sendAreaEl: document.getElementById("sendArea"),
+  messageInputEl: document.getElementById("messageInput"),
+  sendBtn: document.getElementById("sendBtn"),
+  buzzBtn: document.getElementById("buzzBtn"),
+
+  // Profile
+  profileBoxEl: document.getElementById("profileBox"),
+  profileNameEl: document.getElementById("profileName"),
+  starCountEl: document.getElementById("starCount"),
+  cashCountEl: document.getElementById("cashCount"),
+  onlineCountEl: document.getElementById("onlineCount"),
+
+  // Buttons & Links
+  redeemBtn: document.getElementById("redeemBtn"),
+  tipBtn: document.getElementById("tipBtn"),
+
+  // Admin
+  adminControlsEl: document.getElementById("adminControls"),
+  adminClearMessagesBtn: document.getElementById("adminClearMessagesBtn"),
+
+  // Modals
+  chatIDModal: document.getElementById("chatIDModal"),
+  chatIDInput: document.getElementById("chatIDInput"),
+  chatIDConfirmBtn: document.getElementById("chatIDConfirmBtn"),
+
+  giftModal: document.getElementById("giftModal"),
+  giftModalTitle: document.getElementById("giftModalTitle"),
+  giftAmountInput: document.getElementById("giftAmountInput"),
+  giftConfirmBtn: document.getElementById("giftConfirmBtn"),
+  giftModalClose: document.getElementById("giftModalClose"),
+  giftAlert: document.getElementById("giftAlert"),
+
+  // Popups
+  starPopup: document.getElementById("starPopup"),
+  starText: document.getElementById("starText"),
+
+  // Notifications (if you have a bell count)
+  notificationBell: document.getElementById("notificationBell"),
+  notificationsList: document.getElementById("notificationsList"),
+  markAllRead: document.getElementById("markAllRead")
+};
+
+// Optional: Limit chatID input length
+if (refs.chatIDInput) {
+  refs.chatIDInput.maxLength = 12;
 }
 
 
@@ -1693,32 +1733,6 @@ window.addEventListener("DOMContentLoaded", () => {
       }
     }, interval);
   }
-
-  /* ----------------------------
-     🧩 Cache DOM References
-  ----------------------------- */
-  refs = {
-    authBox: document.getElementById("authBox"),
-    messagesEl: document.getElementById("messages"),
-    sendAreaEl: document.getElementById("sendArea"),
-    messageInputEl: document.getElementById("messageInput"),
-    sendBtn: document.getElementById("sendBtn"),
-    buzzBtn: document.getElementById("buzzBtn"),
-    profileBoxEl: document.getElementById("profileBox"),
-    profileNameEl: document.getElementById("profileName"),
-    starCountEl: document.getElementById("starCount"),
-    cashCountEl: document.getElementById("cashCount"),
-    redeemBtn: document.getElementById("redeemBtn"),
-    tipBtn: document.getElementById("tipBtn"),
-    onlineCountEl: document.getElementById("onlineCount"),
-    adminControlsEl: document.getElementById("adminControls"),
-    adminClearMessagesBtn: document.getElementById("adminClearMessagesBtn"),
-    chatIDModal: document.getElementById("chatIDModal"),
-    chatIDInput: document.getElementById("chatIDInput"),
-    chatIDConfirmBtn: document.getElementById("chatIDConfirmBtn")
-  };
-
-  if (refs.chatIDInput) refs.chatIDInput.maxLength = 12;
 
 
   /* ----------------------------
