@@ -2148,46 +2148,54 @@ if (modal) {
   modal.style.opacity = "0";
 }
 
-// SAFE: Only open modal if hosts exist AND function is ready
+// FETCH HOSTS ON START
+fetchFeaturedHosts();
+
+/* ---------- STAR HOSTS BUTTON — FINAL VERSION (ONE LISTENER ONLY) ---------- */
 if (openBtn) {
   openBtn.onclick = async () => {
-    // If hosts not loaded yet → load them first
+    // If no hosts loaded yet → try to load
     if (!hosts || hosts.length === 0) {
       openBtn.disabled = true;
       openBtn.textContent = "Loading...";
 
       try {
-        await loadFeaturedHosts(); // ← Your existing function (must be async or return promise)
-        
-        // After loading — re-check
-        if (!hosts || hosts.length === 0) {
-          showStarPopup("No Star Hosts online right now");
-          openBtn.disabled = false;
-          openBtn.textContent = "Star Hosts";
-          return;
-        }
+        await fetchFeaturedHosts();
+        await new Promise(r => setTimeout(r, 300)); // tiny delay for Firestore
       } catch (err) {
         console.error("Failed to load hosts:", err);
-        showStarPopup("Failed to load hosts");
+      }
+
+      // Still empty? → Show alert and stop
+      if (!hosts || hosts.length === 0) {
+        showGiftAlert("⚠️ No Star Hosts online right now!");
         openBtn.disabled = false;
         openBtn.textContent = "Star Hosts";
         return;
       }
-      
+
+      // Success → update button
+      openBtn.textContent = `Star Hosts (${hosts.length})`;
       openBtn.disabled = false;
-      openBtn.textContent = "Star Hosts";
     }
 
-    // Only now — safe to open
-    if (hosts.length > 0) {
-      modal.style.display = "flex";
-      setTimeout(() => modal.style.opacity = "1", 50);
-      showHostAtIndex(currentIndex); // your existing function
+    // NOW SAFE TO OPEN — HOSTS EXIST
+    loadHost(currentIndex); // ← Your existing function
+    modal.style.display = "flex";
+    modal.style.justifyContent = "center";
+    modal.style.alignItems = "center";
+    setTimeout(() => modal.style.opacity = "1", 50);
+
+    // Fiery gradient for gift slider
+    if (giftSlider) {
+      giftSlider.style.background = randomFieryGradient();
     }
+
+    console.log("Star Hosts Modal Opened —", hosts.length, "online");
   };
 }
 
-// CLOSE MODAL — SMOOTH
+/* ---------- CLOSE MODAL — SMOOTH & CLEAN ---------- */
 if (closeModal) {
   closeModal.onclick = () => {
     modal.style.opacity = "0";
@@ -2203,6 +2211,13 @@ if (modal) {
     }
   };
 }
+
+/* ---------- UPDATE HOST COUNT ON BUTTON (OPTIONAL BUT CLEAN) ---------- */
+window.updateHostCount = () => {
+  if (!openBtn) return;
+  openBtn.textContent = hosts.length > 0 ? `Star Hosts (${hosts.length})` : "Star Hosts";
+  openBtn.disabled = false;
+};
 
 /* ---------- SECURE + WORKING: Featured Hosts (2025 Final Version) ---------- */
 async function fetchFeaturedHosts() {
@@ -2709,29 +2724,7 @@ nextBtn.addEventListener("click", e => {
   loadHost((currentIndex + 1) % hosts.length);
 });
 
-/* ---------- Safe Star Hosts Modal Open ---------- */
-openBtn.addEventListener("click", () => {
-  if (!hosts.length) {
-    showGiftAlert("⚠️ No featured hosts available yet!");
-    return;
-  }
-
-  // Load the current host safely
-  loadHost(currentIndex);
-
-  // Show modal centered
-  modal.style.display = "flex";
-  modal.style.justifyContent = "center";
-  modal.style.alignItems = "center";
-
-  // Optional: fiery gradient for gift slider
-  if (giftSlider) {
-    giftSlider.style.background = randomFieryGradient();
-  }
-
-  console.log("📺 Modal opened");
-});
-
+ 
 /* ---------- Close modal logic ---------- */
 closeModal.addEventListener("click", () => {
   modal.style.display = "none";
