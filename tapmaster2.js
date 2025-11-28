@@ -130,7 +130,7 @@ function showEndGameModal() {
   // REAL NAME — NEVER "Tapper" AGAIN
   const realName = currentUser?.chatId || 
                    currentUser?.username || 
-                   currentUser?.email?.replace(/,/g, '.').split('@')[0] || 
+                   currentUser?.email?.replace(/_/g, '.').split('@')[0] || 
                    "Legend";
 
   document.getElementById('playerName').textContent = realName;
@@ -175,7 +175,7 @@ setTimeout(() => {
  document.getElementById('shareBtn')?.addEventListener('click', () => {
   const realName = currentUser?.chatId || 
                    currentUser?.username || 
-                   currentUser?.email?.replace(/,/g, '.').split('@')[0] || 
+                   currentUser?.email?.replace(/_/g, '.').split('@')[0] || 
                    "A Warrior";
 
   const text = `${realName} just smashed ${taps.toLocaleString()} taps and earned ₦${earnings.toLocaleString()}! Can you beat that?`;
@@ -203,7 +203,6 @@ const SESSION_DURATION = 60;
 // ---------- STATE ----------
 let currentUser = null;
 const tapEvent = ('ontouchstart' in window) ? 'touchstart' : 'click';
-window.isInBid = false; // NEW: Flag for bid participation
 
 
 
@@ -226,87 +225,63 @@ function initializePot(){
 function randomInt(min,max){ return Math.floor(Math.random()*(max-min+1))+min; }
 function formatNumber(n){ return n.toLocaleString(); }
 
-// ---------- LOAD USER — NEW 2025 STANDARD (UID + BACKWARD COMPATIBLE) ----------
+// ---------- LOAD USER ----------
 async function loadCurrentUserForGame() {
   try {
-    // 1. Get from localStorage (set during signup)
     const vipRaw = localStorage.getItem("vipUser");
     const hostRaw = localStorage.getItem("hostUser");
     const storedUser = vipRaw ? JSON.parse(vipRaw) : hostRaw ? JSON.parse(hostRaw) : null;
-
-    if (!storedUser || (!storedUser.uid && !storedUser.email)) {
+    
+    if (!storedUser?.email) {
       currentUser = null;
-      if (profileNameEl) profileNameEl.textContent = "GUEST 0000";
-      if (starCountEl) starCountEl.textContent = "50";
-      if (cashCountEl) cashCountEl.textContent = "₦0";
+      profileNameEl && (profileNameEl.textContent = "GUEST 0000");
+      starCountEl && (starCountEl.textContent = "50");
+      cashCountEl && (cashCountEl.textContent = "₦0");
       return;
     }
 
-    let uid = storedUser.uid;
-
-    // 2. If no UID saved (old user), try to find by email
-    if (!uid && storedUser.email) {
-      const emailKey = storedUser.email.replace(/\./g, ',').toLowerCase();
-      const oldDocRef = doc(db, "users", emailKey);
-      const oldSnap = await getDoc(oldDocRef);
-      if (oldSnap.exists()) {
-        uid = oldSnap.data().uid; // grab real UID from old doc
-      }
-    }
-
-    // 3. If still no UID → user is truly new or corrupted
-    if (!uid) {
-      currentUser = null;
-      if (profileNameEl) profileNameEl.textContent = "GUEST 0000";
-      return;
-    }
-
-    // 4. NOW LOAD BY REAL UID — THIS WILL ALWAYS WORK
+   const uid = storedUser.email
+  .toLowerCase()
+  .replace(/[@.]/g, '_')           // @ and . → _
+  .replace(/[,\\/*[\]]/g, '_')      // kill any stray commas too
+  .replace(/_+/g, '_')
+  .replace(/^_|_$/g, '');
     const userRef = doc(db, "users", uid);
     const snap = await getDoc(userRef);
 
     if (!snap.exists()) {
-      console.warn("User doc not found for UID:", uid);
-      currentUser = null;
-      if (profileNameEl) profileNameEl.textContent = "GUEST 0000";
-      return;
+      // CREATE USER AUTOMATICALLY
+      await setDoc(userRef, {
+        uid,
+        chatId: storedUser.fullName || storedUser.displayName || storedUser.email.split("@")[0],
+        email: storedUser.email,
+        stars: 100,
+        cash: 0,
+        totalTaps: 0,
+        createdAt: serverTimestamp(),
+        tapsDaily: {},
+        tapsWeekly: {},
+        tapsMonthly: {}
+      });
     }
 
-    const data = snap.data();
-
+    const data = (await getDoc(userRef)).data();
     currentUser = {
-      uid: uid,
-      chatId: data.chatId || storedUser.chatId || data.email?.split('@')[0] || "Player",
-      email: data.email || storedUser.email,
-      stars: Number(data.stars || 50),
+      uid,
+      chatId: data.chatId || storedUser.email.split("@")[0],
+      email: storedUser.email,
+      stars: Number(data.stars || 100),
       cash: Number(data.cash || 0),
-      totalTaps: Number(data.totalTaps || 0),
-      isVIP: !!data.isVIP
+      totalTaps: Number(data.totalTaps || 0)
     };
 
-    // UPDATE UI — REAL NAME EVERYWHERE
-    if (profileNameEl) profileNameEl.textContent = currentUser.chatId;
-    if (starCountEl) starCountEl.textContent = formatNumber(currentUser.stars);
-    if (cashCountEl) cashCountEl.textContent = '₦' + formatNumber(currentUser.cash);
-
-    // Also fix end-game modal name
-    document.getElementById('playerName') && 
-      (document.getElementById('playerName').textContent = currentUser.chatId);
-
-    await checkIfInBid(); // NEW: Check bid status on load
+    profileNameEl && (profileNameEl.textContent = currentUser.chatId);
+    starCountEl && (starCountEl.textContent = formatNumber(currentUser.stars));
+    cashCountEl && (cashCountEl.textContent = '₦' + formatNumber(currentUser.cash));
 
   } catch (err) {
-    console.error("loadCurrentUserForGame failed:", err);
-    currentUser = null;
+    console.warn("load user error", err);
   }
-}
-
-// NEW: Check if user is already in today's bid (for reloads)
-async function checkIfInBid() {
-  if (!currentUser?.uid) return;
-  const q = query(collection(db, "bids"), where("uid", "==", currentUser.uid), where("roundId", "==", window.CURRENT_ROUND_ID));
-  const snap = await getDocs(q);
-  window.isInBid = !snap.empty;
 }
 
 // ---------- DEDUCT ANIMATION ----------
@@ -701,7 +676,7 @@ async function endSessionRecord() {
     });
 
   // === 3. BID LEADERBOARD — ONLY IF IN ACTIVE BID ===
-if (window.isInBid && sessionTaps > 0) { // FIXED: Use isInBid flag
+if (window.CURRENT_ROUND_ID && sessionTaps > 0) {
   addDoc(collection(db, "taps"), {
     uid: currentUser.uid,
     username: currentUser.chatId || "Player",
@@ -935,7 +910,7 @@ async function fetchLeaderboard(period = "daily", top = 10) {
   try {
     // Try aggregate first (fast)
     const aggRef = doc(db, "leaderboards", `${period}_${key}`);
-    let aggSnap = await getDoc(aggRef);
+    const aggSnap = await getDoc(aggRef);
 
     let topScores = [];
     let myDailyTaps = 0;
@@ -952,16 +927,8 @@ async function fetchLeaderboard(period = "daily", top = 10) {
       // Aggregate missing → do one-time fallback + create it
       console.log(`%cCreating ${period} aggregate...`, "color:#0f9");
       await createLeaderboardAggregate(period, key);
-      // FIXED: Refetch after creation
-      aggSnap = await getDoc(aggRef);
-      if (aggSnap.exists()) {
-        const data = aggSnap.data();
-        topScores = data.top15 || [];
-        myDailyTaps = data.scores?.[currentUser?.uid] || 0;
-        if (currentUser && data.fullRanks?.[currentUser.uid]) {
-          myRank = data.fullRanks[currentUser.uid];
-        }
-      }
+      // Don't reload — just use fallback data from creation
+      topScores = [];  // will be populated in createLeaderboardAggregate
     }
 
     // Update my stats (always works)
@@ -1071,31 +1038,25 @@ async function createLeaderboardAggregate(period, key) {
   }
 }
 /* -------------------------------------------
-   TAB SWITCHER (CLEAN + FULLY WORKING)
+   TAB SWITCHER — GOLD HIGHLIGHT NOW MOVES 100% CORRECTLY
 -------------------------------------------- */
 periodTabs.forEach(tab => {
   tab.addEventListener("click", () => {
     const period = tab.dataset.period;
 
-    // Highlight active tab
-    periodTabs.forEach(t => {
-      t.classList.remove("active");
-      t.style.background = "#222";
-      t.style.color = "#ccc";
-    });
+    // Remove active class from ALL tabs (this removes the gold from previous)
+    periodTabs.forEach(t => t.classList.remove("active"));
 
+    // Add active class ONLY to the clicked tab → gold instantly moves!
     tab.classList.add("active");
-    tab.style.background = "#ff1493";
-    tab.style.color = "#fff";
 
-    // Toggle timer
+    // Show/hide daily timer
     dailyTimerContainer.style.display = period === "daily" ? "block" : "none";
 
-    // Fetch leaderboard
+    // Fetch the correct leaderboard
     fetchLeaderboard(period);
   });
 });
-
 /* -------------------------------------------
    DAILY COUNTDOWN
 -------------------------------------------- */
@@ -1610,13 +1571,11 @@ document.getElementById('finalConfirmBtn')?.addEventListener('click', async () =
     // Join the bid — this is what allows their taps to count
     await addDoc(collection(db, "bids"), {
       uid: currentUser.uid,
-      username: currentUser.chatId || "Player",
+      username: currentUser.username || currentUser.displayName || "Warrior",
       roundId: CURRENT_ROUND_ID,
       status: "active",
       joinedAt: serverTimestamp()
     });
-
-    window.isInBid = true; // NEW: Set flag after successful join
 
     await showNiceAlert("You're IN!\nPrize pool +₦100\nStart tapping NOW!");
 
@@ -1704,20 +1663,20 @@ function startDailyBidEngine() {
 
     const roundRef = doc(db, "rounds", CURRENT_ROUND_ID);
 
-    unsubStats = onSnapshot(roundRef, async (snap) => { // FIXED: Added async for await
-      if (!snap.exists()) {
-        await createMissingAggregate(); // FIXED: Await creation and return to refresh snapshot
-        return;
-      }
-
+    unsubStats = onSnapshot(roundRef, (snap) => {
       let activePlayers = 0;
       let prizePool = 50000;
       let leaderboard = [];
 
-      const d = snap.data();
-      activePlayers = d.activePlayers || 0;
-      prizePool = d.prizePool || 50000;
-      leaderboard = d.leaderboard || [];
+      if (snap.exists()) {
+        const d = snap.data();
+        activePlayers = d.activePlayers || 0;
+        prizePool = d.prizePool || 50000;
+        leaderboard = d.leaderboard || [];
+      } else {
+        createMissingAggregate();
+        return;
+      }
 
       playersEl.textContent = activePlayers;
       prizeEl.textContent = "₦" + prizePool.toLocaleString();
