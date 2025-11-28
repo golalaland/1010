@@ -759,64 +759,118 @@ function renderMessagesFromArray(messages) {
       return;
     }
 
-    // === USERNAME — NOW TAPABLE & OPENS SOCIAL CARD ===
-  const metaEl = document.createElement("span");
-    metaEl.className = "meta";
-    metaEl.style.color = refs.userColors?.[m.uid] || "#fff";
+  // === USERNAME — TAP → OPENS SOCIAL CARD ONLY ===
+const metaEl = document.createElement("span");
+metaEl.className = "meta";
+metaEl.style.color = refs.userColors?.[m.uid] || "#fff";
 
-    const tapableName = document.createElement("span");
-    tapableName.className = "chat-username";
-    tapableName.textContent = m.chatId || "Guest";
-// 100% GUARANTEED CORRECT UID — WORKS EVERY TIME
+const tapableName = document.createElement("span");
+tapableName.className = "chat-username";
+tapableName.textContent = m.chatId || "Guest";
+
+// 100% correct UID for future use (e.g. admin tools, mods, etc.)
 const realUid = m.uid || m.email?.replace(/[.@]/g, '_') || m.chatId || "unknown";
-tapableName.dataset.userId = realUid.replace(/[.@/\\]/g, '_'); // double-clean
-    tapableName.style.cssText = "cursor:pointer; font-weight:700; padding:0 4px; border-radius:4px; user-select:none;";
+tapableName.dataset.userId = realUid.replace(/[.@/\\]/g, '_');
 
-    // Visual feedback on tap
-    tapableName.addEventListener("pointerdown", () => {
-      tapableName.style.background = "rgba(255,204,0,0.4)";
-    });
-    tapableName.addEventListener("pointerup", () => {
-      setTimeout(() => tapableName.style.background = "", 200);
-    });
+tapableName.style.cssText = `
+  cursor: pointer;
+  font-weight: 700;
+  padding: 0 6px;
+  border-radius: 6px;
+  user-select: none;
+  display: inline-block;
+  transition: background 0.2s ease;
+`.replace(/\s+/g, " ").trim();
 
-    metaEl.append(tapableName, document.createTextNode(": "));
-    wrapper.appendChild(metaEl);
-    
-    // === REPLY PREVIEW ===
-    if (m.replyTo) {
-      const replyPreview = document.createElement("div");
-      replyPreview.className = "reply-preview";
-      replyPreview.style.cssText = `
-        background: rgba(255,255,255,0.06);
-        border-left: 3px solid #b3b3b3;
-        padding: 6px 10px;
-        margin: 6px 0 4px 0;
-        border-radius: 0 6px 6px 0;
-        font-size: 13px;
-        color: #aaa;
-        cursor: pointer;
-        line-height: 1.4;
-      `.replace(/\s+/g, " ").trim();
+// Visual feedback when pressing the name
+tapableName.addEventListener("pointerdown", (e) => {
+  e.stopPropagation(); // ← prevents message tap modal
+  tapableName.style.background = "rgba(255,204,0,0.45)";
+});
+tapableName.addEventListener("pointerup", () => {
+  setTimeout(() => tapableName.style.background = "", 180);
+});
+tapableName.addEventListener("pointercancel", () => {
+  tapableName.style.background = "";
+});
 
-      const replyText = (m.replyToContent || "Original message").replace(/\n/g, " ").trim();
-      const shortText = replyText.length > 80 ? replyText.substring(0, 80) + "..." : replyText;
+// MAIN ACTION: Tap username → show social card
+tapableName.addEventListener("click", (e) => {
+  e.stopPropagation(); // ← super important
 
-      replyPreview.innerHTML = `
-        <strong style="color:#999;">↳ ${m.replyToChatId || "someone"}:</strong>
-        <span style="color:#aaa;">${shortText}</span>
-      `;
+  const name = tapableName.textContent.trim().toLowerCase();
+  const user = usersByChatId[name] ||
+               allUsers.find(u => (u.chatId || "").toLowerCase() === name);
 
-      replyPreview.onclick = () => {
-        const target = document.getElementById(m.replyTo);
-        if (target) {
-          target.scrollIntoView({ behavior: "smooth", block: "center" });
-          target.style.background = "rgba(180,180,180,0.15)";
-          setTimeout(() => target.style.background = "", 2000);
-        }
-      };
-      wrapper.appendChild(replyPreview);
+  if (user && user._docId !== currentUser?.uid) {
+    showSocialCard(user);
+  }
+});
+
+// Append username + colon
+metaEl.appendChild(tapableName);
+metaEl.appendChild(document.createTextNode(": "));
+wrapper.appendChild(metaEl);
+
+// === MESSAGE CONTENT — TAP → REPLY / REPORT MODAL ===
+const contentEl = document.createElement("span");
+contentEl.textContent = m.content;
+contentEl.style.cursor = "pointer";
+contentEl.style.userSelect = "none";
+
+// Long-press or normal tap on message body → show your existing tap modal
+contentEl.addEventListener("pointerdown", (e) => {
+  // Optional: only trigger on touch devices for long-press feel
+  if (e.pointerType === "touch") {
+    longPressTimer = setTimeout(() => showTapModal(contentEl, m), 500);
+  }
+});
+contentEl.addEventListener("pointerup", () => clearTimeout(longPressTimer));
+contentEl.addEventListener("pointercancel", () => clearTimeout(longPressTimer));
+
+// Short tap also works (great for desktop & quick mobile taps)
+contentEl.addEventListener("click", (e) => {
+  e.stopPropagation();
+  showTapModal(contentEl, m);
+});
+
+// Append message text
+wrapper.appendChild(contentEl);
+
+// === REPLY PREVIEW (unchanged — perfect as-is) ===
+if (m.replyTo) {
+  const replyPreview = document.createElement("div");
+  replyPreview.className = "reply-preview";
+  replyPreview.style.cssText = `
+    background: rgba(255,255,255,0.06);
+    border-left: 3px solid #b3b3b3;
+    padding: 6px 10px;
+    margin: 6px 0 4px 0;
+    border-radius: 0 6px 6px 0;
+    font-size: 13px;
+    color: #aaa;
+    cursor: pointer;
+    line-height: 1.4;
+  `.replace(/\s+/g, " ").trim();
+
+  const replyText = (m.replyToContent || "Original message").replace(/\n/g, " ").trim();
+  const shortText = replyText.length > 80 ? replyText.substring(0, 80) + "..." : replyText;
+  replyPreview.innerHTML = `
+    <strong style="color:#999;">↳ ${m.replyToChatId || "someone"}:</strong>
+    <span style="color:#aaa;">${shortText}</span>
+  `;
+
+  replyPreview.onclick = () => {
+    const target = document.getElementById(m.replyTo);
+    if (target) {
+      target.scrollIntoView({ behavior: "smooth", block: "center" });
+      target.style.background = "rgba(180,180,180,0.15)";
+      setTimeout(() => target.style.background = "", 2000);
     }
+  };
+
+  wrapper.appendChild(replyPreview);
+}
 
     // === MESSAGE CONTENT ===
     const contentEl = document.createElement("span");
