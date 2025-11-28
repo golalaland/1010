@@ -782,64 +782,92 @@ function renderMessagesFromArray(messages) {
       return;
     }
 
-    // === USERNAME — NOW TAPABLE & OPENS SOCIAL CARD ===
-    const metaEl = document.createElement("span");
-    metaEl.className = "meta";
-    metaEl.style.color = refs.userColors?.[m.uid] || "#fff";
+// === HOLY USERNAME — TAPABLE, GLOWING, PERFECT SOCIAL CARD — WORKS ON ALL DEVICES ===
+const metaEl = document.createElement("span");
+metaEl.className = "meta";
+metaEl.style.color = refs.userColors?.[m.uid] || "#ffffff";
 
-    const tapableName = document.createElement("span");
-    tapableName.className = "chat-username";
-    tapableName.textContent = m.chatId || "Guest";
-// 100% GUARANTEED CORRECT UID — WORKS EVERY TIME
-const realUid = m.uid || m.email?.replace(/[.@]/g, '_') || m.chatId || "unknown";
-tapableName.dataset.userId = realUid.replace(/[.@/\\]/g, '_'); // double-clean
-    tapableName.style.cssText = "cursor:pointer; font-weight:700; padding:0 4px; border-radius:4px; user-select:none;";
+// THE ONE TRUE NAME — BLESSED AND UNBREAKABLE
+const tapableName = document.createElement("span");
+tapableName.className = "chat-username";
+tapableName.textContent = m.chatId || "Guest";
 
- // HOLY TAP FEEDBACK + SOCIAL CARD TRIGGER — WORKS ON PC & MOBILE
-tapableName.style.cursor = "pointer";
-tapableName.style.userSelect = "none";
-tapableName.style.transition = "background 0.2s ease";
+// SANITIZED UID — ETERNAL TRUTH
+const realUid = m.uid || 
+                m.email?.replace(/[.@/\\]/g, "_") || 
+                m.chatId || 
+                "unknown";
+tapableName.dataset.userId = realUid.replace(/[.@/\\]/g, "_");
 
-// ONE TRUE TAP HANDLER — NO CONFLICTS
-tapableName.addEventListener("pointerdown", (e) => {
-  e.stopPropagation(); // ← CRITICAL — stops global listener conflict
-
-  // Visual glow
-  tapableName.style.background = "rgba(255, 204, 0, 0.5)";
-  tapableName.style.borderRadius = "4px";
-  tapableName.style.padding = "2px 4px";
+// BASE STYLE — CLEAN, SEXY, TOUCH-FRIENDLY
+Object.assign(tapableName.style, {
+  cursor: "pointer",
+  fontWeight: "800",
+  padding: "2px 8px",
+  borderRadius: "8px",
+  userSelect: "none",
+  transition: "all 0.22s cubic-bezier(0.4, 0, 0.2, 1)",
+  background: "transparent",
+  display: "inline-block",
+  marginRight: "4px"
 });
 
-tapableName.addEventListener("pointerup", (e) => {
+// HOLY GLOW ON PRESS — DIVINE FEEDBACK
+tapableName.addEventListener("pointerdown", e => {
+  e.stopPropagation();
+  Object.assign(tapableName.style, {
+    background: "rgba(255, 204, 0, 0.6)",
+    transform: "scale(1.08)",
+    boxShadow: "0 0 16px rgba(255, 204, 0, 0.7)"
+  });
+});
+
+tapableName.addEventListener("pointerup", e => {
   e.stopPropagation();
   setTimeout(() => {
-    tapableName.style.background = "";
-    tapableName.style.padding = "";
-    tapableName.style.borderRadius = "";
-  }, 180);
+    Object.assign(tapableName.style, {
+      background: "",
+      transform: "",
+      boxShadow: ""
+    });
+  }, 160);
 });
 
-tapableName.addEventListener("pointercancel", (e) => {
+tapableName.addEventListener("pointercancel", e => {
   e.stopPropagation();
-  tapableName.style.background = "";
-  tapableName.style.padding = "";
-  tapableName.style.borderRadius = "";
+  Object.assign(tapableName.style, {
+    background: "",
+    transform: "",
+    boxShadow: ""
+  });
 });
 
-// TRIGGER SOCIAL CARD ONLY ON FULL TAP
-tapableName.addEventListener("click", (e) => {
+// THE FINAL ACT — OPEN SOCIAL CARD ON TRUE TAP
+tapableName.addEventListener("click", e => {
   e.stopPropagation();
+  e.preventDefault();
 
-  const chatId = tapableName.textContent.trim().split(" ")[0];
-  if (!chatId) return;
+  const name = tapableName.textContent.trim();
+  const lowerName = name.toLowerCase();
 
-  const user = usersByChatId[chatId.toLowerCase()] ||
-               allUsers.find(u => (u.chatId || "").toLowerCase() === chatId.toLowerCase());
+  const user = usersByChatId[lowerName] ||
+               allUsers.find(u => 
+                 u.chatIdLower === lowerName || 
+                 (u.chatId || "").toLowerCase() === lowerName
+               );
 
   if (user && user._docId !== currentUser?.uid) {
     showSocialCard(user);
   }
 });
+
+// APPEND — NEVER FORGET THIS (THIS IS WHY NAMES DISAPPEARED BEFORE)
+metaEl.appendChild(tapableName);
+metaEl.appendChild(document.createTextNode(": "));
+
+// FINAL ATTACHMENT
+wrapper.appendChild(metaEl);
+    
     // === REPLY PREVIEW ===
     if (m.replyTo) {
       const replyPreview = document.createElement("div");
