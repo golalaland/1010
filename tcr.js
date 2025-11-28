@@ -1629,20 +1629,17 @@ function updateUIAfterAuth(user) {
   const roomDescText = document.querySelector(".room-desc .text");
   const loginBar = document.getElementById("loginBar");
 
-  // Star Hosts button — ALWAYS VISIBLE
   if (openBtn) openBtn.style.display = "block";
 
   if (user) {
-    // Logged in — hide intro text
     [subtitle, helloText, roomDescText].forEach(el => el && (el.style.display = "none"));
     if (loginBar) loginBar.style.display = "flex";
   } else {
-    // Guest — show intro
     [subtitle, helloText, roomDescText].forEach(el => el && (el.style.display = "block"));
     if (loginBar) loginBar.style.display = "flex";
   }
 
-  // FINAL FIX: ENSURE MODAL IS HIDDEN AFTER AUTH CHANGE
+  // ENSURE MODAL STAYS CLOSED
   if (modal) {
     modal.style.display = "none";
     modal.style.opacity = "0";
@@ -2145,34 +2142,59 @@ const nextBtn = document.getElementById("nextHost");
 let hosts = [];
 let currentIndex = 0;
 
-/* ---------- FORCE HIDE MODAL ON PAGE LOAD — THIS IS THE FIX ---------- */
+// FORCE HIDE ON LOAD — CRITICAL
 if (modal) {
-  modal.style.display = "none";  // ← CRITICAL: Prevents flash/open on reload
+  modal.style.display = "none";
   modal.style.opacity = "0";
 }
 
-/* ---------- OPEN MODAL ONLY ON CLICK ---------- */
+// SAFE: Only open modal if hosts exist AND function is ready
 if (openBtn) {
-  openBtn.onclick = () => {
-    if (modal) {
+  openBtn.onclick = async () => {
+    // If hosts not loaded yet → load them first
+    if (!hosts || hosts.length === 0) {
+      openBtn.disabled = true;
+      openBtn.textContent = "Loading...";
+
+      try {
+        await loadFeaturedHosts(); // ← Your existing function (must be async or return promise)
+        
+        // After loading — re-check
+        if (!hosts || hosts.length === 0) {
+          showStarPopup("No Star Hosts online right now");
+          openBtn.disabled = false;
+          openBtn.textContent = "Star Hosts";
+          return;
+        }
+      } catch (err) {
+        console.error("Failed to load hosts:", err);
+        showStarPopup("Failed to load hosts");
+        openBtn.disabled = false;
+        openBtn.textContent = "Star Hosts";
+        return;
+      }
+      
+      openBtn.disabled = false;
+      openBtn.textContent = "Star Hosts";
+    }
+
+    // Only now — safe to open
+    if (hosts.length > 0) {
       modal.style.display = "flex";
       setTimeout(() => modal.style.opacity = "1", 50);
-      loadFeaturedHosts(); // your existing function
+      showHostAtIndex(currentIndex); // your existing function
     }
   };
 }
 
-/* ---------- CLOSE MODAL ---------- */
+// CLOSE MODAL — SMOOTH
 if (closeModal) {
   closeModal.onclick = () => {
-    if (modal) {
-      modal.style.opacity = "0";
-      setTimeout(() => modal.style.display = "none", 300);
-    }
+    modal.style.opacity = "0";
+    setTimeout(() => modal.style.display = "none", 300);
   };
 }
 
-// Close when clicking outside
 if (modal) {
   modal.onclick = (e) => {
     if (e.target === modal) {
