@@ -170,6 +170,29 @@ if (rtdb) {
 }
 
 
+// PUT THIS AT THE VERY TOP — RUNS ONCE
+window.socialCardUsersReady = false;
+let allUsers = [];
+let usersByChatId = {};
+
+(async function loadSocialCardUsers() {
+  try {
+    const q = await getDocs(collection(db, "users"));
+    q.forEach(doc => {
+      const d = doc.data();
+      d._docId = doc.id;
+      d.chatIdLower = (d.chatId || "guest").toString().toLowerCase();
+      allUsers.push(d);
+      usersByChatId[d.chatIdLower] = d;
+    });
+    window.socialCardUsersReady = true;
+    console.log("YAH HAS LOADED SOCIAL CARD USERS:", allUsers.length);
+  } catch (e) {
+    console.error("Failed to load social card users:", e);
+  }
+})();
+
+
 /* ===============================
    GLOBAL DOM REFERENCES — POPULATE THE refs OBJECT (ONLY ONCE!)
    THIS RUNS IMMEDIATELY — NO DUPLICATE DECLARATION
