@@ -3884,37 +3884,6 @@ function showUnlockConfirm(video, onUnlockCallback) {
     if (onUnlockCallback) onUnlockCallback();
   };
 }
-
-
-function enterNativeFullscreen(previewEl, fullSrc) {
-  previewEl.pause();
-
-  const fullVideo = document.createElement("video");
-  fullVideo.src = fullSrc;
-  fullVideo.controls = true;
-  fullVideo.autoplay = true;
-  fullVideo.playsInline = false;
-  fullVideo.style.cssText = "width:100%;height:100%;background:#000;";
-
-  const container = document.createElement("div");
-  container.style.cssText = "position:fixed;top:0;left:0;width:100vw;height:100vh;background:#000;z-index:1000002;";
-  container.appendChild(fullVideo);
-  document.body.appendChild(container);
-
-  const cleanup = () => {
-    fullVideo.pause();
-    container.remove();
-    document.removeEventListener("fullscreenchange", cleanup);
-    document.removeEventListener("webkitfullscreenchange", cleanup);
-  };
-
-  document.addEventListener("fullscreenchange", cleanup);
-  document.addEventListener("webkitfullscreenchange", cleanup);
-
-  if (container.requestFullscreen) container.requestFullscreen();
-  else if (container.webkitRequestFullscreen) container.webkitRequestFullscreen();
-}
-
 /* ---------- Unlock Logic ---------- */
 async function handleUnlockVideo(video) {
   try {
