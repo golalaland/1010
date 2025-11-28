@@ -82,6 +82,22 @@ if (sessionStorage.getItem("justLoggedOut") === "true") {
   showStarPopup("Welcome back, legend!");
 }
 
+/* ===============================
+   GLOBAL DOM REFERENCES — ONLY ONE TIME!
+   PLACE THIS AT THE VERY TOP OF tcr.js
+================================= */
+const refs = {
+  redeemBtn: document.getElementById("redeemBtn"),
+  tipBtn: document.getElementById("tipBtn"),
+  giftModal: document.getElementById("giftModal"),
+  giftModalTitle: document.getElementById("giftModalTitle"),
+  giftAmountInput: document.getElementById("giftAmountInput"),
+  giftConfirmBtn: document.getElementById("giftConfirmBtn"),
+  giftModalClose: document.getElementById("giftModalClose"),
+  giftAlert: document.getElementById("giftAlert"),
+  starPopup: document.getElementById("starPopup"),
+  starText: document.getElementById("starText")
+};
 
 /* ---------- Presence (Realtime) ---------- */
 function setupPresence(user) {
@@ -323,6 +339,7 @@ document.getElementById("markAllRead")?.addEventListener("click", async () => {
   showStarPopup("Marked as read");
 });
 
+
 // HELPERS — ALL INCLUDED
 function showStarPopup(text) {
   const popup = document.getElementById("starPopup");
@@ -352,23 +369,6 @@ window.formatNumberWithCommas = formatNumberWithCommas;
 /* ---------- User Colors ---------- */ 
 function setupUsersListener() { onSnapshot(collection(db, "users"), snap => { refs.userColors = refs.userColors || {}; snap.forEach(docSnap => { refs.userColors[docSnap.id] = docSnap.data()?.usernameColor || "#ffffff"; }); if (lastMessagesArray.length) renderMessagesFromArray(lastMessagesArray); }); } setupUsersListener();
   
-
-/* ----------------------------
-   GIFT MODAL + REDEEM/TIP LINKS — FINAL 2025 BULLETPROOF
-   BUTTONS NEVER DISAPPEAR AGAIN
------------------------------ */
-
-// GLOBAL refs — make sure this exists at the top of your script
-const refs = {
-  redeemBtn: document.getElementById("redeemBtn"),
-  tipBtn: document.getElementById("tipBtn"),
-  giftModal: document.getElementById("giftModal"),
-  giftModalTitle: document.getElementById("giftModalTitle"),
-  giftAmountInput: document.getElementById("giftAmountInput"),
-  giftConfirmBtn: document.getElementById("giftConfirmBtn"),
-  giftModalClose: document.getElementById("giftModalClose"),
-  giftAlert: document.getElementById("giftAlert")
-};
 
 /* ----------------------------
    GIFT MODAL — NOW 100% RELIABLE
