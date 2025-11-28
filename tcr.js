@@ -812,30 +812,29 @@ metaEl.appendChild(tapableName);
 metaEl.appendChild(document.createTextNode(": "));
 wrapper.appendChild(metaEl);
 
-// === MESSAGE CONTENT — TAP → REPLY / REPORT MODAL ===
-const contentEl = document.createElement("span");
-contentEl.textContent = m.content;
-contentEl.style.cursor = "pointer";
-contentEl.style.userSelect = "none";
 
-// Long-press or normal tap on message body → show your existing tap modal
-contentEl.addEventListener("pointerdown", (e) => {
-  // Optional: only trigger on touch devices for long-press feel
+// === MESSAGE CONTENT — TAP → REPLY / REPORT MODAL ===
+const messageContent = document.createElement("span");
+messageContent.textContent = m.content;
+messageContent.style.cursor = "pointer";
+messageContent.style.userSelect = "none";
+
+// Long-press (mobile) + short tap (desktop & mobile) → show modal
+let longPressTimer;
+messageContent.addEventListener("pointerdown", (e) => {
   if (e.pointerType === "touch") {
-    longPressTimer = setTimeout(() => showTapModal(contentEl, m), 500);
+    longPressTimer = setTimeout(() => showTapModal(messageContent, m), 500);
   }
 });
-contentEl.addEventListener("pointerup", () => clearTimeout(longPressTimer));
-contentEl.addEventListener("pointercancel", () => clearTimeout(longPressTimer));
+messageContent.addEventListener("pointerup", () => clearTimeout(longPressTimer));
+messageContent.addEventListener("pointercancel", () => clearTimeout(longPressTimer));
 
-// Short tap also works (great for desktop & quick mobile taps)
-contentEl.addEventListener("click", (e) => {
+messageContent.addEventListener("click", (e) => {
   e.stopPropagation();
-  showTapModal(contentEl, m);
+  showTapModal(messageContent, m);
 });
 
-// Append message text
-wrapper.appendChild(contentEl);
+wrapper.appendChild(messageContent);
 
 // === REPLY PREVIEW (unchanged — perfect as-is) ===
 if (m.replyTo) {
