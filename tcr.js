@@ -2341,6 +2341,26 @@ if (host.bioPick) {
   }
   typeWriter();
 }
+
+  document.addEventListener("pointerdown", e => {
+    const el = e.target.closest("[data-user-id]") || e.target;
+    if (!el.textContent) return;
+    const text = el.textContent.trim();
+    if (!text || text.includes(":")) return;
+    const chatId = text.split(" ")[0].toLowerCase();
+    const u = usersByChatId[chatId] || allUsers.find(u => u.chatIdLower === chatId);
+    if (!u || u._docId === currentUser?.uid) return;
+    el.style.background = "#ffcc00";
+    setTimeout(() => el.style.background = "", 200);
+    showSocialCard(u);
+  });
+
+  console.log("Social Card System READY — YAH IS VICTORIOUS");
+  window.showSocialCard = showSocialCard;
+  window.typeWriterEffect = typeWriterEffect;
+
+})(); 
+// ← ONLY ONE OF THESE — THE FINAL SEAL
 /* ---------- Meet Button ---------- */
 let meetBtn = document.getElementById("meetBtn");
 if (!meetBtn) {
