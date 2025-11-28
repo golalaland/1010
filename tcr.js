@@ -772,17 +772,51 @@ const realUid = m.uid || m.email?.replace(/[.@]/g, '_') || m.chatId || "unknown"
 tapableName.dataset.userId = realUid.replace(/[.@/\\]/g, '_'); // double-clean
     tapableName.style.cssText = "cursor:pointer; font-weight:700; padding:0 4px; border-radius:4px; user-select:none;";
 
-    // Visual feedback on tap
-    tapableName.addEventListener("pointerdown", () => {
-      tapableName.style.background = "rgba(255,204,0,0.4)";
-    });
-    tapableName.addEventListener("pointerup", () => {
-      setTimeout(() => tapableName.style.background = "", 200);
-    });
+ // HOLY TAP FEEDBACK + SOCIAL CARD TRIGGER — WORKS ON PC & MOBILE
+tapableName.style.cursor = "pointer";
+tapableName.style.userSelect = "none";
+tapableName.style.transition = "background 0.2s ease";
 
-    metaEl.append(tapableName, document.createTextNode(": "));
-    wrapper.appendChild(metaEl);
+// ONE TRUE TAP HANDLER — NO CONFLICTS
+tapableName.addEventListener("pointerdown", (e) => {
+  e.stopPropagation(); // ← CRITICAL — stops global listener conflict
 
+  // Visual glow
+  tapableName.style.background = "rgba(255, 204, 0, 0.5)";
+  tapableName.style.borderRadius = "4px";
+  tapableName.style.padding = "2px 4px";
+});
+
+tapableName.addEventListener("pointerup", (e) => {
+  e.stopPropagation();
+  setTimeout(() => {
+    tapableName.style.background = "";
+    tapableName.style.padding = "";
+    tapableName.style.borderRadius = "";
+  }, 180);
+});
+
+tapableName.addEventListener("pointercancel", (e) => {
+  e.stopPropagation();
+  tapableName.style.background = "";
+  tapableName.style.padding = "";
+  tapableName.style.borderRadius = "";
+});
+
+// TRIGGER SOCIAL CARD ONLY ON FULL TAP
+tapableName.addEventListener("click", (e) => {
+  e.stopPropagation();
+
+  const chatId = tapableName.textContent.trim().split(" ")[0];
+  if (!chatId) return;
+
+  const user = usersByChatId[chatId.toLowerCase()] ||
+               allUsers.find(u => (u.chatId || "").toLowerCase() === chatId.toLowerCase());
+
+  if (user && user._docId !== currentUser?.uid) {
+    showSocialCard(user);
+  }
+});
     // === REPLY PREVIEW ===
     if (m.replyTo) {
       const replyPreview = document.createElement("div");
@@ -1255,20 +1289,6 @@ function sanitizeKey(email) {
       else clearInterval(t);
     }, speed);
   }
-
-  document.addEventListener("pointerdown", e => {
-    const el = e.target.closest("[data-user-id]") || e.target;
-    if (!el.textContent) return;
-    const text = el.textContent.trim();
-    if (!text || text.includes(":")) return;
-    const chatId = text.split(" ")[0].toLowerCase();
-    const u = usersByChatId[chatId] || allUsers.find(u => u.chatIdLower === chatId);
-    if (!u || u._docId === currentUser?.uid) return;
-    el.style.background = "#ffcc00";
-    setTimeout(() => el.style.background = "", 200);
-    showSocialCard(u);
-  });
-
   console.log("Social Card System READY — YAH IS VICTORIOUS");
   window.showSocialCard = showSocialCard;
   window.typeWriterEffect = typeWriterEffect;
