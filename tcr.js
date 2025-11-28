@@ -3919,43 +3919,6 @@ async function handleUnlockVideo(video) {
     showGoldAlert(`⚠️ ${err.message}`);
   }
 }
-// ---------- Play Full Video → Native Fullscreen (Perfect Hybrid) ----------
-function playFullVideo(video, previewEl) {
-  previewEl.pause();
-
-  const fullVideo = document.createElement("video");
-  fullVideo.src = video.highlightVideo;
-  fullVideo.controls = true;
-  fullVideo.autoplay = true;
-  fullVideo.playsInline = false;
-  fullVideo.style.cssText = "width:100%;height:100%;object-fit:contain;background:#000;";
-
-  const container = document.createElement("div");
-  container.style.cssText = "position:fixed;top:0;left:0;width:100vw;height:100vh;background:#000;z-index:1000002;display:flex;align-items:center;justify-content:center;";
-  container.appendChild(fullVideo);
-  document.body.appendChild(container);
-
-  const cleanup = () => {
-    fullVideo.pause();
-    container.remove();
-    document.removeEventListener("fullscreenchange", onFsChange);
-    document.removeEventListener("webkitfullscreenchange", onFsChange);
-    previewEl.play().catch(() => {}); // resume hover preview
-  };
-
-  const onFsChange = () => {
-    if (!document.fullscreenElement && !document.webkitFullscreenElement) {
-      cleanup();
-    }
-  };
-
-  document.addEventListener("fullscreenchange", onFsChange);
-  document.addEventListener("webkitfullscreenchange", onFsChange);
-
-  if (container.requestFullscreen) container.requestFullscreen();
-  else if (container.webkitRequestFullscreen) container.webkitRequestFullscreen();
-}
-
 // ————————————————————————————————————————————————————————
 // FINAL LINE — THIS MUST BE THE VERY LAST THING IN tcr.js
 // ————————————————————————————————————————————————————————
