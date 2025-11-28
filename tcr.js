@@ -1622,33 +1622,30 @@ const todayDate = () => new Date().toISOString().split("T")[0];
 const sleep = ms => new Promise(res => setTimeout(res, ms));
 
 
-/* ===============================
-   🧠 UI Updates After Auth (Improved)
-================================= */
+/* ---------- UPDATE UI AFTER AUTH — IMPROVED & SAFE ---------- */
 function updateUIAfterAuth(user) {
   const subtitle = document.getElementById("roomSubtitle");
-   const hostsBtn = document.getElementById("openHostsBtn");
   const helloText = document.getElementById("helloText");
   const roomDescText = document.querySelector(".room-desc .text");
-  const loginBar = document.getElementById("loginBar"); // adjust if different ID
+  const loginBar = document.getElementById("loginBar");
 
-  // Keep Star Hosts button always visible
-  if (hostsBtn) hostsBtn.style.display = "block";
+  // Star Hosts button — ALWAYS VISIBLE
+  if (openBtn) openBtn.style.display = "block";
 
   if (user) {
-    // Hide intro texts only for logged-in users
-    if (subtitle) subtitle.style.display = "none";
-    if (helloText) helloText.style.display = "none";
-    if (roomDescText) roomDescText.style.display = "none";
-
+    // Logged in — hide intro text
+    [subtitle, helloText, roomDescText].forEach(el => el && (el.style.display = "none"));
     if (loginBar) loginBar.style.display = "flex";
   } else {
-    // Show intro texts for guests
-    if (subtitle) subtitle.style.display = "block";
-    if (helloText) helloText.style.display = "block";
-    if (roomDescText) roomDescText.style.display = "block";
-
+    // Guest — show intro
+    [subtitle, helloText, roomDescText].forEach(el => el && (el.style.display = "block"));
     if (loginBar) loginBar.style.display = "flex";
+  }
+
+  // FINAL FIX: ENSURE MODAL IS HIDDEN AFTER AUTH CHANGE
+  if (modal) {
+    modal.style.display = "none";
+    modal.style.opacity = "0";
   }
 }
 
@@ -2126,7 +2123,12 @@ replaceStarsWithSVG();
 
 
 
-/* ---------- DOM Elements ---------- */
+/* ===============================
+   FEATURED HOSTS MODAL — FINAL 2025 BULLETPROOF
+   NEVER OPENS ON RELOAD — ONLY WHEN USER CLICKS
+================================= */
+
+/* ---------- DOM Elements (KEEP THESE) ---------- */
 const openBtn = document.getElementById("openHostsBtn");
 const modal = document.getElementById("featuredHostsModal");
 const closeModal = document.querySelector(".featured-close");
@@ -2135,7 +2137,6 @@ const usernameEl = document.getElementById("featuredHostUsername");
 const detailsEl = document.getElementById("featuredHostDetails");
 const hostListEl = document.getElementById("featuredHostList");
 const giftSlider = document.getElementById("giftSlider");
-// For modal only — different name!
 const modalGiftBtn = document.getElementById("featuredGiftBtn");
 const giftAmountEl = document.getElementById("giftAmount");
 const prevBtn = document.getElementById("prevHost");
@@ -2144,6 +2145,42 @@ const nextBtn = document.getElementById("nextHost");
 let hosts = [];
 let currentIndex = 0;
 
+/* ---------- FORCE HIDE MODAL ON PAGE LOAD — THIS IS THE FIX ---------- */
+if (modal) {
+  modal.style.display = "none";  // ← CRITICAL: Prevents flash/open on reload
+  modal.style.opacity = "0";
+}
+
+/* ---------- OPEN MODAL ONLY ON CLICK ---------- */
+if (openBtn) {
+  openBtn.onclick = () => {
+    if (modal) {
+      modal.style.display = "flex";
+      setTimeout(() => modal.style.opacity = "1", 50);
+      loadFeaturedHosts(); // your existing function
+    }
+  };
+}
+
+/* ---------- CLOSE MODAL ---------- */
+if (closeModal) {
+  closeModal.onclick = () => {
+    if (modal) {
+      modal.style.opacity = "0";
+      setTimeout(() => modal.style.display = "none", 300);
+    }
+  };
+}
+
+// Close when clicking outside
+if (modal) {
+  modal.onclick = (e) => {
+    if (e.target === modal) {
+      modal.style.opacity = "0";
+      setTimeout(() => modal.style.display = "none", 300);
+    }
+  };
+}
 
 /* ---------- SECURE + WORKING: Featured Hosts (2025 Final Version) ---------- */
 async function fetchFeaturedHosts() {
