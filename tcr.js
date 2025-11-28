@@ -3919,46 +3919,59 @@ async function handleUnlockVideo(video) {
     showGoldAlert(`⚠️ ${err.message}`);
   }
 }
-// ---------- Play Full Video (Native Browser Player - Perfect) ----------
+// ---------- Play Full Video → Native Fullscreen (Perfect Hybrid) ----------
 function playFullVideo(video) {
-  const player = document.createElement("video");
-  
-  player.src = video.highlightVideo;
-  player.controls = true;
-  player.autoplay = true;
-  player.playsInline = true;                    // crucial for iOS
-  player.style.cssText = `
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    max-width: 95vw;
-    max-height: 95vh;
-    width: auto;
-    height: auto;
-    z-index: 1000002;
-    border-radius: 16px;
-    box-shadow: 0 0 60px rgba(255,0,110,0.4);
-    background: #000;
-  `;
+  const previewVideo = event.target.closest(".videoCard").querySelector("video");
 
-  // Close on click/tap outside OR when ended
-  const closePlayer = () => {
-    player.pause();
-    player.remove();
-    document.removeEventListener("keydown", escHandler);
+  // Pause the small preview
+  previewVideo.pause();
+
+  const fullVideo = document.createElement("video");
+  fullVideo.src = video.highlightVideo;
+  fullVideo.controls = true;
+  fullVideo.playsInline = false;  // This allows real fullscreen on iOS
+  fullVideo.autoplay = true;
+  fullVideo.style.cssText = "width:100%; height:100%; object-fit:contain; background:#000;";
+
+  // Create invisible fullscreen container
+  const container = document.createElement("div");
+  container.style.cssText = `
+    position:fixed; top:0; left:0; width:100vw; height:100vh;
+    background:#000; z-index:1000002; display:flex; align-items:center; justify-content:center;
+  `;
+  container.appendChild(fullVideo);
+  document.body.appendChild(container);
+
+  // When user exits fullscreen → clean up and resume preview
+  const cleanup = () => {
+    fullVideo.pause();
+    container.remove();
+    document.removeEventListener("fullscreenchange", onFullscreenChange);
+    // Resume hover preview in card
+    previewVideo.play().catch(() => {});
   };
 
-  const escHandler = (e) => { if (e.key === "Escape") closePlayer(); };
+  const onFullscreenChange = () => {
+    if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+      cleanup();
+    }
+  };
 
-  player.onclick = (e) => { e.stopPropagation(); }; // don't close when tapping video
-  document.body.addEventListener("click", closePlayer, { once: true });
+  document.addEventListener("fullscreenchange", onFullscreenChange);
+  document.addEventListener("webkitfullscreenchange", onFullscreenChange);
+
+  // Enter fullscreen
+  if (container.requestFullscreen) {
+    container.requestFullscreen();
+  } else if (container.webkitRequestFullscreen) {
+    container.webkitRequestFullscreen();
+  }
+
+  // ESC or back button also cleans up
+  const escHandler = (e) => {
+    if (e.key === "Escape") cleanup();
+  };
   document.addEventListener("keydown", escHandler);
-
-  document.body.appendChild(player);
-
-  // Optional: force focus so controls appear instantly
-  player.focus();
 }
 // ————————————————————————————————————————————————————————
 // FINAL LINE — THIS MUST BE THE VERY LAST THING IN tcr.js
