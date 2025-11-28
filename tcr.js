@@ -1018,250 +1018,162 @@ async function promptForChatID(userRef, userData) {
   Social Card + Gift Stars System — FINAL 2025 BULLETPROOF EDITION
   YOUR ORIGINAL SOUL — FULLY RESTORED & FIXED
 ====================================================== */
-(async function initSocialCardSystem() {
-  const allUsers = [];
-  const usersByChatId = {};
+function showSocialCard(user) {
+  if (!user) return;
+  document.getElementById('socialCard')?.remove();
 
-  // Load all users
-  try {
-    const snaps = await getDocs(collection(db, "users"));
-    snaps.forEach(doc => {
-      const data = doc.data();
-      data._docId = doc.id;
-      data.chatIdLower = (data.chatId || "").toString().toLowerCase();
-      allUsers.push(data);
-      usersByChatId[data.chatIdLower] = data;
-    });
-    console.log("Social card: loaded", allUsers.length, "users");
-  } catch (err) {
-    console.error("Failed to load users:", err);
-  }
-
-  // Inject spinner once
-  if (!document.getElementById("gift-spinner-style")) {
-    const s = document.createElement("style");
-    s.id = "gift-spinner-style";
-    s.textContent = `@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`;
-    document.head.appendChild(s);
-  }
-
-  function showSocialCard(user) {
-    if (!user) return;
-
-    document.getElementById('socialCard')?.remove();
-
-    const card = document.createElement('div');
-    card.id = 'socialCard';
-    Object.assign(card.style, {
-      position: 'fixed', top: '50%', left: '50%',
-      transform: 'translate(-50%, -50%)',
-      background: 'linear-gradient(135deg, rgba(20,20,22,0.9), rgba(25,25,27,0.9))',
-      backdropFilter: 'blur(10px)',
-      borderRadius: '14px',
-      padding: '12px 16px',
-      color: '#fff',
-      width: '230px',
-      maxWidth: '90%',
-      zIndex: '999999',
-      textAlign: 'center',
-      boxShadow: '0 6px 24px rgba(0,0,0,0.5)',
-      fontFamily: 'Poppins, sans-serif',
-      opacity: '0',
-      transition: 'opacity .18s ease, transform .18s ease'
-    });
-
-    // Close button
-    const closeBtn = document.createElement('div');
-    closeBtn.innerHTML = '×';
-    Object.assign(closeBtn.style, {
-      position: 'absolute', top: '6px', right: '10px',
-      fontSize: '16px', fontWeight: '700', cursor: 'pointer',
-      opacity: '0.6', transition: 'opacity 0.2s'
-    });
-    closeBtn.onmouseenter = () => closeBtn.style.opacity = '1';
-    closeBtn.onmouseleave = () => closeBtn.style.opacity = '0.6';
-    closeBtn.onclick = e => { e.stopPropagation(); card.remove(); };
-    card.appendChild(closeBtn);
-
-    // Header
-    const header = document.createElement('h3');
-    header.textContent = (user.chatId || "Unknown").charAt(0).toUpperCase() + (user.chatId || "unknown").slice(1);
-    const color = user.isHost ? '#ff6600' : user.isVIP ? '#ff0099' : '#cccccc';
-    header.style.cssText = `margin:0 0 8px; font-size:18px; font-weight:700; background:linear-gradient(90deg,${color},#ff33cc); -webkit-background-clip:text; -webkit-text-fill-color:transparent;`;
-    card.appendChild(header);
-
-    // YOUR ORIGINAL LEGENDARY DETAILS — RESTORED
-    const detailsEl = document.createElement('p');
-    Object.assign(detailsEl.style, { margin: '0 0 10px', fontSize: '14px', lineHeight: '1.4' });
-
-    const gender = (user.gender || "person").toLowerCase();
-    const pronoun = gender === "male" ? "his" : "her";
-    const ageGroup = !user.age ? "20s" : user.age >= 30 ? "30s" : "20s";
-    const flair = gender === "male" ? "Cool" : "Kiss";
-    const fruit = user.fruitPick || "Grape";
-    const nature = user.naturePick || "cool";
-    const city = user.location || user.city || "Lagos";
-    const country = user.country || "Nigeria";
-
-    if (user.isHost) {
-      detailsEl.innerHTML = `A ${fruit} ${nature} ${gender} in ${pronoun} ${ageGroup}, currently in ${city}, ${country}. ${flair}`;
-    } else if (user.isVIP) {
-      detailsEl.innerHTML = `A ${gender} in ${pronoun} ${ageGroup}, currently in ${city}, ${country}. ${flair}`;
-    } else {
-      detailsEl.innerHTML = `A ${gender} from ${city}, ${country}. ${flair}`;
-    }
-    card.appendChild(detailsEl);
-
-    // Bio
-    const bioEl = document.createElement('div');
-    Object.assign(bioEl.style, { margin: '6px 0 12px', fontStyle: 'italic', fontWeight: '600', fontSize: '13px' });
-    bioEl.style.color = ['#ff99cc','#ffcc33','#66ff99','#66ccff','#ff6699','#ff9966','#ccccff','#f8b500'][Math.floor(Math.random()*8)];
-    card.appendChild(bioEl);
-    typeWriterEffect(bioEl, user.bioPick || 'Nothing shared yet...');
-
-    // Buttons wrapper
-    const btnWrap = document.createElement('div');
-    Object.assign(btnWrap.style, { display:'flex', flexDirection:'column', gap:'8px', alignItems:'center', marginTop:'4px' });
-
-    // Meet button
-    if (user.isHost) {
-      const meetBtn = document.createElement('button');
-      meetBtn.textContent = 'Meet';
-      Object.assign(meetBtn.style, { padding:'7px 14px', borderRadius:'6px', border:'none', fontWeight:'600', background:'linear-gradient(90deg,#ff6600,#ff0099)', color:'#fff', cursor:'pointer' });
-      meetBtn.onclick = () => { if (typeof showMeetModal === 'function') showMeetModal(user); };
-      btnWrap.appendChild(meetBtn);
-    }
-
- // ——— COMPACT & CUTE SLIDER + GIFT BUTTON FOR SOCIAL CARD ———
-const sliderPanel = document.createElement('div');
-Object.assign(sliderPanel.style, {
-  width: '100%',
-  padding: '7px 10px',
-  borderRadius: '10px',
-  background: 'rgba(255,255,255,0.07)',
-  backdropFilter: 'blur(8px)',
-  display: 'flex',
-  alignItems: 'center',
-  gap: '10px',
-  margin: '8px 0'
-});
-
-const fieryColors = [["#ff3300","#ff9900"],["#ff0066","#ff3399"],["#ff1493","#ff66cc"],["#ff5500","#ffdd00"]];
-function randomFieryGradient() {
-  const [c1,c2] = fieryColors[Math.floor(Math.random()*fieryColors.length)];
-  return `linear-gradient(90deg, ${c1}, ${c2})`;
-}
-
-const slider = document.createElement('input');
-slider.type = 'range';
-slider.min = 100;
-slider.max = 999;
-slider.value = 100;
-slider.style.cssText = `flex:1; height:6px; border-radius:6px; outline:none; cursor:pointer; -webkit-appearance:none; background:${randomFieryGradient()};`;
-
-// CUTE LITTLE THUMB
-const thumbCSS = document.createElement('style');
-thumbCSS.textContent = `
-  #socialCard input[type="range"]::-webkit-slider-thumb {
-    -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%;
-    background: white; border: 2px solid #ff3300; box-shadow: 0 0 12px #ff6600; cursor: pointer;
-  }
-  #socialCard input[type="range"]::-moz-range-thumb {
-    width: 18px; height: 18px; border-radius: 50%; background: white;
-    border: 2px solid #ff3300; box-shadow: 0 0 12px #ff6600; cursor: pointer; border: none;
-  }
-`;
-document.head.appendChild(thumbCSS);
-
-const sliderLabel = document.createElement('span');
-sliderLabel.textContent = "100";
-sliderLabel.style.cssText = 'font-size:14px; font-weight:700; min-width:52px; text-align:right; color:#fff; opacity:0.9';
-
-slider.oninput = () => {
-  sliderLabel.textContent = slider.value;
-  slider.style.background = randomFieryGradient();
-};
-
-sliderPanel.append(slider, sliderLabel);
-btnWrap.appendChild(sliderPanel);
-
-// ——— TINY CUTE GIFT BUTTON ———
-const giftBtnLocal = document.createElement('button');
-giftBtnLocal.textContent = 'Gift';
-Object.assign(giftBtnLocal.style, {
-  padding: '8px 16px',
-  borderRadius: '10px',
-  border: 'none',
-  fontWeight: '700',
-  fontSize: '14px',
-  background: 'linear-gradient(90deg, #ff0099, #ff0066)',
-  color: '#fff',
-  cursor: 'pointer',
-  boxShadow: '0 4px 12px rgba(255,0,153,0.4)',
-  transition: 'all 0.2s'
-});
-
-giftBtnLocal.onmouseenter = () => giftBtnLocal.style.transform = 'translateY(-3px)';
-giftBtnLocal.onmouseleave = () => giftBtnLocal.style.transform = '';
-
-giftBtnLocal.onclick = async () => {
-  const amt = parseInt(slider.value);
-  if (amt < 100) return showStarPopup("Minimum 100 stars");
-  if ((currentUser?.stars || 0) < amt) return showStarPopup("Not enough stars");
-  if (user.chatId?.toLowerCase() === currentUser?.chatId?.toLowerCase()) {
-    return showStarPopup("You can't gift yourself silly!");
-  }
-
-  const orig = giftBtnLocal.textContent;
-  giftBtnLocal.textContent = '';
-  const spin = document.createElement('div');
-  Object.assign(spin.style, {
-    width:'18px', height:'18px', border:'3px solid #fff3', borderTop:'3px solid white',
-    borderRadius:'50%', animation:'spin 0.7s linear infinite', margin:'0 auto'
+  const card = document.createElement('div');
+  card.id = 'socialCard';
+  Object.assign(card.style, {
+    position: 'fixed', top: '50%', left: '50%',
+    transform: 'translate(-50%, -50%)',
+    background: 'linear-gradient(135deg, rgba(20,20,22,0.9), rgba(25,25,27,0.9))',
+    backdropFilter: 'blur(10px)', borderRadius: '14px',
+    padding: '12px 16px', color: '#fff', width: '230px', maxWidth: '90%',
+    zIndex: '999999', textAlign: 'center',
+    boxShadow: '0 6px 24px rgba(0,0,0,0.5)',
+    fontFamily: 'Poppins, sans-serif', opacity: '0',
+    transition: 'opacity .18s ease, transform .18s ease'
   });
-  giftBtnLocal.appendChild(spin);
 
-  try {
-    // Use your CURRENT, WORKING sendStarsToUser
-    await sendStarsToUser({
-      chatId: user.chatId,
-      email: user.email,
-      uid: user.uid || user._docId
-    }, amt);
+  // Close ×
+  const closeBtn = document.createElement('div');
+  closeBtn.innerHTML = '×';
+  Object.assign(closeBtn.style, { position: 'absolute', top: '6px', right: '10px', fontSize: '16px', fontWeight: '700', cursor: 'pointer', opacity: '0.6' });
+  closeBtn.onmouseenter = () => closeBtn.style.opacity = '1';
+  closeBtn.onmouseleave = () => closeBtn.style.opacity = '0.6';
+  closeBtn.onclick = e => { e.stopPropagation(); card.remove(); };
+  card.appendChild(closeBtn);
 
-    showStarPopup(`Sent ${amt} stars to ${user.chatId}!`);
-    slider.value = 100;
-    sliderLabel.textContent = "100";
+  // Header
+  const header = document.createElement('h3');
+  header.textContent = user.chatId ? user.chatId.charAt(0).toUpperCase() + user.chatId.slice(1) : 'Unknown';
+  const color = user.isHost ? '#ff6600' : user.isVIP ? '#ff0099' : '#cccccc';
+  header.style.cssText = `margin:0 0 8px; font-size:18px; font-weight:700; background:linear-gradient(90deg,${color},#ff33cc); -webkit-background-clip:text; -webkit-text-fill-color:transparent;`;
+  card.appendChild(header);
 
-    setTimeout(() => card.remove(), 800);
-
-  } catch (e) {
-    console.error("Gift failed:", e);
-    showStarPopup("Failed — try again");
-  } finally {
-    giftBtnLocal.textContent = orig;
+  // Legendary Details — FULLY RESTORED
+  const detailsEl = document.createElement('p');
+  detailsEl.style.cssText = 'margin:0 0 10px; font-size:14px; line-height:1.4';
+  const gender = (user.gender || "person").toLowerCase();
+  const pronoun = gender === "male" ? "his" : "her";
+  const ageGroup = !user.age ? "20s" : user.age >= 30 ? "30s" : "20s";
+  const flair = gender === "male" ? "Cool" : "Kiss";
+  const fruit = user.fruitPick || "Grape";
+  const nature = user.naturePick || "cool";
+  const city = user.location || user.city || "Lagos";
+  const country = user.country || "Nigeria";
+  if (user.isHost) {
+    detailsEl.innerHTML = `A ${fruit} ${nature} ${gender} in ${pronoun} ${ageGroup}, currently in ${city}, ${country}. ${flair}`;
+  } else if (user.isVIP) {
+    detailsEl.innerHTML = `A ${gender} in ${pronoun} ${ageGroup}, currently in ${city}, ${country}. ${flair}`;
+  } else {
+    detailsEl.innerHTML = `A ${gender} from ${city}, ${country}. ${flair}`;
   }
-};
+  card.appendChild(detailsEl);
 
-btnWrap.appendChild(giftBtnLocal);
-card.appendChild(btnWrap);
-document.body.appendChild(card);
-    
-    // ANIMATE IN — BEAUTIFUL
-    requestAnimationFrame(() => {
-      card.style.opacity = '1';
-      card.style.transform = 'translate(-50%, -50%) scale(1)';
-    });
+  // Bio
+  const bioEl = document.createElement('div');
+  bioEl.style.cssText = 'margin:6px 0 12px; font-style:italic; font-weight:600; font-size:13px';
+  bioEl.style.color = ['#ff99cc','#ffcc33','#66ff99','#66ccff','#ff6699','#ff9966','#ccccff','#f8b500'][Math.floor(Math.random()*8)];
+  card.appendChild(bioEl);
+  typeWriterEffect(bioEl, user.bioPick || 'Nothing shared yet...');
 
-    // CLOSE ON OUTSIDE CLICK
-    const closeOut = (e) => {
-      if (card && !card.contains(e.target)) {
-        card.remove();
-        document.removeEventListener('click', closeOut);
-      }
-    };
-    setTimeout(() => document.addEventListener('click', closeOut), 10);
-  } // ← closes showSocialCard
+  // Buttons wrapper
+  const btnWrap = document.createElement('div');
+  btnWrap.style.cssText = 'display:flex; flex-direction:column; gap:8px; align-items:center; margin-top:4px';
+
+  // Meet button (hosts only)
+  if (user.isHost) {
+    const meetBtn = document.createElement('button');
+    meetBtn.textContent = 'Meet';
+    meetBtn.style.cssText = 'padding:7px 14px; border-radius:6px; border:none; font-weight:600; background:linear-gradient(90deg,#ff6600,#ff0099); color:#fff; cursor:pointer';
+    meetBtn.onclick = () => { if (typeof showMeetModal === 'function') showMeetModal(user); };
+    btnWrap.appendChild(meetBtn);
+  }
+
+  // ORIGINAL COMPACT CUTE SLIDER — RESTORED TO ORIGINAL GLORY
+  const sliderPanel = document.createElement('div');
+  sliderPanel.style.cssText = 'width:100%; padding:6px 8px; border-radius:8px; background:rgba(255,255,255,0.06); backdrop-filter:blur(8px); display:flex; align-items:center; gap:8px';
+
+  const fieryColors = [["#ff0000","#ff8c00"],["#ff4500","#ffd700"],["#ff1493","#ff6347"],["#ff0055","#ff7a00"],["#ff5500","#ffcc00"],["#ff3300","#ff0066"]];
+  const randomFieryGradient = () => `linear-gradient(90deg, ${fieryColors[Math.floor(Math.random()*fieryColors.length)].join(', ')})`;
+
+  const slider = document.createElement('input');
+  slider.type = 'range'; slider.min = 100; slider.max = 999; slider.value = 100;
+  slider.style.cssText = `flex:1; height:5px; border-radius:5px; outline:none; cursor:pointer; -webkit-appearance:none; background:${randomFieryGradient()}`;
+
+  const thumbStyle = document.createElement('style');
+  thumbStyle.textContent = `
+    #socialCard input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance:none; width:16px; height:16px; border-radius:50%;
+      background:white; border:2px solid #ff3300; box-shadow:0 0 10px #ff6600; cursor:pointer;
+    }
+    #socialCard input[type="range"]::-moz-range-thumb {
+      width:16px; height:16px; border-radius:50%; background:white;
+      border:2px solid #ff3300; box-shadow:0 0 10px #ff6600; cursor:pointer; border:none;
+    }
+  `;
+  document.head.appendChild(thumbStyle);
+
+  const sliderLabel = document.createElement('span');
+  sliderLabel.textContent = "100";
+  sliderLabel.style.cssText = 'font-size:13px; font-weight:700; min-width:50px; text-align:right; color:#fff';
+
+  slider.oninput = () => {
+    sliderLabel.textContent = slider.value;
+    slider.style.background = randomFieryGradient();
+  };
+
+  sliderPanel.append(slider, sliderLabel);
+  btnWrap.appendChild(sliderPanel);
+
+  // ORIGINAL TINY GIFT BUTTON — RESTORED
+  const giftBtnLocal = document.createElement('button');
+  giftBtnLocal.textContent = 'Gift';
+  giftBtnLocal.style.cssText = 'padding:8px 16px; border-radius:10px; border:none; font-weight:700; font-size:14px; background:linear-gradient(90deg,#ff0099,#ff0066); color:#fff; cursor:pointer; box-shadow:0 4px 12px rgba(255,0,153,0.4); transition:all 0.2s';
+  giftBtnLocal.onmouseenter = () => giftBtnLocal.style.transform = 'translateY(-3px)';
+  giftBtnLocal.onmouseleave = () => giftBtnLocal.style.transform = '';
+
+  giftBtnLocal.onclick = async () => {
+    const amt = parseInt(slider.value);
+    if (amt < 100) return showStarPopup("Minimum 100 stars");
+    if ((currentUser?.stars || 0) < amt) return showStarPopup("Not enough stars");
+    if (user.chatId?.toLowerCase() === currentUser?.chatId?.toLowerCase()) return showStarPopup("You can't gift yourself silly!");
+
+    const orig = giftBtnLocal.textContent;
+    giftBtnLocal.textContent = '';
+    const spin = document.createElement('div');
+    spin.style.cssText = 'width:18px; height:18px; border:3px solid #fff3; border-top:3px solid white; border-radius:50%; animation:spin 0.7s linear infinite; margin:0 auto';
+    giftBtnLocal.appendChild(spin);
+
+    try {
+      await sendStarsToUser(user, amt);
+      showStarPopup(`Sent ${amt} stars to ${user.chatId}!`);
+      slider.value = 100; sliderLabel.textContent = "100";
+      setTimeout(() => card.remove(), 800);
+    } catch (e) {
+      console.error(e);
+      showStarPopup("Failed — try again");
+    } finally {
+      giftBtnLocal.textContent = orig;
+    }
+  };
+
+  btnWrap.appendChild(giftBtnLocal);
+  card.appendChild(btnWrap);
+  document.body.appendChild(card);
+
+  // Animate in
+  requestAnimationFrame(() => {
+    card.style.opacity = '1';
+    card.style.transform = 'translate(-50%, -50%) scale(1)';
+  });
+
+  // Close on outside click
+  const closeOut = e => { if (!card.contains(e.target)) { card.remove(); document.removeEventListener('click', closeOut); } };
+  setTimeout(() => document.addEventListener('click', closeOut), 10);
+}
 
   // ——— TYPEWRITER EFFECT ———
   function typeWriterEffect(el, text, speed = 40) {
