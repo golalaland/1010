@@ -3657,24 +3657,35 @@ function showHighlightsModal(videos) {
         card.style.boxShadow = "0 4px 16px rgba(255,0,110,0.15)";
       };
 
-                                    const videoContainer = document.createElement("div");
+                              
+
+                              const videoContainer = document.createElement("div");
       videoContainer.style.cssText = "height:320px;overflow:hidden;position:relative;background:#000;cursor:pointer;";
 
       const videoEl = document.createElement("video");
       videoEl.muted = true;
       videoEl.loop = true;
       videoEl.preload = "metadata";
-      videoEl.style.cssText = "width:100%;height:100%;object-fit:cover;pointer-events:none;"; // ← THIS IS KEY
+      videoEl.style.cssText = "width:100%;height:100%;object-fit:cover;";
 
       if (isUnlocked) {
+        // UNLOCKED → visible immediately, plays on hover only
         videoEl.src = video.previewClip || video.highlightVideo;
 
+        // Show right away (no fade, no black)
+        videoEl.poster = ""; // ensures no poster delay
+
+        // Play only on hover
         videoContainer.onmouseenter = () => videoEl.play().catch(() => {});
         videoContainer.onmouseleave = () => {
           videoEl.pause();
           videoEl.currentTime = 0;
         };
+
+        // Optional: start paused but loaded and visible
+        videoEl.load(); // ensures it's ready
       } else {
+        // LOCKED → pure black + sexy lock overlay
         videoEl.removeAttribute("src");
 
         const lockedOverlay = document.createElement("div");
@@ -3685,19 +3696,16 @@ function showHighlightsModal(videos) {
               <svg width="68" height="68" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M12 2C9.2 2 7 4.2 7 7V11H6C4.9 11 4 11.9 4 13V20C4 21.1 4.9 22 6 22H18C19.1 22 20 21.1 20 20V13C20 11.9 19.1 11 18 11H17V7C17 4.2 14.8 2 12 2ZM12 4C13.7 4 15 5.3 15 7V11H9V7C9 5.3 10.3 4 12 4Z" fill="#ff006e"/>
               </svg>
-              
             </div>
           </div>`;
         videoContainer.appendChild(lockedOverlay);
       }
 
-      // ONLY the container handles clicks — video element is untouchable
+      // CLICK → full video or unlock modal
       videoContainer.onclick = (e) => {
         e.stopPropagation();
-        e.preventDefault();
-
         if (isUnlocked) {
-          playFullVideo(video);  // ← your beautiful modal
+          playFullVideo(video);
         } else {
           showUnlockConfirm(video, () => renderCards(videos));
         }
@@ -3911,28 +3919,6 @@ async function handleUnlockVideo(video) {
     console.error("❌ Unlock failed:", err);
     showGoldAlert(`⚠️ ${err.message}`);
   }
-}
-// ---------- Play Full Video Modal ----------
-function playFullVideo(video) {
-  const modal = document.createElement("div");
-  Object.assign(modal.style, {
-    position: "fixed", top: 0, left: 0, width: "90vw", height: "90vh",
-    background: "rgba(0,0,0,0.95)",
-    display: "flex", alignItems: "center", justifyContent: "center",
-    zIndex: "1000002"
-  });
-
-  const vid = document.createElement("video");
-  vid.src = video.highlightVideo;
-  vid.controls = true;
-  vid.autoplay = true;
-  vid.style.maxWidth = "90%";
-  vid.style.maxHeight = "90%";
-  vid.style.borderRadius = "12px";
-
-  modal.appendChild(vid);
-  modal.onclick = () => modal.remove();
-  document.body.appendChild(modal);
 }
 // ————————————————————————————————————————————————————————
 // FINAL LINE — THIS MUST BE THE VERY LAST THING IN tcr.js
