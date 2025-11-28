@@ -1,4 +1,3 @@
-
 /* ---------- Firebase Modular Imports (v10+) ---------- */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 
@@ -3664,51 +3663,78 @@ function showHighlightsModal(videos) {
                               const videoEl = document.createElement("video");
                               videoEl.muted = true;
                               videoEl.loop = true;
-                              videoEl.controls = false;           // ← NO browser controls in card
+                              videoEl.controls = false;
                               videoEl.preload = "metadata";
                               videoEl.playsInline = true;
-                              videoEl.style.cssText = "width:100%;height:100%;object-fit:cover;pointer-events:none;"; // ← prevents direct interaction
+                              videoEl.style.cssText = "width:100%;height:100%;object-fit:cover;pointer-events:none;";
+
+                              let lastTap = 0;
+                              let isPlaying = false;
 
                               if (isUnlocked) {
-                                // UNLOCKED → clean preview, hover to play
                                 videoEl.src = video.previewClip || video.highlightVideo;
+                                videoEl.load();
 
-                                videoContainer.onmouseenter = () => videoEl.play().catch(() => {});
+                                // Hover play (desktop)
+                                videoContainer.onmouseenter = () => {
+                                  if (!isPlaying) videoEl.play().catch(() => {});
+                                };
                                 videoContainer.onmouseleave = () => {
                                   videoEl.pause();
                                   videoEl.currentTime = 0;
+                                  isPlaying = false;
                                 };
 
-                                // Load and show immediately
-                                videoEl.load();
+                                // SINGLE TAP = Play/Pause inside card
+                                // DOUBLE TAP = Native fullscreen
+                                videoContainer.ontouchstart = videoContainer.onclick = (e) => {
+                                  e.stopPropagation();
+
+                                  const now = Date.now();
+                                  const DOUBLE_TAP_DELAY = 300;
+
+                                  if (now - lastTap < DOUBLE_TAP_DELAY) {
+                                    // DOUBLE TAP → Native fullscreen
+                                    e.preventDefault();
+                                    enterNativeFullscreen(videoEl, video.highlightVideo || video.previewClip);
+                                    lastTap = 0;
+                                    return;
+                                  }
+
+                                  lastTap = now;
+
+                                  // SINGLE TAP → toggle play/pause inside card
+                                  if (videoEl.paused) {
+                                    videoEl.play().catch(() => {});
+                                    isPlaying = true;
+                                  } else {
+                                    videoEl.pause();
+                                    videoEl.currentTime = 0;
+                                    isPlaying = false;
+                                  }
+                                };
+
                               } else {
-                                // LOCKED → pure black + sexy lock
+                                // LOCKED → pure black + lock
                                 videoEl.removeAttribute("src");
 
                                 const lockedOverlay = document.createElement("div");
                                 lockedOverlay.innerHTML = `
-                                  <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
-                                              background:rgba(0,0,0,0.96);z-index:2;">
+                                  <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.96);z-index:2;">
                                     <div style="text-align:center;">
                                       <svg width="68" height="68" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                         <path d="M12 2C9.2 2 7 4.2 7 7V11H6C4.9 11 4 11.9 4 13V20C4 21.1 4.9 22 6 22H18C19.1 22 20 21.1 20 20V13C20 11.9 19.1 11 18 11H17V7C17 4.2 14.8 2 12 2ZM12 4C13.7 4 15 5.3 15 7V11H9V7C9 5.3 10.3 4 12 4Z" fill="#ff006e"/>
                                       </svg>
-                                     
+                                    
                                     </div>
                                   </div>`;
                                 videoContainer.appendChild(lockedOverlay);
-                              }
 
-                              // TAP → Native Fullscreen (or unlock modal)
-                              videoContainer.onclick = (e) => {
-                                e.stopPropagation();
-
-                                if (isUnlocked) {
-                                  playFullVideo(video, videoEl); // pass the preview element so we can resume it later
-                                } else {
+                                videoContainer.onclick = (e) => {
+                                  e.stopPropagation();
                                   showUnlockConfirm(video, () => renderCards(videos));
-                                }
-                              };
+                                };
+                              }
 
                               videoContainer.appendChild(videoEl);
       // Info Panel
@@ -3857,6 +3883,36 @@ function showUnlockConfirm(video, onUnlockCallback) {
     await handleUnlockVideo(video);
     if (onUnlockCallback) onUnlockCallback();
   };
+}
+
+
+function enterNativeFullscreen(previewEl, fullSrc) {
+  previewEl.pause();
+
+  const fullVideo = document.createElement("video");
+  fullVideo.src = fullSrc;
+  fullVideo.controls = true;
+  fullVideo.autoplay = true;
+  fullVideo.playsInline = false;
+  fullVideo.style.cssText = "width:100%;height:100%;background:#000;";
+
+  const container = document.createElement("div");
+  container.style.cssText = "position:fixed;top:0;left:0;width:100vw;height:100vh;background:#000;z-index:1000002;";
+  container.appendChild(fullVideo);
+  document.body.appendChild(container);
+
+  const cleanup = () => {
+    fullVideo.pause();
+    container.remove();
+    document.removeEventListener("fullscreenchange", cleanup);
+    document.removeEventListener("webkitfullscreenchange", cleanup);
+  };
+
+  document.addEventListener("fullscreenchange", cleanup);
+  document.addEventListener("webkitfullscreenchange", cleanup);
+
+  if (container.requestFullscreen) container.requestFullscreen();
+  else if (container.webkitRequestFullscreen) container.webkitRequestFullscreen();
 }
 
 /* ---------- Unlock Logic ---------- */
