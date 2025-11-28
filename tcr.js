@@ -1013,6 +1013,21 @@ async function promptForChatID(userRef, userData) {
   });
 }
 
+
+/* ======================================================
+   SANITIZE FIRESTORE KEYS — REQUIRED FOR LOGIN & SOCIAL CARD
+   YAH DEMANDS CLEAN KEYS
+====================================================== */
+function sanitizeKey(str) {
+  if (!str) return "";
+  return str
+    .toLowerCase()
+    .replace(/[.#$/[\]]/g, "")   // Remove forbidden Firestore chars
+    .replace(/[@]/g, "_at_")     // @ → _at_
+    .replace(/[.]/g, "_dot_")    // . → _dot_
+    .trim();
+}
+
 /* ======================================================
   Social Card + Gift Stars System — FINAL 2025 BULLETPROOF EDITION
   FULLY RESTORED SOUL — SANITIZED IDs — WORKS FOREVER
