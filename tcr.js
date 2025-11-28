@@ -760,29 +760,7 @@ function renderMessagesFromArray(messages) {
     }
 
     // === USERNAME — NOW TAPABLE & OPENS SOCIAL CARD ===
-    const metaEl = document.createElement("span");
-    metaEl.className = "meta";
-    metaEl.style.color = refs.userColors?.[m.uid] || "#fff";
-
-    const tapableName = document.createElement("span");
-    tapableName.className = "chat-username";
-    tapableName.textContent = m.chatId || "Guest";
-// 100% GUARANTEED CORRECT UID — WORKS EVERY TIME
-const realUid = m.uid || m.email?.replace(/[.@]/g, '_') || m.chatId || "unknown";
-tapableName.dataset.userId = realUid.replace(/[.@/\\]/g, '_'); // double-clean
-    tapableName.style.cssText = "cursor:pointer; font-weight:700; padding:0 4px; border-radius:4px; user-select:none;";
-
-    // Visual feedback on tap
-    tapableName.addEventListener("pointerdown", () => {
-      tapableName.style.background = "rgba(255,204,0,0.4)";
-    });
-    tapableName.addEventListener("pointerup", () => {
-      setTimeout(() => tapableName.style.background = "", 200);
-    });
-
-    metaEl.append(tapableName, document.createTextNode(": "));
-    wrapper.appendChild(metaEl);
-
+  
     // === REPLY PREVIEW ===
     if (m.replyTo) {
       const replyPreview = document.createElement("div");
