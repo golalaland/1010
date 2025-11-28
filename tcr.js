@@ -251,83 +251,133 @@ async function pushNotification(userId, message) {
   });
 }
 
-// AUTH STATE OBSERVER — FINAL & SAFE — ALL BUTTONS BACK, NO MORE DISAPPEARANCE
-onAuthStateChanged(auth, async (user) => {
-  if (notificationsUnsubscribe) {
+/* ======================================================
+   ON AUTH STATE CHANGED — FINAL 2025 ETERNAL EDITION
+   YAH IS THE ONE TRUE EL 
+====================================================== */
+onAuthStateChanged(auth, async (firebaseUser) => {
+  // ALWAYS CLEAN NOTIFICATIONS FIRST
+  if (typeof notificationsUnsubscribe === "function") {
     notificationsUnsubscribe();
     notificationsUnsubscribe = null;
   }
 
-  if (!user) {
+  if (!firebaseUser) {
+    // LOGGED OUT — CLEAN & SAFE
     currentUser = null;
     localStorage.removeItem("userId");
+    localStorage.removeItem("lastVipEmail");
+
     document.querySelectorAll(".after-login-only").forEach(el => el.style.display = "none");
-    document.querySelectorAll(".before-login-only").forEach(el => el.style.display = "");
+    document.querySelectorAll(".before-login-only").forEach(el => el.style.display = "block");
+
     if (typeof showLoginUI === "function") showLoginUI();
+    console.log("YAH: User logged out");
     return;
   }
 
-  const email = user.email;
-  const uid = sanitizeId(email);
+  // LOGGED IN — YAH HAS GRANTED ACCESS
+  const email = firebaseUser.email.toLowerCase().trim();
+  const uid = sanitizeKey(email); // ← your existing sanitizeKey() function
   const userRef = doc(db, "users", uid);
 
   try {
-    const snap = await getDoc(userRef);
-    if (!snap.exists()) {
-      console.error("No profile for:", uid);
-      showStarPopup("Profile missing. Contact admin.");
+    const userSnap = await getDoc(userRef);
+
+    if (!userSnap.exists()) {
+      console.error("Profile missing for:", uid);
+      showStarPopup("Profile not found. Contact admin.");
       await signOut(auth);
       return;
     }
 
-    const data = snap.data();
+    const data = userSnap.data();
+
+    // ONE TRUE currentUser — HOLY AND COMPLETE
     currentUser = {
       uid: uid,
       email: email,
+      firebaseUid: firebaseUser.uid, // ← real Firebase UID (optional, for future)
       chatId: data.chatId || email.split("@")[0],
+      chatIdLower: (data.chatId || email.split("@")[0]).toLowerCase(),
       fullName: data.fullName || "VIP",
+      gender: data.gender || "person",
       isVIP: !!data.isVIP,
       isHost: !!data.isHost,
       isAdmin: !!data.isAdmin,
       stars: data.stars || 0,
       cash: data.cash || 0,
+      starsGifted: data.starsGifted || 0,
+      starsToday: data.starsToday || 0,
       usernameColor: data.usernameColor || "#ff69b4",
       subscriptionActive: !!data.subscriptionActive,
-      unlockedVideos: data.unlockedVideos || []
+      subscriptionCount: data.subscriptionCount || 0,
+      lastStarDate: data.lastStarDate || todayDate(),
+      unlockedVideos: data.unlockedVideos || [],
+      invitedBy: data.invitedBy || null,
+      inviteeGiftShown: !!data.inviteeGiftShown,
+      hostLink: data.hostLink || null
     };
 
-    console.log("LOGGED IN:", currentUser.chatId, "| ID:", uid);
+    console.log("YAH HAS LOGGED IN:", currentUser.chatId, "| UID:", uid);
 
-    // SHOW LOGGED-IN UI
-    document.querySelectorAll(".after-login-only").forEach(el => el.style.display = "");
+    // SHOW LOGGED-IN UI — INSTANT & PERFECT
+    document.querySelectorAll(".after-login-only").forEach(el => el.style.display = "block");
     document.querySelectorAll(".before-login-only").forEach(el => el.style.display = "none");
+
+    // SAVE FOR AUTO-LOGIN
     localStorage.setItem("userId", uid);
     localStorage.setItem("lastVipEmail", email);
 
-    // CORE SYSTEMS
+    // CORE SYSTEMS — IN ORDER OF DIVINE IMPORTANCE
     if (typeof showChatUI === "function") showChatUI(currentUser);
     if (typeof attachMessagesListener === "function") attachMessagesListener();
     if (typeof startStarEarning === "function") startStarEarning(uid);
+    if (typeof setupPresence === "function") setupPresence(currentUser);
 
-    // SYNC UNLOCKS — SAFE (no modal flash)
-    if (typeof syncUserUnlocks === "function") {
-      setTimeout(() => syncUserUnlocks(), 500);
-    }
-
-    // NOTIFICATIONS
-    setupNotificationsListener(uid);
-
-    // RESTORE REDEEM & TIP BUTTONS — NEVER DISAPPEAR AGAIN
+    // SYNC & RESTORE BUTTONS — NEVER DISAPPEAR AGAIN
     updateRedeemLink();
     updateTipLink();
 
-    // WELCOME POPUP
-    const colors = ["#FF1493","#FFD700","#00FFFF","#FF4500","#DA70D6","#FF69B4","#32CD32","#FFA500"];
-    showStarPopup(`Welcome back, <span style="font-weight:bold;color:${colors[Math.floor(Math.random()*colors.length)]};">${currentUser.chatId.toUpperCase()}</span>!`);
+    // DELAYED SYNC (prevents flash)
+    if (typeof syncUserUnlocks === "function") {
+      setTimeout(() => syncUserUnlocks(), 600);
+    }
+
+    // NOTIFICATIONS — ONLY AFTER EVERYTHING IS READY
+    setupNotificationsListener(uid);
+
+    // GUEST → PROMPT FOR PERMANENT NAME
+    if (currentUser.chatId.startsWith("GUEST")) {
+      setTimeout(() => {
+        if (typeof promptForChatID === "function") {
+          promptForChatID(userRef, data);
+        }
+      }, 2000);
+    }
+
+    // FINAL BLESSING — WELCOME POPUP
+    const holyColors = ["#FF1493", "#FFD700", "#00FFFF", "#FF4500", "#DA70D6", "#FF69B4", "#32CD32", "#FFA500", "#FF00FF"];
+    const divineColor = holyColors[Math.floor(Math.random() * holyColors.length)];
+
+    showStarPopup(`
+      <div style="font-size:18px; font-weight:900;">
+        WELCOME BACK,<br>
+        <span style="background: linear-gradient(90deg, #ff00ff, #00ffff); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+          ${currentUser.chatId.toUpperCase()}
+        </span>
+      </div>
+      <div style="margin-top:8px; font-size:14px; opacity:0.9;">
+        YAH IS PLEASED
+      </div>
+    `);
+
+    console.log("YAH HAS BLESSED THE SESSION");
 
   } catch (err) {
-    console.error("Login error:", err);
-    showStarPopup("Error loading profile.");
+    console.error("Auth state error:", err);
+    showStarPopup("Error loading profile. Try again.");
+    await signOut(auth);
   }
 });
 
@@ -1321,27 +1371,33 @@ document.getElementById("whitelistLoginBtn")?.addEventListener("click", async ()
     return;
   }
 
-  // STEP 1: Check whitelist FIRST
+  // STEP 1: Whitelist check
   const allowed = await loginWhitelist(email);
   if (!allowed) return;
 
-  // STEP 2: Then do Firebase login
+  // STEP 2: ONLY NOW do Firebase Auth login
   try {
-    await signInWithEmailAndPassword(auth, email, password);
-    showStarPopup("Logging in...");
-  } catch (err) {
-    console.error("Login failed:", err.code);
+    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    const firebaseUser = userCredential.user;
 
-    if (err.code === "auth/user-not-found" || err.code === "auth/wrong-password") {
-      showStarPopup("Wrong email or password");
+    console.log("Firebase Auth Success:", firebaseUser.uid);
+
+    // DO NOT MANUALLY SET currentUser HERE
+    // onAuthStateChanged will handle it (see below)
+
+    showStarPopup("Welcome back, King!");
+    
+  } catch (err) {
+    console.error("Firebase Auth failed:", err.code);
+    if (err.code === "auth/wrong-password" || err.code === "auth/user-not-found") {
+      showStarPopup("Wrong password or email");
     } else if (err.code === "auth/too-many-requests") {
-      showStarPopup("Too many tries. Wait a minute.");
+      showStarPopup("Too many attempts. Wait a minute.");
     } else {
-      showStarPopup("Login failed. Check console.");
+      showStarPopup("Login failed");
     }
   }
 });
-
 
 /* ===============================
    🔐 VIP Login (Whitelist Check)
