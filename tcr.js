@@ -3417,6 +3417,82 @@ document.getElementById("hostSettingsBtn")?.addEventListener("click", () => {
   setGreeting();
 });
 
+/* =======================================
+   Scroll to Bottom Arrow (Smart & Smooth)
+========================================== */
+const chatContainer = document.getElementById("chatContainer") || document.getElementById("messages");
+
+if (scrollArrow && chatContainer) {
+  let fadeTimeout = null;
+
+  function showArrow() {
+    scrollArrow.classList.add("show");
+    if (fadeTimeout) clearTimeout(fadeTimeout);
+    fadeTimeout = setTimeout(() => {
+      scrollArrow.classList.remove("show");
+    }, 3000);
+  }
+
+  function checkScroll() {
+    const distanceFromBottom = chatContainer.scrollHeight - chatContainer.scrollTop - chatContainer.clientHeight;
+
+    if (distanceFromBottom > 300) {
+      showArrow();
+    } else {
+      scrollArrow.classList.remove("show");
+    }
+  }
+
+  // Listen to scroll
+  chatContainer.addEventListener("scroll", checkScroll);
+
+  // Click to scroll down
+  scrollArrow.addEventListener("click", () => {
+    chatContainer.scrollTo({
+      top: chatContainer.scrollHeight,
+      behavior: "smooth"
+    });
+  });
+
+  // Initial check
+  setTimeout(checkScroll, 1000);
+
+  // Re-check when new messages come in
+  const observer = new MutationObserver(checkScroll);
+  observer.observe(chatContainer, { childList: true, subtree: true });
+}
+
+
+const scrollArrow = document.getElementById('scrollArrow');
+  let fadeTimeout;
+
+  function showArrow() {
+    scrollArrow.classList.add('show');
+    if (fadeTimeout) clearTimeout(fadeTimeout);
+    fadeTimeout = setTimeout(() => {
+      scrollArrow.classList.remove('show');
+    }, 2000); // disappears after 2 seconds
+  }
+
+  function checkScroll() {
+    const distanceFromBottom = chatContainer.scrollHeight - chatContainer.scrollTop - chatContainer.clientHeight;
+    if (distanceFromBottom > 200) { // threshold for showing arrow
+      showArrow();
+    }
+  }
+
+  chatContainer.addEventListener('scroll', checkScroll);
+
+  scrollArrow.addEventListener('click', () => {
+    chatContainer.scrollTo({
+      top: chatContainer.scrollHeight,
+      behavior: 'smooth'
+    });
+  });
+  
+checkScroll(); // initial check
+}); // ✅ closes DOMContentLoaded event listener
+
 
 /* ---------- Highlights Button ---------- */
 highlightsBtn.onclick = async () => {
