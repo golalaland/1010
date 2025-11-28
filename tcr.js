@@ -3919,6 +3919,47 @@ async function handleUnlockVideo(video) {
     showGoldAlert(`⚠️ ${err.message}`);
   }
 }
+// ---------- Play Full Video (Native Browser Player - Perfect) ----------
+function playFullVideo(video) {
+  const player = document.createElement("video");
+  
+  player.src = video.highlightVideo;
+  player.controls = true;
+  player.autoplay = true;
+  player.playsInline = true;                    // crucial for iOS
+  player.style.cssText = `
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    max-width: 95vw;
+    max-height: 95vh;
+    width: auto;
+    height: auto;
+    z-index: 1000002;
+    border-radius: 16px;
+    box-shadow: 0 0 60px rgba(255,0,110,0.4);
+    background: #000;
+  `;
+
+  // Close on click/tap outside OR when ended
+  const closePlayer = () => {
+    player.pause();
+    player.remove();
+    document.removeEventListener("keydown", escHandler);
+  };
+
+  const escHandler = (e) => { if (e.key === "Escape") closePlayer(); };
+
+  player.onclick = (e) => { e.stopPropagation(); }; // don't close when tapping video
+  document.body.addEventListener("click", closePlayer, { once: true });
+  document.addEventListener("keydown", escHandler);
+
+  document.body.appendChild(player);
+
+  // Optional: force focus so controls appear instantly
+  player.focus();
+}
 // ————————————————————————————————————————————————————————
 // FINAL LINE — THIS MUST BE THE VERY LAST THING IN tcr.js
 // ————————————————————————————————————————————————————————
