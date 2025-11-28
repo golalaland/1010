@@ -66,11 +66,9 @@ const ROOM_ID = "room5";
 const CHAT_COLLECTION = "messages_room5";
 const BUZZ_COST = 50;
 const SEND_COST = 1;
-
 let lastMessagesArray = [];
 let starInterval = null;
-let refs = {};
-
+let refs = {};  
 
 // Make Firebase objects available globally (for debugging or reuse)
 window.app = app;
@@ -174,11 +172,11 @@ if (rtdb) {
 
 
 /* ===============================
-   GLOBAL DOM REFERENCES — THE ONE AND ONLY TRUTH (2025 FINAL)
-   PLACE THIS AT THE VERY TOP OF tcr.js — DELETE ALL OTHER refs = {}
+   GLOBAL DOM REFERENCES — POPULATE THE refs OBJECT (ONLY ONCE!)
+   THIS RUNS IMMEDIATELY — NO DUPLICATE DECLARATION
 ================================= */
-const refs = {
-  // Auth & Core
+Object.assign(refs, {
+  // Core
   authBox: document.getElementById("authBox"),
   messagesEl: document.getElementById("messages"),
   sendAreaEl: document.getElementById("sendArea"),
@@ -205,7 +203,6 @@ const refs = {
   chatIDModal: document.getElementById("chatIDModal"),
   chatIDInput: document.getElementById("chatIDInput"),
   chatIDConfirmBtn: document.getElementById("chatIDConfirmBtn"),
-
   giftModal: document.getElementById("giftModal"),
   giftModalTitle: document.getElementById("giftModalTitle"),
   giftAmountInput: document.getElementById("giftAmountInput"),
@@ -213,20 +210,16 @@ const refs = {
   giftModalClose: document.getElementById("giftModalClose"),
   giftAlert: document.getElementById("giftAlert"),
 
-  // Popups
+  // Popups & Notifications
   starPopup: document.getElementById("starPopup"),
   starText: document.getElementById("starText"),
-
-  // Notifications (if you have a bell count)
   notificationBell: document.getElementById("notificationBell"),
   notificationsList: document.getElementById("notificationsList"),
   markAllRead: document.getElementById("markAllRead")
-};
+});
 
-// Optional: Limit chatID input length
-if (refs.chatIDInput) {
-  refs.chatIDInput.maxLength = 12;
-}
+// Optional: Limit input length
+if (refs.chatIDInput) refs.chatIDInput.maxLength = 12;
 
 
 
