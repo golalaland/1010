@@ -2116,6 +2116,46 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 
     <div id="highlightUploadStatus" style="font-size:12px; color:#ffcc00; text-align:center;"></div>
   </div>
+</div
+
+  <!-- MY CLIPS ON SALE — THE DOPEST PANEL IN THE EMPIRE -->
+<div id="myClipsPanel" style="margin:40px auto 20px; max-width:900px; font-family:system-ui,sans-serif;">
+  <h2 style="
+    text-align:center;
+    font-size:28px;
+    font-weight:900;
+    background:linear-gradient(90deg,#00ffea,#ff00c8,#ffea00);
+    -webkit-background-clip:text;
+    -webkit-text-fill-color:transparent;
+    margin:0 0 20px;
+    letter-spacing:1px;
+  ">
+    MY CLIPS ON SALE
+  </h2>
+  <p style="text-align:center; color:#aaa; font-size:14px; margin:-10px 0 30px;">
+    Your uploaded highlights · Delete anytime · Buyers keep access forever
+  </p>
+
+  <div id="myClipsGrid" style="
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(280px, 1fr));
+    gap:18px;
+    padding:10px;
+  ">
+    <!-- CLIPS WILL BE INJECTED HERE BY JS -->
+  </div>
+
+  <div id="noClipsMessage" style="
+    text-align:center;
+    padding:60px 20px;
+    color:#666;
+    font-size:16px;
+    display:none;
+  ">
+    <div style="font-size:60px; margin-bottom:20px;">Empty</div>
+    You haven't uploaded any clips yet.<br>
+    <span style="color:#ffcc00">Upload one above to start earning stars!</span>
+  </div>
 </div>
   
       <!-- Messages / Additional Info -->
