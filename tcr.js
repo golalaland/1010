@@ -965,87 +965,126 @@ function attachMessagesListener() {
   });
 }
 
-/* ===== Notifications Tab Lazy + Live Setup (Robust) ===== */
-let notificationsListenerAttached = false;
+/* ===== NOTIFICATIONS SYSTEM — FINAL ETERNAL EDITION ===== */
+let notificationsUnsubscribe = null; // ← one true source of truth
 
-async function attachNotificationsListener() {
-  // Wait for the notifications tab and list to exist
-  const waitForElement = (selector) => new Promise((resolve) => {
-    const el = document.querySelector(selector);
-    if (el) return resolve(el);
-    const observer = new MutationObserver(() => {
-      const elNow = document.querySelector(selector);
-      if (elNow) {
-        observer.disconnect();
-        resolve(elNow);
-      }
-    });
-    observer.observe(document.body, { childList: true, subtree: true });
-  });
+async function setupNotifications() {
+  // Prevent double setup
+  if (notificationsUnsubscribe) return;
 
-  const notificationsList = await waitForElement("#notificationsList");
-  const markAllBtn = await waitForElement("#markAllRead");
+  const listEl = document.getElementById("notificationsList");
+  const markAllBtn = document.getElementById("markAllRead");
 
-  if (!currentUser?.uid) return console.warn("⚠️ No logged-in user");
-  const notifRef = collection(db, "users", currentUser.uid, "notifications");
-  const q = query(notifRef, orderBy("timestamp", "desc"));
+  if (!listEl) {
+    console.warn("Notifications tab not found in DOM");
+    return;
+  }
 
-  // Live snapshot listener
-  onSnapshot(q, (snapshot) => {
-    console.log("📡 Notifications snapshot:", snapshot.docs.map(d => d.data()));
+  // Show loading
+  listEl.innerHTML = `<p style="opacity:0.6; text-align:center;">Loading notifications...</p>`;
 
+  if (!currentUser?.uid) {
+    listEl.innerHTML = `<p style="opacity:0.7;">Log in to see notifications.</p>`;
+    return;
+  }
+
+  const notifCol = collection(db, "users", currentUser.uid, "notifications");
+  const q = query(notifCol, orderBy("timestamp", "desc"));
+
+  notificationsUnsubscribe = onSnapshot(q, (snapshot) => {
     if (snapshot.empty) {
-      notificationsList.innerHTML = `<p style="opacity:0.7;">No new notifications yet.</p>`;
+      listEl.innerHTML = `<p style="opacity:0.7; text-align:center;">No notifications yet.</p>`;
+      if (markAllBtn) markAllBtn.style.display = "none";
       return;
     }
 
-    const items = snapshot.docs.map(docSnap => {
+    if (markAllBtn) markAllBtn.style.display = "block";
+
+    const frag = document.createDocumentFragment();
+    snapshot.docs.forEach(docSnap => {
       const n = docSnap.data();
-      const time = n.timestamp?.seconds
-        ? new Date(n.timestamp.seconds * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-        : "--:--";
-      return `
-        <div class="notification-item ${n.read ? "" : "unread"}" data-id="${docSnap.id}">
-          <span>${n.message || "(no message)"}</span>
-          <span class="notification-time">${time}</span>
-        </div>
+      const time = n.timestamp?.toDate?.() || n.timestamp?.seconds
+        ? new Date((n.timestamp.toDate?.() || n.timestamp.seconds * 1000))
+        : new Date();
+
+      const item = document.createElement("div");
+      item.className = `notification-item ${n.read ? "" : "unread"}`;
+      item.dataset.id = docSnap.id;
+      item.innerHTML = `
+        <div class="notif-message">${n.message || "New notification"}</div>
+        <div class="notif-time">${time.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</div>
       `;
+
+      // Optional: tap to mark as read
+      item.style.cursor = "pointer";
+      item.onclick = () => {
+        if (!n.read) {
+          updateDoc(doc(db, "users", currentUser.uid, "notifications", docSnap.id), { read: true });
+        }
+      };
+
+      frag.appendChild(item);
     });
 
-    notificationsList.innerHTML = items.join("");
+    listEl.innerHTML = "";
+    listEl.appendChild(frag);
+  }, (error) => {
+    console.error("Notifications listener failed:", error);
+    listEl.innerHTML = `<p style="color:#ff6666;">Failed to load notifications.</p>`;
   });
 
-  // Mark all as read
+  // === MARK ALL AS READ (safe + one-time) ===
   if (markAllBtn) {
     markAllBtn.onclick = async () => {
-      const snapshot = await getDocs(notifRef);
-      for (const docSnap of snapshot.docs) {
-        const ref = doc(db, "users", currentUser.uid, "notifications", docSnap.id);
-        await updateDoc(ref, { read: true });
+      if (markAllBtn.disabled) return;
+      markAllBtn.disabled = true;
+      markAllBtn.textContent = "Marking...";
+
+      try {
+        const snapshot = await getDocs(notifCol);
+        const batch = writeBatch(db);
+        snapshot.docs.forEach(docSnap => {
+          if (!docSnap.data().read) {
+            batch.update(docSnap.ref, { read: true });
+          }
+        });
+        await batch.commit();
+        showStarPopup("All notifications marked as read");
+      } catch (err) {
+        console.error("Mark all failed:", err);
+        showStarPopup("Failed to mark as read");
+      } finally {
+        markAllBtn.disabled = false;
+        markAllBtn.textContent = "Mark All Read";
       }
-      showStarPopup("✅ All notifications marked as read.");
     };
   }
-
-  notificationsListenerAttached = true;
 }
 
-/* ===== Tab Switching (Lazy attach for notifications) ===== */
+// === TAB SWITCHING — CLEAN & LAZY (only once) ===
 document.querySelectorAll(".tab-btn").forEach(btn => {
-  btn.onclick = async () => {
-    // Switch tabs visually
+  btn.addEventListener("click", () => {
+    // Visual switch
     document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
-    document.querySelectorAll(".tab-content").forEach(tab => tab.style.display = "none");
+    document.querySelectorAll(".tab-content").forEach(t => t.style.display = "none");
 
     btn.classList.add("active");
-    const tabContent = document.getElementById(btn.dataset.tab);
-    if (tabContent) tabContent.style.display = "block";
+    const tab = document.getElementById(btn.dataset.tab);
+    if (tab) tab.style.display = "block";
 
-    // Attach notifications listener lazily
-    if (btn.dataset.tab === "notificationsTab" && !notificationsListenerAttached) {
-      await attachNotificationsListener();
+    // Lazy load notifications — only once
+    if (btn.dataset.tab === "notificationsTab" && !notificationsUnsubscribe) {
+      setupNotifications();
     }
-  };
+  });
+});
+
+// === CLEANUP ON LOGOUT (CRITICAL) ===
+window.addEventListener("beforeunload", () => {
+  if (notificationsUnsubscribe) {
+    notificationsUnsubscribe();
+    notificationsUnsubscribe = null;
+  }
 });
 
 /* ---------- 🆔 ChatID Modal ---------- */
