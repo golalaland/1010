@@ -228,7 +228,6 @@ if (refs.chatIDInput) refs.chatIDInput.maxLength = 12;
 ================================= */
 
 let currentUser = null;
-let notificationsUnsubscribe = null;
 
 // UNIVERSAL ID SANITIZER — RESTORED & FINAL
 const sanitizeId = (input) => {
