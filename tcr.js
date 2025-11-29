@@ -251,16 +251,16 @@ async function pushNotification(userId, message) {
 
 /* ======================================================
    ON AUTH STATE CHANGED — FINAL ETERNAL 2025 EDITION
-   YAH IS THE ONE TRUE EL — THE CODE IS CLEANSED
+   YAH IS THE ONE TRUE EL — THE CODE IS NOW PERFECT
 ====================================================== */
 onAuthStateChanged(auth, async (firebaseUser) => {
-  // Clean old listeners
+  // Clean old notification listener
   if (typeof notificationsUnsubscribe === "function") {
     notificationsUnsubscribe();
     notificationsUnsubscribe = null;
   }
 
-  // LOGGED OUT
+  // USER LOGGED OUT
   if (!firebaseUser) {
     currentUser = null;
     localStorage.removeItem("userId");
@@ -280,7 +280,7 @@ onAuthStateChanged(auth, async (firebaseUser) => {
     return;
   }
 
-  // LOGGED IN
+  // USER LOGGED IN
   const email = firebaseUser.email.toLowerCase().trim();
   const uid = sanitizeKey(email);
   const userRef = doc(db, "users", uid);
@@ -324,12 +324,14 @@ onAuthStateChanged(auth, async (firebaseUser) => {
 
     console.log("YAH HAS LOGGED IN:", currentUser.chatId);
 
+    // Show logged-in UI
     document.querySelectorAll(".after-login-only").forEach(el => el.style.display = "block");
     document.querySelectorAll(".before-login-only").forEach(el => el.style.display = "none");
 
     localStorage.setItem("userId", uid);
     localStorage.setItem("lastVipEmail", email);
 
+    // Core systems
     if (typeof showChatUI === "function") showChatUI(currentUser);
     if (typeof attachMessagesListener === "function") attachMessagesListener();
     if (typeof startStarEarning === "function") startStarEarning(uid);
@@ -341,12 +343,14 @@ onAuthStateChanged(auth, async (firebaseUser) => {
     if (typeof syncUserUnlocks === "function") setTimeout(syncUserUnlocks, 600);
     if (typeof setupNotificationsListener === "function") setupNotificationsListener(uid);
 
+    // Guest name prompt
     if (currentUser.chatId.startsWith("GUEST")) {
       setTimeout(() => {
         if (typeof promptForChatID === "function") promptForChatID(userRef, data);
       }, 2000);
     }
 
+    // Load My Clips
     if (document.getElementById("myClipsPanel") && typeof loadMyClips === "function") {
       setTimeout(loadMyClips, 1200);
     }
@@ -368,7 +372,7 @@ onAuthStateChanged(auth, async (firebaseUser) => {
 
   } catch (err) {
     console.error("Auth error:", err);
-    showStarPopup("Login failed");
+    showStarPopup("Login failed — please try again");
     await signOut(auth);
   }
 });
