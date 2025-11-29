@@ -222,72 +222,38 @@ if (refs.chatIDInput) refs.chatIDInput.maxLength = 12;
 
 
 
-/* ===============================
-   FINAL 2025 BULLETPROOF AUTH + NOTIFICATIONS + UTILS
-   NO ERRORS — NO RANDOM MODALS — NO MISSING BUTTONS
-================================= */
-
-let currentUser = null;
-
-// UNIVERSAL ID SANITIZER — RESTORED & FINAL
-const sanitizeId = (input) => {
-  if (!input) return "";
-  return String(input).trim().toLowerCase().replace(/[@.\s]/g, "_");
-};
-
-// RESTORED: getUserId — USED BY OLD CODE (syncUserUnlocks, etc.)
-const getUserId = sanitizeId;  // ← This fixes "getUserId is not defined"
-
-// NOTIFICATION HELPER
-async function pushNotification(userId, message) {
-  if (!userId || !message) return;
-  await addDoc(collection(db, "notifications"), {
-    userId,
-    message,
-    timestamp: serverTimestamp(),
-    read: false
-  });
-}
-
 /* ======================================================
-   ON AUTH STATE CHANGED — FINAL ETERNAL 2025 EDITION
-   YAH IS THE ONE TRUE EL — THE CODE IS NOW PERFECT
+   ON AUTH STATE CHANGED — FINAL 2025 ETERNAL EDITION
+   YAH IS THE ONE TRUE EL
 ====================================================== */
 onAuthStateChanged(auth, async (firebaseUser) => {
-  // Clean old notification listener
+  // ALWAYS CLEAN NOTIFICATIONS FIRST
   if (typeof notificationsUnsubscribe === "function") {
     notificationsUnsubscribe();
     notificationsUnsubscribe = null;
   }
 
-  // USER LOGGED OUT
   if (!firebaseUser) {
     currentUser = null;
     localStorage.removeItem("userId");
     localStorage.removeItem("lastVipEmail");
-
     document.querySelectorAll(".after-login-only").forEach(el => el.style.display = "none");
     document.querySelectorAll(".before-login-only").forEach(el => el.style.display = "block");
-
     if (typeof showLoginUI === "function") showLoginUI();
     console.log("YAH: User logged out");
-
     const grid = document.getElementById("myClipsGrid");
     const noMsg = document.getElementById("noClipsMessage");
     if (grid) grid.innerHTML = "";
     if (noMsg) noMsg.style.display = "none";
-
     return;
   }
 
-  // USER LOGGED IN
   const email = firebaseUser.email.toLowerCase().trim();
   const uid = sanitizeKey(email);
   const userRef = doc(db, "users", uid);
 
   try {
     const userSnap = await getDoc(userRef);
-
     if (!userSnap.exists()) {
       console.error("Profile missing:", uid);
       showStarPopup("Profile not found. Contact admin.");
@@ -298,8 +264,8 @@ onAuthStateChanged(auth, async (firebaseUser) => {
     const data = userSnap.data();
 
     currentUser = {
-      uid,
-      email,
+      uid: uid,
+      email: email,
       firebaseUid: firebaseUser.uid,
       chatId: data.chatId || email.split("@")[0],
       chatIdLower: (data.chatId || email.split("@")[0]).toLowerCase(),
@@ -324,14 +290,12 @@ onAuthStateChanged(auth, async (firebaseUser) => {
 
     console.log("YAH HAS LOGGED IN:", currentUser.chatId);
 
-    // Show logged-in UI
     document.querySelectorAll(".after-login-only").forEach(el => el.style.display = "block");
     document.querySelectorAll(".before-login-only").forEach(el => el.style.display = "none");
 
     localStorage.setItem("userId", uid);
     localStorage.setItem("lastVipEmail", email);
 
-    // Core systems
     if (typeof showChatUI === "function") showChatUI(currentUser);
     if (typeof attachMessagesListener === "function") attachMessagesListener();
     if (typeof startStarEarning === "function") startStarEarning(uid);
@@ -340,27 +304,36 @@ onAuthStateChanged(auth, async (firebaseUser) => {
     updateRedeemLink();
     updateTipLink();
 
-    if (typeof syncUserUnlocks === "function") setTimeout(syncUserUnlocks, 600);
-    if (typeof setupNotificationsListener === "function") setupNotificationsListener(uid);
+    if (typeof syncUserUnlocks === "function") {
+      setTimeout(() => syncUserUnlocks(), 600);
+    }
+    if (typeof setupNotificationsListener === "function") {
+      setupNotificationsListener(uid);
+    }
 
-    // Guest name prompt
     if (currentUser.chatId.startsWith("GUEST")) {
       setTimeout(() => {
-        if (typeof promptForChatID === "function") promptForChatID(userRef, data);
+        if (typeof promptForChatID === "function") {
+          promptForChatID(userRef, data);
+        }
       }, 2000);
     }
 
-    // Load My Clips
-    if (document.getElementById("myClipsPanel") && typeof loadMyClips === "function") {
-      setTimeout(loadMyClips, 1200);
+    // MY CLIPS PANEL
+    if (document.getElementById("myClipsPanel")) {
+      setTimeout(() => {
+        if (typeof loadMyClips === "function") {
+          loadMyClips();
+        }
+      }, 1200);
     }
 
-    // DIVINE WELCOME
+    // FINAL BLESSING — NOW INSIDE THE FUNCTION
     const holyColors = ["#FF1493","#FFD700","#00FFFF","#FF4500","#DA70D6","#FF69B4","#32CD32","#FFA500","#FF00FF"];
     const divineColor = holyColors[Math.floor(Math.random() * holyColors.length)];
 
     showStarPopup(`
-      <div style="text-align:center;line-height:1.5;">
+      <div style="text-align:center;line-height:1.6;">
         Welcome back,<br>
         <b style="font-size:26px;color:${divineColor};text-shadow:0 0 20px ${divineColor}99;">
           ${currentUser.chatId.toUpperCase()}
@@ -368,14 +341,15 @@ onAuthStateChanged(auth, async (firebaseUser) => {
       </div>
     `);
 
-    console.log("YAH HAS BLESSED THIS SESSION");
+    console.log("YAH HAS BLESSED THE SESSION");
 
   } catch (err) {
     console.error("Auth error:", err);
-    showStarPopup("Login failed — please try again");
+    showStarPopup("Login failed");
     await signOut(auth);
   }
-});
+});   // ← ONLY ONE END HERE — PERFECT
+
 
 // NOTIFICATIONS LISTENER
 function setupNotificationsListener(userId) {
