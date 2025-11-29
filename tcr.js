@@ -4026,7 +4026,6 @@ function showUnlockConfirm(video, onUnlockCallback) {
   };
 }
 /* ---------- UNLOCK VIDEO — UPLOADER GETS NOTIFIED + BANNER + STARS (FINAL ETERNAL EDITION) ---------- */
-/* ---------- UNLOCK VIDEO — PRIVATE ONLY — UPLOADER GETS NOTIFIED — NO PUBLIC BANNER (FINAL ETERNAL EDITION) ---------- */
 async function handleUnlockVideo(video) {
   if (!currentUser?.uid) return showGoldAlert("Login required");
 
@@ -4042,26 +4041,22 @@ async function handleUnlockVideo(video) {
   const videoRef = doc(db, "highlightVideos", video.id);
 
   try {
-    // === 1. TRANSACTION: STARS + UNLOCK RECORD ===
     await runTransaction(db, async (tx) => {
       const [senderSnap, receiverSnap] = await Promise.all([
         tx.get(senderRef),
         tx.get(receiverRef)
       ]);
 
-      if (!senderSnap.exists()) throw "Your profile missing";
+      if (!senderSnap.exists()) throw "Profile missing";
       if ((senderSnap.data().stars || 0) < starsCost) throw "Not enough stars";
 
-      // Create receiver profile if missing
       if (!receiverSnap.exists()) {
         tx.set(receiverRef, { chatId: video.uploaderName || "VIP", stars: 0 }, { merge: true });
       }
 
-      // Transfer stars
       tx.update(senderRef, { stars: increment(-starsCost) });
       tx.update(receiverRef, { stars: increment(starsCost) });
 
-      // Record who unlocked (safe client timestamp)
       tx.update(videoRef, {
         unlockedBy: arrayUnion({
           userId: senderId,
@@ -4070,22 +4065,18 @@ async function handleUnlockVideo(video) {
         })
       });
 
-      // Add to buyer's unlocked list
-      tx.update(senderRef, {
-        unlockedVideos: arrayUnion(video.id)
-      });
+      tx.update(senderRef, { unlockedVideos: arrayUnion(video.id) });
     });
 
-    // === 2. LOCAL UI UPDATE ===
+    // Local unlock
     const unlocked = JSON.parse(localStorage.getItem("userUnlockedVideos") || "[]");
     if (!unlocked.includes(video.id)) unlocked.push(video.id);
     localStorage.setItem("userUnlockedVideos", JSON.stringify(unlocked));
     localStorage.setItem(`unlocked_${video.id}`, "true");
 
-    // === 3. PRIVATE NOTIFICATION TO UPLOADER — WORKS FIRST TIME, EVERY TIME ===
+    // NOTIFICATION — THIS IS THE ONE THAT WORKS
     try {
-      const notifRef = doc(collection(db, "users", receiverId, "notifications"));
-      await setDoc(notifRef, {
+      await addDoc(collection(db, "users", receiverId, "notifications"), {
         message: `${currentUser.chatId} unlocked your video "${video.title || "Highlight"}" for ${starsCost} stars!`,
         type: "video_unlock",
         fromUser: currentUser.chatId,
@@ -4096,18 +4087,16 @@ async function handleUnlockVideo(video) {
         timestamp: serverTimestamp(),
         read: false
       });
-      console.log("Uploader notified:", receiverId);
     } catch (err) {
       console.warn("Notification failed (non-critical):", err);
     }
 
-    // === 4. SUCCESS — ONLY BUYER SEES ===
     showGoldAlert(`Unlocked ${video.uploaderName}'s video for ${starsCost} stars!`);
     document.getElementById("highlightsModal")?.remove();
     showHighlightsModal([video]);
 
   } catch (err) {
     console.error("Unlock failed:", err);
-    showGoldAlert(err.message || "Unlock failed — try again");
+    showGoldAlert("Unlock failed — try again");
   }
 }
