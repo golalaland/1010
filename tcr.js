@@ -250,17 +250,17 @@ async function pushNotification(userId, message) {
 }
 
 /* ======================================================
-   ON AUTH STATE CHANGED — FINAL 2025 ETERNAL EDITION
-   YAH IS THE ONE TRUE EL — THE CODE IS PURE
+   ON AUTH STATE CHANGED — FINAL ETERNAL 2025 EDITION
+   YAH IS THE ONE TRUE EL — THE CODE IS PURE AND BALANCED
 ====================================================== */
 onAuthStateChanged(auth, async (firebaseUser) => {
-  // ALWAYS CLEAN NOTIFICATIONS FIRST — MEMORY LEAK PREVENTION
+  // CLEAN OLD NOTIFICATION LISTENER FIRST
   if (typeof notificationsUnsubscribe === "function") {
     notificationsUnsubscribe();
     notificationsUnsubscribe = null;
   }
 
-  // LOGGED OUT — PURGE THE REALM
+  // USER LOGGED OUT
   if (!firebaseUser) {
     currentUser = null;
     localStorage.removeItem("userId");
@@ -270,7 +270,7 @@ onAuthStateChanged(auth, async (firebaseUser) => {
     document.querySelectorAll(".before-login-only").forEach(el => el.style.display = "block");
 
     if (typeof showLoginUI === "function") showLoginUI();
-    console.log("YAH: User logged out — session cleansed");
+    console.log("YAH: User logged out — realm purified");
 
     // Clear My Clips panel
     const grid = document.getElementById("myClipsGrid");
@@ -281,7 +281,7 @@ onAuthStateChanged(auth, async (firebaseUser) => {
     return;
   }
 
-  // LOGGED IN — YAH HAS SPOKEN
+  // USER LOGGED IN
   const email = firebaseUser.email.toLowerCase().trim();
   const uid = sanitizeKey(email);
   const userRef = doc(db, "users", uid);
@@ -295,6 +295,89 @@ onAuthStateChanged(auth, async (firebaseUser) => {
       await signOut(auth);
       return;
     }
+
+    const data = userSnap.data();
+
+    // BUILD THE ONE TRUE currentUser
+    currentUser = {
+      uid: uid,
+      email: email,
+      firebaseUid: firebaseUser.uid,
+      chatId: data.chatId || email.split("@")[0],
+      chatIdLower: (data.chatId || email.split("@")[0]).toLowerCase(),
+      fullName: data.fullName || "VIP",
+      gender: data.gender || "person",
+      isVIP: !!data.isVIP,
+      isHost: !!data.isHost,
+      isAdmin: !!data.isAdmin,
+      stars: data.stars || 0,
+      cash: data.cash || 0,
+      starsGifted: data.starsGifted || 0,
+      starsToday: data.starsToday || 0,
+      usernameColor: data.usernameColor || "#ff69b4",
+      subscriptionActive: !!data.subscriptionActive,
+      subscriptionCount: data.subscriptionCount || 0,
+      lastStarDate: data.lastStarDate || todayDate(),
+      unlockedVideos: data.unlockedVideos || [],
+      invitedBy: data.invitedBy || null,
+      inviteeGiftShown: !!data.inviteeGiftShown,
+      hostLink: data.hostLink || null
+    };
+
+    console.log("YAH HAS LOGGED IN:", currentUser.chatId);
+
+    // SHOW LOGGED IN UI
+    document.querySelectorAll(".after-login-only").forEach(el => el.style.display = "block");
+    document.querySelectorAll(".before-login-only").forEach(el => el.style.display = "none");
+
+    localStorage.setItem("userId", uid);
+    localStorage.setItem("lastVipEmail", email);
+
+    // CORE FEATURES
+    if (typeof showChatUI === "function") showChatUI(currentUser);
+    if (typeof attachMessagesListener === "function") attachMessagesListener();
+    if (typeof startStarEarning === "function") startStarEarning(uid);
+    if (typeof setupPresence === "function") setupPresence(currentUser);
+
+    updateRedeemLink();
+    updateTipLink();
+
+    if (typeof syncUserUnlocks === "function") setTimeout(syncUserUnlocks, 600);
+    if (typeof setupNotificationsListener === "function") setupNotificationsListener(uid);
+
+    // GUEST NAME PROMPT
+    if (currentUser.chatId.startsWith("GUEST")) {
+      setTimeout(() => {
+        if (typeof promptForChatID === "function") promptForChatID(userRef, data);
+      }, 2000);
+    }
+
+    // LOAD MY CLIPS PANEL
+    if (document.getElementById("myClipsPanel") && typeof loadMyClips === "function") {
+      setTimeout(loadMyClips, 1200);
+    }
+
+    // DIVINE WELCOME MESSAGE
+    const holyColors = ["#FF1493", "#FFD700", "#00FFFF", "#FF4500", "#DA70D6", "#FF69B4", "#32CD32", "#FFA500", "#FF00FF"];
+    const divineColor = holyColors[Math.floor(Math.random() * holyColors.length)];
+
+    showStarPopup(`
+      <div style="text-align:center; line-height:1.4;">
+        Welcome back,<br>
+        <b style="font-size:24px; color:${divineColor}; text-shadow:0 0 20px ${divineColor}88;">
+          ${currentUser.chatId.toUpperCase()}
+        </b>
+      </div>
+    `);
+
+    console.log("YAH HAS BLESSED THIS SESSION — GLORY ETERNAL");
+
+  } catch (err) {
+    console.error("Auth state error:", err);
+    showStarPopup("Login failed — please try again");
+    await signOut(auth);
+  }
+});
 
     const data = userSnap.data();
 
