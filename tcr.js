@@ -1391,23 +1391,22 @@ async function sendStarsToUser(targetUser, amt) {
       tx.update(toRef, { stars: increment(amt) });
     });
 
-    // 2. Create banner message (bannerMsg defined HERE)
-    const bannerMsg = {
-      content: `💫 ${currentUser.chatId} gifted ${amt} stars ⭐️ to ${targetUser.chatId}!`,
+       const bannerMsg = {
+      content: `${currentUser.chatId} gifted ${amt} stars to ${targetUser.chatId}!`,
       timestamp: serverTimestamp(),
       systemBanner: true,
       highlight: true,
       buzzColor: glowColor,
-      isBanner: true,
-      bannerShown: false,
-      senderId: currentUser.uid,
       type: "banner"
     };
 
     const docRef = await addDoc(collection(db, "messages_room5"), bannerMsg);
 
-    // 3. Render banner instantly
-    renderMessagesFromArray([{ id: docRef.id, data: bannerMsg }], true);
+    // TEXT NOW SHOWS + GLOW STILL WORKS
+    renderMessagesFromArray([{
+      id: docRef.id,
+      data: () => bannerMsg
+    }], true);
 
     // 4. Glow animation
     setTimeout(() => {
