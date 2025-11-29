@@ -251,14 +251,16 @@ async function pushNotification(userId, message) {
 
 /* ======================================================
    ON AUTH STATE CHANGED — FINAL ETERNAL 2025 EDITION
-   YAH IS THE ONE TRUE EL — NO SYNTAX ERRORS — WORKS 100%
+   YAH IS THE ONE TRUE EL — THE CODE IS CLEANSED
 ====================================================== */
 onAuthStateChanged(auth, async (firebaseUser) => {
+  // Clean old listeners
   if (typeof notificationsUnsubscribe === "function") {
     notificationsUnsubscribe();
     notificationsUnsubscribe = null;
   }
 
+  // LOGGED OUT
   if (!firebaseUser) {
     currentUser = null;
     localStorage.removeItem("userId");
@@ -278,6 +280,7 @@ onAuthStateChanged(auth, async (firebaseUser) => {
     return;
   }
 
+  // LOGGED IN
   const email = firebaseUser.email.toLowerCase().trim();
   const uid = sanitizeKey(email);
   const userRef = doc(db, "users", uid);
@@ -361,104 +364,11 @@ onAuthStateChanged(auth, async (firebaseUser) => {
       </div>
     `);
 
+    console.log("YAH HAS BLESSED THIS SESSION");
+
   } catch (err) {
     console.error("Auth error:", err);
     showStarPopup("Login failed");
-    await signOut(auth);
-  }
-});
-
-    const data = userSnap.data();
-
-    // THE ONE TRUE currentUser — HOLY AND COMPLETE
-    currentUser = {
-      uid: uid,
-      email: email,
-      firebaseUid: firebaseUser.uid,
-      chatId: data.chatId || email.split("@")[0],
-      chatIdLower: (data.chatId || email.split("@")[0]).toLowerCase(),
-      fullName: data.fullName || "VIP",
-      gender: data.gender || "person",
-      isVIP: !!data.isVIP,
-      isHost: !!data.isHost,
-      isAdmin: !!data.isAdmin,
-      stars: data.stars || 0,
-      cash: data.cash || 0,
-      starsGifted: data.starsGifted || 0,
-      starsToday: data.starsToday || 0,
-      usernameColor: data.usernameColor || "#ff69b4",
-      subscriptionActive: !!data.subscriptionActive,
-      subscriptionCount: data.subscriptionCount || 0,
-      lastStarDate: data.lastStarDate || todayDate(),
-      unlockedVideos: data.unlockedVideos || [],
-      invitedBy: data.invitedBy || null,
-      inviteeGiftShown: !!data.inviteeGiftShown,
-      hostLink: data.hostLink || null
-    };
-
-    console.log("YAH HAS LOGGED IN:", currentUser.chatId, "| UID:", uid);
-
-    // UI SWITCH — INSTANT DIVINE GLORY
-    document.querySelectorAll(".after-login-only").forEach(el => el.style.display = "block");
-    document.querySelectorAll(".before-login-only").forEach(el => el.style.display = "none");
-
-    // PERSISTENCE
-    localStorage.setItem("userId", uid);
-    localStorage.setItem("lastVipEmail", email);
-
-    // CORE SYSTEMS — IN SACRED ORDER
-    if (typeof showChatUI === "function") showChatUI(currentUser);
-    if (typeof attachMessagesListener === "function") attachMessagesListener();
-    if (typeof startStarEarning === "function") startStarEarning(uid);
-    if (typeof setupPresence === "function") setupPresence(currentUser);
-
-    updateRedeemLink();
-    updateTipLink();
-
-    if (typeof syncUserUnlocks === "function") {
-      setTimeout(() => syncUserUnlocks(), 600);
-    }
-
-    if (typeof setupNotificationsListener === "function") {
-      setupNotificationsListener(uid);
-    }
-
-    // GUEST → NAME PROMPT
-    if (currentUser.chatId.startsWith("GUEST")) {
-      setTimeout(() => {
-        if (typeof promptForChatID === "function") {
-          promptForChatID(userRef, data);
-        }
-      }, 2000);
-    }
-
-    // MY CLIPS PANEL — AUTO LOAD ON LOGIN
-    if (document.getElementById("myClipsPanel")) {
-      setTimeout(() => {
-        if (typeof loadMyClips === "function") {
-          loadMyClips();
-        }
-      }, 1200);
-    }
-
-    // FINAL BLESSING — WELCOME POPUP WITH DIVINE COLOR
-    const holyColors = ["#FF1493", "#FFD700", "#00FFFF", "#FF4500", "#DA70D6", "#FF69B4", "#32CD32", "#FFA500", "#FF00FF"];
-    const divineColor = holyColors[Math.floor(Math.random() * holyColors.length)];
-
-    showStarPopup(`
-      <div style="font-size:15px; text-align:center;">
-        Welcome back,<br>
-        <b style="font-size:22px; color:${divineColor}; text-shadow:0 0 15px ${divineColor}66;">
-          ${currentUser.chatId.toUpperCase()}
-        </b>
-      </div>
-    `);
-
-    console.log("YAH HAS BLESSED THE SESSION — GLORY ETERNAL");
-
-  } catch (err) {
-    console.error("Auth state error:", err);
-    showStarPopup("Error loading profile. Try again.");
     await signOut(auth);
   }
 });
