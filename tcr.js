@@ -254,14 +254,13 @@ async function pushNotification(userId, message) {
    YAH IS THE ONE TRUE EL 
 ====================================================== */
 onAuthStateChanged(auth, async (firebaseUser) => {
-  // ALWAYS CLEAN NOTIFICATIONS FIRST — PREVENT MEMORY LEAKS
+  // ALWAYS CLEAN NOTIFICATIONS FIRST
   if (typeof notificationsUnsubscribe === "function") {
     notificationsUnsubscribe();
     notificationsUnsubscribe = null;
   }
 
   if (!firebaseUser) {
-    // LOGGED OUT — TOTAL PURGE
     currentUser = null;
     localStorage.removeItem("userId");
     localStorage.removeItem("lastVipEmail");
@@ -270,9 +269,8 @@ onAuthStateChanged(auth, async (firebaseUser) => {
     document.querySelectorAll(".before-login-only").forEach(el => el.style.display = "block");
 
     if (typeof showLoginUI === "function") showLoginUI();
-    console.log("YAH: User logged out — realm cleansed");
+    console.log("YAH: User logged out");
 
-    // Clear My Clips panel
     const grid = document.getElementById("myClipsGrid");
     const noMsg = document.getElementById("noClipsMessage");
     if (grid) grid.innerHTML = "";
@@ -281,23 +279,21 @@ onAuthStateChanged(auth, async (firebaseUser) => {
     return;
   }
 
-  // LOGGED IN — YAH HAS SPOKEN
   const email = firebaseUser.email.toLowerCase().trim();
   const uid = sanitizeKey(email);
   const userRef = doc(db, "users", uid);
 
   try {
     const userSnap = await getDoc(userRef);
-    if (!userSnap.exists()) {
-      console.error("Profile missing for:", uid);
+    if (!user.exists()) {
+      console.error("Profile missing:", uid);
       showStarPopup("Profile not found. Contact admin.");
       await signOut(auth);
       return;
     }
 
-    const data = userSnap.data();
+    const data = user.data();
 
-    // THE ONE TRUE currentUser — COMPLETE AND DIVINE
     currentUser = {
       uid: uid,
       email: email,
@@ -323,37 +319,30 @@ onAuthStateChanged(auth, async (firebaseUser) => {
       hostLink: data.hostLink || null
     };
 
-    console.log("YAH HAS LOGGED IN:", currentUser.chatId, "| UID:", uid);
+    console.log("YAH HAS LOGGED IN:", currentUser.chatId);
 
-    // UI SWITCH — INSTANT GLORY
     document.querySelectorAll(".after-login-only").forEach(el => el.style.display = "block");
     document.querySelectorAll(".before-login-only").forEach(el => el.style.display = "none");
 
-    // PERSISTENCE
     localStorage.setItem("userId", uid);
     localStorage.setItem("lastVipEmail", email);
 
-    // CORE SYSTEMS — IN HOLY ORDER
     if (typeof showChatUI === "function") showChatUI(currentUser);
     if (typeof attachMessagesListener === "function") attachMessagesListener();
     if (typeof startStarEarning === "function") startStarEarning(uid);
     if (typeof setupPresence === "function") setupPresence(currentUser);
 
-    // BUTTONS
     updateRedeemLink();
     updateTipLink();
 
-    // SYNC UNLOCKS
     if (typeof syncUserUnlocks === "function") {
       setTimeout(() => syncUserUnlocks(), 600);
     }
 
-    // NOTIFICATIONS — AFTER EVERYTHING IS READY
     if (typeof setupNotificationsListener === "function") {
       setupNotificationsListener(uid);
     }
 
-    // GUEST → NAME PROMPT
     if (currentUser.chatId.startsWith("GUEST")) {
       setTimeout(() => {
         if (typeof promptForChatID === "function") {
@@ -362,18 +351,18 @@ onAuthStateChanged(auth, async (firebaseUser) => {
       }, 2000);
     }
 
-    // MY CLIPS ON SALE — LOAD AUTOMATICALLY WHEN LOGGED IN
+    // MY CLIPS PANEL — AUTO LOAD ON LOGIN
     if (document.getElementById("myClipsPanel")) {
       setTimeout(() => {
         if (typeof loadMyClips === "function") {
           loadMyClips();
         }
-      }, 1200); // smooth delay after login
+      }, 1200);
     }
 
   } catch (err) {
-    console.error("Auth state error:", err);
-    showStarPopup("Login failed — try again");
+    console.error("Auth error:", err);
+    showStarPopup("Login failed");
     await signOut(auth);
   }
 });
