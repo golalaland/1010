@@ -251,15 +251,16 @@ async function pushNotification(userId, message) {
 
 /* ======================================================
    ON AUTH STATE CHANGED — FINAL 2025 ETERNAL EDITION
-   YAH IS THE ONE TRUE EL 
+   YAH IS THE ONE TRUE EL — THE CODE IS PURE
 ====================================================== */
 onAuthStateChanged(auth, async (firebaseUser) => {
-  // ALWAYS CLEAN NOTIFICATIONS FIRST
+  // ALWAYS CLEAN NOTIFICATIONS FIRST — MEMORY LEAK PREVENTION
   if (typeof notificationsUnsubscribe === "function") {
     notificationsUnsubscribe();
     notificationsUnsubscribe = null;
   }
 
+  // LOGGED OUT — PURGE THE REALM
   if (!firebaseUser) {
     currentUser = null;
     localStorage.removeItem("userId");
@@ -269,8 +270,9 @@ onAuthStateChanged(auth, async (firebaseUser) => {
     document.querySelectorAll(".before-login-only").forEach(el => el.style.display = "block");
 
     if (typeof showLoginUI === "function") showLoginUI();
-    console.log("YAH: User logged out");
+    console.log("YAH: User logged out — session cleansed");
 
+    // Clear My Clips panel
     const grid = document.getElementById("myClipsGrid");
     const noMsg = document.getElementById("noClipsMessage");
     if (grid) grid.innerHTML = "";
@@ -279,21 +281,24 @@ onAuthStateChanged(auth, async (firebaseUser) => {
     return;
   }
 
+  // LOGGED IN — YAH HAS SPOKEN
   const email = firebaseUser.email.toLowerCase().trim();
   const uid = sanitizeKey(email);
   const userRef = doc(db, "users", uid);
 
   try {
     const userSnap = await getDoc(userRef);
-    if (!user.exists()) {
-      console.error("Profile missing:", uid);
+
+    if (!userSnap.exists()) {
+      console.error("Profile missing for:", uid);
       showStarPopup("Profile not found. Contact admin.");
       await signOut(auth);
       return;
     }
 
-    const data = user.data();
+    const data = userSnap.data();
 
+    // THE ONE TRUE currentUser — HOLY AND COMPLETE
     currentUser = {
       uid: uid,
       email: email,
@@ -319,14 +324,17 @@ onAuthStateChanged(auth, async (firebaseUser) => {
       hostLink: data.hostLink || null
     };
 
-    console.log("YAH HAS LOGGED IN:", currentUser.chatId);
+    console.log("YAH HAS LOGGED IN:", currentUser.chatId, "| UID:", uid);
 
+    // UI SWITCH — INSTANT DIVINE GLORY
     document.querySelectorAll(".after-login-only").forEach(el => el.style.display = "block");
     document.querySelectorAll(".before-login-only").forEach(el => el.style.display = "none");
 
+    // PERSISTENCE
     localStorage.setItem("userId", uid);
     localStorage.setItem("lastVipEmail", email);
 
+    // CORE SYSTEMS — IN SACRED ORDER
     if (typeof showChatUI === "function") showChatUI(currentUser);
     if (typeof attachMessagesListener === "function") attachMessagesListener();
     if (typeof startStarEarning === "function") startStarEarning(uid);
@@ -343,6 +351,7 @@ onAuthStateChanged(auth, async (firebaseUser) => {
       setupNotificationsListener(uid);
     }
 
+    // GUEST → NAME PROMPT
     if (currentUser.chatId.startsWith("GUEST")) {
       setTimeout(() => {
         if (typeof promptForChatID === "function") {
@@ -360,20 +369,20 @@ onAuthStateChanged(auth, async (firebaseUser) => {
       }, 1200);
     }
 
-  } catch (err) {
-    console.error("Auth error:", err);
-    showStarPopup("Login failed");
-    await signOut(auth);
-  }
-});
-
-    // FINAL BLESSING — WELCOME POPUP
+    // FINAL BLESSING — WELCOME POPUP WITH DIVINE COLOR
     const holyColors = ["#FF1493", "#FFD700", "#00FFFF", "#FF4500", "#DA70D6", "#FF69B4", "#32CD32", "#FFA500", "#FF00FF"];
     const divineColor = holyColors[Math.floor(Math.random() * holyColors.length)];
 
- showStarPopup(`<div style="font-size:14px;">Welcome back, <b style="color:${divineColor};">${currentUser.chatId.toUpperCase()}</b></div>`);
+    showStarPopup(`
+      <div style="font-size:15px; text-align:center;">
+        Welcome back,<br>
+        <b style="font-size:22px; color:${divineColor}; text-shadow:0 0 15px ${divineColor}66;">
+          ${currentUser.chatId.toUpperCase()}
+        </b>
+      </div>
+    `);
 
-    console.log("YAH HAS BLESSED THE SESSION");
+    console.log("YAH HAS BLESSED THE SESSION — GLORY ETERNAL");
 
   } catch (err) {
     console.error("Auth state error:", err);
