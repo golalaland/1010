@@ -4025,63 +4025,99 @@ function showUnlockConfirm(video, onUnlockCallback) {
     if (onUnlockCallback) onUnlockCallback();
   };
 }
-/* ---------- Unlock Logic ---------- */
+/* ---------- UNLOCK VIDEO — UPLOADER GETS NOTIFIED + BANNER + STARS (FINAL ETERNAL EDITION) ---------- */
 async function handleUnlockVideo(video) {
+  if (!currentUser?.uid) return showGoldAlert("Login required");
+
+  const senderId = currentUser.uid;
+  const receiverId = video.uploaderId;
+  const starsCost = parseInt(video.highlightVideoPrice, 10) || 0;
+
+  if (starsCost < 10) return showGoldAlert("Invalid price");
+  if (senderId === receiverId) return showGoldAlert("You own this video");
+
+  const senderRef = doc(db, "users", senderId);
+  const receiverRef = doc(db, "users", receiverId);
+  const videoRef = doc(db, "highlightVideos", video.id);
+
   try {
-    const senderId = currentUser.uid;
-    const receiverId = video.uploaderId;
-    const starsToDeduct = parseInt(video.highlightVideoPrice, 10) || 0;
-
-    if (!starsToDeduct || starsToDeduct <= 0)
-      return showGoldAlert("Invalid unlock price ❌");
-    if (senderId === receiverId)
-      return showGoldAlert("You can’t unlock your own video 😅");
-
-    const senderRef = doc(db, "users", senderId);
-    const receiverRef = doc(db, "users", receiverId);
-    const videoRef = doc(db, "highlightVideos", video.id);
-
     await runTransaction(db, async (tx) => {
-      const senderSnap = await tx.get(senderRef);
-      const receiverSnap = await tx.get(receiverRef);
-      const videoSnap = await tx.get(videoRef);
+      const [senderSnap, receiverSnap, videoSnap] = await Promise.all([
+        tx.get(senderRef),
+        tx.get(receiverRef),
+        tx.get(videoRef)
+      ]);
 
-      if (!senderSnap.exists()) throw new Error("User record not found.");
-      if (!receiverSnap.exists()) tx.set(receiverRef, { stars: 0 }, { merge: true });
+      if (!senderSnap.exists()) throw "Your profile missing";
+      if ((senderSnap.data().stars || 0) < starsCost) throw "Not enough stars";
 
-      const senderData = senderSnap.data();
-      if ((senderData.stars || 0) < starsToDeduct)
-        throw new Error("Insufficient stars ⭐");
+      // Ensure receiver might not exist yet — create if needed
+      if (!receiverSnap.exists()) {
+        tx.set(receiverRef, { chatId: video.uploaderName || "VIP", stars: 0 }, { merge: true });
+      }
 
-      // Deduct and add stars
-      tx.update(senderRef, { stars: increment(-starsToDeduct) });
-      tx.update(receiverRef, { stars: increment(starsToDeduct) });
+      // 1. Transfer stars
+      tx.update(senderRef, { stars: increment(-starsCost) });
+      tx.update(receiverRef, { stars: increment(starsCost) });
 
-      // Add sender info to video unlockedBy using client timestamp
+      // 2. Record unlock
       tx.update(videoRef, {
         unlockedBy: arrayUnion({
           userId: senderId,
-          chatId: currentUser.chatId || "unknown",
-          unlockedAt: new Date() // <-- replace serverTimestamp()
+          chatId: currentUser.chatId,
+          unlockedAt: serverTimestamp()
         })
       });
 
-      // Add video to user unlockedVideos
-      tx.update(senderRef, { unlockedVideos: arrayUnion(video.id) });
+      // 3. Add to buyer's unlocked list
+      tx.update(senderRef, {
+        unlockedVideos: arrayUnion(video.id)
+      });
     });
 
-    // Update localStorage for UI
-    const unlockedIds = JSON.parse(localStorage.getItem("userUnlockedVideos") || "[]");
-    if (!unlockedIds.includes(video.id)) unlockedIds.push(video.id);
-    localStorage.setItem("userUnlockedVideos", JSON.stringify(unlockedIds));
+    // === LOCAL UI UPDATE ===
+    const unlocked = JSON.parse(localStorage.getItem("userUnlockedVideos") || "[]");
+    if (!unlocked.includes(video.id)) unlocked.push(video.id);
+    localStorage.setItem("userUnlockedVideos", JSON.stringify(unlocked));
     localStorage.setItem(`unlocked_${video.id}`, "true");
 
-    showGoldAlert(`✅ You unlocked ${video.uploaderName}'s video for ${starsToDeduct} ⭐`);
+    // === PUBLIC BANNER IN CHAT (EVERYONE SEES) ===
+    const bannerMsg = {
+      content: `${currentUser.chatId} unlocked "${video.title || "a highlight video"}" from ${video.uploaderName} for ${starsCost} stars!`,
+      chatId: "SYSTEM",
+      uid: "system",
+      timestamp: serverTimestamp(),
+      systemBanner: true,
+      highlight: true,
+      buzzColor: "#ffcc00",
+      _confettiPlayed: false,
+      type: "unlock_banner"
+    };
+
+    const bannerRef = await addDoc(collection(db, "messages_room5"), bannerMsg);
+    renderMessagesFromArray([{ id: bannerRef.id, data: bannerMsg }], true);
+
+    // === PRIVATE NOTIFICATION TO UPLOADER ===
+    const notifRef = doc(db, "users", receiverId, "notifications", `unlock_${Date.now()}`);
+    await setDoc(notifRef, {
+      message: `${currentUser.chatId} unlocked your video "${video.title || "Highlight"}" for ${starsCost} stars!`,
+      type: "video_unlock",
+      fromUser: currentUser.chatId,
+      fromUid: senderId,
+      videoId: video.id,
+      videoTitle: video.title || "Highlight Video",
+      stars: starsCost,
+      timestamp: serverTimestamp(),
+      read: false
+    });
+
+    // === CELEBRATION ===
+    showGoldAlert(`Unlocked ${video.uploaderName}'s video for ${starsCost} stars!`);
     document.getElementById("highlightsModal")?.remove();
     showHighlightsModal([video]);
 
   } catch (err) {
-    console.error("❌ Unlock failed:", err);
-    showGoldAlert(`⚠️ ${err.message}`);
+    console.error("Unlock failed:", err);
+    showGoldAlert(err.message || "Unlock failed — try again");
   }
 }
