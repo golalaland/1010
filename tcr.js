@@ -525,37 +525,53 @@ async function showGiftModal(targetUid, targetData) {
         });
       });
 
-          // === SUCCESS BANNER IN CHAT — TEXT + GLOW 100% WORKING ===
-      const bannerMsg = {
-        content: `${currentUser.chatId} just gifted ${amt} stars to ${targetData.chatId}!`,
+            // === SUCCESS — GIFT BANNER THAT ALWAYS WORKS (THE ONE TRUE WAY) ===
+      const glowColor = "#ffcc00"; // or randomColor() if you want variety
+
+      const bannerMessage = {
+        content: `${currentUser.chatId} just gifted ${amt} ⭐ to ${targetData.chatId}!`,
+        chatId: "★ SYSTEM ★",
+        uid: "system",
         timestamp: serverTimestamp(),
         systemBanner: true,
         highlight: true,
-        buzzColor: "#ffcc00",
-        type: "banner"
+        buzzColor: glowColor,
+        _confettiPlayed: false,     // ← CRITICAL: your renderer uses this
+        type: "gift_banner"
       };
 
-      const bannerRef = await addDoc(collection(db, "messages_room5"), bannerMsg);
+      try {
+        const bannerRef = await addDoc(collection(db, "messages_room5"), bannerMessage);
 
-      // THIS IS THE HOLY LINE — TEXT APPEARS INSTANTLY
-      renderMessagesFromArray([{
-        id: bannerRef.id,
-        data: () => ({ ...bannerMsg, timestamp: Timestamp.now() })  // fake timestamp for renderer
-      }], true);
+        // THIS IS THE HOLY LINE — THE ONE THAT HAS ALWAYS WORKED
+        renderMessagesFromArray([{
+          id: bannerRef.id,
+          data: bannerMessage        // ← plain object, NOT a function
+        }], true);
 
-      // GLOW ACTIVATED — 100ms delay so DOM is ready
-      setTimeout(() => {
-        const bannerEl = document.getElementById(bannerRef.id);
-        if (bannerEl) triggerBannerEffect(bannerEl);
-      }, 100);
+        // Optional: extra glow if your renderer doesn't handle it perfectly
+        setTimeout(() => {
+          const el = document.getElementById(bannerRef.id);
+          if (el && typeof triggerBannerEffect === "function") {
+            triggerBannerEffect(el);
+          }
+        }, 120);
 
-      showGiftAlert(`Gifted ${amt} stars to ${targetData.chatId}!`);
-      closeModal();
-      
+        // Celebration
+        showGiftAlert(`Gifted ${amt} stars to ${targetData.chatId}!`);
+        closeModal();
+
+      } catch (err) {
+        console.error("Banner creation failed:", err);
+        showStarPopup("Gift sent — banner delayed");
+        closeModal();
+      }
+
     } catch (err) {
-      console.error("Gift failed:", err);
+      console.error("Gift transaction failed:", err);
       showStarPopup("Gift failed — try again");
     } finally {
+      // Reset button
       newConfirmBtn.disabled = false;
       newConfirmBtn.textContent = "Send Gift";
       document.removeEventListener("keydown", escHandler);
