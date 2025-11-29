@@ -4041,6 +4041,7 @@ async function handleUnlockVideo(video) {
   const videoRef = doc(db, "highlightVideos", video.id);
 
   try {
+    // === 1. TRANSACTION: STARS + UNLOCK ===
     await runTransaction(db, async (tx) => {
       const [senderSnap, receiverSnap] = await Promise.all([
         tx.get(senderRef),
@@ -4068,15 +4069,16 @@ async function handleUnlockVideo(video) {
       tx.update(senderRef, { unlockedVideos: arrayUnion(video.id) });
     });
 
-    // Local unlock
+    // === 2. LOCAL UNLOCK UI ===
     const unlocked = JSON.parse(localStorage.getItem("userUnlockedVideos") || "[]");
     if (!unlocked.includes(video.id)) unlocked.push(video.id);
     localStorage.setItem("userUnlockedVideos", JSON.stringify(unlocked));
     localStorage.setItem(`unlocked_${video.id}`, "true");
 
-    // NOTIFICATION — THIS IS THE ONE THAT WORKS
+    // === 3. SEND NOTIFICATION TO YOUR REAL TOP-LEVEL NOTIFICATIONS COLLECTION ===
     try {
-      await addDoc(collection(db, "users", receiverId, "notifications"), {
+      await addDoc(collection(db, "notifications"), {
+        userId: receiverId,                                   // ← who receives it
         message: `${currentUser.chatId} unlocked your video "${video.title || "Highlight"}" for ${starsCost} stars!`,
         type: "video_unlock",
         fromUser: currentUser.chatId,
@@ -4087,10 +4089,12 @@ async function handleUnlockVideo(video) {
         timestamp: serverTimestamp(),
         read: false
       });
+      console.log("Notification sent to global 'notifications' collection");
     } catch (err) {
-      console.warn("Notification failed (non-critical):", err);
+      console.warn("Failed to send notification:", err);
     }
 
+    // === 4. SUCCESS ===
     showGoldAlert(`Unlocked ${video.uploaderName}'s video for ${starsCost} stars!`);
     document.getElementById("highlightsModal")?.remove();
     showHighlightsModal([video]);
