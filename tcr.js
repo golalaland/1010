@@ -1400,14 +1400,19 @@ async function sendStarsToUser(targetUser, amt) {
       type: "banner"
     };
 
-    const docRef = await addDoc(collection(db, "messages_room5"), bannerMsg);
+        const docRef = await addDoc(collection(db, "messages_room5"), bannerMsg);
 
-    // TEXT NOW SHOWS + GLOW STILL WORKS
     renderMessagesFromArray([{
       id: docRef.id,
       data: () => bannerMsg
     }], true);
 
+    // HOLY LINE — BRINGS GLOW TO LIFE
+    setTimeout(() => {
+      const el = document.getElementById(docRef.id);
+      if (el) triggerBannerEffect(el);
+    }, 100);
+    
     // 4. Glow animation
     setTimeout(() => {
       const msgEl = document.getElementById(docRef.id);
