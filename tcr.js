@@ -4104,3 +4104,139 @@ async function handleUnlockVideo(video) {
     showGoldAlert("Unlock failed — try again");
   }
 }
+/* MY CLIPS ON SALE — LOAD & DISPLAY + DELETE FUNCTIONALITY */
+async function loadMyClips() {
+  const grid = document.getElementById("myClipsGrid");
+  const noMsg = document.getElementById("noClipsMessage");
+  if (!grid) return;
+
+  grid.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:40px; color:#888;">Loading your clips...</div>`;
+
+  try {
+    const q = query(
+      collection(db, "highlightVideos"),
+      where("uploaderId", "==", currentUser.uid),
+      orderBy("uploadedAt", "desc")
+    );
+
+    const snapshot = await getDocs(q);
+    
+    if (snapshot.empty) {
+      grid.innerHTML = "";
+      noMsg.style.display = "block";
+      return;
+    }
+
+    noMsg.style.display = "none";
+    grid.innerHTML = ""; // clear loading
+
+    snapshot.forEach(docSnap => {
+      const vid = { id: docSnap.id, ...docSnap.data() };
+
+      const card = document.createElement("div");
+      card.style.cssText = `
+        background:#111;
+        border-radius:16px;
+        overflow:hidden;
+        box-shadow:0 8px 30px rgba(0,0,0,0.6);
+        border:1px solid #333;
+        transition:transform 0.3s ease, box-shadow 0.3s ease;
+        position:relative;
+      `;
+      card.onmouseover = () => card.style.transform = "translateY(-8px)";
+      card.onmouseout = () => card.style.transform = "";
+
+      card.innerHTML = `
+        <div style="position:relative; height:180px; background:#000; overflow:hidden;">
+          <video 
+            src="${vid.videoUrl}" 
+            style="width:100%; height:100%; object-fit:cover; filter:blur(8px); transform:scale(1.1);"
+            muted loop playsinline>
+          </video>
+          <div style="
+            position:absolute; inset:0;
+            background:linear-gradient(180deg, transparent 40%, rgba(0,0,0,0.9));
+          "></div>
+          <video 
+            src="${vid.videoUrl}" 
+            style="
+              position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+              width:85%; height:85%; object-fit:contain;
+              border-radius:12px;
+              box-shadow:0 10px 30px rgba(0,0,0,0.8);
+              border:3px solid #ffcc00;
+            "
+            muted loop playsinline>
+          </video>
+          <div style="
+            position:absolute; top:10px; right:10px;
+            background:rgba(255,0,150,0.9); color:#fff;
+            padding:6px 12px; border-radius:20px;
+            font-size:13px; font-weight:700;
+            box-shadow:0 4px 15px rgba(255,0,150,0.4);
+          ">
+            ${vid.highlightVideoPrice || 50} Stars
+          </div>
+        </div>
+
+        <div style="padding:14px;">
+          <h4 style="margin:0 0 6px; color:#fff; font-size:15px; font-weight:600;">
+            ${vid.title || "Untitled Clip"}
+          </h4>
+          ${vid.description ? `<p style="margin:0; color:#aaa; font-size:13px; line-height:1.4;">${vid.description}</p>` : ''}
+
+          <div style="margin-top:12px; display:flex; justify-content:space-between; align-items:center;">
+            <span style="color:#0f0; font-size:13px;">
+              Unlocked ${vid.unlockedBy?.length || 0} times
+            </span>
+            <button onclick="deleteMyClip('${vid.id}')" style="
+              background:#ff3355;
+              color:#fff;
+              border:none;
+              padding:8px 16px;
+              border-radius:8px;
+              font-weight:600;
+              cursor:pointer;
+              font-size:13px;
+              box-shadow:0 4px 15px rgba(255,51,85,0.4);
+            ">
+              Delete
+            </button>
+          </div>
+        </div>
+      `;
+
+      // Auto-play small preview on hover
+      const videos = card.querySelectorAll("video");
+      card.addEventListener("mouseenter", () => videos.forEach(v => v.play()));
+      card.addEventListener("mouseleave", () => videos.forEach(v => { v.pause(); v.currentTime = 0; }));
+
+      grid.appendChild(card);
+    });
+
+  } catch (err) {
+    console.error("Failed to load my clips:", err);
+    grid.innerHTML = `<div style="grid-column:1/-1; text-align:center; color:#f66; padding:40px;">Failed to load clips</div>`;
+  }
+}
+
+/* DELETE CLIP — BUYERS KEEP ACCESS */
+async function deleteMyClip(clipId) {
+  if (!confirm("Delete this clip? Buyers who already unlocked it will KEEP access forever.")) return;
+
+  try {
+    await deleteDoc(doc(db, "highlightVideos", clipId));
+    showGoldAlert("Clip deleted — no longer for sale");
+    loadMyClips(); // refresh
+  } catch (err) {
+    console.error(err);
+    showGoldAlert("Delete failed");
+  }
+}
+
+/* AUTO-LOAD WHEN USER LOGS IN OR PAGE LOADS */
+onAuthStateChanged(auth, (user) => {
+  if (user && document.getElementById("myClipsPanel")) {
+    setTimeout(loadMyClips, 1000); // small delay to let page settle
+  }
+});
