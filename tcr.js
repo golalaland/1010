@@ -3999,19 +3999,3 @@ async function handleUnlockVideo(video) {
     showGoldAlert(`⚠️ ${err.message}`);
   }
 }
-// ————————————————————————————————————————————————————————
-// FINAL LINE — THIS MUST BE THE VERY LAST THING IN tcr.js
-// ————————————————————————————————————————————————————————
-document.body.addEventListener('click', e => {
-  const el = e.target.closest('[data-user-id]');
-  if (!el) return;
-  const userId = el.dataset.userId;
-  if (!userId || userId === currentUser?.uid) return;
-
-  e.preventDefault();
-  e.stopPropagation();
-  showSocialCard(userId);   // now it works — function exists above!
-}, { capture: true, passive: false });
-
-// OPTIONAL: tiny confirmation it loaded
-console.log("Social card tap system READY");
