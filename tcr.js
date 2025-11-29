@@ -3113,65 +3113,93 @@ confirmBtn.onclick = async () => {
 }
 
 // ================================
-// 💰 $ell Content (Highlight Upload)
+// UPLOAD HIGHLIGHT — FIXED TO WORK WITH MY CLIPS PANEL
 // ================================
-document.getElementById("uploadHighlightBtn").addEventListener("click", async () => {
+document.getElementById("uploadHighlightBtn")?.addEventListener("click", async () => {
   const statusEl = document.getElementById("highlightUploadStatus");
+  if (!statusEl) return;
+
   statusEl.textContent = "";
 
-  // 🧍 Wait until user is confirmed
-  if (!currentUser) {
-    statusEl.textContent = "⚠️ Please sign in first!";
-    console.warn("❌ Upload blocked — no currentUser found");
+  if (!currentUser?.uid) {
+    statusEl.textContent = "Please sign in first!";
     return;
   }
 
-  // 🧾 Get field values
-  const videoUrl = document.getElementById("highlightVideoInput").value.trim();
+  const fileInput = document.getElementById("highlightUploadInput");
+  const videoUrlInput = document.getElementById("highlightVideoInput");
   const title = document.getElementById("highlightTitleInput").value.trim();
   const desc = document.getElementById("highlightDescInput").value.trim();
-  const price = parseInt(document.getElementById("highlightPriceInput").value.trim() || "0");
+  const price = parseInt(document.getElementById("highlightPriceInput").value) || 0;
 
-  if (!videoUrl || !title || !price) {
-    statusEl.textContent = "⚠️ Fill in all required fields (URL, title, price)";
+  // === VALIDATION ===
+  if (!title || price < 10) {
+    statusEl.textContent = "Title + price (min 10 stars) required";
     return;
   }
 
+  if (!fileInput.files[0] && !videoUrlInput.value.trim()) {
+    statusEl.textContent = "Upload a file OR paste a URL";
+    return;
+  }
+
+  statusEl.textContent = "Uploading your fire clip...";
+
   try {
-    const userId = currentUser.uid;
-    const emailId = (currentUser.email || "").replace(/\./g, "_");
-    const chatId = currentUser.chatId || currentUser.displayName || "Anonymous";
+    let finalVideoUrl = videoUrlInput.value.trim();
 
-    statusEl.textContent = "⏳ Uploading highlight...";
+    // === FILE UPLOAD (IF USER UPLOADED A FILE) ===
+    if (fileInput.files[0]) {
+      const file = fileInput.files[0];
+      if (file.size > 500 * 1024 * 1024) {
+        statusEl.textContent = "File too big (max 500MB)";
+        return;
+      }
 
-    // ✅ Direct upload without thumbnail generation
+      statusEl.textContent = "Uploading video file...";
+
+      const storageRef = ref(storage, `highlights/${currentUser.uid}_${Date.now()}_${file.name}`);
+      const snapshot = await uploadBytes(storageRef, file);
+      finalVideoUrl = await getDownloadURL(snapshot.ref);
+    }
+
+    // === SAVE TO FIRESTORE — EXACT FIELDS MY CLIPS PANEL EXPECTS ===
     const docRef = await addDoc(collection(db, "highlightVideos"), {
-      uploaderId: userId,
-      uploaderEmail: emailId,
-      uploaderName: chatId,
-      highlightVideo: videoUrl,
+      uploaderId: currentUser.uid,
+      uploaderName: currentUser.chatId || "Anonymous",
+      videoUrl: finalVideoUrl,           // THIS LINE WAS MISSING
       highlightVideoPrice: price,
-      title,
+      title: title,
       description: desc || "",
-      createdAt: serverTimestamp(),
+      uploadedAt: serverTimestamp(),     // THIS FIELD IS USED FOR SORTING
+      unlockedBy: [],
+      createdAt: serverTimestamp()
     });
 
-    console.log("✅ Uploaded highlight:", docRef.id);
-    statusEl.textContent = "✅ Highlight uploaded successfully!";
-    setTimeout(() => (statusEl.textContent = ""), 4000);
+    console.log("Highlight uploaded:", docRef.id);
+    statusEl.textContent = "CLIP LIVE — EARN STARS NOW!";
+    statusEl.style.color = "#00ff9d";
 
-    // 🧹 Reset form
-    document.getElementById("highlightVideoInput").value = "";
+    // === AUTO REFRESH MY CLIPS PANEL ===
+    if (typeof loadMyClips === "function") {
+      setTimeout(loadMyClips, 800);
+    }
+
+    // === RESET FORM ===
+    fileInput.value = "";
+    videoUrlInput.value = "";
     document.getElementById("highlightTitleInput").value = "";
-    document.getElementById("highlightDescInput").value = "";
-    document.getElementById("highlightPriceInput").value = "";
+    document.getctElementById("highlightDescInput").value = "";
+    document.getElementById("highlightPriceInput").value = "50";
+
+    setTimeout(() => statusEl.textContent = "", 5000);
 
   } catch (err) {
-    console.error("❌ Error uploading highlight:", err);
-    statusEl.textContent = "⚠️ Failed to upload. Try again.";
+    console.error("Upload failed:", err);
+    statusEl.textContent = "⚠️ Upload failed — try again";
+    statusEl.style.color = "#ff3366";
   }
 });
-
 
   // --- Initial random values for first load ---
 (function() {
