@@ -525,21 +525,33 @@ async function showGiftModal(targetUid, targetData) {
         });
       });
 
-      // === SUCCESS BANNER IN CHAT ===
+          // === SUCCESS BANNER IN CHAT — TEXT + GLOW 100% WORKING ===
       const bannerMsg = {
-        content: `${currentUser.chatId} just gifted ${amt} ⭐ to ${targetData.chatId}!`,
+        content: `${currentUser.chatId} just gifted ${amt} stars to ${targetData.chatId}!`,
         timestamp: serverTimestamp(),
         systemBanner: true,
         highlight: true,
-        buzzColor: "#ffcc00"
+        buzzColor: "#ffcc00",
+        type: "banner"
       };
 
       const bannerRef = await addDoc(collection(db, "messages_room5"), bannerMsg);
-      renderMessagesFromArray([{ id: bannerRef.id, ...bannerMsg }], true);
 
-      showGiftAlert (`Gifted ${amt} stars to ${targetData.chatId}!`);
+      // THIS IS THE HOLY LINE — TEXT APPEARS INSTANTLY
+      renderMessagesFromArray([{
+        id: bannerRef.id,
+        data: () => ({ ...bannerMsg, timestamp: Timestamp.now() })  // fake timestamp for renderer
+      }], true);
+
+      // GLOW ACTIVATED — 100ms delay so DOM is ready
+      setTimeout(() => {
+        const bannerEl = document.getElementById(bannerRef.id);
+        if (bannerEl) triggerBannerEffect(bannerEl);
+      }, 100);
+
+      showGiftAlert(`Gifted ${amt} stars to ${targetData.chatId}!`);
       closeModal();
-
+      
     } catch (err) {
       console.error("Gift failed:", err);
       showStarPopup("Gift failed — try again");
