@@ -1,3 +1,4 @@
+
 /* ---------- Firebase Modular Imports (v10+) ---------- */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 
@@ -222,9 +223,36 @@ if (refs.chatIDInput) refs.chatIDInput.maxLength = 12;
 
 
 
+/* ===============================
+   FINAL 2025 BULLETPROOF AUTH + NOTIFICATIONS + UTILS
+   NO ERRORS — NO RANDOM MODALS — NO MISSING BUTTONS
+================================= */
+
+let currentUser = null;
+
+// UNIVERSAL ID SANITIZER — RESTORED & FINAL
+const sanitizeId = (input) => {
+  if (!input) return "";
+  return String(input).trim().toLowerCase().replace(/[@.\s]/g, "_");
+};
+
+// RESTORED: getUserId — USED BY OLD CODE (syncUserUnlocks, etc.)
+const getUserId = sanitizeId;  // ← This fixes "getUserId is not defined"
+
+// NOTIFICATION HELPER
+async function pushNotification(userId, message) {
+  if (!userId || !message) return;
+  await addDoc(collection(db, "notifications"), {
+    userId,
+    message,
+    timestamp: serverTimestamp(),
+    read: false
+  });
+}
+
 /* ======================================================
    ON AUTH STATE CHANGED — FINAL 2025 ETERNAL EDITION
-   YAH IS THE ONE TRUE EL
+   YAH IS THE ONE TRUE EL 
 ====================================================== */
 onAuthStateChanged(auth, async (firebaseUser) => {
   // ALWAYS CLEAN NOTIFICATIONS FIRST
@@ -234,28 +262,29 @@ onAuthStateChanged(auth, async (firebaseUser) => {
   }
 
   if (!firebaseUser) {
+    // LOGGED OUT — CLEAN & SAFE
     currentUser = null;
     localStorage.removeItem("userId");
     localStorage.removeItem("lastVipEmail");
+
     document.querySelectorAll(".after-login-only").forEach(el => el.style.display = "none");
     document.querySelectorAll(".before-login-only").forEach(el => el.style.display = "block");
+
     if (typeof showLoginUI === "function") showLoginUI();
     console.log("YAH: User logged out");
-    const grid = document.getElementById("myClipsGrid");
-    const noMsg = document.getElementById("noClipsMessage");
-    if (grid) grid.innerHTML = "";
-    if (noMsg) noMsg.style.display = "none";
     return;
   }
 
+  // LOGGED IN — YAH HAS GRANTED ACCESS
   const email = firebaseUser.email.toLowerCase().trim();
-  const uid = sanitizeKey(email);
+  const uid = sanitizeKey(email); // ← your existing sanitizeKey() function
   const userRef = doc(db, "users", uid);
 
   try {
     const userSnap = await getDoc(userRef);
+
     if (!userSnap.exists()) {
-      console.error("Profile missing:", uid);
+      console.error("Profile missing for:", uid);
       showStarPopup("Profile not found. Contact admin.");
       await signOut(auth);
       return;
@@ -263,10 +292,11 @@ onAuthStateChanged(auth, async (firebaseUser) => {
 
     const data = userSnap.data();
 
+    // ONE TRUE currentUser — HOLY AND COMPLETE
     currentUser = {
       uid: uid,
       email: email,
-      firebaseUid: firebaseUser.uid,
+      firebaseUid: firebaseUser.uid, // ← real Firebase UID (optional, for future)
       chatId: data.chatId || email.split("@")[0],
       chatIdLower: (data.chatId || email.split("@")[0]).toLowerCase(),
       fullName: data.fullName || "VIP",
@@ -288,29 +318,35 @@ onAuthStateChanged(auth, async (firebaseUser) => {
       hostLink: data.hostLink || null
     };
 
-    console.log("YAH HAS LOGGED IN:", currentUser.chatId);
+    console.log("YAH HAS LOGGED IN:", currentUser.chatId, "| UID:", uid);
 
+    // SHOW LOGGED-IN UI — INSTANT & PERFECT
     document.querySelectorAll(".after-login-only").forEach(el => el.style.display = "block");
     document.querySelectorAll(".before-login-only").forEach(el => el.style.display = "none");
 
+    // SAVE FOR AUTO-LOGIN
     localStorage.setItem("userId", uid);
     localStorage.setItem("lastVipEmail", email);
 
+    // CORE SYSTEMS — IN ORDER OF DIVINE IMPORTANCE
     if (typeof showChatUI === "function") showChatUI(currentUser);
     if (typeof attachMessagesListener === "function") attachMessagesListener();
     if (typeof startStarEarning === "function") startStarEarning(uid);
     if (typeof setupPresence === "function") setupPresence(currentUser);
 
+    // SYNC & RESTORE BUTTONS — NEVER DISAPPEAR AGAIN
     updateRedeemLink();
     updateTipLink();
 
+    // DELAYED SYNC (prevents flash)
     if (typeof syncUserUnlocks === "function") {
       setTimeout(() => syncUserUnlocks(), 600);
     }
-    if (typeof setupNotificationsListener === "function") {
-      setupNotificationsListener(uid);
-    }
 
+    // NOTIFICATIONS — ONLY AFTER EVERYTHING IS READY
+    setupNotificationsListener(uid);
+
+    // GUEST → PROMPT FOR PERMANENT NAME
     if (currentUser.chatId.startsWith("GUEST")) {
       setTimeout(() => {
         if (typeof promptForChatID === "function") {
@@ -319,37 +355,20 @@ onAuthStateChanged(auth, async (firebaseUser) => {
       }, 2000);
     }
 
-    // MY CLIPS PANEL
-    if (document.getElementById("myClipsPanel")) {
-      setTimeout(() => {
-        if (typeof loadMyClips === "function") {
-          loadMyClips();
-        }
-      }, 1200);
-    }
-
-    // FINAL BLESSING — NOW INSIDE THE FUNCTION
-    const holyColors = ["#FF1493","#FFD700","#00FFFF","#FF4500","#DA70D6","#FF69B4","#32CD32","#FFA500","#FF00FF"];
+    // FINAL BLESSING — WELCOME POPUP
+    const holyColors = ["#FF1493", "#FFD700", "#00FFFF", "#FF4500", "#DA70D6", "#FF69B4", "#32CD32", "#FFA500", "#FF00FF"];
     const divineColor = holyColors[Math.floor(Math.random() * holyColors.length)];
 
-    showStarPopup(`
-      <div style="text-align:center;line-height:1.6;">
-        Welcome back,<br>
-        <b style="font-size:26px;color:${divineColor};text-shadow:0 0 20px ${divineColor}99;">
-          ${currentUser.chatId.toUpperCase()}
-        </b>
-      </div>
-    `);
+ showStarPopup(`<div style="font-size:14px;">Welcome back, <b style="color:${divineColor};">${currentUser.chatId.toUpperCase()}</b></div>`);
 
     console.log("YAH HAS BLESSED THE SESSION");
 
   } catch (err) {
-    console.error("Auth error:", err);
-    showStarPopup("Login failed");
+    console.error("Auth state error:", err);
+    showStarPopup("Error loading profile. Try again.");
     await signOut(auth);
   }
-});   // ← ONLY ONE END HERE — PERFECT
-
+});
 
 // NOTIFICATIONS LISTENER
 function setupNotificationsListener(userId) {
@@ -3095,93 +3114,65 @@ confirmBtn.onclick = async () => {
 }
 
 // ================================
-// UPLOAD HIGHLIGHT — FIXED TO WORK WITH MY CLIPS PANEL
+// 💰 $ell Content (Highlight Upload)
 // ================================
-document.getElementById("uploadHighlightBtn")?.addEventListener("click", async () => {
+document.getElementById("uploadHighlightBtn").addEventListener("click", async () => {
   const statusEl = document.getElementById("highlightUploadStatus");
-  if (!statusEl) return;
-
   statusEl.textContent = "";
 
-  if (!currentUser?.uid) {
-    statusEl.textContent = "Please sign in first!";
+  // 🧍 Wait until user is confirmed
+  if (!currentUser) {
+    statusEl.textContent = "⚠️ Please sign in first!";
+    console.warn("❌ Upload blocked — no currentUser found");
     return;
   }
 
-  const fileInput = document.getElementById("highlightUploadInput");
-  const videoUrlInput = document.getElementById("highlightVideoInput");
+  // 🧾 Get field values
+  const videoUrl = document.getElementById("highlightVideoInput").value.trim();
   const title = document.getElementById("highlightTitleInput").value.trim();
   const desc = document.getElementById("highlightDescInput").value.trim();
-  const price = parseInt(document.getElementById("highlightPriceInput").value) || 0;
+  const price = parseInt(document.getElementById("highlightPriceInput").value.trim() || "0");
 
-  // === VALIDATION ===
-  if (!title || price < 10) {
-    statusEl.textContent = "Title + price (min 10 stars) required";
+  if (!videoUrl || !title || !price) {
+    statusEl.textContent = "⚠️ Fill in all required fields (URL, title, price)";
     return;
   }
-
-  if (!fileInput.files[0] && !videoUrlInput.value.trim()) {
-    statusEl.textContent = "Upload a file OR paste a URL";
-    return;
-  }
-
-  statusEl.textContent = "Uploading your fire clip...";
 
   try {
-    let finalVideoUrl = videoUrlInput.value.trim();
+    const userId = currentUser.uid;
+    const emailId = (currentUser.email || "").replace(/\./g, "_");
+    const chatId = currentUser.chatId || currentUser.displayName || "Anonymous";
 
-    // === FILE UPLOAD (IF USER UPLOADED A FILE) ===
-    if (fileInput.files[0]) {
-      const file = fileInput.files[0];
-      if (file.size > 500 * 1024 * 1024) {
-        statusEl.textContent = "File too big (max 500MB)";
-        return;
-      }
+    statusEl.textContent = "⏳ Uploading highlight...";
 
-      statusEl.textContent = "Uploading video file...";
-
-      const storageRef = ref(storage, `highlights/${currentUser.uid}_${Date.now()}_${file.name}`);
-      const snapshot = await uploadBytes(storageRef, file);
-      finalVideoUrl = await getDownloadURL(snapshot.ref);
-    }
-
-    // === SAVE TO FIRESTORE — EXACT FIELDS MY CLIPS PANEL EXPECTS ===
+    // ✅ Direct upload without thumbnail generation
     const docRef = await addDoc(collection(db, "highlightVideos"), {
-      uploaderId: currentUser.uid,
-      uploaderName: currentUser.chatId || "Anonymous",
-      videoUrl: finalVideoUrl,           // THIS LINE WAS MISSING
+      uploaderId: userId,
+      uploaderEmail: emailId,
+      uploaderName: chatId,
+      highlightVideo: videoUrl,
       highlightVideoPrice: price,
-      title: title,
+      title,
       description: desc || "",
-      uploadedAt: serverTimestamp(),     // THIS FIELD IS USED FOR SORTING
-      unlockedBy: [],
-      createdAt: serverTimestamp()
+      createdAt: serverTimestamp(),
     });
 
-    console.log("Highlight uploaded:", docRef.id);
-    statusEl.textContent = "CLIP LIVE — EARN STARS NOW!";
-    statusEl.style.color = "#00ff9d";
+    console.log("✅ Uploaded highlight:", docRef.id);
+    statusEl.textContent = "✅ Highlight uploaded successfully!";
+    setTimeout(() => (statusEl.textContent = ""), 4000);
 
-    // === AUTO REFRESH MY CLIPS PANEL ===
-    if (typeof loadMyClips === "function") {
-      setTimeout(loadMyClips, 800);
-    }
-
-    // === RESET FORM ===
-    fileInput.value = "";
-    videoUrlInput.value = "";
+    // 🧹 Reset form
+    document.getElementById("highlightVideoInput").value = "";
     document.getElementById("highlightTitleInput").value = "";
-    document.getctElementById("highlightDescInput").value = "";
-    document.getElementById("highlightPriceInput").value = "50";
-
-    setTimeout(() => statusEl.textContent = "", 5000);
+    document.getElementById("highlightDescInput").value = "";
+    document.getElementById("highlightPriceInput").value = "";
 
   } catch (err) {
-    console.error("Upload failed:", err);
-    statusEl.textContent = "⚠️ Upload failed — try again";
-    statusEl.style.color = "#ff3366";
+    console.error("❌ Error uploading highlight:", err);
+    statusEl.textContent = "⚠️ Failed to upload. Try again.";
   }
 });
+
 
   // --- Initial random values for first load ---
 (function() {
@@ -4115,25 +4106,12 @@ async function handleUnlockVideo(video) {
   }
 }
 /* MY CLIPS ON SALE — LOAD & DISPLAY + DELETE FUNCTIONALITY */
-/* MY CLIPS ON SALE — SAFE & BULLETPROOF (NO MORE NULL UID ERROR) */
 async function loadMyClips() {
   const grid = document.getElementById("myClipsGrid");
   const noMsg = document.getElementById("noClipsMessage");
   if (!grid) return;
 
-  // IF NO USER → SHOW LOGIN MESSAGE
-  if (!currentUser?.uid) {
-    grid.innerHTML = `
-      <div style="grid-column:1/-1; text-align:center; padding:60px; color:#888; font-size:16px;">
-        <div style="font-size:50px;">Lock</div>
-        Sign in to see your clips
-      </div>
-    `;
-    if (noMsg) noMsg.style.display = "none";
-    return;
-  }
-
-  grid.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:50px; color:#888;">Loading your clips...</div>`;
+  grid.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:40px; color:#888;">Loading your clips...</div>`;
 
   try {
     const q = query(
@@ -4143,73 +4121,123 @@ async function loadMyClips() {
     );
 
     const snapshot = await getDocs(q);
-
+    
     if (snapshot.empty) {
       grid.innerHTML = "";
-      if (noMsg) noMsg.style.display = "block";
+      noMsg.style.display = "block";
       return;
     }
 
-    }
-
-    if (noMsg) noMsg.style.display = "none";
-    grid.innerHTML = "";
+    noMsg.style.display = "none";
+    grid.innerHTML = ""; // clear loading
 
     snapshot.forEach(docSnap => {
       const vid = { id: docSnap.id, ...docSnap.data() };
 
       const card = document.createElement("div");
       card.style.cssText = `
-        background:#111;border-radius:16px;overflow:hidden;
-        box-shadow:0 8px 30px rgba(0,0,0,0.6);border:1px solid #333;
-        transition:all 0.3s ease;position:relative;
+        background:#111;
+        border-radius:16px;
+        overflow:hidden;
+        box-shadow:0 8px 30px rgba(0,0,0,0.6);
+        border:1px solid #333;
+        transition:transform 0.3s ease, box-shadow 0.3s ease;
+        position:relative;
       `;
       card.onmouseover = () => card.style.transform = "translateY(-8px)";
       card.onmouseout = () => card.style.transform = "";
 
       card.innerHTML = `
-        <div style="position:relative;height:180px;background:#000;">
-          <video src="${vid.videoUrl || ''}" 
-                 style="width:100%;height:100%;object-fit:cover;filter:blur(8px);transform:scale(1.1);" 
-                 muted loop playsinline></video>
-          <div style="position:absolute;inset:0;background:linear-gradient(180deg,transparent 40%,rgba(0,0,0,0.9));"></div>
-          <video src="${vid.videoUrl || ''}" 
-                 style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
-                        width:85%;height:85%;object-fit:contain;border-radius:12px;
-                        box-shadow:0 10px 30px rgba(0,0,0,0.8);border:3px solid #ffcc00;" 
-                 muted loop playsinline></video>
-          <div style="position:absolute;top:10px;right:10px;
-                      background:rgba(255,0,150,0.9);color:#fff;padding:6px 12px;
-                      border-radius:20px;font-size:13px;font-weight:700;">
+        <div style="position:relative; height:180px; background:#000; overflow:hidden;">
+          <video 
+            src="${vid.videoUrl}" 
+            style="width:100%; height:100%; object-fit:cover; filter:blur(8px); transform:scale(1.1);"
+            muted loop playsinline>
+          </video>
+          <div style="
+            position:absolute; inset:0;
+            background:linear-gradient(180deg, transparent 40%, rgba(0,0,0,0.9));
+          "></div>
+          <video 
+            src="${vid.videoUrl}" 
+            style="
+              position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+              width:85%; height:85%; object-fit:contain;
+              border-radius:12px;
+              box-shadow:0 10px 30px rgba(0,0,0,0.8);
+              border:3px solid #ffcc00;
+            "
+            muted loop playsinline>
+          </video>
+          <div style="
+            position:absolute; top:10px; right:10px;
+            background:rgba(255,0,150,0.9); color:#fff;
+            padding:6px 12px; border-radius:20px;
+            font-size:13px; font-weight:700;
+            box-shadow:0 4px 15px rgba(255,0,150,0.4);
+          ">
             ${vid.highlightVideoPrice || 50} Stars
           </div>
         </div>
+
         <div style="padding:14px;">
-          <h4 style="margin:0 0 6px;color:#fff;font-size:15px;font-weight:600;">
-            ${vid.title || "Untitled"}
+          <h4 style="margin:0 0 6px; color:#fff; font-size:15px; font-weight:600;">
+            ${vid.title || "Untitled Clip"}
           </h4>
-          ${vid.description ? `<p style="margin:0;color:#aaa;font-size:13px;">${vid.description}</p>` : ''}
-          <div style="margin-top:12px;display:flex;justify-content:space-between;align-items:center;">
-            <span style="color:#0f0;font-size:13px;">
+          ${vid.description ? `<p style="margin:0; color:#aaa; font-size:13px; line-height:1.4;">${vid.description}</p>` : ''}
+
+          <div style="margin-top:12px; display:flex; justify-content:space-between; align-items:center;">
+            <span style="color:#0f0; font-size:13px;">
               Unlocked ${vid.unlockedBy?.length || 0} times
             </span>
             <button onclick="deleteMyClip('${vid.id}')" style="
-              background:#ff3355;color:#fff;border:none;padding:8px 16px;
-              border-radius:8px;font-weight:600;cursor:pointer;font-size:13px;
-            ">Delete</button>
+              background:#ff3355;
+              color:#fff;
+              border:none;
+              padding:8px 16px;
+              border-radius:8px;
+              font-weight:600;
+              cursor:pointer;
+              font-size:13px;
+              box-shadow:0 4px 15px rgba(255,51,85,0.4);
+            ">
+              Delete
+            </button>
           </div>
         </div>
       `;
 
+      // Auto-play small preview on hover
       const videos = card.querySelectorAll("video");
-      card.addEventListener("mouseenter", () => videos.forEach(v => v.play().catch(()=>{})));
+      card.addEventListener("mouseenter", () => videos.forEach(v => v.play()));
       card.addEventListener("mouseleave", () => videos.forEach(v => { v.pause(); v.currentTime = 0; }));
 
       grid.appendChild(card);
     });
 
   } catch (err) {
-    console.error("Failed to load clips:", err);
-    grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;color:#f66;padding:40px;">Error loading clips</div>`;
+    console.error("Failed to load my clips:", err);
+    grid.innerHTML = `<div style="grid-column:1/-1; text-align:center; color:#f66; padding:40px;">Failed to load clips</div>`;
   }
 }
+
+/* DELETE CLIP — BUYERS KEEP ACCESS */
+async function deleteMyClip(clipId) {
+  if (!confirm("Delete this clip? Buyers who already unlocked it will KEEP access forever.")) return;
+
+  try {
+    await deleteDoc(doc(db, "highlightVideos", clipId));
+    showGoldAlert("Clip deleted — no longer for sale");
+    loadMyClips(); // refresh
+  } catch (err) {
+    console.error(err);
+    showGoldAlert("Delete failed");
+  }
+}
+
+/* AUTO-LOAD WHEN USER LOGS IN OR PAGE LOADS */
+onAuthStateChanged(auth, (user) => {
+  if (user && document.getElementById("myClipsPanel")) {
+    setTimeout(loadMyClips, 1000); // small delay to let page settle
+  }
+});
