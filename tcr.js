@@ -1390,7 +1390,7 @@ async function sendStarsToUser(targetUser, amt) {
       systemBanner: true, highlight: true, buzzColor: glow, type: "banner"
     });
 
-    renderMessagesFromArray([{ id: banner.id, data: banner.data() }], true);
+  renderMessagesFromArray([{ id: banner.id, data: bannerMsg }], true);
     showGoldAlert(`Sent ${amt} stars!`, 4000);
 
   } catch (e) {
