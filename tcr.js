@@ -3854,18 +3854,33 @@ function showHighlightsModal(videos) {
       videoEl.preload = "metadata";
       videoEl.style.cssText = "width:100%;height:100%;object-fit:cover;";
 
-     if (isUnlocked) {
-  videoEl.src = video.videoUrl || video.previewClip || video.highlightVideo;
-  videoEl.load(); // forces load
-  videoEl.poster = "";
+ // SAFE VIDEO URL — NEVER RETURNS "undefined"
+const videoSrc = video.videoUrl || 
+                 video.previewClip || 
+                 video.highlightVideo || 
+                 video.url || 
+                 video.src || 
+                 ""; // fallback to empty string
+
+if (isUnlocked) {
+  if (videoSrc && videoSrc !== "undefined") {
+    videoEl.src = videoSrc;
+    videoEl.load();
+    videoEl.poster = "";
+  } else {
+    // No valid video → show fallback thumbnail or message
+    videoEl.removeAttribute("src");
+    videoEl.poster = "https://via.placeholder.com/400x300/111/444?text=No+Preview";
+  }
 
   videoContainer.onmouseenter = () => videoEl.play().catch(() => {});
   videoContainer.onmouseleave = () => {
     videoEl.pause();
     videoEl.currentTime = 0;
   };
+
 } else {
-  // NEVER remove src attribute — just empty it
+  // Locked — just black + lock
   videoEl.src = "";
   videoEl.poster = "";
 
@@ -3876,14 +3891,16 @@ function showHighlightsModal(videos) {
       <svg width="68" height="68" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M12 2C9.2 2 7 4.2 7 7V11H6C4.9 11 4 11.9 4 13V20C4 21.1 4.9 22 6 22H18C19.1 22 20 21.1 20 20V13C20 11.9 19.1 11 18 11H17V7C17 4.2 14.8 2 12 2ZM12 4C13.7 4 15 5.3 15 7V11H9V7C9 5.3 10.3 4 12 4Z" fill="#ff006e"/>
       </svg>
-      <div style="margin-top:8px;color:#ff006e;font-weight:700;">
+      <div style="margin-top:8px;color:#ff006e;font-weight:700;font-size:14px;">
         ${video.highlightVideoPrice || 100} STRZ
       </div>
     </div>
   `;
   videoContainer.appendChild(overlay);
 }
-
+console.log("Video object:", video);
+console.log("Trying to load src:", videoSrc);
+      
       // CLICK → full video or unlock modal
       videoContainer.onclick = (e) => {
         e.stopPropagation();
