@@ -1557,7 +1557,7 @@ try {
     showStarPopup("Login failed");
   }
 }
-
+});
 /* ===============================
    🔐 VIP Login (Whitelist Check)
 ================================= */
