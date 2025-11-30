@@ -239,17 +239,23 @@ const sanitizeId = (input) => {
 // RESTORED: getUserId — USED BY OLD CODE (syncUserUnlocks, etc.)
 const getUserId = sanitizeId;  // ← This fixes "getUserId is not defined"
 
-// NOTIFICATION HELPER
+// NOTIFICATION HELPER — CLEAN & ETERNAL
 async function pushNotification(userId, message) {
   if (!userId || !message) return;
-  await addDoc(collection(db, "notifications"), {
-    userId,
-    message,
-    timestamp: serverTimestamp(),
-    read: false
-  });
+  try {
+    await addDoc(collection(db, "notifications"), {
+      userId,
+      message,
+      timestamp: serverTimestamp(),
+      read: false
+    });
+  } catch (err) {
+    console.warn("Failed to send notification:", err);
+  }
 }
 
+// ON AUTH STATE CHANGED — FINAL 2025 ETERNAL EDITION
+// YAH IS THE ONE TRUE EL — THE CODE IS NOW PURE
 onAuthStateChanged(auth, async (firebaseUser) => {
   // ALWAYS CLEAN NOTIFICATIONS FIRST
   if (typeof notificationsUnsubscribe === "function") {
@@ -257,6 +263,7 @@ onAuthStateChanged(auth, async (firebaseUser) => {
     notificationsUnsubscribe = null;
   }
 
+  // USER LOGGED OUT
   if (!firebaseUser) {
     currentUser = null;
     localStorage.removeItem("userId");
@@ -276,24 +283,28 @@ onAuthStateChanged(auth, async (firebaseUser) => {
     return;
   }
 
+  // USER LOGGED IN
   const email = firebaseUser.email.toLowerCase().trim();
   const uid = sanitizeKey(email);
   const userRef = doc(db, "users", uid);
 
   try {
     const userSnap = await getDoc(userRef);
-    if (!user.exists()) {
+
+    // FIXED: userSnap, not user
+    if (!userSnap.exists()) {
       console.error("Profile missing:", uid);
       showStarPopup("Profile not found. Contact admin.");
       await signOut(auth);
       return;
     }
 
-    const data = user.data();
+    // FIXED: userSnap.data(), not user.data()
+    const data = userSnap.data();
 
     currentUser = {
-      uid: uid,
-      email: email,
+      uid,
+      email,
       firebaseUid: firebaseUser.uid,
       chatId: data.chatId || email.split("@")[0],
       chatIdLower: (data.chatId || email.split("@")[0]).toLowerCase(),
@@ -318,12 +329,14 @@ onAuthStateChanged(auth, async (firebaseUser) => {
 
     console.log("YAH HAS LOGGED IN:", currentUser.chatId);
 
+    // SHOW LOGGED-IN UI
     document.querySelectorAll(".after-login-only").forEach(el => el.style.display = "block");
     document.querySelectorAll(".before-login-only").forEach(el => el.style.display = "none");
 
     localStorage.setItem("userId", uid);
     localStorage.setItem("lastVipEmail", email);
 
+    // CORE SYSTEMS
     if (typeof showChatUI === "function") showChatUI(currentUser);
     if (typeof attachMessagesListener === "function") attachMessagesListener();
     if (typeof startStarEarning === "function") startStarEarning(uid);
@@ -332,34 +345,39 @@ onAuthStateChanged(auth, async (firebaseUser) => {
     updateRedeemLink();
     updateTipLink();
 
-    if (typeof syncUserUnlocks === "function") {
-      setTimeout(() => syncUserUnlocks(), 600);
-    }
+    if (typeof syncUserUnlocks === "function") setTimeout(syncUserUnlocks, 600);
+    if (typeof setupNotificationsListener === "function") setupNotificationsListener(uid);
 
-    if (typeof setupNotificationsListener === "function") {
-      setupNotificationsListener(uid);
-    }
-
+    // GUEST NAME PROMPT
     if (currentUser.chatId.startsWith("GUEST")) {
       setTimeout(() => {
-        if (typeof promptForChatID === "function") {
-          promptForChatID(userRef, data);
-        }
+        if (typeof promptForChatID === "function") promptForChatID(userRef, data);
       }, 2000);
     }
 
-    // MY CLIPS PANEL — AUTO LOAD ON LOGIN
-    if (document.getElementById("myClipsPanel")) {
-      setTimeout(() => {
-        if (typeof loadMyClips === "function") {
-          loadMyClips();
-        }
-      }, 1200);
+    // MY CLIPS PANEL
+    if (document.getElementById("myClipsPanel") && typeof loadMyClips === "function") {
+      setTimeout(loadMyClips, 1200);
     }
+
+    // DIVINE WELCOME — NOW INSIDE AND GLOWING
+    const holyColors = ["#FF1493","#FFD700","#00FFFF","#FF4500","#DA70D6","#FF69B4","#32CD32","#FFA500","#FF00FF"];
+    const divineColor = holyColors[Math.floor(Math.random() * holyColors.length)];
+
+    showStarPopup(`
+      <div style="text-align:center;line-height:1.6;">
+        Welcome back,<br>
+        <b style="font-size:26px;color:${divineColor};text-shadow:0 0 20px ${divineColor}99;">
+          ${currentUser.chatId.toUpperCase()}
+        </b>
+      </div>
+    `);
+
+    console.log("YAH HAS BLESSED THIS SESSION — GLORY ETERNAL");
 
   } catch (err) {
     console.error("Auth error:", err);
-    showStarPopup("Login failed");
+    showStarPopup("Login failed — please try again");
     await signOut(auth);
   }
 });
