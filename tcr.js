@@ -3821,7 +3821,7 @@ let filterMode = "all"; // "all" | "unlocked" | "trending"
 function renderCards(videosToRender) {
   content.innerHTML = "";
 
-  // ALWAYS READ FRESH UNLOCKED LIST — NEVER CACHED
+  // CRITICAL: ALWAYS READ FRESH FROM LOCALSTORAGE
   const unlockedVideos = JSON.parse(localStorage.getItem("userUnlockedVideos") || "[]");
 
   const filtered = videosToRender.filter(video => {
@@ -3831,12 +3831,9 @@ function renderCards(videosToRender) {
   });
 
   filtered.forEach(video => {
-    // THIS LINE MUST BE INSIDE THE LOOP — THIS WAS THE ENTIRE PROBLEM
     const isUnlocked = unlockedVideos.includes(video.id);
 
-    const videoSrc = video.videoUrl || video.previewClip || video.highlightVideo || video.url || "";
-
-    // YOUR EXACT ORIGINAL CARD — NOT ONE PIXEL CHANGED
+    // YOUR ORIGINAL CARD — 100% UNTOUCHED
     const card = document.createElement("div");
     card.className = "videoCard";
     card.setAttribute("data-uploader", video.uploaderName || "Anonymous");
@@ -3867,20 +3864,28 @@ function renderCards(videosToRender) {
     videoEl.preload = "metadata";
     videoEl.style.cssText = "width:100%;height:100%;object-fit:cover;";
 
-    // UNLOCKED → SHOW VIDEO + HOVER PLAY
-    if (isUnlocked && videoSrc) {
-      videoEl.src = videoSrc;
-      videoEl.load();
+    if (isUnlocked) {
+      // UNLOCKED → SHOW THE ACTUAL VIDEO (previewClip or highlightVideo)
+      const src = video.previewClip || video.highlightVideo || "";
+      if (src) {
+        videoEl.src = src;
+        videoEl.load();
 
-      videoContainer.onmouseenter = () => videoEl.play().catch(() => {});
-      videoContainer.onmouseleave = () => {
-        videoEl.pause();
-        videoEl.currentTime = 0;
+        videoContainer.onmouseenter = () => videoEl.play().catch(() => {});
+        videoContainer.onmouseleave = () => {
+          videoEl.pause();
+          videoEl.currentTime = 0;
+        };
+      }
+
+      videoContainer.onclick = (e) => {
+        e.stopPropagation();
+        playFullVideo(video); // uses video.highlightVideo
       };
 
-    // LOCKED → ONLY BLACK + LOCK ICON
     } else {
-      videoEl.src = ""; // clear source
+      // LOCKED → BLACK + LOCK ICON
+      videoEl.src = "";
       const overlay = document.createElement("div");
       overlay.style.cssText = "position:absolute;inset:0;background:#000;display:flex;align-items:center;justify-content:center;z-index:2;";
       overlay.innerHTML = `
@@ -3894,17 +3899,12 @@ function renderCards(videosToRender) {
         </div>
       `;
       videoContainer.appendChild(overlay);
-    }
 
-    // CLICK BEHAVIOR
-    videoContainer.onclick = (e) => {
-      e.stopPropagation();
-      if (isUnlocked) {
-        playFullVideo(video);
-      } else {
+      videoContainer.onclick = (e) => {
+        e.stopPropagation();
         showUnlockConfirm(video, () => renderCards(videosToRender));
-      }
-    };
+      };
+    }
 
     videoContainer.appendChild(videoEl);
 
@@ -3944,7 +3944,6 @@ function renderCards(videosToRender) {
     content.appendChild(card);
   });
 }
-  
   // === FILTER BUTTON LOGIC (EXCLUSIVE) ===
   function updateButtonStates() {
     // Reset all
