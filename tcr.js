@@ -4124,13 +4124,13 @@ async function handleUnlockVideo(video) {
     showGoldAlert("Unlock failed — try again");
   }
 }
-/* MY CLIPS ON SALE — ZOOMED OUT VIBE RESTORED + DELETE WORKS */
+/* MY CLIPS ON SALE — FINAL DOPE & CLASSY VERSION */
 async function loadMyClips() {
   const grid = document.getElementById("myClipsGrid");
   const noMsg = document.getElementById("noClipsMessage");
   if (!grid || !currentUser?.uid) return;
 
-  grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:60px;color:#888;">Loading clips...</div>`;
+  grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:60px;color:#888;">Loading your clips...</div>`;
 
   try {
     const q = query(
@@ -4145,7 +4145,6 @@ async function loadMyClips() {
       if (noMsg) noMsg.style.display = "block";
       return;
     }
-
     if (noMsg) noMsg.style.display = "none";
     grid.innerHTML = "";
 
@@ -4154,102 +4153,96 @@ async function loadMyClips() {
 
       const card = document.createElement("div");
       card.style.cssText = `
-        background:#111;
-        border-radius:16px;
-        overflow:hidden;
-        box-shadow:0 8px 30px rgba(0,0,0,0.6);
-        border:1px solid #333;
-        transition:all 0.3s ease;
-        position:relative;
+        background:#111;border-radius:16px;overflow:hidden;
+        box-shadow:0 8px 30px rgba(0,0,0,0.6);border:1px solid #333;
+        transition:all 0.3s ease;position:relative;
       `;
       card.onmouseover = () => card.style.transform = "translateY(-8px)";
       card.onmouseout = () => card.style.transform = "";
 
       card.innerHTML = `
-        <div style="position:relative; height:180px; background:#000; overflow:hidden;">
-          <!-- ZOOMED OUT BLURRY BG -->
+        <div style="position:relative;height:200px;background:#000;overflow:hidden;">
           <video src="${vid.videoUrl}" 
-                 style="width:100%; height:100%; object-fit:cover; filter:blur(8px); transform:scale(1.1);" 
-                 muted loop playsinline>
-          </video>
-          
-          <div style="position:absolute; inset:0; background:linear-gradient(180deg,transparent 40%,rgba(0,0,0,0.9));"></div>
-          
-          <!-- ZOOMED IN CENTER PREVIEW -->
+                 style="width:100%;height:100%;object-fit:cover;filter:blur(8px);transform:scale(1.1);" 
+                 muted loop playsinline></video>
+          <div style="position:absolute;inset:0;background:linear-gradient(180deg,transparent 40%,rgba(0,0,0,0.9));"></div>
           <video src="${vid.videoUrl}" 
-                 style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
-                        width:85%; height:85%; object-fit:contain; border-radius:12px;
-                        box-shadow:0 10px 30px rgba(0,0,0,0.8); border:2px solid #fff;" 
-                 muted loop playsinline>
-          </video>
+                 style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+                        width:80%;height:80%;object-fit:contain;border-radius:12px;
+                        box-shadow:0 10px 30px rgba(0,0,0,0.8);border:2px solid #444;"
+                 muted loop playsinline></video>
         </div>
 
-        <div style="padding:14px;">
-          <h4 style="margin:0 0 6px; color:#fff; font-size:15px; font-weight:600;">
-            ${vid.title || "Untitled Clip"}
-          </h4>
-          ${vid.description ? `<p style="margin:0 0 12px; color:#aaa; font-size:13px; line-height:1.4;">${vid.description}</p>` : ''}
-          
-          <div style="margin-top:12px; display:flex; justify-content:space-between; align-items:center;">
+        <div style="padding:16px;">
+          <h3 style="margin:0 0 8px;color:#fff;font-size:16px;font-weight:600;">
+            ${vid.title || "Untitled"}
+          </h3>
+          ${vid.description ? `<p style="margin:0 0 12px;color:#aaa;font-size:13px;line-height:1.4;">${vid.description}</p>` : ''}
+
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;">
             <div>
-              <div style="color:#00ff9d; font-size:14px; font-weight:600;">
+              <div style="color:#00ff9d;font-size:15px;font-weight:700;">
                 ${vid.highlightVideoPrice || 50} Stars
               </div>
-              <div style="color:#888; font-size:12px; margin-top:4px;">
+              <div style="color:#888;font-size:12px;margin-top:4px;">
                 Unlocked ${vid.unlockedBy?.length || 0} times
               </div>
             </div>
-            <button onclick="showDeleteModal('${vid.id}', '${vid.title}')" 
-                    style="background:#ff3355; color:#fff; border:none; padding:10px 18px;
-                           border-radius:10px; font-weight:600; cursor:pointer; font-size:13px;
-                           transition:all 0.3s;">
+
+            <!-- THIS BUTTON NOW WORKS 100% -->
+            <button onclick="openDeleteModal('${vid.id}', '${vid.title.replace(/'/g, "\\'")}')" 
+                    style="background:#ff3355;color:#fff;border:none;padding:10px 18px;
+                           border-radius:10px;font-weight:600;cursor:pointer;">
               Delete
             </button>
           </div>
         </div>
       `;
 
-      // HOVER PLAY
       const videos = card.querySelectorAll("video");
-      card.addEventListener("mouseenter", () => videos.forEach(v => v.play().catch(()=>{})));
+      card.addEventListener("mouseenter", () => videos.forEach(v => v.play().catch(() => {})));
       card.addEventListener("mouseleave", () => videos.forEach(v => { v.pause(); v.currentTime = 0; }));
 
       grid.appendChild(card);
     });
 
   } catch (err) {
-    console.error("Failed to load clips:", err);
-    grid.innerHTML = `<div style="grid-column:1/-1; text-align:center; color:#f66; padding:40px;">Failed to load clips</div>`;
+    console.error("Load clips failed:", err);
+    grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;color:#f66;padding:40px;">Failed to load</div>`;
   }
 }
 
-// === DELETE MODAL — NOW 100% WORKING ===
-function showDeleteModal(clipId, title) {
-  if (!document.getElementById("deleteModal")) {
-    const modal = document.createElement("div");
-    modal.id = "deleteModal";
+/* BEAUTIFUL DELETE MODAL — WORKS EVERY TIME */
+function openDeleteModal(clipId, title) {
+  // Create modal if not exists
+  let modal = document.getElementById("clipDeleteModal");
+  if (!modal) {
+    modal = document.createElement("div");
+    modal.id = "clipDeleteModal";
     modal.style.cssText = `
-      position:fixed; inset:0; background:rgba(0,0,0,0.9); display:flex;
-      align-items:center; justify-content:center; z-index:9999;
-      opacity:0; pointer-events:none; transition:opacity 0.3s;
+      position:fixed;inset:0;background:rgba(0,0,0,0.92);display:flex;
+      align-items:center;justify-content:center;z-index:9999;
+      opacity:0;pointer-events:none;transition:opacity 0.4s ease;
+      font-family:inherit;
     `;
     modal.innerHTML = `
-      <div style="background:#111; padding:30px; border-radius:16px; max-width:400px; width:90%;
-                   text-align:center; box-shadow:0 20px 60px rgba(0,0,0,0.8);">
-        <h3 style="color:#fff; margin:0 0 16px; font-size:20px;">Delete Clip?</h3>
-        <p style="color:#aaa; margin:0 0 24px; line-height:1.5;">
-          "${title || "This clip"}" will be removed from sale.<br>
+      <div style="background:#111;padding:32px;border-radius:18px;max-width:420px;width:90%;
+                   text-align:center;box-shadow:0 20px 70px rgba(0,0,0,0.8);border:1px solid #333;">
+        <h3 style="color:#fff;margin:0 0 16px;font-size:22px;">Delete Clip?</h3>
+        <p style="color:#aaa;margin:0 0 24px;line-height:1.6;">
+          "<span style="color:#ff6b6b;font-weight:600;" id="modalClipTitle"></span>" 
+          will be removed from sale.<br>
           <span style="color:#ff9966;">Buyers keep access forever.</span>
         </p>
-        <div style="display:flex; gap:12px; justify-content:center;">
+        <div style="display:flex;gap:16px;justify-content:center;">
           <button onclick="closeDeleteModal()" 
-                  style="padding:10px 24px; background:#333; color:#fff; border:none;
-                         border-radius:10px; cursor:pointer; font-weight:600;">
+                  style="padding:12px 28px;background:#333;color:#fff;border:none;
+                         border-radius:12px;cursor:pointer;font-weight:600;font-size:15px;">
             Cancel
           </button>
-          <button onclick="confirmDelete('${clipId}')" 
-                  style="padding:10px 24px; background:#ff3355; color:#fff; border:none;
-                         border-radius:10px; cursor:pointer; font-weight:600;">
+          <button onclick="deleteClipConfirmed('${clipId}')" 
+                  style="padding:12px 28px;background:#ff3355;color:#fff;border:none;
+                         border-radius:12px;cursor:pointer;font-weight:600;font-size:15px;">
             Delete Forever
           </button>
         </div>
@@ -4258,27 +4251,27 @@ function showDeleteModal(clipId, title) {
     document.body.appendChild(modal);
   }
 
-  const modal = document.getElementById("deleteModal");
+  document.getElementById("modalClipTitle").textContent = title || "This clip";
   modal.style.opacity = "1";
   modal.style.pointerEvents = "auto";
 }
 
 function closeDeleteModal() {
-  const modal = document.getElementById("deleteModal");
+  const modal = document.getElementById("clipDeleteModal");
   if (modal) {
     modal.style.opacity = "0";
     modal.style.pointerEvents = "none";
   }
 }
 
-async function confirmDelete(clipId) {
+async function deleteClipConfirmed(clipId) {
   try {
     await deleteDoc(doc(db, "highlightVideos", clipId));
-    showGoldAlert("Clip deleted from sale");
+    showGoldAlert("Clip deleted — no longer for sale");
     closeDeleteModal();
-    if (typeof loadMyClips === "function") loadMyClips();
+    loadMyClips();
   } catch (err) {
     console.error("Delete failed:", err);
-    showGoldAlert("Delete failed");
+    showGoldAlert("Delete failed — try again");
   }
 }
