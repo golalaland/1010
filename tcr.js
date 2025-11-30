@@ -3692,7 +3692,7 @@ highlightsBtn.onclick = async () => {
   }
 };
 
-/* ---------- Highlights Modal (FINAL ETERNAL VERSION — BULLETPROOF) ---------- */
+/* ---------- Highlights Modal (FINAL ETERNAL — NO ERRORS, WORKS 100%) ---------- */
 function showHighlightsModal(videos) {
   document.getElementById("highlightsModal")?.remove();
 
@@ -3706,12 +3706,9 @@ function showHighlightsModal(videos) {
     fontFamily: "system-ui, sans-serif"
   });
 
-  // === STICKY INTRO + CLOSE BUTTON ===
+  // STICKY INTRO + CLOSE BUTTON
   const intro = document.createElement("div");
-  intro.innerHTML = `<div style="text-align:center;color:#ccc;max-width:640px;margin:0 auto;line-height:1.6;font-size:14px;
-    background:linear-gradient(135deg,rgba(255,0,110,0.12),rgba(255,100,0,0.08));
-    padding:14px 48px 14px 20px;border:1px solid rgba(255,0,110,0.3);
-    box-shadow:0 0 16px rgba(255,0,110,0.15);border-radius:12px;position:relative;">
+  intro.innerHTML = `<div style="text-align:center;color:#ccc;max-width:640px;margin:0 auto;line-height:1.6;font-size:14px;background:linear-gradient(135deg,rgba(255,0,110,0.12),rgba(255,100,0,0.08));padding:14px 48px 14px 20px;border:1px solid rgba(255,0,110,0.3);box-shadow:0 0 16px rgba(255,0,110,0.15);border-radius:12px;position:relative;">
     <p style="margin:0;">
       <span style="background:linear-gradient(90deg,#ff006e,#ff8c00);-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-weight:700;">
         Highlights
@@ -3734,12 +3731,12 @@ function showHighlightsModal(videos) {
   closeBtn.onclick = () => modal.remove();
   intro.querySelector("div").appendChild(closeBtn);
 
-  // === SEARCH + FILTERS ===
+  // SEARCH + FILTERS
   const searchWrap = document.createElement("div");
   Object.assign(searchWrap.style, { position: "sticky", top: "84px", zIndex: "1001", marginBottom: "20px", display: "flex", flexDirection: "column", alignItems: "center", gap: "6px" });
 
   const searchInputWrap = document.createElement("div");
-  searchInputWrap.style.cssText = `display:flex;align-items:center;background:linear-gradient(135deg,rgba(255,255,255,0.08),rgba(255,255,255,0.04));border:1px solid rgba(255,0,110,0.3);border-radius:30px;padding:8px 14px;width:280px;backdrop-filter:blur(8px);box-shadow:0 0 12px rgba(255,0,110,0.15);`;
+  searchInputWrap.style.cssText = "display:flex;align-items:center;background:linear-gradient(135deg,rgba(255,255,255,0.08),rgba(255,255,255,0.04));border:1px solid rgba(255,0,110,0.3);border-radius:30px;padding:8px 14px;width:280px;backdrop-filter:blur(8px);box-shadow:0 0 12px rgba(255,0,110,0.15);";
   searchInputWrap.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M15 15L21 21M10 17C6.13401 17 3 13.866 3 10C3 6.13401 6.13401 3 10 3C13.866 3 17 6.13401 17 10C17 13.866 13.866 17 10 17Z" stroke="url(#gradSearch)" stroke-width="2" stroke-linecap="round"/><defs><linearGradient id="gradSearch" x1="3" y1="3" x2="21" y2="21"><stop stop-color="#ff006e"/><stop offset="1" stop-color="#ff8c00"/></linearGradient></defs></svg>
     <input id="highlightSearchInput" type="text" placeholder="Search by creator..." style="flex:1;background:transparent;border:none;outline:none;color:#fff;font-size:13px;"/>`;
   searchWrap.appendChild(searchInputWrap);
@@ -3756,7 +3753,7 @@ function showHighlightsModal(videos) {
   searchWrap.appendChild(buttonRow);
   modal.appendChild(searchWrap);
 
-  // === CONTENT ===
+  // CONTENT AREA
   const content = document.createElement("div");
   Object.assign(content.style, { display: "flex", gap: "20px", flexWrap: "nowrap", overflowX: "auto", padding: "20px 0 60px", scrollBehavior: "smooth", width: "100%", justifyContent: "flex-start" });
   modal.appendChild(content);
@@ -3765,8 +3762,6 @@ function showHighlightsModal(videos) {
 
   function renderCards(videosToRender) {
     content.innerHTML = "";
-
-    // ALWAYS FRESH FROM LOCALSTORAGE — THIS IS THE FIX
     const unlockedVideos = JSON.parse(localStorage.getItem("userUnlockedVideos") || "[]");
 
     const filtered = videosToRender.filter(video => {
@@ -3776,7 +3771,7 @@ function showHighlightsModal(videos) {
     });
 
     filtered.forEach(video => {
-      const isUnlocked = unlockedVideos.includes(video.id); // ← ALWAYS CORRECT NOW
+      const isUnlocked = unlockedVideos.includes(video.id);
 
       const card = document.createElement("div");
       card.className = "videoCard";
@@ -3802,14 +3797,14 @@ function showHighlightsModal(videos) {
       videoEl.style.cssText = "width:100%;height:100%;object-fit:cover;";
 
       if (isUnlocked) {
-        const src = video.previewClip || video.highlightVideo;
+        const src = video.previewClip || video.highlightVideo || "";
         if (src) {
           videoEl.src = src;
           videoEl.load();
         }
         videoContainer.onmouseenter = () => videoEl.play().catch(() => {});
         videoContainer.onmouseleave = () => { videoEl.pause(); videoEl.currentTime = 0; };
-        videoContainer.onclick = (e) => { e.stopPropagation(); playFullVideo(video); };
+        videoContainer.onclick = e => { e.stopPropagation(); playFullVideo(video); };
       } else {
         videoEl.src = "";
         const overlay = document.createElement("div");
@@ -3819,7 +3814,7 @@ function showHighlightsModal(videos) {
           <div style="margin-top:12px;color:#ff006e;font-weight:700;font-size:16px;">${video.highlightVideoPrice || 100} STRZ</div>
         </div>`;
         videoContainer.appendChild(overlay);
-        videoContainer.onclick = (e) => { e.stopPropagation(); showUnlockConfirm(video, () => renderCards(videosToRender)); };
+        videoContainer.onclick = e => { e.stopPropagation(); showUnlockConfirm(video, () => renderCards(videosToRender)); };
       }
 
       videoContainer.appendChild(videoEl);
@@ -3841,7 +3836,7 @@ function showHighlightsModal(videos) {
         fontSize: "13px", boxShadow: isUnlocked ? "inset 0 2px 6px rgba(0,0,0,0.3)" : "0 3px 10px rgba(255,0,110,0.3)"
       });
       if (!isUnlocked) {
-        unlockBtn.onclick = (e) => { e.stopPropagation(); showUnlockConfirm(video, () => renderCards(videosToRender)); };
+        unlockBtn.onclick = e => { e.stopPropagation(); showUnlockConfirm(video, () => renderCards(videosToRender)); };
       }
 
       infoPanel.append(title, uploader, unlockBtn);
@@ -3875,11 +3870,9 @@ function showHighlightsModal(videos) {
     });
   });
 
-  // RENDER
   renderCards(videos);
-
   document.body.appendChild(modal);
-  setTimeout(() => searchInputWrap.querySelector("input.focus(), 300);
+  setTimeout(() => searchInputWrap.querySelector("input").focus(), 300);
 }
 
 /* ---------- Sorting helper ---------- */
