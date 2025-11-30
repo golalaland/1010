@@ -4080,7 +4080,6 @@ async function loadMyClips() {
     grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;color:#f66;padding:40px;">Failed to load</div>`;
   }
 }
-videosToRender.forEach(video => {
   const unlockedVideos = JSON.parse(localStorage.getItem("userUnlockedVideos") || "[]");
   const isUnlocked = unlockedVideos.includes(video.id);
 
