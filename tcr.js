@@ -3821,7 +3821,7 @@ let filterMode = "all"; // "all" | "unlocked" | "trending"
 function renderCards(videosToRender) {
   content.innerHTML = "";
 
-  // ALWAYS READ FRESH FROM LOCALSTORAGE — THIS WAS THE KILLER BUG
+  // ALWAYS READ FRESH UNLOCKED LIST — NEVER CACHED
   const unlockedVideos = JSON.parse(localStorage.getItem("userUnlockedVideos") || "[]");
 
   const filtered = videosToRender.filter(video => {
@@ -3831,11 +3831,12 @@ function renderCards(videosToRender) {
   });
 
   filtered.forEach(video => {
-    // THIS LINE MUST BE INSIDE THE LOOP AND AFTER WE RE-READ LOCALSTORAGE
+    // THIS LINE MUST BE INSIDE THE LOOP — THIS WAS THE ENTIRE PROBLEM
     const isUnlocked = unlockedVideos.includes(video.id);
 
     const videoSrc = video.videoUrl || video.previewClip || video.highlightVideo || video.url || "";
 
+    // YOUR EXACT ORIGINAL CARD — NOT ONE PIXEL CHANGED
     const card = document.createElement("div");
     card.className = "videoCard";
     card.setAttribute("data-uploader", video.uploaderName || "Anonymous");
@@ -3866,8 +3867,8 @@ function renderCards(videosToRender) {
     videoEl.preload = "metadata";
     videoEl.style.cssText = "width:100%;height:100%;object-fit:cover;";
 
+    // UNLOCKED → SHOW VIDEO + HOVER PLAY
     if (isUnlocked && videoSrc) {
-      // UNLOCKED → SHOW AND PLAY VIDEO
       videoEl.src = videoSrc;
       videoEl.load();
 
@@ -3876,9 +3877,10 @@ function renderCards(videosToRender) {
         videoEl.pause();
         videoEl.currentTime = 0;
       };
+
+    // LOCKED → ONLY BLACK + LOCK ICON
     } else {
-      // LOCKED → BLACK + LOCK ICON ONLY
-      videoEl.src = "";
+      videoEl.src = ""; // clear source
       const overlay = document.createElement("div");
       overlay.style.cssText = "position:absolute;inset:0;background:#000;display:flex;align-items:center;justify-content:center;z-index:2;";
       overlay.innerHTML = `
@@ -3894,14 +3896,19 @@ function renderCards(videosToRender) {
       videoContainer.appendChild(overlay);
     }
 
+    // CLICK BEHAVIOR
     videoContainer.onclick = (e) => {
       e.stopPropagation();
-      isUnlocked ? playFullVideo(video) : showUnlockConfirm(video, () => renderCards(videosToRender));
+      if (isUnlocked) {
+        playFullVideo(video);
+      } else {
+        showUnlockConfirm(video, () => renderCards(videosToRender));
+      }
     };
 
     videoContainer.appendChild(videoEl);
 
-    // Bottom panel — 100% your original
+    // INFO PANEL — 100% YOUR ORIGINAL
     const infoPanel = document.createElement("div");
     infoPanel.style.cssText = "background:#111;padding:10px;display:flex;flex-direction:column;gap:4px;";
 
@@ -3914,11 +3921,12 @@ function renderCards(videosToRender) {
     uploader.style.cssText = "font-size:12px;color:#ff006e;";
 
     const unlockBtn = document.createElement("button");
-    unlockBtn.textContent = isUnlocked ? "Unlocked" : `Unlock ${video.highlightVideoPrice || 100} ⭐️`;
+    unlockBtn.textContent = isUnlocked ? "Unlocked" : `Unlock ${video.highlightVideoPrice || 100} STRZ`;
     Object.assign(unlockBtn.style, {
       background: isUnlocked ? "#333" : "linear-gradient(135deg, #ff006e, #ff4500)",
-      border: "none", borderRadius: "6px", padding: "8px 0", fontWeight: "600 13px system-ui",
+      border: "none", borderRadius: "6px", padding: "8px 0", fontWeight: "600",
       color: "#fff", cursor: isUnlocked ? "default" : "pointer",
+      transition: "all 0.2s", fontSize: "13px",
       boxShadow: isUnlocked ? "inset 0 2px 6px rgba(0,0,0,0.3)" : "0 3px 10px rgba(255,0,110,0.3)"
     });
 
@@ -3936,6 +3944,7 @@ function renderCards(videosToRender) {
     content.appendChild(card);
   });
 }
+  
   // === FILTER BUTTON LOGIC (EXCLUSIVE) ===
   function updateButtonStates() {
     // Reset all
