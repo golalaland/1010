@@ -4124,7 +4124,7 @@ async function handleUnlockVideo(video) {
     showGoldAlert("Unlock failed — try again");
   }
 }
-/* MY CLIPS ON SALE — FINAL ETERNAL VERSION — FLAWLESS */
+/* MY CLIPS ON SALE — FINAL ETERNAL VERSION — PERFECT DESIGN + SAME-LINE LABELS */
 async function loadMyClips() {
   const grid = document.getElementById("myClipsGrid");
   const noMsg = document.getElementById("noClipsMessage");
@@ -4178,24 +4178,29 @@ async function loadMyClips() {
         </div>
 
         <div style="padding:16px;">
-          <!-- TITLE -->
+
+          <!-- TITLE — SAME LINE -->
           <div style="margin-bottom:10px;">
-            <strong style="color:#aaa;font-size:13px;">Title:</strong><br>
-            <span style="color:#fff;font-size:16px;font-weight:600;">${vid.title || "Untitled Clip"}</span>
+            <strong style="color:#aaa;font-size:13px;">Title:</strong>
+            <span style="color:#fff;font-size:16px;font-weight:600;margin-left:8px;">
+              ${vid.title || "Untitled Clip"}
+            </span>
           </div>
 
-          <!-- DESCRIPTION -->
+          <!-- DESCRIPTION — SAME LINE -->
           ${vid.description ? `
             <div style="margin-bottom:10px;">
-              <strong style="color:#aaa;font-size:13px;">Description:</strong><br>
-              <span style="color:#ddd;font-size:14px;line-height:1.5;">${vid.description}</span>
+              <strong style="color:#aaa;font-size:13px;">Description:</strong>
+              <span style="color:#ddd;font-size:14px;line-height:1.5;margin-left:8px;">
+                ${vid.description}
+              </span>
             </div>
           ` : ''}
 
-          <!-- PRICE — "Price:" white like title, number green -->
+          <!-- PRICE — SAME LINE + GREEN NUMBER -->
           <div style="margin:16px 0;">
-            <strong style="color:#aaa;font-size:13px;">Price:</strong><br>
-            <span style="color:#00ff9d;font-size:18px;font-weight:700;">
+            <strong style="color:#aaa;font-size:13px;">Price:</strong>
+            <span style="color:#00ff9d;font-size:18px;font-weight:700;margin-left:10px;">
               ${vid.highlightVideoPrice || 50} Stars
             </span>
           </div>
@@ -4206,18 +4211,16 @@ async function loadMyClips() {
               Unlocked <strong style="color:#00ff9d;">${vid.unlockedBy?.length || 0}</strong> times
             </div>
 
-            <!-- THIS WORKS 100% — FUNCTION IS DEFINED BELOW -->
             <button onclick="deleteMyClip('${vid.id}')" 
                     style="background:#ff3355;color:#fff;border:none;padding:10px 20px;
                            border-radius:10px;font-weight:600;cursor:pointer;
-                           box-shadow:0 4px 15px rgba(255,51,85,0.4);transition:0.3s;">
+                           box-shadow:0 4px 15px rgba(255,51,85,0.4);">
               Delete
             </button>
           </div>
         </div>
       `;
 
-      // Hover preview play
       const videos = card.querySelectorAll("video");
       card.addEventListener("mouseenter", () => videos.forEach(v => v.play().catch(() => {})));
       card.addEventListener("mouseleave", () => videos.forEach(v => { v.pause(); v.currentTime = 0; }));
@@ -4231,17 +4234,17 @@ async function loadMyClips() {
   }
 }
 
-/* DELETE — 100% WORKING — NO MORE "NOT DEFINED" */
+/* DELETE FUNCTION — DEFINED FIRST SO IT ALWAYS EXISTS */
 async function deleteMyClip(clipId) {
   if (!clipId) return;
 
-  const confirmed = confirm("Delete this clip from sale?\n\nBuyers who already paid will KEEP access forever.");
+  const confirmed = confirm("Delete this clip from sale?\n\nBuyers who already unlocked it will KEEP access forever.");
   if (!confirmed) return;
 
   try {
     await deleteDoc(doc(db, "highlightVideos", clipId));
     showGoldAlert("Clip deleted — removed from sale");
-    loadMyClips(); // instant refresh
+    loadMyClips(); // refresh instantly
   } catch (err) {
     console.error("Delete failed:", err);
     showGoldAlert("Delete failed — try again");
