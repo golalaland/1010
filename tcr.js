@@ -3858,7 +3858,6 @@ function showUnlockConfirm(video, onUnlockCallback) {
   };
 }
 
-/ ---------- Play Full Video Modal ----------
 function playFullVideo(video) {
   const modal = document.createElement("div");
   Object.assign(modal.style, {
