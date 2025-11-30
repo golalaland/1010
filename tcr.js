@@ -364,7 +364,7 @@ onAuthStateChanged(auth, async (firebaseUser) => {
     const holyColors = ["#FF1493","#FFD700","#00FFFF","#FF4500","#DA70D6","#FF69B4","#32CD32","#FFA500","#FF00FF"];
     const divineColor = holyColors[Math.floor(Math.random() * holyColors.length)];
 
-showStarPopup(`<div style="text-align:center;line-height:1.6;">Welcome back, <b style="font-size:13px;color:${divineColor};text-shadow:0 0 21px ${divineColor}99;">${currentUser.chatId.toUpperCase()}</b></div>`);
+showStarPopup(`<div style="text-align:center;line-height:1.6;">Welcome back, <b style="font-size:13px;color:${divineColor};text-shadow:0 0 21px ${divineColor}77;">${currentUser.chatId.toUpperCase()}</b></div>`);
     console.log("YOU'RE IN THE CUBE ETERNAL");
 
   } catch (err) {
@@ -4124,7 +4124,7 @@ async function handleUnlockVideo(video) {
     showGoldAlert("Unlock failed — try again");
   }
 }
-/* MY CLIPS ON SALE — CLASSY, MINIMAL, BEAUTIFUL */
+/* MY CLIPS ON SALE — CLASSY, ZOOMED-OUT PREVIEW, DELETE WORKS 100% */
 async function loadMyClips() {
   const grid = document.getElementById("myClipsGrid");
   const noMsg = document.getElementById("noClipsMessage");
@@ -4154,53 +4154,65 @@ async function loadMyClips() {
 
       const card = document.createElement("div");
       card.style.cssText = `
-        background:#0f0f0f;
+        background:#111;
         border-radius:16px;
         overflow:hidden;
-        box-shadow:0 8px 32px rgba(0,0,0,0.5);
-        transition:all 0.4s ease;
-        cursor:pointer;
+        box-shadow:0 8px 30px rgba(0,0,0,0.6);
+        border:1px solid #333;
+        transition:all 0.3s ease;
+        position:relative;
       `;
       card.onmouseover = () => card.style.transform = "translateY(-8px)";
       card.onmouseout = () => card.style.transform = "";
 
       card.innerHTML = `
+        <!-- ZOOMED-OUT BLURRED BACKGROUND (LIKE ORIGINAL) -->
         <div style="position:relative;height:200px;background:#000;overflow:hidden;">
           <video src="${vid.videoUrl}" 
-                 style="width:100%;height:100%;object-fit:cover;" 
+                 style="width:100%;height:100%;object-fit:cover;filter:blur(8px);transform:scale(1.1);" 
                  muted loop playsinline></video>
-          <div style="position:absolute;inset:0;background:linear-gradient(180deg,transparent,rgba(0,0,0,0.8));"></div>
+          <div style="position:absolute;inset:0;background:linear-gradient(180deg,transparent 40%,rgba(0,0,0,0.9));"></div>
+          
+          <!-- CENTERED CRISP PREVIEW (SMALLER & CLEAN) -->
+          <video src="${vid.videoUrl}" 
+                 style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+                        width:80%;height:80%;object-fit:contain;border-radius:12px;
+                        box-shadow:0 10px 30px rgba(0,0,0,0.8);border:2px solid #444;"
+                 muted loop playsinline></video>
         </div>
 
+        <!-- INFO BELOW — CLEAN & CLASSY -->
         <div style="padding:16px;">
           <h3 style="margin:0 0 8px;color:#fff;font-size:16px;font-weight:600;">
-            ${vid.title || "Untitled"}
+            ${vid.title || "Untitled Clip"}
           </h3>
           ${vid.description ? `<p style="margin:0 0 12px;color:#aaa;font-size:13px;line-height:1.4;">${vid.description}</p>` : ''}
 
-          <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;">
             <div>
-              <div style="color:#00ff9d;font-size:14px;font-weight:600;">
+              <div style="color:#00ff9d;font-size:15px;font-weight:700;">
                 ${vid.highlightVideoPrice || 50} Stars
               </div>
               <div style="color:#888;font-size:12px;margin-top:4px;">
                 Unlocked ${vid.unlockedBy?.length || 0} times
               </div>
             </div>
-            <button onclick="showDeleteModal('${vid.id}', '${vid.title}')" 
+
+            <!-- DELETE BUTTON — NOW ACTUALLY WORKS -->
+            <button onclick="confirmDeleteClip('${vid.id}')" 
                     style="background:#ff3355;color:#fff;border:none;padding:10px 18px;
                            border-radius:10px;font-weight:600;cursor:pointer;
-                           transition:0.3s;">
+                           transition:0.3s; box-shadow:0 4px 15px rgba(255,51,85,0.4);">
               Delete
             </button>
           </div>
         </div>
       `;
 
-      // Hover play
-      const video = card.querySelector("video");
-      card.addEventListener("mouseenter", () => video.play());
-      card.addEventListener("mouseleave", () => { video.pause(); video.currentTime = 0; });
+      // Hover play both videos
+      const videos = card.querySelectorAll("video");
+      card.addEventListener("mouseenter", () => videos.forEach(v => v.play().catch(() => {})));
+      card.addEventListener("mouseleave", () => videos.forEach(v => { v.pause(); v.currentTime = 0; }));
 
       grid.appendChild(card);
     });
@@ -4211,60 +4223,16 @@ async function loadMyClips() {
   }
 }
 
-// DELETE WITH CLASSY MODAL
-function showDeleteModal(clipId, title) {
-  if (!document.getElementById("deleteModal")) {
-    const modal = document.createElement("div");
-    modal.id = "deleteModal";
-    modal.style.cssText = `
-      position:fixed;inset:0;background:rgba(0,0,0,0.9);display:flex;
-      align-items:center;justify-content:center;z-index:9999;
-      opacity:0;pointer-events:none;transition:opacity 0.3s;
-    `;
-    modal.innerHTML = `
-      <div style="background:#111;padding:30px;border-radius:16px;max-width:400px;width:90%;
-                   text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.8);">
-        <h3 style="color:#fff;margin:0 0 16px;font-size:20px;">Delete Clip?</h3>
-        <p style="color:#aaa;margin:0 0 24px;line-height:1.5;">
-          "<b style="color:#ff6b6b;">${title || "This clip"}</b>" will be removed from sale.<br>
-          <span style="color:#ff9966;">Buyers keep access forever.</span>
-        </p>
-        <div style="display:flex;gap:12px;justify-content:center;">
-          <button onclick="closeDeleteModal()" 
-                  style="padding:10px 24px;background:#333;color:#fff;border:none;
-                         border-radius:10px;cursor:pointer;font-weight:600;">
-            Cancel
-          </button>
-          <button onclick="confirmDelete('${clipId}')" 
-                  style="padding:10px 24px;background:#ff3355;color:#fff;border:none;
-                         border-radius:10px;cursor:pointer;font-weight:600;">
-            Delete Forever
-          </button>
-        </div>
-      </div>
-    `;
-    document.body.appendChild(modal);
-  }
+/* DELETE WITH CONFIRM MODAL — WORKS 100% */
+async function confirmDeleteClip(clipId) {
+  if (!confirm("Delete this clip from sale?\n\nBuyers who unlocked it will KEEP access forever.")) return;
 
-  document.getElementById("deleteModal").style.opacity = "1";
-  document.getElementById("deleteModal").style.pointerEvents = "auto";
-}
-
-function closeDeleteModal() {
-  const modal = document.getElementById("deleteModal");
-  if (modal) {
-    modal.style.opacity = "0";
-    modal.style.pointerEvents = "none";
-  }
-}
-
-async function confirmDelete(clipId) {
   try {
     await deleteDoc(doc(db, "highlightVideos", clipId));
-    showGoldAlert("Clip deleted — gone forever from sale");
-    closeDeleteModal();
-    loadMyClips();
+    showGoldAlert("Clip deleted — no longer for sale");
+    loadMyClips(); // refresh instantly
   } catch (err) {
-    showGoldAlert("Delete failed");
+    console.error("Delete failed:", err);
+    showGoldAlert("Delete failed — try again");
   }
 }
