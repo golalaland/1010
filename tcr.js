@@ -367,7 +367,7 @@ onAuthStateChanged(auth, async (firebaseUser) => {
     showStarPopup(`
       <div style="text-align:center;line-height:1.6;">
         Welcome back,<br>
-        <b style="font-size:26px;color:${divineColor};text-shadow:0 0 20px ${divineColor}99;">
+        <b style="font-size:13px;color:${divineColor};text-shadow:0 0 21px ${divineColor}99;">
           ${currentUser.chatId.toUpperCase()}
         </b>
       </div>
@@ -1532,33 +1532,31 @@ document.getElementById("whitelistLoginBtn")?.addEventListener("click", async ()
     return;
   }
 
-  // STEP 1: Whitelist check
-  const allowed = await loginWhitelist(email);
-  if (!allowed) return;
+ // STEP 1: Whitelist check
+const allowed = await loginWhitelist(email);
+if (!allowed) return;
 
-  // STEP 2: ONLY NOW do Firebase Auth login
-  try {
-    const userCredential = await signInWithEmailAndPassword(auth, email, password);
-    const firebaseUser = userCredential.user;
+// STEP 2: ONLY NOW do Firebase Auth login
+try {
+  const userCredential = await signInWithEmailAndPassword(auth, email, password);
+  const firebaseUser = userCredential.user;
+  console.log("Firebase Auth Success:", firebaseUser.uid);
 
-    console.log("Firebase Auth Success:", firebaseUser.uid);
+  // NO MANUAL currentUser SETTING
+  // NO WELCOME POPUP — YOU ALREADY HAVE ONE
+  // onAuthStateChanged will handle everything perfectly
 
-    // DO NOT MANUALLY SET currentUser HERE
-    // onAuthStateChanged will handle it (see below)
+} catch (err) {
+  console.error("Firebase Auth failed:", err.code);
 
-    showStarPopup("Welcome back, King!");
-    
-  } catch (err) {
-    console.error("Firebase Auth failed:", err.code);
-    if (err.code === "auth/wrong-password" || err.code === "auth/user-not-found") {
-      showStarPopup("Wrong password or email");
-    } else if (err.code === "auth/too-many-requests") {
-      showStarPopup("Too many attempts. Wait a minute.");
-    } else {
-      showStarPopup("Login failed");
-    }
+  if (err.code === "auth/wrong-password" || err.code === "auth/user-not-found") {
+    showStarPopup("Wrong password or email");
+  } else if (err.code === "auth/too-many-requests") {
+    showStarPopup("Too many attempts. Wait a minute.");
+  } else {
+    showStarPopup("Login failed");
   }
-});
+}
 
 /* ===============================
    🔐 VIP Login (Whitelist Check)
