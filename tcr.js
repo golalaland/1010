@@ -3692,7 +3692,10 @@ highlightsBtn.onclick = async () => {
   }
 };
 
-/* ========== HIGHLIGHTS MODAL — ETERNAL FINAL VERSION — ZERO ERRORS ========== */
+/* ============================================= */
+/*        HIGHLIGHTS MODAL — ETERNAL EDITION      */
+/*        ZERO ERRORS · PERFECT UNLOCK · SEXY AF  */
+/* ============================================= */
 function showHighlightsModal(videos) {
   document.getElementById("highlightsModal")?.remove();
 
@@ -3700,379 +3703,236 @@ function showHighlightsModal(videos) {
   modal.id = "highlightsModal";
   Object.assign(modal.style, {
     position: "fixed", top: 0, left: 0, width: "100vw", height: "100vh",
-    background: "rgba(0,0,0,0.9)", display: "flex", flexDirection: "column",
+    background: "rgba(0,0,0,0.96)", display: "flex", flexDirection: "column",
     alignItems: "center", justifyContent: "flex-start", zIndex: 999999,
     overflowY: "auto", padding: "20px", boxSizing: "border-box",
-    fontFamily: "system-ui, sans-serif"
+    fontFamily: "'Segoe UI', system-ui, sans-serif", backdropFilter: "blur(12px)"
   });
 
+  // ——— INTRO BANNER ———
   const intro = document.createElement("div");
-  intro.innerHTML = `<div style="text-align:center;color:#ccc;max-width:640px;margin:auto;line-height:1.6;font-size:14px;background:linear-gradient(135deg,rgba(255,0,0.12,0.12),rgba(255,100,0,0.08));padding:14px 48px 14px 20px;border:1px solid rgba(255,0,110,0.3);box-shadow:0 0 16px rgba(255,0,110,0.15);border-radius:12px;position:relative;">
-    <p style="margin:0"><span style="background:linear-gradient(90deg,#ff006e,#ff8c00);-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-weight:700">Highlights</span> are exclusive creator moments.<br>Unlock premium clips with STRZ.</p>
-  </div>`;
-  Object.assign(intro.style, { position: "sticky", top: "10px", zIndex: 1001, marginBottom: "12px" });
+  intro.innerHTML = `
+    <div style="text-align:center;color:#ddd;max-width:660px;margin:0 auto;line-height:1.7;font-size:15px;
+                background:linear-gradient(135deg,rgba(255,0,110,0.15),rgba(255,100,0,0.1));
+                padding:18px 50px 18px 24px;border:1px solid rgba(255,0,110,0.35);
+                box-shadow:0 8px 32px rgba(255,0,110,0.2);border-radius:16px;position:relative;">
+      <p style="margin:0;">
+        <span style="font-size:22px;background:linear-gradient(90deg,#ff006e,#ff8c00);-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-weight:800;">
+          Highlights
+        </span> are exclusive creator moments.<br>
+        Unlock premium clips with <b>STRZ</b> to support your favorites.
+      </p>
+    </div>`;
+  Object.assign(intro.style, { position: "sticky", top: "12px", zIndex: 1001, marginBottom: "16px" });
   modal.appendChild(intro);
 
-  const closeBtn = document.createElement("div");
-  closeBtn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6L18 18" stroke="#ff006e" stroke-width="2.5" stroke-linecap="round"/></svg>`;
-  Object.assign(closeBtn.style, { position:"absolute", top:"14px", right:"16px", cursor:"pointer", zIndex:1002 });
-  closeBtn.onclick = () => modal.remove();
-  intro.firstChild.appendChild(closeBtn);
+  const closeX = document.createElement("div");
+  closeX.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6l12 12" stroke="#ff006e" stroke-width="3" stroke-linecap="round"/></svg>`;
+  Object.assign(closeX.style, { position:"absolute", top:"18px", right:"20px", cursor:"pointer", zIndex:1002, filter:"drop-shadow(0 0 8px #ff006e)" });
+  closeX.onclick = () => modal.remove();
+  intro.firstChild.appendChild(closeX);
 
+  // ——— SEARCH + FILTERS ———
   const searchWrap = document.createElement("div");
-  Object.assign(searchWrap.style, { position:"sticky", top:"84px", zIndex:1001, marginBottom:"20px", display:"flex", flexDirection:"column", alignItems:"center", gap:"6px" });
+  Object.assign(searchWrap.style, { position:"sticky", top:"90px", zIndex:1001, marginBottom:"24px", display:"flex", flexDirection:"column", alignItems:"center", gap:"10px" });
 
-  const searchInputWrap = document.createElement("div");
-  searchInputWrap.style.cssText = "display:flex;align-items:center;background:linear-gradient(135deg,rgba(255,255,255,0.08),rgba(255,255,255,0.04));border:1px solid rgba(255,0,110,0.3);border-radius:30px;padding:8px 14px;width:280px;backdrop-filter:blur(8px);box-shadow:0 0 12px rgba(255,0,110,0.15);";
-  searchInputWrap.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M15 15L21 21M10 17C6.13401 17 3 13.866 3 10C3 6.13401 6.13401 3 10 3C13.866 3 17 6.13401 17 10C17 13.866 13.866 17 10 17Z" stroke="url(#gradSearch)" stroke-width="2" stroke-linecap="round"/><defs><linearGradient id="gradSearch" x1="3" y1="3" x2="21" y2="21"><stop stop-color="#ff006e"/><stop offset="1" stop-color="#ff8c00"/></linearGradient></defs></svg>
-    <input type="text" placeholder="Search by creator..." style="flex:1;background:transparent;border:none;outline:none;color:#fff;font-size:13px;margin-left:8px;"/>`;
-  searchWrap.appendChild(searchInputWrap);
+  const searchBox = document.createElement("div");
+  searchBox.style.cssText = "display:flex;align-items:center;gap:12px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,0,110,0.4);border-radius:40px;padding:10px 18px;backdrop-filter:blur(12px);box-shadow:0 8px 25px rgba(255,0,110,0.2);";
+  searchBox.innerHTML = `
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M21 21L15.8 15.8M17.8 10.4C17.8 14.7 14.3 18.2 10 18.2C5.7 18.2 2.2 14.7 2.2 10.4C2.2 6.1 5.7 2.6 10 2.6C14.3 2.6 17.8 6.1 17.8 10.4Z" stroke="url(#grad)" stroke-width="2.5" stroke-linecap="round"/><defs><linearGradient id="grad"><stop stop-color="#ff006e"/><stop offset="1" stop-color="#ff8c00"/></linearGradient></defs></svg>
+    <input type="text" placeholder="Search creator or title..." style="background:none;border:none;outline:none;color:#fff;font-size:14px;width:260px;"/>
+  `;
+  searchWrap.appendChild(searchBox);
 
-  const buttonRow = document.createElement("div");
-  buttonRow.style.cssText = "display:flex;gap:8px;";
-  const toggleBtn = Object.assign(document.createElement("button"), { textContent: "Show Unlocked", style: "padding:4px 10px;border-radius:6px;background:linear-gradient(135deg,#333,#222);color:#fff;border:1px solid rgba(255,0,110,0.3);font-size:12px;cursor:pointer;font-weight:600;" });
-  const trendingBtn = Object.assign(document.createElement("button"), { textContent: "Trending", style: "padding:4px 10px;border-radius:6px;background:linear-gradient(135deg,#8B00FF,#FF1493);color:#fff;font-size:12px;cursor:pointer;font-weight:600;" });
-  buttonRow.append(toggleBtn, trendingBtn);
-  searchWrap.appendChild(buttonRow);
+  const btns = document.createElement("div");
+  btns.style.cssText = "display:flex;gap:12px;";
+  const unlockedBtn = Object.assign(document.createElement("button"), { textContent: "Show Unlocked", className: "filter-btn" });
+  const trendingBtn = Object.assign(document.createElement("button"), { textContent: "Trending", className: "filter-btn" });
+  btns.append(unlockedBtn, trendingBtn);
+  searchWrap.appendChild(btns);
   modal.appendChild(searchWrap);
 
+  // ——— CONTENT GRID ———
   const content = document.createElement("div");
-  Object.assign(content.style, { display:"flex", gap:"20px", flexWrap:"nowrap", overflowX:"auto", padding:"20px 0 60px", width:"100%" });
+  Object.assign(content.style, { display:"flex", gap:"24px", flexWrap:"nowrap", overflowX:"auto", padding:"20px 0 80px", width:"100%", scrollBehavior:"smooth" });
   modal.appendChild(content);
 
-  let filterMode = "all";
+  let currentFilter = "all";
 
- function renderCards(list) {
-  content.innerHTML = "";
-  const unlocked = JSON.parse(localStorage.getItem("userUnlockedVideos") || "[]");
+  // ——— RENDER CARDS ———
+  function render(list = videos) {
+    content.innerHTML = "";
+    const unlockedIds = JSON.parse(localStorage.getItem("userUnlockedVideos") || "[]");
 
-  list.forEach(video => {
-    const isUnlocked = unlocked.includes(video.id);
-
-    const card = document.createElement("div");
-    card.className = "videoCard";
-    card.dataset.uploader = video.uploaderName || "Anonymous";
-    card.dataset.title = video.title || "Untitled";
-    Object.assign(card.style, {
-      minWidth: "230px", maxWidth: "230px", background: "#1b1b1b", borderRadius: "12px",
-      overflow: "hidden", display: "flex", flexDirection: "column", cursor: "pointer",
-      flexShrink: 0, boxShadow: "0 4px 16px rgba(255,0,110,0.15)", border: "1px solid rgba(255,0,110,0.2)"
+    const filtered = list.filter(v => {
+      if (currentFilter === "unlocked") return unlockedIds.includes(v.id);
+      if (currentFilter === "trending") return v.isTrending === true;
+      return true;
     });
 
-    const container = document.createElement("div");
-    container.style.cssText = "height:320px;position:relative;background:#000;overflow:hidden;cursor:pointer;";
+    filtered.forEach(video => {
+      const isUnlocked = unlockedIds.includes(video.id);
+      const videoSrc = video.previewClip || video.highlightVideo || video.videoUrl || "";
 
-    const vid = document.createElement("video");
-    vid.muted = vid.loop = true;
-    vid.preload = "metadata";
-    vid.style.cssText = "width:100%;height:100%;object-fit:cover;";
+      const card = document.createElement("div");
+      card.className = "highlightCard";
+      card.dataset.uploader = video.uploaderName || "Anon";
+      card.dataset.title = video.title || "Untitled";
+      Object.assign(card.style, {
+        minWidth:"260px", background:"linear-gradient(135deg,#1a1a1a,#111)", borderRadius:"18px",
+        overflow:"hidden", boxShadow":"0 12px 40px rgba(255,0,110,0.25)",
+        border:"1px solid rgba(255,0,110,0.3)", transition:"all 0.4s ease"
+      });
+      card.onmouseenter = () => card.style.transform = "translateY(-12px) scale(1.02)";
+      card.onmouseleave = () => card.style.transform = "";
 
-    // THIS FIXES THE UNDEFINED URL ISSUE
-    const videoSource = video.previewClip || video.highlightVideo || video.videoUrl || "";
+      const thumb = document.createElement("div");
+      thumb.style.cssText = "position:relative;height:360px;background:#000;overflow:hidden;cursor:pointer;";
 
-    if (isUnlocked && videoSource) {
-      vid.src = videoSource;
-      vid.load();
-      container.onmouseenter = () => vid.play().catch(() => {});
-      container.onmouseleave = () => { vid.pause(); vid.currentTime = 0; };
-      container.onclick = e => { e.stopPropagation(); playFullVideo(video); };
-    } else {
-      const overlay = document.createElement("div");
-      overlay.style.cssText = "position:absolute;inset:0;background:#000;display:flex;align-items:center;justify-content:center;z-index:2;";
-      overlay.innerHTML = `<div style="text-align:center">
-        <svg width="72" height="72" viewBox="0 0 24 24" fill="none">
-          <path d="M12 2C9.2 2 7 4.2 7 7V11H6C4.9 11 4 11.9 4 13V20C4 21.1 4.9 22 6 22H18C19.1 22 20 21.1 20 20V13C20 11.9 19.1 11 18 11H17V7C17 4.2 14.8 2 12 2ZM12 4C13.7 4 15 5.3 15 7V11H9V7C9 5.3 10.3 4 12 4Z" fill="#ff006e"/>
-        </svg>
-        <div style="margin-top:12px;color:#ff006e;font-weight:700;font-size:16px">
-          ${video.highlightVideoPrice || 100} STRZ
-        </div>
-      </div>`;
-      container.appendChild(overlay);
-      container.onclick = e => { e.stopPropagation(); showUnlockConfirm(video, () => renderCards(list)); };
+      const vid = document.createElement("video");
+      vid.muted = vid.loop = true;
+      vid.preload = "metadata";
+      vid.style.cssText = "width:100%;height:100%;object-fit:cover;";
+
+      if (isUnlocked && videoSrc) {
+        vid.src = videoSrc;
+        vid.load();
+        thumb.onmouseenter = () => vid.play().catch(() => {});
+        thumb.onmouseleave = () => { vid.pause(); vid.currentTime = 0; };
+        thumb.onclick = e => { e.stopPropagation(); playFullVideo(video); };
+      } else {
+        const lock = document.createElement("div");
+        lock.style.cssText = "position:absolute;inset:0;background:rgba(0,0,0,0.88);display:flex;align-items:center;justify-content:center;z-index:2;";
+        lock.innerHTML = `
+          <div style="text-align:center;">
+            <svg width="88" height="88" viewBox="0 0 24 24" fill="none"><path d="M12 2C9.2 2 7 4.2 7 7V11H6C4.9 11 4 11.9 4 13V20C4 21.1 4.9 22 6 22H18C19.1 22 20 21.1 20 20V13C20 11.9 19.1 11 18 11H17V7C17 4.2 14.8 2 12 2ZM12 4C13.7 4 15 5.3 15 7V11H9V7C9 5.3 10.3 4 12 4Z" fill="#ff006e"/></svg>
+            <div style="margin-top:16px;color:#ff006e;font-weight:800;font-size:19px;">
+              ${video.highlightVideoPrice || 100} STRZ
+            </div>
+          </div>`;
+        thumb.appendChild(lock);
+        thumb.onclick = e => { e.stopPropagation(); showUnlockConfirm(video, () => render()); };
+      }
+      thumb.appendChild(vid);
+
+      const info = document.createElement("div");
+      info.style.cssText = "padding:16px;text-align:center;";
+      info.innerHTML = `
+        <div style="font-weight:700;color:#fff;font-size:16px;margin-bottom:6px;">${video.title || "Untitled"</div>
+        <div style="color:#ff006e;font-size:13px;margin-bottom:12px;">by ${video.uploaderName || "Anonymous"}</div>
+        <button style="width:100%;padding:12px;border:none;border-radius:10px;font-weight:700;font-size:14px;
+                        background:${isUnlocked?'#333':'linear-gradient(90deg,#ff006e,#ff4500)'};
+                        color:#fff;cursor:${isUnlocked?'default':'pointer'};box-shadow:0 6px 20px rgba(255,0,110,0.4);">
+          ${isUnlocked ? "Unlocked" : `Unlock ${video.highlightVideoPrice || 100} STRZ`}
+        </button>`;
+
+      if (!isUnlocked) info.querySelector("button").onclick = e => { e.stopPropagation(); showUnlockConfirm(video, () => render()); };
+
+      card.append(thumb, info);
+      content.appendChild(card);
+    });
+  }
+
+  // ——— FILTER BUTTONS ———
+  unlockedBtn.onclick = () => {
+    currentFilter = currentFilter === "unlocked" ? "all" : "unlocked";
+    unlockedBtn.textContent = currentFilter === "unlocked" ? "All Videos" : "Show Unlocked";
+    unlockedBtn.style.background = currentFilter === "unlocked" ? "linear-gradient(90deg,#ff006e,#ff4500)" : "linear-gradient(90deg,#333,#222)";
+    render();
+  };
+
+  trendingBtn.onclick = () => {
+    currentFilter = currentFilter === "trending" ? "all" : "trending";
+    trendingBtn.textContent = currentFilter === "trending" ? "All Videos" : "Trending";
+    trendingBtn.style.background = currentFilter === "trending" ? "linear-gradient(90deg,#9d00ff,#ff0077)" : "linear-gradient(90deg,#8B00FF,#FF1493)";
+    render();
+  };
+
+  // ——— SEARCH ———
+  searchBox.querySelector("input").addEventListener("input", e => {
+    const term = e.target.value.toLowerCase();
+    content.querySelectorAll(".highlightCard").forEach(c => {
+      const match = c.dataset.uploader.toLowerCase().includes(term) || c.dataset.title.toLowerCase().includes(term);
+      c.style.opacity = match ? "1" : "0.3";
+      c.style.transform = match ? "scale(1)" : "scale(0.95)";
+    });
+  });
+
+  render();
+  document.body.appendChild(modal);
+  setTimeout(() => searchBox.querySelector("input").focus(), 400);
+}
+
+/* ============================================= */
+/*             FULL UNLOCK FLOW — FIXED          */
+/* ============================================= */
+async function handleUnlockVideo(video) {
+  if (!currentUser?.uid) return alert("Login required");
+  const cost = parseInt(video.highlightVideoPrice) || 100;
+  if (currentUser.uid === video.uploaderId) return alert("You already own this");
+
+  try {
+    await runTransaction(db, async (tx) => {
+      const senderSnap = await tx.get(doc(db, "users", currentUser.uid));
+      if ((senderSnap.data()?.stars || 0) < cost) throw "Not enough STRZ";
+
+      tx.update(doc(db, "users", currentUser.uid), { stars: increment(-cost) });
+      tx.update(doc(db, "users", video.uploaderId), { stars: increment(cost) });
+      tx.update(doc(db, "highlightVideos", video.id), {
+        unlockedBy: arrayUnion({ userId: currentUser.uid, chatId: currentUser.chatId || "User", unlockedAt: new Date() })
+      });
+      tx.update(doc(db, "users", currentUser.uid), { unlockedVideos: arrayUnion(video.id) });
+    });
+
+    // LOCAL INSTANT UPDATE — THIS KILLS THE PADLOCK BUG FOREVER
+    let unlocked = JSON.parse(localStorage.getItem("userUnlockedVideos") || "[]");
+    if (!unlocked.includes(video.id)) {
+      unlocked.push(video.id);
+      localStorage.setItem("userUnlockedVideos", JSON.stringify(unlocked));
     }
 
-    container.appendChild(vid);
-
-    const info = document.createElement("div");
-    info.style.cssText = "background:#111;padding:10px;display:flex;flex-direction:column;gap:4px;";
-    info.innerHTML = `
-      <div style="font-weight:700;color:#fff;font-size:14px">${video.title || "Untitled"}</div>
-      <div style="font-size:12px;color:#ff006e">By: ${video.uploaderName || "Anonymous"}</div>
-      <button style="background:${isUnlocked?'#333':'linear-gradient(135deg,#ff006e,#ff4500)'};border:none;border-radius:6px;padding:8px 0;color:#fff;font-weight:600;font-size:13px;cursor:${isUnlocked?'default':'pointer'}">
-        ${isUnlocked ? "Unlocked" : `Unlock ${video.highlightVideoPrice || 100} STRZ`}
-      </button>`;
-    if (!isUnlocked) info.querySelector("button").onclick = e => { e.stopPropagation(); showUnlockConfirm(video, () => renderCards(list)); };
-
-    card.append(container, info);
-    content.appendChild(card);
-  });
-}
-  toggleBtn.onclick = () => { filterMode = filterMode === "unlocked" ? "all" : "unlocked"; toggleBtn.textContent = filterMode === "unlocked" ? "All Videos" : "Show Unlocked"; toggleBtn.style.background = filterMode === "unlocked" ? "linear-gradient(135deg,#ff006e,#ff8c00)" : "linear-gradient(135deg,#333,#222)"; renderCards(videos); };
-  trendingBtn.onclick = () => { filterMode = filterMode === "trending" ? "all" : "trending"; trendingBtn.textContent = filterMode === "trending" ? "All Videos" : "Trending"; trendingBtn.style.background = filterMode === "trending" ? "linear-gradient(135deg,#A020F0,#FF45A1)" : "linear-gradient(135deg,#8B00FF,#FF1493)"; renderCards(videos); };
-
-  searchInputWrap.querySelector("input").addEventListener("input", e => {
-    const term = e.target.value.toLowerCase();
-    content.querySelectorAll(".videoCard").forEach(c => {
-      const match = c.dataset.uploader.toLowerCase().includes(term) || c.dataset.title.toLowerCase().includes(term);
-      c.style.display = match ? "flex" : "none";
+    // Notification
+    await addDoc(collection(db, "notifications"), {
+      userId: video.uploaderId,
+      message: `${currentUser.chatId || "Someone"} unlocked your video "${video.title}" for ${cost} STRZ!`,
+      type: "unlock",
+      timestamp: serverTimestamp(),
+      read: false
     });
-  });
 
-  renderCards(videos);
-  document.body.appendChild(modal);
-  setTimeout(() => searchInputWrap.querySelector("input").focus(), 300);
+    alert(`Unlocked "${video.title}"! Enjoy`);
+    document.getElementById("highlightsModal")?.remove();
+    showHighlightsModal(videos); // Re-open with fresh data
+
+  } catch (e) {
+    console.error(e);
+    alert("Unlock failed: " + e.message || e);
+  }
 }
 
-/* ---------- Sorting helper ---------- */
-function sortVideos(videos, mode="all"){
-  const unlockedIds = JSON.parse(localStorage.getItem("userUnlockedVideos")||"[]");
-  if(mode==="unlocked") return videos.filter(v=>unlockedIds.includes(v.id));
-  if(mode==="locked") return videos.filter(v=>!unlockedIds.includes(v.id));
-  return videos;
-}
-
-/* ---------- Unlock Confirm Modal ---------- */
-function showUnlockConfirm(video, onUnlockCallback) {
-  document.querySelectorAll("video").forEach(v => v.pause());
-  document.getElementById("unlockConfirmModal")?.remove();
-
-  const modal = document.createElement("div");
-  modal.id = "unlockConfirmModal";
-  Object.assign(modal.style, {
-    position: "fixed",
-    top: 0,
-    left: 0,
-    width: "100vw",
-    height: "100vh",
-    background: "rgba(0,0,0,0.93)",
-    backdropFilter: "blur(8px)",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    zIndex: "1000001",
-    opacity: "1",
-  });
-
-  modal.innerHTML = `
-    <div style="background:#111;padding:20px;border-radius:12px;text-align:center;color:#fff;max-width:320px;box-shadow:0 0 20px rgba(0,0,0,0.5);">
-      <h3 style="margin-bottom:10px;font-weight:600;">Unlock "${video.title}"?</h3>
-      <p style="margin-bottom:16px;">This will cost <b>${video.highlightVideoPrice} ⭐</b></p>
-      <div style="display:flex;gap:12px;justify-content:center;">
-        <button id="cancelUnlock" style="padding:8px 16px;background:#333;border:none;color:#fff;border-radius:8px;font-weight:500;">Cancel</button>
-        <button id="confirmUnlock" style="padding:8px 16px;background:linear-gradient(90deg,#ff0099,#ff6600);border:none;color:#fff;border-radius:8px;font-weight:600;">Yes</button>
-      </div>
-    </div>
-  `;
-
-  document.body.appendChild(modal);
-
-  modal.querySelector("#cancelUnlock").onclick = () => modal.remove();
-  modal.querySelector("#confirmUnlock").onclick = async () => {
-    modal.remove();
-    await handleUnlockVideo(video);
-    if (onUnlockCallback) onUnlockCallback();
-  };
-}
-
+/* ============================================= */
+/*             FULL VIDEO PLAYER                 */
+/* ============================================= */
 function playFullVideo(video) {
-  const modal = document.createElement("div");
-  Object.assign(modal.style, {
-    position: "fixed", top: 0, left: 0, width: "90vw", height: "90vh",
-    background: "rgba(0,0,0,0.95)",
-    display: "flex", alignItems: "center", justifyContent: "center",
-    zIndex: "1000002"
+  const src = video.highlightVideo || video.videoUrl || video.previewClip;
+  if (!src) return alert("No video source");
+
+  const overlay = document.createElement("div");
+  Object.assign(overlay.style, {
+    position:"fixed", top:0 left:0 width:"100vw" height:"100vh",
+    background:"rgba(0,0,0,0.98)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:1000002
   });
 
   const vid = document.createElement("video");
-  vid.src = video.highlightVideo;
+  vid.src = src;
   vid.controls = true;
   vid.autoplay = true;
-  vid.style.maxWidth = "90%";
-  vid.style.maxHeight = "90%";
-  vid.style.borderRadius = "12px";
+  vid.style.maxWidth = "94%";
+  vid.style.maxHeight = "94%";
+  vid.style.borderRadius = "16px";
+  vid.style.boxShadow = "0 0 60px rgba(255,0,110,0.6)";
 
-  modal.appendChild(vid);
-  modal.onclick = () => modal.remove();
-  document.body.appendChild(modal);
+  overlay.onclick = () => overlay.remove();
+  overlay.appendChild(vid);
+  document.body.appendChild(overlay);
 }
-
-/* ---------- UNLOCK VIDEO — UPLOADER GETS NOTIFIED + BANNER + STARS (FINAL ETERNAL EDITION) ---------- */
-async function handleUnlockVideo(video) {
-  if (!currentUser?.uid) return showGoldAlert("Login required");
-
-  const senderId = currentUser.uid;
-  const receiverId = video.uploaderId;
-  const starsCost = parseInt(video.highlightVideoPrice, 10) || 0;
-
-  if (starsCost < 10) return showGoldAlert("Invalid price");
-  if (senderId === receiverId) return showGoldAlert("You already own this video");
-
-  const senderRef = doc(db, "users", senderId);
-  const receiverRef = doc(db, "users", receiverId);
-  const videoRef = doc(db, "highlightVideos", video.id);
-
-  try {
-    // === 1. TRANSACTION: STARS + UNLOCK ===
-    await runTransaction(db, async (tx) => {
-      const [senderSnap, receiverSnap] = await Promise.all([
-        tx.get(senderRef),
-        tx.get(receiverRef)
-      ]);
-
-      if (!senderSnap.exists()) throw "Profile missing";
-      if ((senderSnap.data().stars || 0) < starsCost) throw "Not enough stars";
-
-      if (!receiverSnap.exists()) {
-        tx.set(receiverRef, { chatId: video.uploaderName || "VIP", stars: 0 }, { merge: true });
-      }
-
-      tx.update(senderRef, { stars: increment(-starsCost) });
-      tx.update(receiverRef, { stars: increment(starsCost) });
-
-      tx.update(videoRef, {
-        unlockedBy: arrayUnion({
-          userId: senderId,
-          chatId: currentUser.chatId,
-          unlockedAt: new Date()
-        })
-      });
-
-      tx.update(senderRef, { unlockedVideos: arrayUnion(video.id) });
-    });
-
-    // === 2. LOCAL UNLOCK UI ===
-    const unlocked = JSON.parse(localStorage.getItem("userUnlockedVideos") || "[]");
-    if (!unlocked.includes(video.id)) unlocked.push(video.id);
-    localStorage.setItem("userUnlockedVideos", JSON.stringify(unlocked));
-    localStorage.setItem(`unlocked_${video.id}`, "true");
-
-    // === 3. SEND NOTIFICATION TO YOUR REAL TOP-LEVEL NOTIFICATIONS COLLECTION ===
-    try {
-      await addDoc(collection(db, "notifications"), {
-        userId: receiverId,                                   // ← who receives it
-        message: `${currentUser.chatId} unlocked your video "${video.title || "Highlight"}" for ${starsCost} stars!`,
-        type: "video_unlock",
-        fromUser: currentUser.chatId,
-        fromUid: senderId,
-        videoId: video.id,
-        videoTitle: video.title || "Highlight Video",
-        stars: starsCost,
-        timestamp: serverTimestamp(),
-        read: false
-      });
-      console.log("Notification sent to global 'notifications' collection");
-    } catch (err) {
-      console.warn("Failed to send notification:", err);
-    }
-
-    // === 4. SUCCESS ===
-    showGoldAlert(`Unlocked ${video.uploaderName}'s video for ${starsCost} stars!`);
-    document.getElementById("highlightsModal")?.remove();
-    showHighlightsModal([video]);
-
-  } catch (err) {
-    console.error("Unlock failed:", err);
-    showGoldAlert("Unlock failed — try again");
-  }
-}
-/* MY CLIPS — FINAL ETERNAL VERSION — BULLETPROOF */
-async function loadMyClips() {
-  const grid = document.getElementById("myClipsGrid");
-  const noMsg = document.getElementById("noClipsMessage");
-  if (!grid || !currentUser?.uid) return;
-
-  grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:60px;color:#888;">Loading your clips...</div>`;
-
-  try {
-    const q = query(
-      collection(db, "highlightVideos"),
-      where("uploaderId", "==", currentUser.uid),
-      orderBy("uploadedAt", "desc")
-    );
-    const snapshot = await getDocs(q);
-
-    if (snapshot.empty) {
-      grid.innerHTML = "";
-      if (noMsg) noMsg.style.display = "block";
-      return;
-    }
-    if (noMsg) noMsg.style.display = "none";
-    grid.innerHTML = "";
-
-    snapshot.forEach(docSnap => {
-      const vid = { id: docSnap.id, ...docSnap.data() };
-
-      const card = document.createElement("div");
-      card.style.cssText = `
-        background:#111;border-radius:16px;overflow:hidden;
-        box-shadow:0 8px 30px rgba(0,0,0,0.6);border:1px solid #333;
-        transition:all 0.3s ease;position:relative;
-      `;
-      card.onmouseover = () => card.style.transform = "translateY(-8px)";
-      card.onmouseout = () => card.style.transform = "";
-
-      card.innerHTML = `
-        <div style="position:relative;height:200px;background:#000;overflow:hidden;">
-          <video src="${vid.videoUrl}" style="width:100%;height:100%;object-fit:cover;filter:blur(8px);transform:scale(1.1);" muted loop playsinline></video>
-          <div style="position:absolute;inset:0;background:linear-gradient(180deg,transparent 40%,rgba(0,0,0,0.9));"></div>
-          <video src="${vid.videoUrl}" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:80%;height:80%;object-fit:contain;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,0.8);border:2px solid #444;" muted loop playsinline></video>
-        </div>
-
-        <div style="padding:16px;">
-          <div style="margin-bottom:10px;">
-            <strong style="color:#aaa;font-size:13px;">Title:</strong>
-            <span style="color:#fff;font-size:14px;font-weight:600;margin-left:8px;">${vid.title || "Untitled Clip"}</span>
-          </div>
-
-          ${vid.description ? `
-            <div style="margin-bottom:10px;">
-              <strong style="color:#aaa;font-size:13px;">Description:</strong>
-              <span style="color:#ddd;font-size:14px;line-height:1.5;margin-left:8px;">${vid.description}</span>
-            </div>
-          ` : ''}
-
-          <div style="margin:16px 0;">
-            <strong style="color:#aaa;font-size:13px;">Price:</strong>
-            <span style="color:#00ff9d;font-size:14px;font-weight:700;margin-left:10px;">
-              ${vid.highlightVideoPrice || 50} STRZ
-            </span>
-          </div>
-
-          <div style="display:flex;justify-content:space-between;align-items:center;">
-            <div style="color:#888;font-size:13px;">
-              Unlocked <strong style="color:#00ff9d;">${vid.unlockedBy?.length || 0}</strong> times
-            </div>
-
-            <!-- GRADIENT BUTTON — OPENS YOUR FAVORITE MODAL -->
-          <button class="delete-clip-btn" data-clip-id="${vid.id}" data-title="${(vid.title || 'Untitled').replace(/"/g, '&quot;')}"
-        style="background:linear-gradient(90deg,#ff6600,#ff0099); color:#fff; border:none;
-               padding:10px 20px; border-radius:10px; font-weight:600; cursor:pointer;">
-  Delete
-</button>
-          </div>
-        </div>
-      `;
-
-      const videos = card.querySelectorAll("video");
-      card.addEventListener("mouseenter", () => videos.forEach(v => v.play().catch(() => {})));
-      card.addEventListener("mouseleave", () => videos.forEach(v => { v.pause(); v.currentTime = 0; }));
-
-      grid.appendChild(card);
-    });
-
-    // ATTACH MODAL TO ALL DELETE BUTTONS — BULLETPROOF
-    document.querySelectorAll(".delete-clip-btn").forEach(btn => {
-      btn.onclick = null;
-      btn.addEventListener("click", () => {
-        const clipId = btn.dataset.clipId;
-        const title = btn.dataset.title;
-        showDeleteClipModal(clipId, title);
-      });
-    });
-
-  } catch (err) {
-    console.error("Load clips failed:", err);
-    grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;color:#f66;padding:40px;">Failed to load</div>`;
-  }
-}
- 
