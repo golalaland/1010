@@ -3751,10 +3751,9 @@ function showHighlightsModal(videos) {
  function renderCards(videosToRender) {
   content.innerHTML = "";
 
-  // THIS LINE IS THE ONLY ONE THAT MATTERS — ALWAYS FRESH FROM LOCALSTORAGE
-  const unlockedVideos = JSON.parse(localStorage.getItem("userUnlockedVideos") || "[]");
-
-  videosToRender.forEach(video => {
+// ALWAYS READ FRESH — THIS FIXES EVERYTHING
+const unlockedVideos = JSON.parse(localStorage.getItem("userUnlockedVideos") || "[]");
+const isUnlocked = unlockedVideos.includes(video.id);
     // NOW isUnlocked IS DEFINED — BECAUSE unlockedVideos IS DEFINED ABOVE
     const isUnlocked = unlockedVideos.includes(video.id);
 
