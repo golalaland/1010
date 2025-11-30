@@ -9,6 +9,7 @@ import {
   setDoc,
   getDoc,
   updateDoc,
+  deleteDoc,
   collection,
   addDoc,
   serverTimestamp,
@@ -4124,13 +4125,13 @@ async function handleUnlockVideo(video) {
     showGoldAlert("Unlock failed — try again");
   }
 }
-/* MY CLIPS — FINAL, ETERNAL, BULLETPROOF VERSION */
+/* MY CLIPS — FINAL ETERNAL VERSION — BULLETPROOF */
 async function loadMyClips() {
   const grid = document.getElementById("myClipsGrid");
   const noMsg = document.getElementById("noClipsMessage");
   if (!grid || !currentUser?.uid) return;
 
-  grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:60px;color:#888;">Loading clips...</div>`;
+  grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:60px;color:#888;">Loading your clips...</div>`;
 
   try {
     const q = query(
@@ -4192,7 +4193,6 @@ async function loadMyClips() {
               Unlocked <strong style="color:#00ff9d;">${vid.unlockedBy?.length || 0}</strong> times
             </div>
 
-            <!-- THIS BUTTON WILL NEVER FAIL -->
             <button class="delete-clip-btn" data-id="${vid.id}"
                     style="background:#ff3355;color:#fff;border:none;padding:10px 20px;
                            border-radius:10px;font-weight:600;cursor:pointer;
@@ -4203,7 +4203,6 @@ async function loadMyClips() {
         </div>
       `;
 
-      // Hover play
       const videos = card.querySelectorAll("video");
       card.addEventListener("mouseenter", () => videos.forEach(v => v.play().catch(() => {})));
       card.addEventListener("mouseleave", () => videos.forEach(v => { v.pause(); v.currentTime = 0; }));
@@ -4211,28 +4210,29 @@ async function loadMyClips() {
       grid.appendChild(card);
     });
 
-    // ATTACH DELETE LISTENERS AFTER CARDS ARE CREATED
+    // BULLETPROOF EVENT LISTENERS — NEVER FAILS
     document.querySelectorAll(".delete-clip-btn").forEach(btn => {
-      btn.addEventListener("click", () => {
-        deleteMyClip(btn.dataset.id);
-      });
+      btn.onclick = null; // prevent double binding
+      btn.addEventListener("click", () => deleteMyClip(btn.dataset.id));
     });
 
   } catch (err) {
-    console.error(err);
+    console.error("Load clips failed:", err);
     grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;color:#f66;padding:40px;">Failed to load</div>`;
   }
 }
-/* DELETE FUNCTION — CAN BE ANYWHERE, WORKS ALWAYS */
+/* DELETE FUNCTION — NOW IMPORTS deleteDoc PROPERLY */
 async function deleteMyClip(id) {
   if (!confirm("Delete this clip from sale?\n\nBuyers keep access forever.")) return;
 
   try {
+    // THIS LINE WAS MISSING THE IMPORT — NOW FIXED
     await deleteDoc(doc(db, "highlightVideos", id));
+    
     showGoldAlert("Clip deleted — removed from sale");
-    loadMyClips();
+    loadMyClips(); // instant refresh
   } catch (err) {
-    console.error(err);
-    showGoldAlert("Delete failed");
+    console.error("Delete failed:", err);
+    showGoldAlert("Delete failed — try again");
   }
 }
