@@ -2044,7 +2044,7 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 
 
   
-<!-- HIGHLIGHTS ($ELL CONTENT) — CLEAN, PRO, FULLY ADJUSTABLE -->
+<!-- HIGHLIGHTS ($ELL CONTENT) — PROFESSIONAL, SLEEK, FIRE -->
 <div id="sellContentBar" style="margin:40px auto 0; max-width:420px; font-family:system-ui,-apple-system,sans-serif;">
   <div style="text-align:center; margin-bottom:24px;">
     <h2 style="
@@ -2053,9 +2053,11 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
       -webkit-background-clip:text; -webkit-text-fill-color:transparent;
       letter-spacing:-0.5px;
     ">
-      Highlights ($ell Content)
+      Highlights ($ell Content) 
     </h2>
-    <p style="margin:8px 0 0; color:#999; font-size:14px; font-weight:500;">
+    <p style="
+      margin:8px 0 0; color:#999; font-size:14px; font-weight:500;
+    ">
       Upload premium clips • Earn <span style="color:#00ff9d; font-weight:700;">STRZ</span> when unlocked
     </p>
   </div>
@@ -2063,65 +2065,69 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   <div style="
     background:#0d0d0d; border:1px solid #333; border-radius:20px;
     padding:28px 24px; box-shadow:0 20px 60px rgba(0,0,0,0.6);
+    backdrop-filter:blur(10px);
   ">
-    <!-- VIDEO FILE — LABEL + INFO ON SAME LINE -->
-    <div style="margin-bottom:22px;">
-      <label style="display:block; color:#fff; font-size:15px; font-weight:600;">
-        Video File <span style="color:#666; font-weight:400; font-size:14px;">(50MB MAX)</span>
+    <!-- Video File Upload -->
+    <div style="margin-bottom:20px;">
+      <label style="display:block; color:#fff; font-size:15px; font-weight:600; margin-bottom:8px;">
+        Video File <span style="color:#666; font-weight:400;">(MP4 • max 500MB)</span>
       </label>
-      <div style="margin-top:8px;">
-        <input type="file" id="highlightUploadInput" accept="video/*" style="display:none;">
-        <label for="highlightUploadInput" id="fileLabel" style="
-          display:block; padding:18px; background:#111; border:2px dashed #444;
+      <div style="position:relative;">
+        <input type="file" id="highlightUploadInput" accept="video/*" 
+               style="display:none;">
+        <label for="highlightUploadInput" style="
+          display:block; padding:16px; background:#111; border:2px dashed #444;
           border-radius:12px; text-align:center; cursor:pointer; transition:0.3s;
           color:#aaa; font-size:14px;
-        ">
+        " onmouseover="this.style.borderColor='#ff006e'; this.style.background='#1a1a1a';"
+          onmouseout="this.style.borderColor='#444'; this.style.background='#111';">
           <span style="color:#ff006e; font-weight:700;">Click to upload</span> or drag & drop
         </label>
       </div>
     </div>
 
-    <!-- OR URL — SAME LINE -->
-    <div style="margin-bottom:22px;">
-      <label style="display:block; color:#fff; font-size:15px; font-weight:600;">
-        Video Url <span style="color:#666; font-weight:400; font-size:14px;">(required)</span>
+    <!-- Or URL -->
+    <div style="margin-bottom:20px; position:relative;">
+      <div style="text-align:center; color:#666; font-size:13px; margin-bottom:8px;">— OR —</div>
+      <label style="display:block; color:#fff; font-size:15px; font-weight:600; margin-bottom:8px;">
+        Video URL
       </label>
-      <input type="text" id="highlightVideoInput" placeholder="Paste link here" style="
-        width:100%; margin-top:8px; padding:14px 16px; background:#111; border:1px solid #444;
-        border-radius:12px; color:#fff; font-size:14px;
-      ">
+      <input type="text" id="highlightVideoInput" placeholder="https://your-video-link.com"
+             style="width:100%; padding:14px 16px; background:#111; border:1px solid #444;
+                    border-radius:12px; color:#fff; font-size:14px; transition:0.3s;"
+             onfocus="this.style.borderColor='#ff006e'; this.style.boxShadow='0 0 0 3px rgba(255,0,110,0.15)'"
+             onblur="this.style.borderColor='#444'; this.style.boxShadow='none'">
     </div>
 
-    <!-- TITLE — SAME LINE -->
-    <div style="margin-bottom:22px;">
-      <label style="display:block; color:#fff; font-size:15px; font-weight:600;">
-        Title <span style="color:#666; font-weight:400; font-size:14px;">(required)</span>
-      </label>
+    <!-- Title -->
+    <div style="margin-bottom:20px;">
+      <label style="display:block; color:#fff; font-size:15px; font-weight:600; margin-bottom:8px;">Title</label>
       <input type="text" id="highlightTitleInput" placeholder="e.g. Insane 1v5 clutch"
-             style="width:100%; margin-top:8px; padding:14px 16px; background:#111; border:1px solid #444;
-                    border-radius:12px; color:#fff; font-size:15px;">
+             style="width:100%; padding:14px 16px; background:#111; border:1px solid #444;
+                    border-radius:12px; color:#fff; font-size:15px;"
+             onfocus="this.style.borderColor='#ff006e'; this.style.boxShadow='0 0 0 3px rgba(255,0,110,0.15)'"
+             onblur="this.style.borderColor='#444'; this.style.boxShadow='none'">
     </div>
 
-    <!-- DESCRIPTION — OPTIONAL TAG -->
-     <div style="margin-bottom:22px;">
-      <label style="display:block; color:#fff; font-size:15px; font-weight:600;">
-        Description <span style="color:#666; font-weight:400; font-size:14px;">(required)</span>
-      </label>
-      <textarea id="highlightDescInput" placeholder="What makes this clip special?"
-                style="width:100%; margin-top:8px; padding:14px 16px; background:#111; border:1px solid #444;
-                       border-radius:12px; color:#fff; font-size:14px; min-height:80px; resize:vertical;"></textarea>
+    <!-- Description -->
+    <div style="margin-bottom:20px;">
+      <label style="display:block; color:#fff; font-size:15px; font-weight:600; margin-bottom:8px;">Description <span style="color:#666; font-weight:400;">(optional)</span></label>
+      <textarea id="highlightDescInput" placeholder="Describe the moment..."
+                style="width:100%; padding:14px 16px; background:#111; border:1px solid #444;
+                       border-radius:12px; color:#fff; font-size:14px; min-height:80px; resize:vertical;"
+                onfocus="this.style.borderColor='#ff006e'; this.style.boxShadow='0 0 0 3px rgba(255,0,110,0.15)'"
+                onblur="this.style.borderColor='#444'; this.style.boxShadow='none'"></textarea>
     </div>
 
-    <!-- PRICE — CLEAN & BOLD -->
-    <div style="margin-bottom:28px; text-align:center;">
-      <label style="display:block; color:#fff; font-size:15px; font-weight:600; margin-bottom:12px;">
-        Unlock Price <span style="color:#666; font-weight:400; font-size:14px;">(min 10 STRZ)</span>
-      </label>
+    <!-- Price -->
+    <div style="margin-bottom:24px;">
+      <label style="display:block; color:#fff; font-size:15px; font-weight:600; margin-bottom:10px;">Unlock Price</label>
       <div style="display:flex; align-items:center; justify-content:center; gap:12px;">
         <input type="tel" id="highlightPriceInput" value="50" min="10"
-               style="width:130px; padding:16px; background:#111; border:1px solid #444;
-                      border-radius:14px; color:#00ff9d; font-size:28px; font-weight:800; text-align:center;">
-        <span style="font-size:36px; color:#00ff9d;">STRZ</span>
+               style="width:120px; padding:14px; background:#111; border:1px solid #444;
+                      border-radius:12px; color:#00ff9d; font-size:24px; font-weight:800; text-align:center;"
+               onfocus="this.style.borderColor='#00ff9d'; this.style.boxShadow='0 0 0 4px rgba(0,255,157,0.2)'">
+        <span style="font-size:32px;">STRZ</span>
       </div>
     </div>
 
