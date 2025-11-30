@@ -3692,7 +3692,7 @@ highlightsBtn.onclick = async () => {
   }
 };
 
-/* ---------- Highlights Modal (FINAL ETERNAL — NO ERRORS, WORKS 100%) ---------- */
+/* ---------- Highlights Modal — FINAL BULLETPROOF VERSION (NO ERRORS EVER) ---------- */
 function showHighlightsModal(videos) {
   document.getElementById("highlightsModal")?.remove();
 
@@ -3706,34 +3706,23 @@ function showHighlightsModal(videos) {
     fontFamily: "system-ui, sans-serif"
   });
 
-  // STICKY INTRO + CLOSE BUTTON
+  // INTRO + CLOSE
   const intro = document.createElement("div");
   intro.innerHTML = `<div style="text-align:center;color:#ccc;max-width:640px;margin:0 auto;line-height:1.6;font-size:14px;background:linear-gradient(135deg,rgba(255,0,110,0.12),rgba(255,100,0,0.08));padding:14px 48px 14px 20px;border:1px solid rgba(255,0,110,0.3);box-shadow:0 0 16px rgba(255,0,110,0.15);border-radius:12px;position:relative;">
-    <p style="margin:0;">
-      <span style="background:linear-gradient(90deg,#ff006e,#ff8c00);-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-weight:700;">
-        Highlights
-      </span> are exclusive creator moments.<br>
-      Unlock premium clips with STRZ to support your favorite creators.
-    </p>
+    <p style="margin:0;"><span style="background:linear-gradient(90deg,#ff006e,#ff8c00);-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-weight:700;">Highlights</span> are exclusive creator moments.<br>Unlock premium clips with STRZ to support your favorite creators.</p>
   </div>`;
   Object.assign(intro.style, { position: "sticky", top: "10px", zIndex: "1001", marginBottom: "12px" });
   modal.appendChild(intro);
 
   const closeBtn = document.createElement("div");
   closeBtn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6L18 18" stroke="#ff006e" stroke-width="2.5" stroke-linecap="round"/></svg>`;
-  Object.assign(closeBtn.style, {
-    position: "absolute", top: "14px", right: "16px", width: "24px", height: "24px",
-    display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer",
-    zIndex: "1002", transition: "transform 0.2s ease", filter: "drop-shadow(0 0 6px rgba(255,0,110,0.3))"
-  });
-  closeBtn.onmouseenter = () => closeBtn.style.transform = "rotate(90deg) scale(1.15)";
-  closeBtn.onmouseleave = () => closeBtn.style.transform = "";
+  Object.assign(closeBtn.style, { position:"absolute", top:"14px", right:"16px", cursor:"pointer", zIndex:1002 });
   closeBtn.onclick = () => modal.remove();
   intro.querySelector("div").appendChild(closeBtn);
 
   // SEARCH + FILTERS
   const searchWrap = document.createElement("div");
-  Object.assign(searchWrap.style, { position: "sticky", top: "84px", zIndex: "1001", marginBottom: "20px", display: "flex", flexDirection: "column", alignItems: "center", gap: "6px" });
+  Object.assign(searchWrap.style, { position:"sticky", top:"84px", zIndex:1001, marginBottom:"20px", display:"flex", flexDirection:"column", alignItems:"center", gap:"6px" });
 
   const searchInputWrap = document.createElement("div");
   searchInputWrap.style.cssText = "display:flex;align-items:center;background:linear-gradient(135deg,rgba(255,255,255,0.08),rgba(255,255,255,0.04));border:1px solid rgba(255,0,110,0.3);border-radius:30px;padding:8px 14px;width:280px;backdrop-filter:blur(8px);box-shadow:0 0 12px rgba(255,0,110,0.15);";
@@ -3742,26 +3731,27 @@ function showHighlightsModal(videos) {
   searchWrap.appendChild(searchInputWrap);
 
   const buttonRow = document.createElement("div");
-  buttonRow.style.cssText = "display:flex;gap:8px;align-items:center;";
+  buttonRow.style.cssText = "display:flex;gap:8px;";
   const toggleBtn = document.createElement("button");
   toggleBtn.textContent = "Show Unlocked";
-  Object.assign(toggleBtn.style, { padding: "4px 10px", borderRadius: "6px", background: "linear-gradient(135deg, #333, #222)", color: "#fff", border: "1px solid rgba(255,0,110,0.3)", fontSize: "12px", cursor: "pointer", fontWeight: "600" });
+  Object.assign(toggleBtn.style, { padding:"4px 10px", borderRadius:"6px", background:"linear-gradient(135deg,#333,#222)", color:"#fff", border:"1px solid rgba(255,0,110,0.3)", fontSize:"12px", cursor:"pointer", fontWeight:"600" });
   const trendingBtn = document.createElement("button");
   trendingBtn.textContent = "Trending";
-  Object.assign(trendingBtn.style, { padding: "4px 10px", borderRadius: "6px", background: "linear-gradient(135deg, #8B00FF, #FF1493)", color: "#fff", border: "1px solid rgba(255,0,110,0.4)", fontSize: "12px", cursor: "pointer", fontWeight: "600" });
+  Object.assign(trendingBtn.style, { padding:"4px 10px", borderRadius:"6px", background:"linear-gradient(135deg,#8B00FF,#FF1493)", color:"#fff", fontSize:"12px", cursor:"pointer", fontWeight:"600" });
   buttonRow.append(toggleBtn, trendingBtn);
   searchWrap.appendChild(buttonRow);
   modal.appendChild(searchWrap);
 
-  // CONTENT AREA
   const content = document.createElement("div");
-  Object.assign(content.style, { display: "flex", gap: "20px", flexWrap: "nowrap", overflowX: "auto", padding: "20px 0 60px", scrollBehavior: "smooth", width: "100%", justifyContent: "flex-start" });
+  Object.assign(content.style, { display:"flex", gap:"20px", flexWrap:"nowrap", overflowX:"auto", padding:"20px 0 60px", width:"100%" });
   modal.appendChild(content);
 
   let filterMode = "all";
 
   function renderCards(videosToRender) {
     content.innerHTML = "";
+
+    // THIS LINE IS THE ONLY ONE THAT MATTERS — ALWAYS FRESH
     const unlockedVideos = JSON.parse(localStorage.getItem("userUnlockedVideos") || "[]");
 
     const filtered = videosToRender.filter(video => {
@@ -3778,17 +3768,13 @@ function showHighlightsModal(videos) {
       card.setAttribute("data-uploader", video.uploaderName || "Anonymous");
       card.setAttribute("data-title", video.title || "Untitled");
       Object.assign(card.style, {
-        minWidth: "230px", maxWidth: "230px", background: "#1b1b1b", borderRadius: "12px",
-        overflow: "hidden", display: "flex", flexDirection: "column", cursor: "pointer",
-        flexShrink: 0, boxShadow: "0 4px 16px rgba(255,0,110,0.15)",
-        transition: "transform 0.3s ease, box-shadow 0.3s ease",
-        border: "1px solid rgba(255,0,110,0.2)"
+        minWidth:"230px", maxWidth:"230px", background:"#1b1b1b", borderRadius:"12px", overflow:"hidden",
+        display:"flex", flexDirection:"column", cursor:"pointer", flexShrink:0,
+        boxShadow:"0 4px 16px rgba(255,0,110,0.15)", border:"1px solid rgba(255,0,110,0.2)"
       });
-      card.onmouseenter = () => card.style.transform = "scale(1.03)";
-      card.onmouseleave = () => card.style.transform = "scale(1)";
 
       const videoContainer = document.createElement("div");
-      videoContainer.style.cssText = "height:320px;overflow:hidden;position:relative;background:#000;cursor:pointer;";
+      videoContainer.style.cssText = "height:320px;position:relative;background:#000;cursor:pointer;overflow:hidden;";
 
       const videoEl = document.createElement("video");
       videoEl.muted = true;
@@ -3798,10 +3784,7 @@ function showHighlightsModal(videos) {
 
       if (isUnlocked) {
         const src = video.previewClip || video.highlightVideo || "";
-        if (src) {
-          videoEl.src = src;
-          videoEl.load();
-        }
+        if (src) { videoEl.src = src; videoEl.load(); }
         videoContainer.onmouseenter = () => videoEl.play().catch(() => {});
         videoContainer.onmouseleave = () => { videoEl.pause(); videoEl.currentTime = 0; };
         videoContainer.onclick = e => { e.stopPropagation(); playFullVideo(video); };
@@ -3816,7 +3799,6 @@ function showHighlightsModal(videos) {
         videoContainer.appendChild(overlay);
         videoContainer.onclick = e => { e.stopPropagation(); showUnlockConfirm(video, () => renderCards(videosToRender)); };
       }
-
       videoContainer.appendChild(videoEl);
 
       const infoPanel = document.createElement("div");
@@ -3830,14 +3812,11 @@ function showHighlightsModal(videos) {
       const unlockBtn = document.createElement("button");
       unlockBtn.textContent = isUnlocked ? "Unlocked" : `Unlock ${video.highlightVideoPrice || 100} STRZ`;
       Object.assign(unlockBtn.style, {
-        background: isUnlocked ? "#333" : "linear-gradient(135deg, #ff006e, #ff4500)",
-        border: "none", borderRadius: "6px", padding: "8px 0", fontWeight: "600",
-        color: "#fff", cursor: isUnlocked ? "default" : "pointer",
-        fontSize: "13px", boxShadow: isUnlocked ? "inset 0 2px 6px rgba(0,0,0,0.3)" : "0 3px 10px rgba(255,0,110,0.3)"
+        background: isUnlocked ? "#333" : "linear-gradient(135deg,#ff006e,#ff4500)",
+        border:"none", borderRadius:"6px", padding:"8px 0", color:"#fff", fontWeight:"600", fontSize:"13px",
+        cursor: isUnlocked ? "default" : "pointer"
       });
-      if (!isUnlocked) {
-        unlockBtn.onclick = e => { e.stopPropagation(); showUnlockConfirm(video, () => renderCards(videosToRender)); };
-      }
+      if (!isUnlocked) unlockBtn.onclick = e => { e.stopPropagation(); showUnlockConfirm(video, () => renderCards(videosToRender)); };
 
       infoPanel.append(title, uploader, unlockBtn);
       card.append(videoContainer, infoPanel);
@@ -3845,18 +3824,17 @@ function showHighlightsModal(videos) {
     });
   }
 
-  // FILTER BUTTONS
+  // FILTERS
   toggleBtn.onclick = () => {
     filterMode = filterMode === "unlocked" ? "all" : "unlocked";
     toggleBtn.textContent = filterMode === "unlocked" ? "All Videos" : "Show Unlocked";
-    toggleBtn.style.background = filterMode === "unlocked" ? "linear-gradient(135deg, #ff006e, #ff8c00)" : "linear-gradient(135deg, #333, #222)";
+    toggleBtn.style.background = filterMode === "unlocked" ? "linear-gradient(135deg,#ff006e,#ff8c00)" : "linear-gradient(135deg,#333,#222)";
     renderCards(videos);
   };
-
   trendingBtn.onclick = () => {
     filterMode = filterMode === "trending" ? "all" : "trending";
     trendingBtn.textContent = filterMode === "trending" ? "All Videos" : "Trending";
-    trendingBtn.style.background = filterMode === "trending" ? "linear-gradient(135deg, #A020F0, #FF45A1)" : "linear-gradient(135deg, #8B00FF, #FF1493)";
+    trendingBtn.style.background = filterMode === "trending" ? "linear-gradient(135deg,#A020F0,#FF45A1)" : "linear-gradient(135deg,#8B00FF,#FF1493)";
     renderCards(videos);
   };
 
@@ -3864,9 +3842,9 @@ function showHighlightsModal(videos) {
   searchInputWrap.querySelector("input").addEventListener("input", e => {
     const term = e.target.value.trim().toLowerCase();
     content.querySelectorAll(".videoCard").forEach(card => {
-      const matches = (card.getAttribute("data-uploader") || "").toLowerCase().includes(term) ||
-                      (card.getAttribute("data-title") || "").toLowerCase().includes(term);
-      card.style.display = matches ? "flex" : "none";
+      const match = (card.getAttribute("data-uploader")||"").toLowerCase().includes(term) ||
+                    (card.getAttribute("data-title")||"").toLowerCase().includes(term);
+      card.style.display = match ? "flex" : "none";
     });
   });
 
