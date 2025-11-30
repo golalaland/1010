@@ -4193,12 +4193,12 @@ async function loadMyClips() {
               Unlocked <strong style="color:#00ff9d;">${vid.unlockedBy?.length || 0}</strong> times
             </div>
 
-            <button class="delete-clip-btn" data-id="${vid.id}"
-                    style="background:#ff3355;color:#fff;border:none;padding:10px 20px;
-                           border-radius:10px;font-weight:600;cursor:pointer;
-                           box-shadow:0 4px 15px rgba(255,51,85,0.4);">
-              Delete
-            </button>
+           <button class="delete-clip-btn" data-id="${vid.id}" data-title="${vid.title || 'Untitled Clip'}"
+        style="background:linear-gradient(90deg,#ff6600,#ff0099); color:#fff; border:none;
+               padding:10px 20px; border-radius:10px; font-weight:600; cursor:pointer;
+               box-shadow:0 4px 15px rgba(255,0,150,0.4);">
+  Delete
+</button>
           </div>
         </div>
       `;
@@ -4221,18 +4221,69 @@ async function loadMyClips() {
     grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;color:#f66;padding:40px;">Failed to load</div>`;
   }
 }
-/* DELETE FUNCTION — NOW IMPORTS deleteDoc PROPERLY */
-async function deleteMyClip(id) {
-  if (!confirm("Delete this clip from sale?\n\nBuyers keep access forever.")) return;
+/* REUSABLE DELETE MODAL — SAME STYLE AS MEET BUTTON */
+function showDeleteClipModal(clipId, title) {
+  // Remove old modal if exists
+  const oldModal = document.getElementById("deleteClipModal");
+  if (oldModal) oldModal.remove();
 
-  try {
-    // THIS LINE WAS MISSING THE IMPORT — NOW FIXED
-    await deleteDoc(doc(db, "highlightVideos", id));
-    
-    showGoldAlert("Clip deleted — removed from sale");
-    loadMyClips(); // instant refresh
-  } catch (err) {
-    console.error("Delete failed:", err);
-    showGoldAlert("Delete failed — try again");
-  }
+  const modal = document.createElement("div");
+  modal.id = "deleteClipModal";
+  modal.style.cssText = `
+    position:fixed; inset:0; background:rgba(0,0,0,0.92);
+    display:flex; align-items:center; justify-content:center;
+    z-index:9999; font-family:inherit;
+  `;
+
+  modal.innerHTML = `
+    <div style="
+      background:#111; padding:32px; border-radius:18px; width:90%; max-width:420px;
+      text-align:center; box-shadow:0 20px 80px rgba(255,0,150,0.3);
+      border:2px solid #333;
+    ">
+      <h3 style="color:#fff; margin:0 0 16px; font-size:22px;">Delete Clip?</h3>
+      <p style="color:#ccc; margin:0 0 24px; line-height:1.6;">
+        "<strong style="color:#ff3366;">${title || "This clip"}</strong>" 
+        will be removed from sale.<br><br>
+        <span style="color:#ff9966; font-size:14px;">Buyers keep access forever.</span>
+      </p>
+
+      <div style="display:flex; gap:16px; justify-content:center;">
+        <button id="cancelDeleteBtn" style="
+          padding:12px 28px; background:#333; color:#fff; border:none;
+          border-radius:12px; cursor:pointer; font-weight:600; font-size:15px;
+        ">Cancel</button>
+
+        <button id="confirmDeleteBtn" style="
+          padding:12px 28px; background:linear-gradient(90deg,#ff6600,#ff0099);
+          color:#fff; border:none; border-radius:12px; cursor:pointer;
+          font-weight:600; font-size:15px; box-shadow:0 6px 20px rgba(255,0,150,0.4);
+        ">Delete Forever</button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+
+  // Close on cancel
+  modal.querySelector("#cancelDeleteBtn").onclick = () => modal.remove();
+
+  // Confirm delete
+  modal.querySelector("#confirmDeleteBtn").onclick = async () => {
+    try {
+      await deleteDoc(doc(db, "highlightVideos", clipId));
+      showGoldAlert("Clip deleted — gone from sale");
+      modal.remove();
+      loadMyClips(); // refresh
+    } catch (err) {
+      console.error(err);
+      showGoldAlert("Delete failed");
+      modal.remove();
+    }
+  };
+
+  // Close on background click
+  modal.onclick = (e) => {
+    if (e.target === modal) modal.remove();
+  };
 }
