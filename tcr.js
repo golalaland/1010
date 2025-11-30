@@ -3854,33 +3854,46 @@ function showHighlightsModal(videos) {
       videoEl.preload = "metadata";
       videoEl.style.cssText = "width:100%;height:100%;object-fit:cover;";
 
- // SAFE VIDEO URL — NEVER RETURNS "undefined"
-const videoSrc = video.videoUrl || 
-                 video.previewClip || 
-                 video.highlightVideo || 
-                 video.url || 
-                 video.src || 
-                 ""; // fallback to empty string
+// DEBUG + BULLETPROOF VIDEO LOADER — NEVER BREAKS AGAIN
+console.log("%c=== VIDEO DEBUG START ===", "color: #ff006e; font-weight: bold; font-size: 14px;");
+console.log("Full video object:", video);
+
+const possibleUrls = [
+  video.videoUrl,
+  video.previewClip,
+  video.highlightVideo,
+  video.url,
+  video.src,
+  video.video,           // sometimes people use this
+  video.downloadURL      // old Firebase uploads
+].filter(Boolean); // remove null/undefined/empty
+
+let videoSrc = possibleUrls[0] || ""; // take first valid one
+
+console.log("All possible URLs:", possibleUrls);
+console.log("Chosen src:", videoSrc || "(none – will show placeholder)");
 
 if (isUnlocked) {
-  if (videoSrc && videoSrc !== "undefined") {
+  if (videoSrc && videoSrc !== "undefined" && videoSrc.includes("http")) {
     videoEl.src = videoSrc;
-    videoEl.load();
+    videoEl.load(); // FORCE load
     videoEl.poster = "";
+    console.log("%cVIDEO LOADED SUCCESSFULLY", "color: #00ff9d; font-weight: bold;");
+
+    videoContainer.onmouseenter = () => videoEl.play().catch(e => console.warn("Play failed:", e));
+    videoContainer.onmouseleave = () => {
+      videoEl.pause();
+      videoEl.currentTime = 0;
+    };
   } else {
-    // No valid video → show fallback thumbnail or message
+    // NO VALID VIDEO — SHOW CLEAN PLACEHOLDER
+    console.warn("%cNO VALID VIDEO URL FOUND → SHOWING PLACEHOLDER", "color: #ff9966;");
     videoEl.removeAttribute("src");
-    videoEl.poster = "https://via.placeholder.com/400x300/111/444?text=No+Preview";
+    videoEl.poster = "https://via.placeholder.com/400x600/111111/444444?text=No+Preview";
   }
 
-  videoContainer.onmouseenter = () => videoEl.play().catch(() => {});
-  videoContainer.onmouseleave = () => {
-    videoEl.pause();
-    videoEl.currentTime = 0;
-  };
-
 } else {
-  // Locked — just black + lock
+  // LOCKED — BLACK + LOCK ICON
   videoEl.src = "";
   videoEl.poster = "";
 
@@ -3888,18 +3901,18 @@ if (isUnlocked) {
   overlay.style.cssText = "position:absolute;inset:0;background:#000;display:flex;align-items:center;justify-content:center;z-index:2;";
   overlay.innerHTML = `
     <div style="text-align:center;">
-      <svg width="68" height="68" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <svg width="72" height="72" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M12 2C9.2 2 7 4.2 7 7V11H6C4.9 11 4 11.9 4 13V20C4 21.1 4.9 22 6 22H18C19.1 22 20 21.1 20 20V13C20 11.9 19.1 11 18 11H17V7C17 4.2 14.8 2 12 2ZM12 4C13.7 4 15 5.3 15 7V11H9V7C9 5.3 10.3 4 12 4Z" fill="#ff006e"/>
       </svg>
-      <div style="margin-top:8px;color:#ff006e;font-weight:700;font-size:14px;">
+      <div style="margin-top:10px;color:#ff006e;font-weight:700;font-size:15px;">
         ${video.highlightVideoPrice || 100} STRZ
       </div>
     </div>
   `;
   videoContainer.appendChild(overlay);
 }
-console.log("Video object:", video);
-console.log("Trying to load src:", videoSrc);
+
+console.log("%c=== VIDEO DEBUG END ===\n", "color: #ff006e; font-weight: bold; font-size: 14px;");
       
       // CLICK → full video or unlock modal
       videoContainer.onclick = (e) => {
