@@ -3857,6 +3857,30 @@ function showUnlockConfirm(video, onUnlockCallback) {
     if (onUnlockCallback) onUnlockCallback();
   };
 }
+
+/ ---------- Play Full Video Modal ----------
+function playFullVideo(video) {
+  const modal = document.createElement("div");
+  Object.assign(modal.style, {
+    position: "fixed", top: 0, left: 0, width: "90vw", height: "90vh",
+    background: "rgba(0,0,0,0.95)",
+    display: "flex", alignItems: "center", justifyContent: "center",
+    zIndex: "1000002"
+  });
+
+  const vid = document.createElement("video");
+  vid.src = video.highlightVideo;
+  vid.controls = true;
+  vid.autoplay = true;
+  vid.style.maxWidth = "90%";
+  vid.style.maxHeight = "90%";
+  vid.style.borderRadius = "12px";
+
+  modal.appendChild(vid);
+  modal.onclick = () => modal.remove();
+  document.body.appendChild(modal);
+}
+
 /* ---------- UNLOCK VIDEO — UPLOADER GETS NOTIFIED + BANNER + STARS (FINAL ETERNAL EDITION) ---------- */
 async function handleUnlockVideo(video) {
   if (!currentUser?.uid) return showGoldAlert("Login required");
