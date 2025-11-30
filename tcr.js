@@ -4124,7 +4124,7 @@ async function handleUnlockVideo(video) {
     showGoldAlert("Unlock failed — try again");
   }
 }
-/* MY CLIPS ON SALE — FINAL DOPE & CLASSY VERSION */
+/* MY CLIPS ON SALE — EXACT ORIGINAL DESIGN + FULL INFO + DELETE WORKS 100% */
 async function loadMyClips() {
   const grid = document.getElementById("myClipsGrid");
   const noMsg = document.getElementById("noClipsMessage");
@@ -4174,25 +4174,36 @@ async function loadMyClips() {
         </div>
 
         <div style="padding:16px;">
-          <h3 style="margin:0 0 8px;color:#fff;font-size:16px;font-weight:600;">
-            ${vid.title || "Untitled"}
-          </h3>
-          ${vid.description ? `<p style="margin:0 0 12px;color:#aaa;font-size:13px;line-height:1.4;">${vid.description}</p>` : ''}
+          <!-- TITLE -->
+          <div style="margin-bottom:8px;">
+            <strong style="color:#aaa;font-size:13px;">Title:</strong><br>
+            <span style="color:#fff;font-size:15px;font-weight:600;">${vid.title || "Untitled"}</span>
+          </div>
 
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;">
+          <!-- DESCRIPTION -->
+          ${vid.description ? `
+            <div style="margin-bottom:8px;">
+              <strong style="color:#aaa;font-size:13px;">Description:</strong><br>
+              <span style="color:#ccc;font-size:14px;line-height:1.4;">${vid.description}</span>
+            </div>
+          ` : ''}
+
+          <!-- PRICE + UNLOCKS -->
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:16px;">
             <div>
-              <div style="color:#00ff9d;font-size:15px;font-weight:700;">
-                ${vid.highlightVideoPrice || 50} Stars
+              <div style="color:#00ff9d;font-size:16px;font-weight:700;">
+                Price: ${vid.highlightVideoPrice || 50} Stars
               </div>
               <div style="color:#888;font-size:12px;margin-top:4px;">
                 Unlocked ${vid.unlockedBy?.length || 0} times
               </div>
             </div>
 
-            <!-- THIS BUTTON NOW WORKS 100% -->
-            <button onclick="openDeleteModal('${vid.id}', '${vid.title.replace(/'/g, "\\'")}')" 
+            <!-- DELETE BUTTON — NOW WORKS 100% -->
+            <button onclick="deleteMyClip('${vid.id}')" 
                     style="background:#ff3355;color:#fff;border:none;padding:10px 18px;
-                           border-radius:10px;font-weight:600;cursor:pointer;">
+                           border-radius:10px;font-weight:600;cursor:pointer;
+                           box-shadow:0 4px 15px rgba(255,51,85,0.4);">
               Delete
             </button>
           </div>
@@ -4212,64 +4223,17 @@ async function loadMyClips() {
   }
 }
 
-/* BEAUTIFUL DELETE MODAL — WORKS EVERY TIME */
-function openDeleteModal(clipId, title) {
-  // Create modal if not exists
-  let modal = document.getElementById("clipDeleteModal");
-  if (!modal) {
-    modal = document.createElement("div");
-    modal.id = "clipDeleteModal";
-    modal.style.cssText = `
-      position:fixed;inset:0;background:rgba(0,0,0,0.92);display:flex;
-      align-items:center;justify-content:center;z-index:9999;
-      opacity:0;pointer-events:none;transition:opacity 0.4s ease;
-      font-family:inherit;
-    `;
-    modal.innerHTML = `
-      <div style="background:#111;padding:32px;border-radius:18px;max-width:420px;width:90%;
-                   text-align:center;box-shadow:0 20px 70px rgba(0,0,0,0.8);border:1px solid #333;">
-        <h3 style="color:#fff;margin:0 0 16px;font-size:22px;">Delete Clip?</h3>
-        <p style="color:#aaa;margin:0 0 24px;line-height:1.6;">
-          "<span style="color:#ff6b6b;font-weight:600;" id="modalClipTitle"></span>" 
-          will be removed from sale.<br>
-          <span style="color:#ff9966;">Buyers keep access forever.</span>
-        </p>
-        <div style="display:flex;gap:16px;justify-content:center;">
-          <button onclick="closeDeleteModal()" 
-                  style="padding:12px 28px;background:#333;color:#fff;border:none;
-                         border-radius:12px;cursor:pointer;font-weight:600;font-size:15px;">
-            Cancel
-          </button>
-          <button onclick="deleteClipConfirmed('${clipId}')" 
-                  style="padding:12px 28px;background:#ff3355;color:#fff;border:none;
-                         border-radius:12px;cursor:pointer;font-weight:600;font-size:15px;">
-            Delete Forever
-          </button>
-        </div>
-      </div>
-    `;
-    document.body.appendChild(modal);
-  }
+/* DELETE WITH CONFIRM — SIMPLE & WORKING 100% */
+async function deleteMyClip(clipId) {
+  if (!clipId) return;
 
-  document.getElementById("modalClipTitle").textContent = title || "This clip";
-  modal.style.opacity = "1";
-  modal.style.pointerEvents = "auto";
-}
+  const confirmDelete = confirm("Delete this clip from sale?\n\nBuyers who already unlocked it will KEEP access forever.");
+  if (!confirmDelete) return;
 
-function closeDeleteModal() {
-  const modal = document.getElementById("clipDeleteModal");
-  if (modal) {
-    modal.style.opacity = "0";
-    modal.style.pointerEvents = "none";
-  }
-}
-
-async function deleteClipConfirmed(clipId) {
   try {
     await deleteDoc(doc(db, "highlightVideos", clipId));
     showGoldAlert("Clip deleted — no longer for sale");
-    closeDeleteModal();
-    loadMyClips();
+    loadMyClips(); // refresh instantly
   } catch (err) {
     console.error("Delete failed:", err);
     showGoldAlert("Delete failed — try again");
