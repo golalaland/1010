@@ -4124,13 +4124,13 @@ async function handleUnlockVideo(video) {
     showGoldAlert("Unlock failed — try again");
   }
 }
-/* MY CLIPS ON SALE — FINAL ETERNAL VERSION — PERFECT DESIGN + SAME-LINE LABELS */
+/* MY CLIPS — FINAL, ETERNAL, BULLETPROOF VERSION */
 async function loadMyClips() {
   const grid = document.getElementById("myClipsGrid");
   const noMsg = document.getElementById("noClipsMessage");
   if (!grid || !currentUser?.uid) return;
 
-  grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:60px;color:#888;">Loading your clips...</div>`;
+  grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:60px;color:#888;">Loading clips...</div>`;
 
   try {
     const q = query(
@@ -4153,51 +4153,33 @@ async function loadMyClips() {
 
       const card = document.createElement("div");
       card.style.cssText = `
-        background:#111;
-        border-radius:16px;
-        overflow:hidden;
-        box-shadow:0 8px 30px rgba(0,0,0,0.6);
-        border:1px solid #333;
-        transition:all 0.3s ease;
-        position:relative;
+        background:#111;border-radius:16px;overflow:hidden;
+        box-shadow:0 8px 30px rgba(0,0,0,0.6);border:1px solid #333;
+        transition:all 0.3s ease;position:relative;
       `;
       card.onmouseover = () => card.style.transform = "translateY(-8px)";
       card.onmouseout = () => card.style.transform = "";
 
       card.innerHTML = `
         <div style="position:relative;height:200px;background:#000;overflow:hidden;">
-          <video src="${vid.videoUrl}" 
-                 style="width:100%;height:100%;object-fit:cover;filter:blur(8px);transform:scale(1.1);" 
-                 muted loop playsinline></video>
+          <video src="${vid.videoUrl}" style="width:100%;height:100%;object-fit:cover;filter:blur(8px);transform:scale(1.1);" muted loop playsinline></video>
           <div style="position:absolute;inset:0;background:linear-gradient(180deg,transparent 40%,rgba(0,0,0,0.9));"></div>
-          <video src="${vid.videoUrl}" 
-                 style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
-                        width:80%;height:80%;object-fit:contain;border-radius:12px;
-                        box-shadow:0 10px 30px rgba(0,0,0,0.8);border:2px solid #444;"
-                 muted loop playsinline></video>
+          <video src="${vid.videoUrl}" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:80%;height:80%;object-fit:contain;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,0.8);border:2px solid #444;" muted loop playsinline></video>
         </div>
 
         <div style="padding:16px;">
-
-          <!-- TITLE — SAME LINE -->
           <div style="margin-bottom:10px;">
             <strong style="color:#aaa;font-size:13px;">Title:</strong>
-            <span style="color:#fff;font-size:16px;font-weight:600;margin-left:8px;">
-              ${vid.title || "Untitled Clip"}
-            </span>
+            <span style="color:#fff;font-size:16px;font-weight:600;margin-left:8px;">${vid.title || "Untitled Clip"}</span>
           </div>
 
-          <!-- DESCRIPTION — SAME LINE -->
           ${vid.description ? `
             <div style="margin-bottom:10px;">
               <strong style="color:#aaa;font-size:13px;">Description:</strong>
-              <span style="color:#ddd;font-size:14px;line-height:1.5;margin-left:8px;">
-                ${vid.description}
-              </span>
+              <span style="color:#ddd;font-size:14px;line-height:1.5;margin-left:8px;">${vid.description}</span>
             </div>
           ` : ''}
 
-          <!-- PRICE — SAME LINE + GREEN NUMBER -->
           <div style="margin:16px 0;">
             <strong style="color:#aaa;font-size:13px;">Price:</strong>
             <span style="color:#00ff9d;font-size:18px;font-weight:700;margin-left:10px;">
@@ -4205,13 +4187,13 @@ async function loadMyClips() {
             </span>
           </div>
 
-          <!-- UNLOCKS + DELETE -->
           <div style="display:flex;justify-content:space-between;align-items:center;">
             <div style="color:#888;font-size:13px;">
               Unlocked <strong style="color:#00ff9d;">${vid.unlockedBy?.length || 0}</strong> times
             </div>
 
-            <button onclick="deleteMyClip('${vid.id}')" 
+            <!-- THIS BUTTON WILL NEVER FAIL -->
+            <button class="delete-clip-btn" data-id="${vid.id}"
                     style="background:#ff3355;color:#fff;border:none;padding:10px 20px;
                            border-radius:10px;font-weight:600;cursor:pointer;
                            box-shadow:0 4px 15px rgba(255,51,85,0.4);">
@@ -4221,6 +4203,7 @@ async function loadMyClips() {
         </div>
       `;
 
+      // Hover play
       const videos = card.querySelectorAll("video");
       card.addEventListener("mouseenter", () => videos.forEach(v => v.play().catch(() => {})));
       card.addEventListener("mouseleave", () => videos.forEach(v => { v.pause(); v.currentTime = 0; }));
@@ -4228,25 +4211,28 @@ async function loadMyClips() {
       grid.appendChild(card);
     });
 
+    // ATTACH DELETE LISTENERS AFTER CARDS ARE CREATED
+    document.querySelectorAll(".delete-clip-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        deleteMyClip(btn.dataset.id);
+      });
+    });
+
   } catch (err) {
-    console.error("Load clips failed:", err);
-    grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;color:#f66;padding:40px;">Failed to load clips</div>`;
+    console.error(err);
+    grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;color:#f66;padding:40px;">Failed to load</div>`;
   }
 }
-
-/* DELETE FUNCTION — DEFINED FIRST SO IT ALWAYS EXISTS */
-async function deleteMyClip(clipId) {
-  if (!clipId) return;
-
-  const confirmed = confirm("Delete this clip from sale?\n\nBuyers who already unlocked it will KEEP access forever.");
-  if (!confirmed) return;
+/* DELETE FUNCTION — CAN BE ANYWHERE, WORKS ALWAYS */
+async function deleteMyClip(id) {
+  if (!confirm("Delete this clip from sale?\n\nBuyers keep access forever.")) return;
 
   try {
-    await deleteDoc(doc(db, "highlightVideos", clipId));
+    await deleteDoc(doc(db, "highlightVideos", id));
     showGoldAlert("Clip deleted — removed from sale");
-    loadMyClips(); // refresh instantly
+    loadMyClips();
   } catch (err) {
-    console.error("Delete failed:", err);
-    showGoldAlert("Delete failed — try again");
+    console.error(err);
+    showGoldAlert("Delete failed");
   }
 }
