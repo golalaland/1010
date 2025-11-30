@@ -4172,7 +4172,7 @@ async function loadMyClips() {
         <div style="padding:16px;">
           <div style="margin-bottom:10px;">
             <strong style="color:#aaa;font-size:13px;">Title:</strong>
-            <span style="color:#fff;font-size:16px;font-weight:600;margin-left:8px;">${vid.title || "Untitled Clip"}</span>
+            <span style="color:#fff;font-size:14px;font-weight:600;margin-left:8px;">${vid.title || "Untitled Clip"}</span>
           </div>
 
           ${vid.description ? `
@@ -4184,8 +4184,8 @@ async function loadMyClips() {
 
           <div style="margin:16px 0;">
             <strong style="color:#aaa;font-size:13px;">Price:</strong>
-            <span style="color:#00ff9d;font-size:18px;font-weight:700;margin-left:10px;">
-              ${vid.highlightVideoPrice || 50} Stars
+            <span style="color:#00ff9d;font-size:14px;font-weight:700;margin-left:10px;">
+              ${vid.highlightVideoPrice || 50} STRZ
             </span>
           </div>
 
@@ -4195,12 +4195,11 @@ async function loadMyClips() {
             </div>
 
             <!-- GRADIENT BUTTON — OPENS YOUR FAVORITE MODAL -->
-            <button class="delete-clip-btn" data-clip-id="${vid.id}" data-title="${(vid.title || 'Untitled').replace(/"/g, '&quot;')}"
-                    style="background:linear-gradient(90deg,#ff6600,#ff0099);color:#fff;border:none;
-                           padding:10px 20px;border-radius:10px;font-weight:600;cursor:pointer;
-                           box-shadow:0 4px 15px rgba(255,0,150,0.4);">
-              Delete
-            </button>
+          <button class="delete-clip-btn" data-clip-id="${vid.id}" data-title="${(vid.title || 'Untitled').replace(/"/g, '&quot;')}"
+        style="background:linear-gradient(90deg,#ff6600,#ff0099); color:#fff; border:none;
+               padding:10px 20px; border-radius:10px; font-weight:600; cursor:pointer;">
+  Delete
+</button>
           </div>
         </div>
       `;
