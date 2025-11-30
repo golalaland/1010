@@ -4229,49 +4229,50 @@ async function loadMyClips() {
 
 /* YOUR FAVORITE MODAL — BEAUTIFUL, GRADIENT, POWERFUL */
 function showDeleteClipModal(clipId, title) {
-  const oldModal = document.getElementById("deleteClipModal");
-  if (oldModal) oldModal.remove();
+  // Remove old modal
+  document.getElementById("deleteClipModal")?.remove();
 
   const modal = document.createElement("div");
   modal.id = "deleteClipModal";
   modal.style.cssText = `
-    position:fixed;inset:0;background:rgba(0,0,0,0.94);
-    display:flex;align-items:center;justify-content:center;z-index:9999;
+    position:fixed; inset:0; background:rgba(0,0,0,0.92);
+    display:flex; align-items:center; justify-content:center; z-index:9999;
+    font-family:inherit;
   `;
 
   modal.innerHTML = `
-    <div style="background:#111;padding:34px;border-radius:20px;width:90%;max-width:440px;
-                 text-align:center;box-shadow:0 30px 100px rgba(255,0,150,0.3);border:2px solid #333;">
-      <h3 style="color:#fff;margin:0 0 18px;font-size:24px;font-weight:700;">Delete Clip?</h3>
-      <p style="color:#ccc;margin:0 0 28px;line-height:1.7;font-size:15px;">
-        "<strong style="color:#ff3366;">${title || "This clip"}</strong>" will be removed from sale.<br><br>
-        <span style="color:#ffaa00;">Buyers keep access forever.</span>
+    <div style="
+      background:#111; padding:20px 28px; border-radius:14px; width:90%; max-width:340px;
+      text-align:center; border:1px solid #333;
+    ">
+      <h4 style="color:#fff; margin:0 0 12px; font-size:18px;">Delete Clip?</h4>
+      <p style="color:#aaa; margin:0 0 20px; font-size:14px; line-height:1.5;">
+        "<span style="color:#ff6b6b;">${title || "This clip"}</span>"<br>
+        will be removed from sale.
       </p>
 
-      <div style="display:flex;gap:18px;justify-content:center;">
+      <div style="display:flex; justify-content:center; gap:24px; font-size:15px;">
         <button id="cancelBtn" style="
-          padding:14px 32px;background:#333;color:#fff;border:none;
-          border-radius:14px;cursor:pointer;font-weight:600;font-size:16px;
+          color:#999; background:none; border:none; cursor:pointer; font-weight:600;
         ">Cancel</button>
 
         <button id="confirmBtn" style="
-          padding:14px 32px;background:linear-gradient(90deg,#ff6600,#ff0099);
-          color:#fff;border:none;border-radius:14px;cursor:pointer;
-          font-weight:700;font-size:16px;box-shadow:0 8px 25px rgba(255,0,150,0.5);
-        ">Delete Forever</button>
+          color:#ff3366; background:none; border:none; cursor:pointer; font-weight:700;
+        ">Delete</button>
       </div>
     </div>
   `;
 
   document.body.appendChild(modal);
-
+// Close handlers
   modal.querySelector("#cancelBtn").onclick = () => modal.remove();
   modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
 
+  // Confirm delete
   modal.querySelector("#confirmBtn").onclick = async () => {
     try {
       await deleteDoc(doc(db, "highlightVideos", clipId));
-      showGoldAlert("Clip deleted — gone from sale");
+      showGoldAlert("Clip deleted");
       modal.remove();
       loadMyClips();
     } catch (err) {
