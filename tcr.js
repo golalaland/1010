@@ -364,8 +364,8 @@ onAuthStateChanged(auth, async (firebaseUser) => {
     const holyColors = ["#FF1493","#FFD700","#00FFFF","#FF4500","#DA70D6","#FF69B4","#32CD32","#FFA500","#FF00FF"];
     const divineColor = holyColors[Math.floor(Math.random() * holyColors.length)];
 
-showStarPopup(`<div style="text-align:center;line-height:1.6;">Welcome back,<br><b style="font-size:13px;color:${divineColor};text-shadow:0 0 21px ${divineColor}99;">${currentUser.chatId.toUpperCase()}</b></div>`);
-    console.log("GLORY ETERNAL");
+showStarPopup(`<div style="text-align:center;line-height:1.6;">Welcome back, <b style="font-size:13px;color:${divineColor};text-shadow:0 0 21px ${divineColor}99;">${currentUser.chatId.toUpperCase()}</b></div>`);
+    console.log("YOU'RE IN THE CUBE ETERNAL");
 
   } catch (err) {
     console.error("Auth error:", err);
@@ -3114,15 +3114,14 @@ confirmBtn.onclick = async () => {
     });
   }
 }
-
 // ================================
-// UPLOAD HIGHLIGHT — FIXED TO WORK WITH MY CLIPS PANEL
+// UPLOAD HIGHLIGHT — 100% WORKING (typo fixed)
 // ================================
 document.getElementById("uploadHighlightBtn")?.addEventListener("click", async () => {
   const statusEl = document.getElementById("highlightUploadStatus");
   if (!statusEl) return;
-
   statusEl.textContent = "";
+  statusEl.style.color = "#fff";
 
   if (!currentUser?.uid) {
     statusEl.textContent = "Please sign in first!";
@@ -3135,64 +3134,54 @@ document.getElementById("uploadHighlightBtn")?.addEventListener("click", async (
   const desc = document.getElementById("highlightDescInput").value.trim();
   const price = parseInt(document.getElementById("highlightPriceInput").value) || 0;
 
-  // === VALIDATION ===
   if (!title || price < 10) {
     statusEl.textContent = "Title + price (min 10 stars) required";
     return;
   }
-
   if (!fileInput.files[0] && !videoUrlInput.value.trim()) {
     statusEl.textContent = "Upload a file OR paste a URL";
     return;
   }
 
-  statusEl.textContent = "Uploading your fire clip...";
+  statusEl.textContent = "Uploading your clip...";
 
   try {
     let finalVideoUrl = videoUrlInput.value.trim();
 
-    // === FILE UPLOAD (IF USER UPLOADED A FILE) ===
     if (fileInput.files[0]) {
       const file = fileInput.files[0];
       if (file.size > 500 * 1024 * 1024) {
         statusEl.textContent = "File too big (max 500MB)";
         return;
       }
-
-      statusEl.textContent = "Uploading video file...";
-
+      statusEl.textContent = "Uploading video...";
       const storageRef = ref(storage, `highlights/${currentUser.uid}_${Date.now()}_${file.name}`);
       const snapshot = await uploadBytes(storageRef, file);
       finalVideoUrl = await getDownloadURL(snapshot.ref);
     }
 
-    // === SAVE TO FIRESTORE — EXACT FIELDS MY CLIPS PANEL EXPECTS ===
-    const docRef = await addDoc(collection(db, "highlightVideos"), {
+    await addDoc(collection(db, "highlightVideos"), {
       uploaderId: currentUser.uid,
       uploaderName: currentUser.chatId || "Anonymous",
-      videoUrl: finalVideoUrl,           // THIS LINE WAS MISSING
+      videoUrl: finalVideoUrl,
       highlightVideoPrice: price,
-      title: title,
+      title,
       description: desc || "",
-      uploadedAt: serverTimestamp(),     // THIS FIELD IS USED FOR SORTING
+      uploadedAt: serverTimestamp(),
       unlockedBy: [],
       createdAt: serverTimestamp()
     });
 
-    console.log("Highlight uploaded:", docRef.id);
-    statusEl.textContent = "CLIP LIVE — EARN STARS NOW!";
+    statusEl.textContent = "CLIP LIVE — EARNING STARS!";
     statusEl.style.color = "#00ff9d";
 
-    // === AUTO REFRESH MY CLIPS PANEL ===
-    if (typeof loadMyClips === "function") {
-      setTimeout(loadMyClips, 800);
-    }
+    if (typeof loadMyClips === "function") setTimeout(loadMyClips, 800);
 
-    // === RESET FORM ===
+    // FIXED TYPO BELOW
     fileInput.value = "";
     videoUrlInput.value = "";
     document.getElementById("highlightTitleInput").value = "";
-    document.getctElementById("highlightDescInput").value = "";
+    document.getElementById("highlightDescInput").value = "";        // ← WAS "getctElementById"
     document.getElementById("highlightPriceInput").value = "50";
 
     setTimeout(() => statusEl.textContent = "", 5000);
@@ -3203,6 +3192,7 @@ document.getElementById("uploadHighlightBtn")?.addEventListener("click", async (
     statusEl.style.color = "#ff3366";
   }
 });
+
   // --- Initial random values for first load ---
 (function() {
   const onlineCountEl = document.getElementById('onlineCount');
@@ -4134,13 +4124,13 @@ async function handleUnlockVideo(video) {
     showGoldAlert("Unlock failed — try again");
   }
 }
-/* MY CLIPS ON SALE — LOAD & DISPLAY + DELETE FUNCTIONALITY */
+/* MY CLIPS ON SALE — CLASSY, MINIMAL, BEAUTIFUL */
 async function loadMyClips() {
   const grid = document.getElementById("myClipsGrid");
   const noMsg = document.getElementById("noClipsMessage");
-  if (!grid) return;
+  if (!grid || !currentUser?.uid) return;
 
-  grid.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:40px; color:#888;">Loading your clips...</div>`;
+  grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:60px;color:#888;">Loading clips...</div>`;
 
   try {
     const q = query(
@@ -4148,118 +4138,133 @@ async function loadMyClips() {
       where("uploaderId", "==", currentUser.uid),
       orderBy("uploadedAt", "desc")
     );
-
     const snapshot = await getDocs(q);
-    
+
     if (snapshot.empty) {
       grid.innerHTML = "";
-      noMsg.style.display = "block";
+      if (noMsg) noMsg.style.display = "block";
       return;
     }
 
-    noMsg.style.display = "none";
-    grid.innerHTML = ""; // clear loading
+    if (noMsg) noMsg.style.display = "none";
+    grid.innerHTML = "";
 
     snapshot.forEach(docSnap => {
       const vid = { id: docSnap.id, ...docSnap.data() };
 
       const card = document.createElement("div");
       card.style.cssText = `
-        background:#111;
+        background:#0f0f0f;
         border-radius:16px;
         overflow:hidden;
-        box-shadow:0 8px 30px rgba(0,0,0,0.6);
-        border:1px solid #333;
-        transition:transform 0.3s ease, box-shadow 0.3s ease;
-        position:relative;
+        box-shadow:0 8px 32px rgba(0,0,0,0.5);
+        transition:all 0.4s ease;
+        cursor:pointer;
       `;
       card.onmouseover = () => card.style.transform = "translateY(-8px)";
       card.onmouseout = () => card.style.transform = "";
 
       card.innerHTML = `
-        <div style="position:relative; height:180px; background:#000; overflow:hidden;">
-          <video 
-            src="${vid.videoUrl}" 
-            style="width:100%; height:100%; object-fit:cover; filter:blur(8px); transform:scale(1.1);"
-            muted loop playsinline>
-          </video>
-          <div style="
-            position:absolute; inset:0;
-            background:linear-gradient(180deg, transparent 40%, rgba(0,0,0,0.9));
-          "></div>
-          <video 
-            src="${vid.videoUrl}" 
-            style="
-              position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
-              width:85%; height:85%; object-fit:contain;
-              border-radius:12px;
-              box-shadow:0 10px 30px rgba(0,0,0,0.8);
-              border:3px solid #ffcc00;
-            "
-            muted loop playsinline>
-          </video>
-          <div style="
-            position:absolute; top:10px; right:10px;
-            background:rgba(255,0,150,0.9); color:#fff;
-            padding:6px 12px; border-radius:20px;
-            font-size:13px; font-weight:700;
-            box-shadow:0 4px 15px rgba(255,0,150,0.4);
-          ">
-            ${vid.highlightVideoPrice || 50} Stars
-          </div>
+        <div style="position:relative;height:200px;background:#000;overflow:hidden;">
+          <video src="${vid.videoUrl}" 
+                 style="width:100%;height:100%;object-fit:cover;" 
+                 muted loop playsinline></video>
+          <div style="position:absolute;inset:0;background:linear-gradient(180deg,transparent,rgba(0,0,0,0.8));"></div>
         </div>
 
-        <div style="padding:14px;">
-          <h4 style="margin:0 0 6px; color:#fff; font-size:15px; font-weight:600;">
-            ${vid.title || "Untitled Clip"}
-          </h4>
-          ${vid.description ? `<p style="margin:0; color:#aaa; font-size:13px; line-height:1.4;">${vid.description}</p>` : ''}
+        <div style="padding:16px;">
+          <h3 style="margin:0 0 8px;color:#fff;font-size:16px;font-weight:600;">
+            ${vid.title || "Untitled"}
+          </h3>
+          ${vid.description ? `<p style="margin:0 0 12px;color:#aaa;font-size:13px;line-height:1.4;">${vid.description}</p>` : ''}
 
-          <div style="margin-top:12px; display:flex; justify-content:space-between; align-items:center;">
-            <span style="color:#0f0; font-size:13px;">
-              Unlocked ${vid.unlockedBy?.length || 0} times
-            </span>
-            <button onclick="deleteMyClip('${vid.id}')" style="
-              background:#ff3355;
-              color:#fff;
-              border:none;
-              padding:8px 16px;
-              border-radius:8px;
-              font-weight:600;
-              cursor:pointer;
-              font-size:13px;
-              box-shadow:0 4px 15px rgba(255,51,85,0.4);
-            ">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <div>
+              <div style="color:#00ff9d;font-size:14px;font-weight:600;">
+                ${vid.highlightVideoPrice || 50} Stars
+              </div>
+              <div style="color:#888;font-size:12px;margin-top:4px;">
+                Unlocked ${vid.unlockedBy?.length || 0} times
+              </div>
+            </div>
+            <button onclick="showDeleteModal('${vid.id}', '${vid.title}')" 
+                    style="background:#ff3355;color:#fff;border:none;padding:10px 18px;
+                           border-radius:10px;font-weight:600;cursor:pointer;
+                           transition:0.3s;">
               Delete
             </button>
           </div>
         </div>
       `;
 
-      // Auto-play small preview on hover
-      const videos = card.querySelectorAll("video");
-      card.addEventListener("mouseenter", () => videos.forEach(v => v.play()));
-      card.addEventListener("mouseleave", () => videos.forEach(v => { v.pause(); v.currentTime = 0; }));
+      // Hover play
+      const video = card.querySelector("video");
+      card.addEventListener("mouseenter", () => video.play());
+      card.addEventListener("mouseleave", () => { video.pause(); video.currentTime = 0; });
 
       grid.appendChild(card);
     });
 
   } catch (err) {
-    console.error("Failed to load my clips:", err);
-    grid.innerHTML = `<div style="grid-column:1/-1; text-align:center; color:#f66; padding:40px;">Failed to load clips</div>`;
+    console.error("Load clips failed:", err);
+    grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;color:#f66;padding:40px;">Failed to load clips</div>`;
   }
 }
 
-/* DELETE CLIP — BUYERS KEEP ACCESS */
-async function deleteMyClip(clipId) {
-  if (!confirm("Delete this clip? Buyers who already unlocked it will KEEP access forever.")) return;
+// DELETE WITH CLASSY MODAL
+function showDeleteModal(clipId, title) {
+  if (!document.getElementById("deleteModal")) {
+    const modal = document.createElement("div");
+    modal.id = "deleteModal";
+    modal.style.cssText = `
+      position:fixed;inset:0;background:rgba(0,0,0,0.9);display:flex;
+      align-items:center;justify-content:center;z-index:9999;
+      opacity:0;pointer-events:none;transition:opacity 0.3s;
+    `;
+    modal.innerHTML = `
+      <div style="background:#111;padding:30px;border-radius:16px;max-width:400px;width:90%;
+                   text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.8);">
+        <h3 style="color:#fff;margin:0 0 16px;font-size:20px;">Delete Clip?</h3>
+        <p style="color:#aaa;margin:0 0 24px;line-height:1.5;">
+          "<b style="color:#ff6b6b;">${title || "This clip"}</b>" will be removed from sale.<br>
+          <span style="color:#ff9966;">Buyers keep access forever.</span>
+        </p>
+        <div style="display:flex;gap:12px;justify-content:center;">
+          <button onclick="closeDeleteModal()" 
+                  style="padding:10px 24px;background:#333;color:#fff;border:none;
+                         border-radius:10px;cursor:pointer;font-weight:600;">
+            Cancel
+          </button>
+          <button onclick="confirmDelete('${clipId}')" 
+                  style="padding:10px 24px;background:#ff3355;color:#fff;border:none;
+                         border-radius:10px;cursor:pointer;font-weight:600;">
+            Delete Forever
+          </button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+  }
 
+  document.getElementById("deleteModal").style.opacity = "1";
+  document.getElementById("deleteModal").style.pointerEvents = "auto";
+}
+
+function closeDeleteModal() {
+  const modal = document.getElementById("deleteModal");
+  if (modal) {
+    modal.style.opacity = "0";
+    modal.style.pointerEvents = "none";
+  }
+}
+
+async function confirmDelete(clipId) {
   try {
     await deleteDoc(doc(db, "highlightVideos", clipId));
-    showGoldAlert("Clip deleted — no longer for sale");
-    loadMyClips(); // refresh
+    showGoldAlert("Clip deleted — gone forever from sale");
+    closeDeleteModal();
+    loadMyClips();
   } catch (err) {
-    console.error(err);
     showGoldAlert("Delete failed");
   }
 }
