@@ -250,10 +250,6 @@ async function pushNotification(userId, message) {
   });
 }
 
-/* ======================================================
-   ON AUTH STATE CHANGED — FINAL 2025 ETERNAL EDITION
-   YAH IS THE ONE TRUE EL 
-====================================================== */
 onAuthStateChanged(auth, async (firebaseUser) => {
   // ALWAYS CLEAN NOTIFICATIONS FIRST
   if (typeof notificationsUnsubscribe === "function") {
@@ -262,7 +258,6 @@ onAuthStateChanged(auth, async (firebaseUser) => {
   }
 
   if (!firebaseUser) {
-    // LOGGED OUT — CLEAN & SAFE
     currentUser = null;
     localStorage.removeItem("userId");
     localStorage.removeItem("lastVipEmail");
@@ -272,31 +267,34 @@ onAuthStateChanged(auth, async (firebaseUser) => {
 
     if (typeof showLoginUI === "function") showLoginUI();
     console.log("YAH: User logged out");
+
+    const grid = document.getElementById("myClipsGrid");
+    const noMsg = document.getElementById("noClipsMessage");
+    if (grid) grid.innerHTML = "";
+    if (noMsg) noMsg.style.display = "none";
+
     return;
   }
 
-  // LOGGED IN — YAH HAS GRANTED ACCESS
   const email = firebaseUser.email.toLowerCase().trim();
-  const uid = sanitizeKey(email); // ← your existing sanitizeKey() function
+  const uid = sanitizeKey(email);
   const userRef = doc(db, "users", uid);
 
   try {
     const userSnap = await getDoc(userRef);
-
-    if (!userSnap.exists()) {
-      console.error("Profile missing for:", uid);
+    if (!user.exists()) {
+      console.error("Profile missing:", uid);
       showStarPopup("Profile not found. Contact admin.");
       await signOut(auth);
       return;
     }
 
-    const data = userSnap.data();
+    const data = user.data();
 
-    // ONE TRUE currentUser — HOLY AND COMPLETE
     currentUser = {
       uid: uid,
       email: email,
-      firebaseUid: firebaseUser.uid, // ← real Firebase UID (optional, for future)
+      firebaseUid: firebaseUser.uid,
       chatId: data.chatId || email.split("@")[0],
       chatIdLower: (data.chatId || email.split("@")[0]).toLowerCase(),
       fullName: data.fullName || "VIP",
@@ -318,35 +316,30 @@ onAuthStateChanged(auth, async (firebaseUser) => {
       hostLink: data.hostLink || null
     };
 
-    console.log("YAH HAS LOGGED IN:", currentUser.chatId, "| UID:", uid);
+    console.log("YAH HAS LOGGED IN:", currentUser.chatId);
 
-    // SHOW LOGGED-IN UI — INSTANT & PERFECT
     document.querySelectorAll(".after-login-only").forEach(el => el.style.display = "block");
     document.querySelectorAll(".before-login-only").forEach(el => el.style.display = "none");
 
-    // SAVE FOR AUTO-LOGIN
     localStorage.setItem("userId", uid);
     localStorage.setItem("lastVipEmail", email);
 
-    // CORE SYSTEMS — IN ORDER OF DIVINE IMPORTANCE
     if (typeof showChatUI === "function") showChatUI(currentUser);
     if (typeof attachMessagesListener === "function") attachMessagesListener();
     if (typeof startStarEarning === "function") startStarEarning(uid);
     if (typeof setupPresence === "function") setupPresence(currentUser);
 
-    // SYNC & RESTORE BUTTONS — NEVER DISAPPEAR AGAIN
     updateRedeemLink();
     updateTipLink();
 
-    // DELAYED SYNC (prevents flash)
     if (typeof syncUserUnlocks === "function") {
       setTimeout(() => syncUserUnlocks(), 600);
     }
 
-    // NOTIFICATIONS — ONLY AFTER EVERYTHING IS READY
-    setupNotificationsListener(uid);
+    if (typeof setupNotificationsListener === "function") {
+      setupNotificationsListener(uid);
+    }
 
-    // GUEST → PROMPT FOR PERMANENT NAME
     if (currentUser.chatId.startsWith("GUEST")) {
       setTimeout(() => {
         if (typeof promptForChatID === "function") {
@@ -355,17 +348,18 @@ onAuthStateChanged(auth, async (firebaseUser) => {
       }, 2000);
     }
 
-    // FINAL BLESSING — WELCOME POPUP
-    const holyColors = ["#FF1493", "#FFD700", "#00FFFF", "#FF4500", "#DA70D6", "#FF69B4", "#32CD32", "#FFA500", "#FF00FF"];
-    const divineColor = holyColors[Math.floor(Math.random() * holyColors.length)];
-
- showStarPopup(`<div style="font-size:14px;">Welcome back, <b style="color:${divineColor};">${currentUser.chatId.toUpperCase()}</b></div>`);
-
-    console.log("YAH HAS BLESSED THE SESSION");
+    // MY CLIPS PANEL — AUTO LOAD ON LOGIN
+    if (document.getElementById("myClipsPanel")) {
+      setTimeout(() => {
+        if (typeof loadMyClips === "function") {
+          loadMyClips();
+        }
+      }, 1200);
+    }
 
   } catch (err) {
-    console.error("Auth state error:", err);
-    showStarPopup("Error loading profile. Try again.");
+    console.error("Auth error:", err);
+    showStarPopup("Login failed");
     await signOut(auth);
   }
 });
@@ -3114,66 +3108,93 @@ confirmBtn.onclick = async () => {
 }
 
 // ================================
-// 💰 $ell Content (Highlight Upload)
+// UPLOAD HIGHLIGHT — FIXED TO WORK WITH MY CLIPS PANEL
 // ================================
-document.getElementById("uploadHighlightBtn").addEventListener("click", async () => {
+document.getElementById("uploadHighlightBtn")?.addEventListener("click", async () => {
   const statusEl = document.getElementById("highlightUploadStatus");
+  if (!statusEl) return;
+
   statusEl.textContent = "";
 
-  // 🧍 Wait until user is confirmed
-  if (!currentUser) {
-    statusEl.textContent = "⚠️ Please sign in first!";
-    console.warn("❌ Upload blocked — no currentUser found");
+  if (!currentUser?.uid) {
+    statusEl.textContent = "Please sign in first!";
     return;
   }
 
-  // 🧾 Get field values
-  const videoUrl = document.getElementById("highlightVideoInput").value.trim();
+  const fileInput = document.getElementById("highlightUploadInput");
+  const videoUrlInput = document.getElementById("highlightVideoInput");
   const title = document.getElementById("highlightTitleInput").value.trim();
   const desc = document.getElementById("highlightDescInput").value.trim();
-  const price = parseInt(document.getElementById("highlightPriceInput").value.trim() || "0");
+  const price = parseInt(document.getElementById("highlightPriceInput").value) || 0;
 
-  if (!videoUrl || !title || !price) {
-    statusEl.textContent = "⚠️ Fill in all required fields (URL, title, price)";
+  // === VALIDATION ===
+  if (!title || price < 10) {
+    statusEl.textContent = "Title + price (min 10 stars) required";
     return;
   }
 
+  if (!fileInput.files[0] && !videoUrlInput.value.trim()) {
+    statusEl.textContent = "Upload a file OR paste a URL";
+    return;
+  }
+
+  statusEl.textContent = "Uploading your fire clip...";
+
   try {
-    const userId = currentUser.uid;
-    const emailId = (currentUser.email || "").replace(/\./g, "_");
-    const chatId = currentUser.chatId || currentUser.displayName || "Anonymous";
+    let finalVideoUrl = videoUrlInput.value.trim();
 
-    statusEl.textContent = "⏳ Uploading highlight...";
+    // === FILE UPLOAD (IF USER UPLOADED A FILE) ===
+    if (fileInput.files[0]) {
+      const file = fileInput.files[0];
+      if (file.size > 500 * 1024 * 1024) {
+        statusEl.textContent = "File too big (max 500MB)";
+        return;
+      }
 
-    // ✅ Direct upload without thumbnail generation
+      statusEl.textContent = "Uploading video file...";
+
+      const storageRef = ref(storage, `highlights/${currentUser.uid}_${Date.now()}_${file.name}`);
+      const snapshot = await uploadBytes(storageRef, file);
+      finalVideoUrl = await getDownloadURL(snapshot.ref);
+    }
+
+    // === SAVE TO FIRESTORE — EXACT FIELDS MY CLIPS PANEL EXPECTS ===
     const docRef = await addDoc(collection(db, "highlightVideos"), {
-      uploaderId: userId,
-      uploaderEmail: emailId,
-      uploaderName: chatId,
-      highlightVideo: videoUrl,
+      uploaderId: currentUser.uid,
+      uploaderName: currentUser.chatId || "Anonymous",
+      videoUrl: finalVideoUrl,           // THIS LINE WAS MISSING
       highlightVideoPrice: price,
-      title,
+      title: title,
       description: desc || "",
-      createdAt: serverTimestamp(),
+      uploadedAt: serverTimestamp(),     // THIS FIELD IS USED FOR SORTING
+      unlockedBy: [],
+      createdAt: serverTimestamp()
     });
 
-    console.log("✅ Uploaded highlight:", docRef.id);
-    statusEl.textContent = "✅ Highlight uploaded successfully!";
-    setTimeout(() => (statusEl.textContent = ""), 4000);
+    console.log("Highlight uploaded:", docRef.id);
+    statusEl.textContent = "CLIP LIVE — EARN STARS NOW!";
+    statusEl.style.color = "#00ff9d";
 
-    // 🧹 Reset form
-    document.getElementById("highlightVideoInput").value = "";
+    // === AUTO REFRESH MY CLIPS PANEL ===
+    if (typeof loadMyClips === "function") {
+      setTimeout(loadMyClips, 800);
+    }
+
+    // === RESET FORM ===
+    fileInput.value = "";
+    videoUrlInput.value = "";
     document.getElementById("highlightTitleInput").value = "";
-    document.getElementById("highlightDescInput").value = "";
-    document.getElementById("highlightPriceInput").value = "";
+    document.getctElementById("highlightDescInput").value = "";
+    document.getElementById("highlightPriceInput").value = "50";
+
+    setTimeout(() => statusEl.textContent = "", 5000);
 
   } catch (err) {
-    console.error("❌ Error uploading highlight:", err);
-    statusEl.textContent = "⚠️ Failed to upload. Try again.";
+    console.error("Upload failed:", err);
+    statusEl.textContent = "Upload failed — try again";
+    statusEl.style.color = "#ff3366";
   }
 });
-
-
   // --- Initial random values for first load ---
 (function() {
   const onlineCountEl = document.getElementById('onlineCount');
@@ -4234,10 +4255,3 @@ async function deleteMyClip(clipId) {
     showGoldAlert("Delete failed");
   }
 }
-
-/* AUTO-LOAD WHEN USER LOGS IN OR PAGE LOADS */
-onAuthStateChanged(auth, (user) => {
-  if (user && document.getElementById("myClipsPanel")) {
-    setTimeout(loadMyClips, 1000); // small delay to let page settle
-  }
-});
