@@ -4193,16 +4193,18 @@ async function loadMyClips() {
               Unlocked <strong style="color:#00ff9d;">${vid.unlockedBy?.length || 0}</strong> times
             </div>
 
-           <button class="delete-clip-btn" data-id="${vid.id}" data-title="${vid.title || 'Untitled Clip'}"
-        style="background:linear-gradient(90deg,#ff6600,#ff0099); color:#fff; border:none;
-               padding:10px 20px; border-radius:10px; font-weight:600; cursor:pointer;
-               box-shadow:0 4px 15px rgba(255,0,150,0.4);">
-  Delete
-</button>
+            <!-- NO onclick="" → NO ERRORS EVER -->
+            <button class="delete-clip-btn" data-clip-id="${vid.id}"
+                    style="background:linear-gradient(90deg,#ff6600,#ff0099);color:#fff;border:none;
+                           padding:10px 20px;border-radius:10px;font-weight:600;cursor:pointer;
+                           box-shadow:0 4px 15px rgba(255,0,150,0.4);">
+              Delete
+            </button>
           </div>
         </div>
       `;
 
+      // Hover play
       const videos = card.querySelectorAll("video");
       card.addEventListener("mouseenter", () => videos.forEach(v => v.play().catch(() => {})));
       card.addEventListener("mouseleave", () => videos.forEach(v => { v.pause(); v.currentTime = 0; }));
@@ -4210,10 +4212,23 @@ async function loadMyClips() {
       grid.appendChild(card);
     });
 
-    // BULLETPROOF EVENT LISTENERS — NEVER FAILS
+    // THIS IS THE KEY — attach listeners AFTER cards exist
     document.querySelectorAll(".delete-clip-btn").forEach(btn => {
-      btn.onclick = null; // prevent double binding
-      btn.addEventListener("click", () => deleteMyClip(btn.dataset.id));
+      btn.addEventListener("click", async () => {
+        const clipId = btn.dataset.clipId;
+        if (!clipId) return;
+
+        if (!confirm("Delete this clip from sale?\n\nBuyers keep access forever.")) return;
+
+        try {
+          await deleteDoc(doc(db, "highlightVideos", clipId));
+          showGoldAlert("Clip deleted — removed from sale");
+          loadMyClips();
+        } catch (err) {
+          console.error("Delete failed:", err);
+          showGoldAlert("Delete failed");
+        }
+      });
     });
 
   } catch (err) {
