@@ -3821,7 +3821,7 @@ let filterMode = "all"; // "all" | "unlocked" | "trending"
 function renderCards(videosToRender) {
   content.innerHTML = "";
 
-  // CRITICAL: ALWAYS READ FRESH FROM LOCALSTORAGE
+  // THIS LINE IS CRITICAL — MUST BE HERE EVERY TIME
   const unlockedVideos = JSON.parse(localStorage.getItem("userUnlockedVideos") || "[]");
 
   const filtered = videosToRender.filter(video => {
@@ -3831,9 +3831,9 @@ function renderCards(videosToRender) {
   });
 
   filtered.forEach(video => {
+    // THIS MUST BE INSIDE THE LOOP — THIS IS WHERE isUnlocked IS BORN
     const isUnlocked = unlockedVideos.includes(video.id);
 
-    // YOUR ORIGINAL CARD — 100% UNTOUCHED
     const card = document.createElement("div");
     card.className = "videoCard";
     card.setAttribute("data-uploader", video.uploaderName || "Anonymous");
@@ -3865,8 +3865,8 @@ function renderCards(videosToRender) {
     videoEl.style.cssText = "width:100%;height:100%;object-fit:cover;";
 
     if (isUnlocked) {
-      // UNLOCKED → SHOW THE ACTUAL VIDEO (previewClip or highlightVideo)
-      const src = video.previewClip || video.highlightVideo || "";
+      // UNLOCKED — SHOW ACTUAL VIDEO
+      const src = video.previewClip || video.highlightVideo;
       if (src) {
         videoEl.src = src;
         videoEl.load();
@@ -3880,11 +3880,11 @@ function renderCards(videosToRender) {
 
       videoContainer.onclick = (e) => {
         e.stopPropagation();
-        playFullVideo(video); // uses video.highlightVideo
+        playFullVideo(video);
       };
 
     } else {
-      // LOCKED → BLACK + LOCK ICON
+      // LOCKED — BLACK + LOCK ONLY
       videoEl.src = "";
       const overlay = document.createElement("div");
       overlay.style.cssText = "position:absolute;inset:0;background:#000;display:flex;align-items:center;justify-content:center;z-index:2;";
@@ -3893,7 +3893,7 @@ function renderCards(videosToRender) {
           <svg width="72" height="72" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M12 2C9.2 2 7 4.2 7 7V11H6C4.9 11 4 11.9 4 13V20C4 21.1 4.9 22 6 22H18C19.1 22 20 21.1 20 20V13C20 11.9 19.1 11 18 11H17V7C17 4.2 14.8 2 12 2ZM12 4C13.7 4 15 5.3 15 7V11H9V7C9 5.3 10.3 4 12 4Z" fill="#ff006e"/>
           </svg>
-          <div style="margin-top:10px;color:#ff006e;font-weight:700;font-size:15px;">
+          <div style="margin-top:10px;color:#ff006e;font-weight:700;font-size:16px;">
             ${video.highlightVideoPrice || 100} STRZ
           </div>
         </div>
@@ -3908,7 +3908,7 @@ function renderCards(videosToRender) {
 
     videoContainer.appendChild(videoEl);
 
-    // INFO PANEL — 100% YOUR ORIGINAL
+    // INFO PANEL
     const infoPanel = document.createElement("div");
     infoPanel.style.cssText = "background:#111;padding:10px;display:flex;flex-direction:column;gap:4px;";
 
