@@ -3743,53 +3743,63 @@ function showHighlightsModal(videos) {
   let filterMode = "all";
 
   function renderCards(list) {
-    content.innerHTML = "";
-    const unlocked = JSON.parse(localStorage.getItem("userUnlockedVideos") || "[]");
+  content.innerHTML = "";
+  const unlocked = JSON.parse(localStorage.getItem("userUnlockedVideos") || "[]");
 
-    list.forEach(video => {  // ← THIS IS THE ONLY CORRECT LINE
-      const isUnlocked = unlocked.includes(video.id);
+  list.forEach(video => {
+    const isUnlocked = unlocked.includes(video.id);
 
-      const card = document.createElement("div");
-      card.className = "videoCard";
-      card.dataset.uploader = video.uploaderName || "Anonymous";
-      card.dataset.title = video.title || "Untitled";
-      Object.assign(card.style, { minWidth:"230px", maxWidth:"230px", background:"#1b1b1b", borderRadius:"12px", overflow:"hidden", display:"flex", flexDirection:"column", cursor:"pointer", flexShrink:0, boxShadow:"0 4px 16px rgba(255,0,110,0.15)", border:"1px solid rgba(255,0,110,0.2)" });
+    const card = document.createElement("div");
+    card.className = "videoCard";
+    card.dataset.uploader = video.uploaderName || "Anonymous";
+    card.dataset.title = video.title || "Untitled";
+    Object.assign(card.style, { minWidth:"230px", maxWidth:"230px", background:"#1b1b1b", borderRadius:"12px", overflow:"hidden", display:"flex", flexDirection:"column", cursor:"pointer", flexShrink:0, boxShadow:"0 4px 16px rgba(255,0,110,0.15)", border:"1px solid rgba(255,0,110,0.2)" });
 
-      const container = document.createElement("div");
-      container.style.cssText = "height:320px;position:relative;background:#000;overflow:hidden;cursor:pointer;";
-      const vid = document.createElement("video");
-      vid.muted = vid.loop = true;
-      vid.preload = "metadata";
-      vid.style.cssText = "width:100%;height:100%;object-fit:cover;";
+    const container = document.createElement("div");
+    container.style.cssText = "height:320px;position:relative;background:#000;overflow:hidden;cursor:pointer;";
 
-      if (isUnlocked) {
-        const src = video.previewClip || video.highlightVideo || "";
-        if (src) { vid.src = src; vid.load(); }
-        container.onmouseenter = () => vid.play().catch(() => {});
-        container.onmouseleave = () => { vid.pause(); vid.currentTime = 0; };
-        container.onclick = e => { e.stopPropagation(); playFullVideo(video); };
-      } else {
-        const overlay = document.createElement("div");
-        overlay.style.cssText = "position:absolute;inset:0;background:#000;display:flex;align-items:center;justify-content:center;z-index:2;";
-        overlay.innerHTML = `<div style="text-align:center"><svg width="72" height="72" viewBox="0 0 24 24" fill="none"><path d="M12 2C9.2 2 7 4.2 7 7V11H6C4.9 11 4 11.9 4 13V20C4 21.1 4.9 22 6 22H18C19.1 22 20 21.1 20 20V13C20 11.9 19.1 11 18 11H17V7C17 4.2 14.8 2 12 2ZM12 4C13.7 4 15 5.3 15 7V11H9V7C9 5.3 10.3 4 12 4Z" fill="#ff006e"/></svg><div style="margin-top:12px;color:#ff006e;font-weight:700;font-size:16px">${video.highlightVideoPrice || 100} STRZ</div></div>`;
-        container.appendChild(overlay);
-        container.onclick = e => { e.stopPropagation(); showUnlockConfirm(video, () => renderCards(list)); };
-      }
-      container.appendChild(vid);
+    const vid = document.createElement("video");
+    vid.muted = vid.loop = true;
+    vid.preload = "metadata";
+    vid.style.cssText = "width:100%;height:100%;object-fit:cover;";
 
-      const info = document.createElement("div");
-      info.style.cssText = "background:#111;padding:10px;display:flex;flex-direction:column;gap:4px;";
-      info.innerHTML = `<div style="font-weight:700;color:#fff;font-size:14px">${video.title || "Untitled"}</div>
-                        <div style="font-size:12px;color:#ff006e">By: ${video.uploaderName || "Anonymous"}</div>
-                        <button style="background:${isUnlocked?"#333":"linear-gradient(135deg,#ff006e,#ff4500)"};border:none;border-radius:6px;padding:8px 0;color:#fff;font-weight:600;font-size:13px;cursor:${isUnlocked?"default":"pointer"}">
-                          ${isUnlocked ? "Unlocked" : `Unlock ${video.highlightVideoPrice || 100} STRZ`}
-                        </button>`;
-      if (!isUnlocked) info.querySelector("button").onclick = e => { e.stopPropagation(); showUnlockConfirm(video, () => renderCards(list)); };
+    // THIS LINE FIXES EVERYTHING — uses videoUrl as fallback
+    const videoSource = video.previewClip || video.highlightVideo || video.videoUrl || "";
 
-      card.append(container, info);
-      content.appendChild(card);
-    });
-  }
+    if (isUnlocked && videoSource) {
+      vid.src = videoSource;
+      vid.load();
+      container.onmouseenter = () => vid.play().catch(() => {});
+      container.onmouseleave = () => { vid.pause(); vid.currentTime = 0; };
+      container.onclick = e => { e.stopPropagation(); playFullVideo(video); };
+    } else {
+      // Locked or no video → show lock overlay
+      const overlay = document.createElement("div");
+      overlay.style.cssText = "position:absolute;inset:0;background:#000;display:flex;align-items:center;justify-content:center;z-index:2;";
+      overlay.innerHTML = `<div style="text-align:center">
+        <svg width="72" height="72" viewBox="0 0 24 24" fill="none"><path d="M12 2C9.2 2 7 4.2 7 7V11H6C4.9 11 4 11.9 4 13V20C4 21.1 4.9 22 6 22H18C19.1 22 20 21.1 20 20V13C20 11.9 19.1 11 18 11H17V7C17 4.2 14.8 2 12 2ZM12 4C13.7 4 15 5.3 15 7V11H9V7C9 5.3 10.3 4 12 4Z" fill="#ff006e"/></svg>
+        <div style="margin-top:12px;color:#ff006e;font-weight:700;font-size:16px">${video.highlightVideoPrice || 100} STRZ</div>
+      </div>`;
+      container.appendChild(overlay);
+      container.onclick = e => { e.stopPropagation(); showUnlockConfirm(video, () => renderCards(list)); };
+    }
+
+    container.appendChild(vid);
+
+    const info = document.createElement("div");
+    info.style.cssText = "background:#111;padding:10px;display:flex;flex-direction:column;gap:4px;";
+    info.innerHTML = `
+      <div style="font-weight:700;color:#fff;font-size:14px">${video.title || "Untitled"}</div>
+      <div style="font-size:12px;color:#ff006e">By: ${video.uploaderName || "Anonymous"}</div>
+      <button style="background:${isUnlocked?'#333':'linear-gradient(135deg,#ff006e,#ff4500)'};border:none;border-radius:6px;padding:8px 0;color:#fff;font-weight:600;font-size:13px;cursor:${isUnlocked?'default':'pointer'}">
+        ${isUnlocked ? "Unlocked" : `Unlock ${video.highlightVideoPrice || 100} STRZ`}
+      </button>`;
+    if (!isUnlocked) info.querySelector("button").onclick = e => { e.stopPropagation(); showUnlockConfirm(video, () => renderCards(list)); };
+
+    card.append(container, info);
+    content.appendChild(card);
+  });
+}
 
   toggleBtn.onclick = () => { filterMode = filterMode === "unlocked" ? "all" : "unlocked"; toggleBtn.textContent = filterMode === "unlocked" ? "All Videos" : "Show Unlocked"; toggleBtn.style.background = filterMode === "unlocked" ? "linear-gradient(135deg,#ff006e,#ff8c00)" : "linear-gradient(135deg,#333,#222)"; renderCards(videos); };
   trendingBtn.onclick = () => { filterMode = filterMode === "trending" ? "all" : "trending"; trendingBtn.textContent = filterMode === "trending" ? "All Videos" : "Trending"; trendingBtn.style.background = filterMode === "trending" ? "linear-gradient(135deg,#A020F0,#FF45A1)" : "linear-gradient(135deg,#8B00FF,#FF1493)"; renderCards(videos); };
