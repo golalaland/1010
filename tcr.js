@@ -3753,7 +3753,6 @@ function showHighlightsModal(videos) {
 
 // ALWAYS READ FRESH — THIS FIXES EVERYTHING
 const unlockedVideos = JSON.parse(localStorage.getItem("userUnlockedVideos") || "[]");
-const isUnlocked = unlockedVideos.includes(video.id);
     // NOW isUnlocked IS DEFINED — BECAUSE unlockedVideos IS DEFINED ABOVE
     const isUnlocked = unlockedVideos.includes(video.id);
 
