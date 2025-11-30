@@ -3799,181 +3799,182 @@ function showHighlightsModal(videos) {
   closeBtn.onclick = (e) => { e.stopPropagation(); closeBtn.style.transform = "rotate(180deg) scale(1.3)"; setTimeout(() => modal.remove(), 180); };
   intro.querySelector("div").appendChild(closeBtn);
 
-  // === CONTENT AREA ===
-  const content = document.createElement("div");
-  Object.assign(content.style, {
-    display: "flex", gap: "16px", flexWrap: "nowrap", overflowX: "auto",
-    paddingBottom: "40px", scrollBehavior: "smooth", width: "100%", justifyContent: "flex-start"
+ // === CONTENT AREA ===
+const content = document.createElement("div");
+Object.assign(content.style, {
+  display: "flex",
+  gap: "20px",
+  flexWrap: "nowrap",
+  overflowX: "auto",
+  padding: "20px 0 40px",
+  scrollBehavior: "smooth",
+  width: "100%",
+  justifyContent: "flex-start",
+  background: "transparent"
+});
+modal.appendChild(content);
+
+// State
+let unlockedVideos = JSON.parse(localStorage.getItem("userUnlockedVideos") || "[]");
+let filterMode = "all"; // "all" | "unlocked" | "trending"
+
+function renderCards(videosToRender) {
+  content.innerHTML = "";
+
+  const filtered = videosToRender.filter(video => {
+    if (filterMode === "unlocked") return unlockedVideos.includes(video.id);
+    if (filterMode === "trending") return video.isTrending === true;
+    return true;
   });
-  modal.appendChild(content);
 
-  // State
-  let unlockedVideos = JSON.parse(localStorage.getItem("userUnlockedVideos") || "[]");
-  let filterMode = "all"; // "all" | "unlocked" | "trending"
-
-  function renderCards(videosToRender) {
-    content.innerHTML = "";
-
-    const filtered = videosToRender.filter(video => {
-      if (filterMode === "unlocked") return unlockedVideos.includes(video.id);
-      if (filterMode === "trending") return video.isTrending === true;
-      return true; // all
-    });
-
-    filtered.forEach(video => {
-      const isUnlocked = unlockedVideos.includes(video.id);
-
-      const card = document.createElement("div");
-      card.className = "videoCard";
-      card.setAttribute("data-uploader", video.uploaderName || "Anonymous");
-      card.setAttribute("data-title", video.title || "");
-      Object.assign(card.style, {
-        minWidth: "230px", maxWidth: "230px", background: "#1b1b1b", borderRadius: "12px",
-        overflow: "hidden", display: "flex", flexDirection: "column", cursor: "pointer",
-        flexShrink: 0, boxShadow: "0 4px 16px rgba(255,0,110,0.15)",
-        transition: "transform 0.3s ease, box-shadow 0.3s ease",
-        border: "1px solid rgba(255,0,110,0.2)"
-      });
-      card.onmouseenter = () => {
-        card.style.transform = "scale(1.03)";
-        card.style.boxShadow = "0 8px 24px rgba(255,0,110,0.3)";
-      };
-      card.onmouseleave = () => {
-        card.style.transform = "scale(1)";
-        card.style.boxShadow = "0 4px 16px rgba(255,0,110,0.15)";
-      };
-
-                              
-
-                              const videoContainer = document.createElement("div");
-      videoContainer.style.cssText = "height:320px;overflow:hidden;position:relative;background:#000;cursor:pointer;";
-
-      const videoEl = document.createElement("video");
-      videoEl.muted = true;
-      videoEl.loop = true;
-      videoEl.preload = "metadata";
-      videoEl.style.cssText = "width:100%;height:100%;object-fit:cover;";
-
-// DEBUG + BULLETPROOF VIDEO LOADER — NEVER BREAKS AGAIN
-console.log("%c=== VIDEO DEBUG START ===", "color: #ff006e; font-weight: bold; font-size: 14px;");
-console.log("Full video object:", video);
-
-const possibleUrls = [
-  video.videoUrl,
-  video.previewClip,
-  video.highlightVideo,
-  video.url,
-  video.src,
-  video.video,           // sometimes people use this
-  video.downloadURL      // old Firebase uploads
-].filter(Boolean); // remove null/undefined/empty
-
-let videoSrc = possibleUrls[0] || ""; // take first valid one
-
-console.log("All possible URLs:", possibleUrls);
-console.log("Chosen src:", videoSrc || "(none – will show placeholder)");
-
-if (isUnlocked) {
-  if (videoSrc && videoSrc !== "undefined" && videoSrc.includes("http")) {
-    videoEl.src = videoSrc;
-    videoEl.load(); // FORCE load
-    videoEl.poster = "";
-    console.log("%cVIDEO LOADED SUCCESSFULLY", "color: #00ff9d; font-weight: bold;");
-
-    videoContainer.onmouseenter = () => videoEl.play().catch(e => console.warn("Play failed:", e));
-    videoContainer.onmouseleave = () => {
-      videoEl.pause();
-      videoEl.currentTime = 0;
-    };
-  } else {
-    // NO VALID VIDEO — SHOW CLEAN PLACEHOLDER
-    console.warn("%cNO VALID VIDEO URL FOUND → SHOWING PLACEHOLDER", "color: #ff9966;");
-    videoEl.removeAttribute("src");
-    videoEl.poster = "https://via.placeholder.com/400x600/111111/444444?text=No+Preview";
+  if (filtered.length === 0) {
+    content.innerHTML = `<div style="color:#888;font-size:16px;padding:40px;text-align:center;width:100%;">No videos found</div>`;
+    return;
   }
 
-} else {
-  // LOCKED — BLACK + LOCK ICON
-  videoEl.src = "";
-  videoEl.poster = "";
+  filtered.forEach(video => {
+    const isUnlocked = unlockedVideos.includes(video.id);
 
-  const overlay = document.createElement("div");
-  overlay.style.cssText = "position:absolute;inset:0;background:#000;display:flex;align-items:center;justify-content:center;z-index:2;";
-  overlay.innerHTML = `
-    <div style="text-align:center;">
-      <svg width="72" height="72" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M12 2C9.2 2 7 4.2 7 7V11H6C4.9 11 4 11.9 4 13V20C4 21.1 4.9 22 6 22H18C19.1 22 20 21.1 20 20V13C20 11.9 19.1 11 18 11H17V7C17 4.2 14.8 2 12 2ZM12 4C13.7 4 15 5.3 15 7V11H9V7C9 5.3 10.3 4 12 4Z" fill="#ff006e"/>
-      </svg>
-      <div style="margin-top:10px;color:#ff006e;font-weight:700;font-size:15px;">
-        ${video.highlightVideoPrice || 100} STRZ
-      </div>
-    </div>
-  `;
-  videoContainer.appendChild(overlay);
-}
+    // Safe video source
+    const possibleUrls = [
+      video.videoUrl,
+      video.previewClip,
+      video.highlightVideo,
+      video.url,
+      video.src,
+      video.downloadURL
+    ].filter(Boolean);
 
-console.log("%c=== VIDEO DEBUG END ===\n", "color: #ff006e; font-weight: bold; font-size: 14px;");
-      
-      // CLICK → full video or unlock modal
-      videoContainer.onclick = (e) => {
-        e.stopPropagation();
-        if (isUnlocked) {
-          playFullVideo(video);
-        } else {
-          showUnlockConfirm(video, () => renderCards(videos));
-        }
+    const videoSrc = possibleUrls[0] || "";
+
+    // Create card
+    const card = document.createElement("div");
+    card.className = "videoCard";
+    card.setAttribute("data-uploader", video.uploaderName || "Anonymous");
+    card.setAttribute("data-title", video.title || "Untitled");
+    Object.assign(card.style, {
+      minWidth: "260px",
+      maxWidth: "260px",
+      background: "#111",
+      borderRadius: "16px",
+      overflow: "hidden",
+      display: "flex",
+      flexDirection: "column",
+      cursor: "pointer",
+      flexShrink: 0,
+      boxShadow: "0 8px 30px rgba(0,0,0,0.6)",
+      border: "1px solid #333",
+      transition: "all 0.3s ease"
+    });
+
+    card.onmouseenter = () => card.style.transform = "translateY(-10px)";
+    card.onmouseleave = () => card.style.transform = "";
+
+    // Video container
+    const videoContainer = document.createElement("div");
+    videoContainer.style.cssText = "height:340px;overflow:hidden;position:relative;background:#000;cursor:pointer;";
+
+    const videoEl = document.createElement("video");
+    videoEl.muted = true;
+    videoEl.loop = true;
+    videoEl.preload = "metadata";
+    videoEl.style.cssText = "width:100%;height:100%;object-fit:cover;";
+
+    if (isUnlocked && videoSrc) {
+      videoEl.src = videoSrc;
+      videoEl.load();
+
+      videoContainer.onmouseenter = () => videoEl.play().catch(() => {});
+      videoContainer.onmouseleave = () => {
+        videoEl.pause();
+        videoEl.currentTime = 0;
       };
+    } else {
+      videoEl.src = "";
+      videoEl.poster = "";
 
-      videoContainer.appendChild(videoEl);
-      
-      // Info Panel
-      const infoPanel = document.createElement("div");
-      infoPanel.style.cssText = "background:#111;padding:10px;display:flex;flex-direction:column;gap:4px;";
+      const lockOverlay = document.createElement("div");
+      lockOverlay.style.cssText = "position:absolute;inset:0;background:rgba(0,0,0,0.96);display:flex;align-items:center;justify-content:center;z-index:2;";
+      lockOverlay.innerHTML = `
+        <div style="text-align:center;">
+          <svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 2C9.2 2 7 4.2 7 7V11H6C4.9 11 4 11.9 4 13V20C4 21.1 4.9 22 6 22H18C19.1 22 20 21.1 20 20V13C20 11.9 19.1 11 18 11H17V7C17 4.2 14.8 2 12 2ZM12 4C13.7 4 15 5.3 15 7V11H9V7C9 5.3 10.3 4 12 4Z" fill="#ff006e"/>
+          </svg>
+          <div style="margin-top:12px;color:#ff006e;font-weight:800;font-size:18px;">
+            ${video.highlightVideoPrice || 100} STRZ
+          </div>
+        </div>
+      `;
+      videoContainer.appendChild(lockOverlay);
+    }
 
-      const title = document.createElement("div");
-      title.textContent = video.title || "Untitled";
-      title.style.cssText = "font-weight:700;color:#fff;font-size:14px;";
-
-      const uploader = document.createElement("div");
-      uploader.textContent = `By: ${video.uploaderName || "Anonymous"}`;
-      uploader.style.cssText = "font-size:12px;color:#ff006e;";
-
-      const unlockBtn = document.createElement("button");
-      unlockBtn.textContent = isUnlocked ? "Unlocked" : `Unlock ${video.highlightVideoPrice || 100} ⭐️`;
-      Object.assign(unlockBtn.style, {
-        background: isUnlocked ? "#333" : "linear-gradient(135deg, #ff006e, #ff4500)",
-        border: "none", borderRadius: "6px", padding: "8px 0", fontWeight: "600",
-        color: "#fff", cursor: isUnlocked ? "default" : "pointer",
-        transition: "all 0.2s", fontSize: "13px",
-        boxShadow: isUnlocked ? "inset 0 2px 6px rgba(0,0,0,0.3)" : "0 3px 10px rgba(255,0,110,0.3)"
-      });
-
-      if (!isUnlocked) {
-        unlockBtn.onmouseenter = () => {
-          unlockBtn.style.background = "linear-gradient(135deg, #ff3385, #ff6600)";
-          unlockBtn.style.transform = "translateY(-1px)";
-        };
-        unlockBtn.onmouseleave = () => {
-          unlockBtn.style.background = "linear-gradient(135deg, #ff006e, #ff4500)";
-          unlockBtn.style.transform = "translateY(0)";
-        };
-        unlockBtn.onclick = (e) => {
-          e.stopPropagation();
-          showUnlockConfirm(video, () => {
-            unlockedVideos = JSON.parse(localStorage.getItem("userUnlockedVideos") || "[]");
-            renderCards(videos);
-          });
-        };
+    // Click to play or unlock
+    videoContainer.onclick = (e) => {
+      e.stopPropagation();
+      if (isUnlocked) {
+        playFullVideo(video);
       } else {
-        unlockBtn.disabled = true;
+        showUnlockConfirm(video, () => renderCards(videosToRender));
       }
+    };
 
-      infoPanel.append(title, uploader, unlockBtn);
-      card.append(videoContainer, infoPanel);
-      content.appendChild(card);
+    videoContainer.appendChild(videoEl);
+
+    // Info Panel
+    const infoPanel = document.createElement("div");
+    infoPanel.style.cssText = "padding:14px;background:#111;display:flex;flex-direction:column;gap:6px;";
+
+    const title = document.createElement("div");
+    title.textContent = video.title || "Untitled Clip";
+    title.style.cssText = "font-weight:700;color:#fff;font-size:15px;line-height:1.4;";
+
+    const uploader = document.createElement("div");
+    uploader.textContent = `By ${video.uploaderName || "Anonymous"}`;
+    uploader.style.cssText = "font-size:13px;color:#ff006e;font-weight:600;";
+
+    const unlockBtn = document.createElement("button");
+    unlockBtn.textContent = isUnlocked ? "✓ Unlocked" : `Unlock • ${video.highlightVideoPrice || 100} STRZ`;
+    Object.assign(unlockBtn.style, {
+      marginTop: "8px",
+      padding: "10px",
+      border: "none",
+      borderRadius: "12px",
+      fontWeight: "700",
+      fontSize: "14px",
+      cursor: isUnlocked ? "default" : "pointer",
+      background: isUnlocked 
+        ? "linear-gradient(135deg, #333, #222)" 
+        : "linear-gradient(135deg, #ff006e, #ff4500)",
+      color: "#fff",
+      boxShadow: isUnlocked 
+        ? "inset 0 2px 8px rgba(0,0,0,0.4)" 
+        : "0 6px 20px rgba(255,0,110,0.4)",
+      transition: "all 0.3s"
     });
-  }
 
+    if (!isUnlocked) {
+      unlockBtn.onmouseenter = () => {
+        unlockBtn.style.transform = "translateY(-2px)";
+        unlockBtn.style.boxShadow = "0 10px 30px rgba(255,0,110,0.6)";
+      };
+      unlockBtn.onmouseleave = () => {
+        unlockBtn.style.transform = "";
+        unlockBtn.style.boxShadow = "0 6px 20px rgba(255,0,110,0.4)";
+      };
+      unlockBtn.onclick = (e) => {
+        e.stopPropagation();
+        showUnlockConfirm(video, () => {
+          unlockedVideos = JSON.parse(localStorage.getItem("userUnlockedVideos") || "[]");
+          renderCards(videosToRender);
+        });
+      };
+    }
+
+    infoPanel.append(title, uploader, unlockBtn);
+    card.append(videoContainer, infoPanel);
+    content.appendChild(card);
+  });
+}
   // === FILTER BUTTON LOGIC (EXCLUSIVE) ===
   function updateButtonStates() {
     // Reset all
