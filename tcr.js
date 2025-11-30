@@ -3855,37 +3855,40 @@ function showHighlightsModal(videos) {
       videoEl.style.cssText = "width:100%;height:100%;object-fit:cover;";
 
       if (isUnlocked) {
-        // UNLOCKED → visible immediately, plays on hover only
-        videoEl.src = video.previewClip || video.highlightVideo;
+  // UNLOCKED → SHOW VIDEO IMMEDIATELY
+  videoEl.src = video.previewClip || video.highlightVideo || video.videoUrl;
+  videoEl.poster = ""; // force no poster
+  videoEl.load(); // critical: forces browser to load the source
 
-        // Show right away (no fade, no black)
-        videoEl.poster = ""; // ensures no poster delay
+  // Play on hover only
+  videoContainer.onmouseenter = () => videoEl.play().catch(() => {});
+  videoContainer.onmouseleave = () => {
+    videoEl.pause();
+    videoEl.currentTime = 0;
+  };
 
-        // Play only on hover
-        videoContainer.onmouseenter = () => videoEl.play().catch(() => {});
-        videoContainer.onmouseleave = () => {
-          videoEl.pause();
-          videoEl.currentTime = 0;
-        };
+} else {
+  // LOCKED → BLACK SCREEN + LOCK ICON (BUT KEEP VIDEO ELEMENT INTACT)
+  // DO NOT DO: videoEl.removeAttribute("src") → THIS KILLS THE VIDEO
+  // INSTEAD: just hide it with black overlay + don't load source
+  videoEl.src = ""; // empty string = no load, but element stays healthy
+  videoEl.removeAttribute("src"); // optional — but better to use videoEl.src = ""
 
-        // Optional: start paused but loaded and visible
-        videoEl.load(); // ensures it's ready
-      } else {
-        // LOCKED → pure black + sexy lock overlay
-        videoEl.removeAttribute("src");
-
-        const lockedOverlay = document.createElement("div");
-        lockedOverlay.innerHTML = `
-          <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
-                      background:rgba(0,0,0,0.96);z-index:2;">
-            <div style="text-align:center;">
-              <svg width="68" height="68" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 2C9.2 2 7 4.2 7 7V11H6C4.9 11 4 11.9 4 13V20C4 21.1 4.9 22 6 22H18C19.1 22 20 21.1 20 20V13C20 11.9 19.1 11 18 11H17V7C17 4.2 14.8 2 12 2ZM12 4C13.7 4 15 5.3 15 7V11H9V7C9 5.3 10.3 4 12 4Z" fill="#ff006e"/>
-              </svg>
-            </div>
-          </div>`;
-        videoContainer.appendChild(lockedOverlay);
-      }
+  const lockedOverlay = document.createElement("div");
+  lockedOverlay.innerHTML = `
+    <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+                background:#000;z-index:2;">
+      <div style="text-align:center;">
+        <svg width="72" height="72" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2C9.2 2 7 4.2 7 7V11H6C4.9 11 4 11.9 4 13V20C4 21.1 4.9 22 6 22H18C19.1 22 20 21.1 20 20V13C20 11.9 19.1 11 18 11H17V7C17 4.2 14.8 2 12 2ZM12 4C13.7 4 15 5.3 15 7V11H9V7C9 5.3 10.3 4 12 4Z" fill="#ff006e"/>
+        </svg>
+        <div style="margin-top:12px;color:#ff006e;font-weight:700;font-size:14px;">
+          ${video.highlightVideoPrice || 100} STRZ to Unlock
+        </div>
+      </div>
+    </div>`;
+  videoContainer.appendChild(lockedOverlay);
+}
 
       // CLICK → full video or unlock modal
       videoContainer.onclick = (e) => {
@@ -4291,4 +4294,12 @@ function showDeleteClipModal(clipId, title) {
       modal.remove();
     }
   };
+}
+// Force all videos to reload properly on unlock
+function forceVideoReload(card) {
+  const videos = card.querySelectorAll("video");
+  videos.forEach(v => {
+    v.load();
+    v.play().catch(() => {});
+  });
 }
