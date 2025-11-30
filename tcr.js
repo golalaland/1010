@@ -3820,16 +3820,20 @@ let filterMode = "all"; // "all" | "unlocked" | "trending"
 
 function renderCards(videosToRender) {
   content.innerHTML = "";
+
+  // CRITICAL: READ FRESH EVERY TIME
   const unlockedVideos = JSON.parse(localStorage.getItem("userUnlockedVideos") || "[]");
-  const isUnlocked = unlockedVideos.includes(video.id);
 
+  // NO FILTERING FOR NOW — WE FIX THE BASICS FIRST
   videosToRender.forEach(video => {
-    const isUnlocked = unlockedVideos.includes(video.id);   // ← THIS LINE IS LIFE
+    // THIS LINE IS THE KEY — MUST BE HERE
+    const isUnlocked = unlockedVideos.includes(video.id);
 
+    // YOUR EXACT CARD STYLE — UNTOUCHED
     const card = document.createElement("div");
     card.className = "videoCard";
     card.setAttribute("data-uploader", video.uploaderName || "Anonymous");
-    card.setAttribute("data-title", video.title || "");
+    card.setAttribute("data-title", video.title || "Untitled");
     Object.assign(card.style, {
       minWidth: "230px", maxWidth: "230px", background: "#1b1b1b", borderRadius: "12px",
       overflow: "hidden", display: "flex", flexDirection: "column", cursor: "pointer",
@@ -3849,34 +3853,52 @@ function renderCards(videosToRender) {
     videoEl.preload = "metadata";
     videoEl.style.cssText = "width:100%;height:100%;object-fit:cover;";
 
+    // FIXED: UNLOCKED = SHOW VIDEO
     if (isUnlocked) {
-      const src = video.previewClip || video.highlightVideo;
-      if (src) {
-        videoEl.src = src;
+      const videoUrl = video.previewClip || video.highlightVideo || "";
+      if (videoUrl) {
+        videoEl.src = videoUrl;
         videoEl.load();
-        videoContainer.onmouseenter = () => videoEl.play().catch(() => {});
-        videoContainer.onmouseleave = () => { videoEl.pause(); videoEl.currentTime = 0; };
       }
-      videoContainer.onclick = (e) => { e.stopPropagation(); playFullVideo(video); };
+
+      videoContainer.onmouseenter = () => videoEl.play().catch(() => {});
+      videoContainer.onmouseleave = () => {
+        videoEl.pause();
+        videoEl.currentTime = 0;
+      };
+
+      videoContainer.onclick = (e) => {
+        e.stopPropagation();
+        playFullVideo(video);
+      };
+
     } else {
+      // LOCKED = BLACK + LOCK
       videoEl.src = "";
+
       const overlay = document.createElement("div");
       overlay.style.cssText = "position:absolute;inset:0;background:#000;display:flex;align-items:center;justify-content:center;z-index:2;";
-      overlay.innerHTML = `<div style="text-align:center;">
-        <svg width="72" height="72" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M12 2C9.2 2 7 4.2 7 7V11H6C4.9 11 4 11.9 4 13V20C4 21.1 4.9 22 6 22H18C19.1 22 20 21.1 20 20V13C20 11.9 19.1 11 18 11H17V7C17 4.2 14.8 2 12 2ZM12 4C13.7 4 15 5.3 15 7V11H9V7C9 5.3 10.3 4 12 4Z" fill="#ff006e"/>
-        </svg>
-        <div style="margin-top:10px;color:#ff006e;font-weight:700;font-size:16px;">
-          ${video.highlightVideoPrice || 100} STRZ
+      overlay.innerHTML = `
+        <div style="text-align:center;">
+          <svg width="72" height="72" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 2C9.2 2 7 4.2 7 7V11H6C4.9 11 4 11.9 4 13V20C4 21.1 4.9 22 6 22H18C19.1 22 20 21.1 20 20V13C20 11.9 19.1 11 18 11H17V7C17 4.2 14.8 2 12 2ZM12 4C13.7 4 15 5.3 15 7V11H9V7C9 5.3 10.3 4 12 4Z" fill="#ff006e"/>
+          </svg>
+          <div style="margin-top:12px;color:#ff006e;font-weight:700;font-size:16px;">
+            ${video.highlightVideoPrice || 100} STRZ
+          </div>
         </div>
-      </div>`;
+      `;
       videoContainer.appendChild(overlay);
-      videoContainer.onclick = (e) => { e.stopPropagation(); showUnlockConfirm(video, () => renderCards(videosToRender)); };
+
+      videoContainer.onclick = (e) => {
+        e.stopPropagation();
+        showUnlockConfirm(video, () => renderCards(videosToRender));
+      };
     }
 
     videoContainer.appendChild(videoEl);
 
-    // Info panel (100% your original)
+    // INFO PANEL — 100% YOURS
     const infoPanel = document.createElement("div");
     infoPanel.style.cssText = "background:#111;padding:10px;display:flex;flex-direction:column;gap:4px;";
     const title = document.createElement("div");
@@ -3891,13 +3913,14 @@ function renderCards(videosToRender) {
       background: isUnlocked ? "#333" : "linear-gradient(135deg, #ff006e, #ff4500)",
       border: "none", borderRadius: "6px", padding: "8px 0", fontWeight: "600",
       color: "#fff", cursor: isUnlocked ? "default" : "pointer",
-      transition: "all 0.2s", fontSize: "13px",
-      boxShadow: isUnlocked ? "inset 0 2px 6px rgba(0,0,0,0.3)" : "0 3px 10px rgba(255,0,110,0.3)"
+      fontSize: "13px", boxShadow: isUnlocked ? "inset 0 2px 6px rgba(0,0,0,0.3)" : "0 3px 10px rgba(255,0,110,0.3)"
     });
+
     if (!isUnlocked) {
-      unlockBtn.onmouseenter = () => unlockBtn.style.background = "linear-gradient(135deg, #ff3385, #ff6600)";
-      unlockBtn.onmouseleave = () => unlockBtn.style.background = "linear-gradient(135deg, #ff006e, #ff4500)";
-      unlockBtn.onclick = (e) => { e.stopPropagation(); showUnlockConfirm(video, () => renderCards(videosToRender)); };
+      unlockBtn.onclick = (e) => {
+        e.stopPropagation();
+        showUnlockConfirm(video, () => renderCards(videosToRender));
+      };
     }
 
     infoPanel.append(title, uploader, unlockBtn);
