@@ -331,18 +331,20 @@ body::before {
   z-index: -1; /* behind content */
 }
 
-body.start-mode {
-  background: url('https://cdn.shopify.com/s/files/1/0962/6648/6067/files/9F6F9EAC-F165-4C70-85CB-B2351A3B8C59.png?v=1763282422') no-repeat center center fixed;
-  background-size: cover;
-}
-
 body.start-mode::before {
   display: none;
 }
 
+/* NEW CSS – paste this and delete everything you just showed me */
+body.start-mode,
 body.game-mode {
-  background: url('https://cdn.shopify.com/s/files/1/0962/6648/6067/files/64EB80F3-9BE7-4D39-8C96-5608B941E4DC.png?v=1763280746') no-repeat center center fixed;
+  background: #000 no-repeat center center fixed; /* fallback black */
   background-size: cover;
+  transition: background-image 0.6s ease-in-out; /* nice fade between wallpapers – optional but looks great */
+}
+
+body.start-mode::before {
+  display: none; /* you can keep this if you still use it for something */
 }
 
 /* ———————————————————————
