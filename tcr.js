@@ -3918,3 +3918,120 @@ function playFullVideo(video) {
   overlay.appendChild(vid);
   document.body.appendChild(overlay);
 }
+/* ---------- UNLOCK VIDEO — UPLOADER GETS NOTIFIED + BANNER + STARS (FINAL ETERNAL EDITION) ---------- */
+async function handleUnlockVideo(video) {
+  if (!currentUser?.uid) return showGoldAlert("Login required");
+  const senderId = currentUser.uid;
+  const receiverId = video.uploaderId;
+  const starsCost = parseInt(video.highlightVideoPrice, 10) || 0;
+  if (starsCost < 10) return showGoldAlert("Invalid price");
+  if (senderId === receiverId) return showGoldAlert("You already own this video");
+  const senderRef = doc(db, "users", senderId);
+  const receiverRef = doc(db, "users", receiverId);
+  const videoRef = doc(db, "highlightVideos", video.id);
+  try {
+    // === 1. TRANSACTION: STARS + UNLOCK ===
+    await runTransaction(db, async (tx) => {
+      const [senderSnap, receiverSnap] = await Promise.all([
+        tx.get(senderRef),
+        tx.get(receiverRef)
+      ]);
+      if (!senderSnap.exists()) throw "Profile missing";
+      if ((senderSnap.data().stars || 0) < starsCost) throw "Not enough stars";
+      if (!receiverSnap.exists()) {
+        tx.set(receiverRef, { chatId: video.uploaderName || "VIP", stars: 0 }, { merge: true });
+      }
+      tx.update(senderRef, { stars: increment(-starsCost) });
+      tx.update(receiverRef, { stars: increment(starsCost) });
+      tx.update(videoRef, {
+        unlockedBy: arrayUnion({
+          userId: senderId,
+          chatId: currentUser.chatId,
+          unlockedAt: new Date()
+        })
+      });
+      tx.update(senderRef, { unlockedVideos: arrayUnion(video.id) });
+    });
+    // === 2. LOCAL UNLOCK UI ===
+    const unlocked = JSON.parse(localStorage.getItem("userUnlockedVideos") || "[]");
+    if (!unlocked.includes(video.id)) unlocked.push(video.id);
+    localStorage.setItem("userUnlockedVideos", JSON.stringify(unlocked));
+    localStorage.setItem(unlocked_${video.id}, "true");
+    // === 3. SEND NOTIFICATION TO YOUR REAL TOP-LEVEL NOTIFICATIONS COLLECTION ===
+    try {
+      await addDoc(collection(db, "notifications"), {
+        userId: receiverId, // ← who receives it
+        message: ${currentUser.chatId} unlocked your video "${video.title || "Highlight"}" for ${starsCost} stars!,
+        type: "video_unlock",
+        fromUser: currentUser.chatId,
+        fromUid: senderId,
+        videoId: video.id,
+        videoTitle: video.title || "Highlight Video",
+        stars: starsCost,
+        timestamp: serverTimestamp(),
+        read: false
+      });
+      console.log("Notification sent to global 'notifications' collection");
+    } catch (err) {
+      console.warn("Failed to send notification:", err);
+    }
+    // === 4. SUCCESS ===
+    showGoldAlert(Unlocked ${video.uploaderName}'s video for ${starsCost} stars!);
+    document.getElementById("highlightsModal")?.remove();
+    showHighlightsModal([video]);
+  } catch (err) {
+    console.error("Unlock failed:", err);
+    showGoldAlert("Unlock failed — try again");
+  }
+}
+/* MY CLIPS — FINAL ETERNAL VERSION — BULLETPROOF */
+async function loadMyClips() {
+  const grid = document.getElementById("myClipsGrid");
+  const noMsg = document.getElementById("noClipsMessage");
+  if (!grid || !currentUser?.uid) return;
+  grid.innerHTML = <div style="grid-column:1/-1;text-align:center;padding:60px;color:#888;">Loading your clips...</div>;
+  try {
+    const q = query(
+      collection(db, "highlightVideos"),
+      where("uploaderId", "==", currentUser.uid),
+      orderBy("uploadedAt", "desc")
+    );
+    const snapshot = await getDocs(q);
+    if (snapshot.empty) {
+      grid.innerHTML = "";
+      if (noMsg) noMsg.style.display = "block";
+      return;
+    }
+    if (noMsg) noMsg.style.display = "none";
+    grid.innerHTML = "";
+    snapshot.forEach(docSnap => {
+      const vid = { id: docSnap.id, ...docSnap.data() };
+      const card = document.createElement("div");
+      card.style.cssText =  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;background:#111;border-radius:16px;overflow:hidden; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;box-shadow:0 8px 30px rgba(0,0,0,0.6);border:1px solid #333; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;transition:all 0.3s ease;position:relative; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;;
+      card.onmouseover = () => card.style.transform = "translateY(-8px)";
+      card.onmouseout = () => card.style.transform = "";
+      card.innerHTML = &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<div style="position:relative;height:200px;background:#000;overflow:hidden;"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<video src="${vid.videoUrl}" style="width:100%;height:100%;object-fit:cover;filter:blur(8px);transform:scale(1.1);" muted loop playsinline></video> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<div style="position:absolute;inset:0;background:linear-gradient(180deg,transparent 40%,rgba(0,0,0,0.9));"></div> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<video src="${vid.videoUrl}" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:80%;height:80%;object-fit:contain;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,0.8);border:2px solid #444;" muted loop playsinline></video> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</div> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<div style="padding:16px;"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<div style="margin-bottom:10px;"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<strong style="color:#aaa;font-size:13px;">Title:</strong> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#fff;font-size:14px;font-weight:600;margin-left:8px;">${vid.title || "Untitled Clip"}</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</div> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;${vid.description ?
+            <div style="margin-bottom:10px;">
+              <strong style="color:#aaa;font-size:13px;">Description:</strong>
+              <span style="color:#ddd;font-size:14px;line-height:1.5;margin-left:8px;">${vid.description}</span>
+            </div>
+           : ''} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<div style="margin:16px 0;"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<strong style="color:#aaa;font-size:13px;">Price:</strong> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#00ff9d;font-size:14px;font-weight:700;margin-left:10px;"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;${vid.highlightVideoPrice || 50} STRZ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</div> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<div style="display:flex;justify-content:space-between;align-items:center;"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<div style="color:#888;font-size:13px;"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Unlocked <strong style="color:#00ff9d;">${vid.unlockedBy?.length || 0}</strong> times &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</div> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<!-- GRADIENT BUTTON — OPENS YOUR FAVORITE MODAL --> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<button class="delete-clip-btn" data-clip-id="$$ {vid.id}" data-title=" $${(vid.title || 'Untitled').replace(/"/g, '&quot;')}" &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;style="background:linear-gradient(90deg,#ff6600,#ff0099); color:#fff; border:none; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;padding:10px 20px; border-radius:10px; font-weight:600; cursor:pointer;"> &nbsp;&nbsp;Delete </button> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</div> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</div> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;;
+      const videos = card.querySelectorAll("video");
+      card.addEventListener("mouseenter", () => videos.forEach(v => v.play().catch(() => {})));
+      card.addEventListener("mouseleave", () => videos.forEach(v => { v.pause(); v.currentTime = 0; }));
+      grid.appendChild(card);
+    });
+    // ATTACH MODAL TO ALL DELETE BUTTONS — BULLETPROOF
+    document.querySelectorAll(".delete-clip-btn").forEach(btn => {
+      btn.onclick = null;
+      btn.addEventListener("click", () => {
+        const clipId = btn.dataset.clipId;
+        const title = btn.dataset.title;
+        showDeleteClipModal(clipId, title);
+      });
+    });
+  } catch (err) {
+    console.error("Load clips failed:", err);
+    grid.innerHTML = <div style="grid-column:1/-1;text-align:center;color:#f66;padding:40px;">Failed to load</div>;
+  }
+}
