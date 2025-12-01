@@ -4087,51 +4087,60 @@ async function loadMyClips() {
   }
 }
 
-function showUnlockConfirm(video, onUnlockCallback) {
-  document.querySelectorAll("video").forEach(v => v.pause());
-  document.getElementById("unlockConfirmModal")?.remove();
+function showDeleteConfirm(id, title) {
+  document.getElementById("deleteConfirmModal")?.remove();
 
   const modal = document.createElement("div");
-  modal.id = "unlockConfirmModal";
-  modal.style.cssText = `
-    position:fixed;inset:0;background:rgba(0,0,0,0.9);
-    display:flex;align-items:center;justify-content:center;
-    z-index:1000001;font-family:system-ui,sans-serif;
-  `;
+  modal.id = "deleteConfirmModal";
+  Object.assign(modal.style, {
+    style: `
+      position:fixed;top:0;left:0;width:100vw;height:100vh;
+      background:rgba(0,0,0,0.93);backdrop-filter:blur(8px);
+      display:flex;align-items:center;justify-content:center;
+      z-index:1000001;font-family:system-ui,sans-serif;
+    `
+  });
 
   modal.innerHTML = `
     <div style="
-      background:#111;padding:32px;border-radius:12px;
-      text-align:center;max-width:340px;width:90%;
-      border:1px solid #333;
+      background:#111;padding:20px;border-radius:12px;
+      text-align:center;color:#fff;max-width:320px;
+      box-shadow:0 0 20px rgba(0,0,0,0.5);
     ">
-      <h3 style="color:#fff;margin:0 0 16px;font-size:20px;font-weight:600;">
-        Unlock "${video.title}"?
+      <h3 style="margin-bottom:10px;font-weight:600;">
+        Delete "${title}"?
       </h3>
-      <p style="color:#ccc;margin:0 0 24px;line-height:1.5;">
-        This will cost <strong style="color:#ff006e;">${video.highlightVideoPrice} STRZ</strong>
+      <p style="margin-bottom:16px;">
+        This clip will be removed forever.<br>
+        <small style="color:#ff9966;">Buyers keep access</small>
       </p>
-      <div style="display:flex;gap:16px;justify-content:center;">
-        <button id="cancelUnlock" style="
-          padding:10px 24px;background:#333;color:#ccc;
-          border:none;border-radius:8px;cursor:pointer;font-weight:600;
+      <div style="display:flex;gap:12px;justify-content:center;">
+        <button id="cancelDelete" style="
+          padding:8px 16px;background:#333;color:#fff;
+          border:none;border-radius:8px;font-weight:500;cursor:pointer;
         ">Cancel</button>
-        <button id="confirmUnlock" style="
-          padding:10px 24px;background:#d42c5a;color:#fff;
-          border:none;border-radius:8px;cursor:pointer;font-weight:600;
-        ">Unlock</button>
+        <button id="confirmDelete" style="
+          padding:8px 16px;background:#c42c2c;color:#fff;
+          border:none;border-radius:8px;font-weight:600;cursor:pointer;
+        ">Delete</button>
       </div>
     </div>
   `;
 
   document.body.appendChild(modal);
 
-  modal.querySelector("#cancelUnlock").onclick = () => modal.remove();
+  modal.querySelector("#cancelDelete").onclick = () => modal.remove();
 
-  modal.querySelector("#confirmUnlock").onclick = async () => {
-    modal.remove();
-    await handleUnlockVideo(video);
-    if (onUnlockCallback) onUnlockCallback();
+  modal.querySelector("#confirmDelete").onclick = async () => {
+    try {
+      await deleteDoc(doc(db, "highlightVideos", id));
+      showGoldAlert("Clip deleted");
+      modal.remove();
+      loadMyClips?.();
+    } catch (e) {
+      showGoldAlert("Delete failed");
+      modal.remove();
+    }
   };
 
   // Click outside to close
