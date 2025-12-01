@@ -4152,7 +4152,7 @@ async function loadMyClips() {
           <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;margin:20px 0 24px;">
             <div style="text-align:center;">
               <div style="color:#888;font-size:13px;letter-spacing:0.5px;">Price</div>
-              <div style="color:#00ff9d;font-weight:800;font-size:9px;margin-top:5px;">
+              <div style="color:#00ff9d;font-weight:800;font-size:11px;margin-top:5px;">
                 ${price} STRZ
               </div>
             </div>
@@ -4179,10 +4179,10 @@ async function loadMyClips() {
                 background:linear-gradient(90deg,#ff0099,#ff6600);
                 color:#fff;
                 border:none;
-                padding:11px 21px;
+                padding:9px 15px;
                 border-radius:10px;
                 font-weight:600;
-                font-size:13px;
+                font-size:9px;
                 cursor:pointer;
                 transition:all 0.25s ease;
                 box-shadow:0 4px 15px rgba(255,0,153,0.3);
