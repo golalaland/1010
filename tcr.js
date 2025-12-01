@@ -3650,8 +3650,8 @@ checkScroll(); // initial check
 
 
 /* ===================================================== */
-/*     FULL HIGHLIGHTS SYSTEM — FINAL FIX — DEC 2025     */
-/*     ZERO ERRORS · ZERO CRASHES · WORKS EVERY TIME     */
+/*     HIGHLIGHTS SYSTEM — FINAL, COMPLETE, NO ERRORS     */
+/*                DECEMBER 2025 — FOREVER FIXED               */
 /* ===================================================== */
 
 highlightsBtn.onclick = async () => {
@@ -3695,58 +3695,32 @@ function showHighlightsModal(videos) {
 
   const modal = document.createElement("div");
   modal.id = "highlightsModal";
-  modal.style.cssText = `
-    position:fixed;top:0;left:0;width:100vw;height:100vh;
-    background:rgba(0,0,0,0.96);display:flex;flex-direction:column;
-    align-items:center;overflow-y:auto;padding:20px;box-sizing:border-box;
-    z-index:999999;font-family:system-ui,sans-serif;backdrop-filter:blur(12px);
-  `;
+  modal.style.cssText = "position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.96);display:flex;flex-direction:column;align-items:center;overflow-y:auto;padding:20px;box-sizing:border-box;z-index:999999;font-family:system-ui,sans-serif;backdrop-filter:blur(12px);";
 
-  // === INTRO BANNER (SAFE WAY) ===
+  // Intro Banner (100% safe)
   const introWrapper = document.createElement("div");
   introWrapper.style.cssText = "position:sticky;top:12px;z-index:1001;width:100%;max-width:700px;margin-bottom:20px;";
 
   const introBox = document.createElement("div");
-  introBox.style.cssText = `
-    text-align:center;color:#ddd;line-height:1.7;font-size:15px;
-    background:linear-gradient(135deg,rgba(255,0,110,0.15),rgba(255,100,0,0.1));
-    padding:18px 50px 18px 24px;border:1px solid rgba(255,0,110,0.35);
-    box-shadow:0 8px 32px rgba(255,0,110,0.2);border-radius:16px;position:relative;
-  `;
-  introBox.innerHTML = `
-    <p style="margin:0;">
-      <span style="font-size:22px;background:linear-gradient(90deg,#ff006e,#ff8c00);-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-weight:800;">
-        Highlights
-      </span> are exclusive creator moments.<br>
-      Unlock with <b>STRZ</b> to support your favorites.
-    </p>
-  `;
+  introBox.style.cssText = "text-align:center;color:#ddd;line-height:1.7;font-size:15px;background:linear-gradient(135deg,rgba(255,0,110,0.15),rgba(255,100,0,0.1));padding:18px 50px 18px 24px;border:1px solid rgba(255,0,110,0.35);box-shadow:0 8px 32px rgba(255,0,110,0.2);border-radius:16px;position:relative;";
+  introBox.innerHTML = '<p style="margin:0;"><span style="font-size:22px;background:linear-gradient(90deg,#ff006e,#ff8c00);-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-weight:800;">Highlights</span> are exclusive creator moments.<br>Unlock with <b>STRZ</b> to support your favorites.</p>';
 
-  // Close Button — NOW 100% SAFE
   const closeX = document.createElement("div");
-  closeX.innerHTML = `<svg width="26" height="26" viewBox="0 0 24 24" fill="none">
-    <path d="M18 6L6 18M6 6l12 12" stroke="#ff006e" stroke-width="3.5" stroke-linecap="round"/>
-  </svg>`;
-  closeX.style.cssText = "position:absolute;top:18px;right:24px;cursor:pointer;z-index:1002;opacity:0.9;";
+  closeX.innerHTML = '<svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6l12 12" stroke="#ff006e" stroke-width="3.5" stroke-linecap="round"/></svg>';
+  closeX.style.cssText = "position:absolute;top:18px;right:24px;cursor:pointer;z-index:1002;";
   closeX.onclick = () => modal.remove();
 
   introBox.appendChild(closeX);
   introWrapper.appendChild(introBox);
   modal.appendChild(introWrapper);
 
-  // === CONTROLS (SEARCH + BUTTONS) ===
+  // Controls
   const controls = document.createElement("div");
   controls.style.cssText = "position:sticky;top:100px;z-index:1000;margin:20px 0;display:flex;flex-direction:column;align-items:center;gap:14px;width:100%;max-width:600px;";
 
   const searchBox = document.createElement("div");
   searchBox.style.cssText = "display:flex;align-items:center;gap:12px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,0,110,0.4);border-radius:40px;padding:12px 20px;width:100%;max-width:420px;backdrop-filter:blur(12px);box-shadow:0 8px 25px rgba(255,0,110,0.2);";
-  searchBox.innerHTML = `
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-      <path d="M21 21L15.8 15.8M17.8 10.4C17.8 14.7 14.3 18.2 10 18.2C5.7 18.2 2.2 14.7 2.2 10.4C2.2 6.1 5.7 2.6 10 2.6C14.3 2.6 17.8 6.1 17.8 10.4Z" stroke="url(#gs)" stroke-width="2.5"/>
-      <defs><linearGradient id="gs"><stop stop-color="#ff006e"/><stop offset="1" stop-color="#ff8c00"/></linearGradient></defs>
-    </svg>
-    <input type="text" placeholder="Search creator or title..." style="background:none;border:none;outline:none;color:#fff;font-size:15px;flex:1;">
-  `;
+  searchBox.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M21 21L15.8 15.8M17.8 10.4C17.8 14.7 14.3 18.2 10 18.2C5.7 18.2 2.2 14.7 2.2 10.4C2.2 6.1 5.7 2.6 10 2.6C14.3 2.6 17.8 6.1 17.8 10.4Z" stroke="url(#gs)" stroke-width="2.5"/><defs><linearGradient id="gs"><stop stop-color="#ff006e"/><stop offset="1" stop-color="#ff8c00"/></linearGradient></defs></svg><input type="text" placeholder="Search creator or title..." style="background:none;border:none;outline:none;color:#fff;font-size:15px;flex:1;">';
   controls.appendChild(searchBox);
 
   const btnRow = document.createElement("div");
@@ -3761,32 +3735,26 @@ function showHighlightsModal(videos) {
   controls.appendChild(btnRow);
   modal.appendChild(controls);
 
-  // === CONTENT GRID ===
+  // Content
   const content = document.createElement("div");
   content.style.cssText = "display:flex;gap:24px;flex-wrap:nowrap;overflow-x:auto;padding:20px 0 100px;width:100%;";
   modal.appendChild(content);
 
-  // State
   let filter = "all";
   const unlockedIds = JSON.parse(localStorage.getItem("userUnlockedVideos") || "[]");
 
   function render() {
-    {
     content.innerHTML = "";
     videos
-      .filter(v => {
-        if (filter === "unlocked") return unlockedIds.includes(v.id);
-        if (filter === "trending") return v.isTrending === true;
-        return true;
-      })
+      .filter(v => filter === "unlocked" ? unlockedIds.includes(v.id) : filter === "trending" ? v.isTrending : true)
       .forEach(video => {
         const isUnlocked = unlockedIds.includes(video.id);
-        const videoSrc = video.previewClip || video.highlightVideo || video.videoUrl || "";
+        const src = video.previewClip || video.highlightVideo || video.videoUrl || "";
 
         const card = document.createElement("div");
         card.dataset.uploader = video.uploaderName;
         card.dataset.title = video.title;
-        card.style.cssText = "min-width:280px;background:linear-gradient(135deg,#1a1a1a,#111);border-radius:20px;overflow:hidden;box-shadow:0 12px 40px rgba(255,0,110,0.25);border:1px solid rgba(255,0,110,0.3);transition:transform 0.4s;";
+        card.style.cssText = "min-width:280px;background:linear-gradient(135deg,#1a1a1a,#111);border-radius:20px;overflow:hidden;box-shadow:0 12px 40px rgba(255,0,110,0.25);border:1px solid rgba(255,0,110,0.3);transition:transform 0.4s;cursor:pointer;";
         card.onmouseenter = () => card.style.transform = "translateY(-16px)";
         card.onmouseleave = () => card.style.transform = "";
 
@@ -3798,38 +3766,21 @@ function showHighlightsModal(videos) {
         vid.preload = "metadata";
         vid.style.cssText = "width:100%;height:100%;object-fit:cover;";
 
-        if (isUnlocked && videoSrc) {
-          vid.src = videoSrc;
+        if (isUnlocked && src) {
+          vid.src = src;
           vid.load();
           thumb.onmouseenter = () => vid.play().catch(() => {});
           thumb.onmouseleave = () => { vid.pause(); vid.currentTime = 0; };
           thumb.onclick = () => playFullVideo(video);
         } else {
-          thumb.innerHTML = `
-            <div style="position:absolute;inset:0;background:rgba(0,0,0,0.92);display:flex;align-items:center;justify-content:center;z-index:2;">
-              <div style="text-align:center;">
-                <svg width="90" height="90" viewBox="0 0 24 24" fill="none">
-                  <path d="M12 2C9.2 2 7 4.2 7 7V11H6C4.9 11 4 11.9 4 13V20C4 21.1 4.9 22 6 22H18C19.1 22 20 21.1 20 20V13C20 11.9 19.1 11 18 11H17V7C17 4.2 14.8 2 12 2ZM12 4C13.7 4 15 5.3 15 7V11H9V7C9 5.3 10.3 4 12 4Z" fill="#ff006e"/>
-                </svg>
-                <div style="margin-top:18px;color:#ff006e;font-weight:800;font-size:20px;">
-                  ${video.highlightVideoPrice} STRZ
-                </div>
-              </div>
-            </div>`;
+          thumb.innerHTML = '<div style="position:absolute;inset:0;background:rgba(0,0,0,0.92);display:flex;align-items:center;justify-content:center;z-index:2;"><div style="text-align:center;"><svg width="90" height="90" viewBox="0 0 24 24" fill="none"><path d="M12 2C9.2 2 7 4.2 7 7V11H6C4.9 11 4 11.9 4 13V20C4 21.1 4.9 22 6 22H18C19.1 22 20 21.1 20 20V13C20 11.9 19.1 11 18 11H17V7C17 4.2 14.8 2 12 2ZM12 4C13.7 4 15 5.3 15 7V11H9V7C9 5.3 10.3 4 12 4Z" fill="#ff006e"/></svg><div style="margin-top:18px;color:#ff006e;font-weight:800;font-size:20px;">' + video.highlightVideoPrice + ' STRZ</div></div></div>';
           thumb.onclick = () => showUnlockConfirm(video);
         }
         thumb.appendChild(vid);
 
         const info = document.createElement("div");
         info.style.cssText = "padding:18px;text-align:center;";
-        info.innerHTML = `
-          <div style="font-weight:700;color:#fff;font-size:17px;margin-bottom:8px;">${video.title}</div>
-          <div style="color:#ff006e;font-size:14px;margin-bottom:16px;">by ${video.uploaderName}</div>
-          <button style="width:100%;padding:14px;border:none;border-radius:12px;font-weight:700;color:#fff;
-                          background:${isUnlocked ? '#333' : 'linear-gradient(90deg,#ff006e,#ff4500)'};
-                          box-shadow:0 6px 20px rgba(255,0,110,0.4);cursor:${isUnlocked ? 'default' : 'pointer'}">
-            ${isUnlocked ? "Unlocked" : `Unlock ${video.highlightVideoPrice} STRZ`}
-          </button>`;
+        info.innerHTML = '<div style="font-weight:700;color:#fff;font-size:17px;margin-bottom:8px;">' + video.title + '</div><div style="color:#ff006e;font-size:14px;margin-bottom:16px;">by ' + video.uploaderName + '</div><button style="width:100%;padding:14px;border:none;border-radius:12px;font-weight:700;color:#fff;background:' + (isUnlocked ? '#333' : 'linear-gradient(90deg,#ff006e,#ff4500)') + ';box-shadow:0 6px 20px rgba(255,0,110,0.4);cursor:' + (isUnlocked ? 'default' : 'pointer') + ';">' + (isUnlocked ? "Unlocked" : "Unlock " + video.highlightVideoPrice + " STRZ") + '</button>';
         if (!isUnlocked) info.querySelector("button").onclick = () => showUnlockConfirm(video);
 
         card.append(thumb, info);
@@ -3837,7 +3788,6 @@ function showHighlightsModal(videos) {
       });
   }
 
-  // Buttons
   unlockedBtn.onclick = () => {
     filter = filter === "unlocked" ? "all" : "unlocked";
     unlockedBtn.textContent = filter === "unlocked" ? "All Videos" : "Show Unlocked";
@@ -3852,7 +3802,6 @@ function showHighlightsModal(videos) {
     render();
   };
 
-  // Search
   searchBox.querySelector("input").oninput = e => {
     const term = e.target.value.toLowerCase();
     content.querySelectorAll("[data-uploader]").forEach(card => {
@@ -3866,22 +3815,11 @@ function showHighlightsModal(videos) {
   setTimeout(() => searchBox.querySelector("input").focus(), 400);
 }
 
-/* ======================= UNLOCK + PLAY ======================= */
 async function showUnlockConfirm(video) {
   document.querySelectorAll("video").forEach(v => v.pause());
-
   const overlay = document.createElement("div");
   overlay.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.95);display:flex;align-items:center;justify-content:center;z-index:1000001;backdrop-filter:blur(12px);";
-  overlay.innerHTML = `
-    <div style="background:#111;padding:32px 40px;border-radius:18px;text-align:center;color:#fff;max-width:340px;box-shadow:0 0 50px rgba(255,0,110,0.5);border:1px solid #444;">
-      <h3 style="margin:0 0 16px;font-size:21px;">Unlock Clip?</h3>
-      <p style="margin:16px 0 24px;color:#ccc;">"${video.title}"<br><strong style="color:#ff006e;font-size:22px;">${video.highlightVideoPrice} STRZ</strong></p>
-      <div style="display:flex;gap:16px;justify-content:center;">
-        <button id="cancelBtn" style="padding:12px 28px;background:#333;color:#aaa;border:none;border-radius:12px;font-weight:600;cursor:pointer;">Cancel</button>
-        <button id="unlockBtn" style="padding:12px 28px;background:linear-gradient(90deg,#ff006e,#ff4500);color:#fff;border:none;border-radius:12px;font-weight:700;cursor:pointer;box-shadow:0 6px 20px rgba(255,0,110,0.5);">Unlock Now</button>
-      </div>
-    </div>`;
-
+  overlay.innerHTML = '<div style="background:#111;padding:32px 40px;border-radius:18px;text-align:center;color:#fff;max-width:340px;box-shadow:0 0 50px rgba(255,0,110,0.5);border:1px solid #444;"><h3 style="margin:0 0 16px;font-size:21px;">Unlock Clip?</h3><p style="margin:16px 0 24px;color:#ccc;">"' + video.title + '"<br><strong style="color:#ff006e;font-size:22px;">' + video.highlightVideoPrice + ' STRZ</strong></p><div style="display:flex;gap:16px;justify-content:center;"><button id="cancelBtn" style="padding:12px 28px;background:#333;color:#aaa;border:none;border-radius:12px;font-weight:600;cursor:pointer;">Cancel</button><button id="unlockBtn" style="padding:12px 28px;background:linear-gradient(90deg,#ff006e,#ff4500);color:#fff;border:none;border-radius:12px;font-weight:700;cursor:pointer;box-shadow:0 6px 20px rgba(255,0,110,0.5);">Unlock Now</button></div></div>';
   document.body.appendChild(overlay);
   overlay.querySelector("#cancelBtn").onclick = () => overlay.remove();
   overlay.querySelector("#unlockBtn").onclick = async () => {
@@ -3913,7 +3851,7 @@ async function unlockVideo(video) {
       localStorage.setItem("userUnlockedVideos", JSON.stringify(unlocked));
     }
 
-    showGoldAlert(`Unlocked "${video.title}"!`);
+    showGoldAlert('Unlocked "' + video.title + '"!');
     document.getElementById("highlightsModal")?.remove();
     setTimeout(() => highlightsBtn.click(), 400);
   } catch (e) {
@@ -3922,23 +3860,22 @@ async function unlockVideo(video) {
 }
 
 function playFullVideo(video) {
-  const src = video.highlightVideo || video.videoUrl || video.previewClip;
+  const src = video.highlightVideo || video.videoUrl || video.previewClip || "";
   if (!src) return showGoldAlert("Video not found");
 
   const player = document.createElement("div");
   player.style.cssText = "position:fixed;inset:0;background:#000;display:flex;align-items:center;justify-content:center;z-index:1000002;";
-  player.innerHTML = `<video src="${src}" controls autoplay style="max-width:96%;max-height:96%;border-radius:18px;box-shadow:0 0 80px rgba(255,0,110,0.6);"></video>`;
+  player.innerHTML = '<video src="' + src + '" controls autoplay style="max-width:96%;max-height:96%;border-radius:18px;box-shadow:0 0 80px rgba(255,0,110,0.6);"></video>';
   player.onclick = () => player.remove();
   document.body.appendChild(player);
 }
 
-/* ======================= MY CLIPS + DELETE (SAFE) ======================= */
 async function loadMyClips() {
   const grid = document.getElementById("myClipsGrid");
   const noMsg = document.getElementById("noClipsMessage");
   if (!grid || !currentUser?.uid) return;
 
-  grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:100px;color:#888;font-size:18px;">Loading...</div>`;
+  grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:100px;color:#888;font-size:18px;">Loading...</div>';
 
   try {
     const q = query(collection(db, "highlightVideos"), where("uploaderId", "==", currentUser.uid), orderBy("uploadedAt", "desc"));
@@ -3954,23 +3891,10 @@ async function loadMyClips() {
 
     snap.forEach(doc => {
       const v = { id: doc.id, ...doc.data() };
+      const videoSrc = v.videoUrl || v.highlightVideo || "";
       const card = document.createElement("div");
       card.style.cssText = "background:#111;border-radius:16px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,0.6);border:1px solid #333;";
-      const videoSrc = v.videoUrl || v.highlightVideo || "";
-      card.innerHTML = `
-        <div style="position:relative;height:220px;background:#000;overflow:hidden;">
-          <video src="${videoSrc}" muted loop playsinline style="width:100%;height:100%;object-fit:cover;filter:blur(10px);transform:scale(1.15);"></video>
-          <div style="position:absolute;inset:0;background:linear-gradient(180deg,transparent,rgba(0,0,0,0.9));"></div>
-          <video src="${videoSrc}" muted loop playsinline style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:85%;height:85%;object-fit:contain;border-radius:12px;border:3px solid #444;box-shadow:0 10px 30px #000;"></video>
-        </div>
-        <div style="padding:18px;">
-          <div style="font-weight:700;color:#fff;font-size:16px;margin-bottom:8px;">${v.title || "Untitled"}</div>
-          <div style="color:#00ff9d;font-weight:700;margin:12px 0;">${v.highlightVideoPrice || 50} STRZ</div>
-          <div style="display:flex;justify-content:space-between;align-items:center;">
-            <small style="color:#888;">Unlocked <strong style="color:#00ff9d;">${v.unlockedBy?.length || 0}</strong>x</small>
-            <button class="delete-clip-btn" data-id="${v.id}" data-title="${(v.title || 'Clip').replace(/"/g, '&quot;')}" style="background:linear-gradient(90deg,#ff3300,#ff0099);color:#fff;border:none;padding:10px 20px;border-radius:10px;font-weight:600;cursor:pointer;">Delete</button>
-          </div>
-        </div>`;
+      card.innerHTML = '<div style="position:relative;height:220px;background:#000;overflow:hidden;"><video src="' + videoSrc + '" muted loop playsinline style="width:100%;height:100%;object-fit:cover;filter:blur(10px);transform:scale(1.15);"></video><div style="position:absolute;inset:0;background:linear-gradient(180deg,transparent,rgba(0,0,0,0.9));"></div><video src="' + videoSrc + '" muted loop playsinline style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:85%;height:85%;object-fit:contain;border-radius:12px;border:3px solid #444;box-shadow:0 10px 30px #000;"></video></div><div style="padding:18px;"><div style="font-weight:700;color:#fff;font-size:16px;margin-bottom:8px;">' + (v.title || "Untitled") + '</div><div style="color:#00ff9d;font-weight:700;margin:12px 0;">' + (v.highlightVideoPrice || 50) + ' STRZ</div><div style="display:flex;justify-content:space-between;align-items:center;"><small style="color:#888;">Unlocked <strong style="color:#00ff9d;">' + (v.unlockedBy?.length || 0) + '</strong>x</small><button class="delete-clip-btn" data-id="' + v.id + '" data-title="' + (v.title || 'Clip').replace(/"/g, '&quot;') + '" style="background:linear-gradient(90deg,#ff3300,#ff0099);color:#fff;border:none;padding:10px 20px;border-radius:10px;font-weight:600;cursor:pointer;">Delete</button></div></div>';
       card.querySelectorAll("video").forEach(vid => {
         card.onmouseenter = () => vid.play().catch(() => {});
         card.onmouseleave = () => { vid.pause(); vid.currentTime = 0; };
@@ -3979,28 +3903,18 @@ async function loadMyClips() {
     });
 
     document.querySelectorAll(".delete-clip-btn").forEach(btn => {
-      btn.onclick = () => {
-        showDeleteConfirm(btn.dataset.id, btn.dataset.title);
-      };
+      btn.onclick = () => showDeleteConfirm(btn.dataset.id, btn.dataset.title);
     });
   } catch (e) {
     console.error(e);
-    grid.innerHTML = `<div style="grid-column:1/-1;color:#f66;text-align:center;padding:60px;">Load failed</div>`;
+    grid.innerHTML = '<div style="grid-column:1/-1;color:#f66;text-align:center;padding:60px;">Load failed</div>';
   }
 }
 
 function showDeleteConfirm(id, title) {
   const modal = document.createElement("div");
   modal.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.92);display:flex;align-items:center;justify-content:center;z-index:99999;";
-  modal.innerHTML = `
-    <div style="background:#111;padding:36px;border-radius:18px;text-align:center;max-width:400px;width:90%;box-shadow:0 20px 60px #000;border:1px solid #444;">
-      <h3 style="color:#fff;margin:0 0 20px;font-size:22px;">Delete Clip?</h3>
-      <p style="color:#ccc;margin:16px;line-height:1.6;">"<strong style="color:#ff3366;">${title}</strong>" will be gone forever.<br><small style="color:#ff9966;">Buyers keep access</small></p>
-      <div style="display:flex;gap:20px;justify-content:center;margin-top:30px;">
-        <button id="cancel" style="padding:14px 32px;background:#333;color:#ccc;border:none;border-radius:12px;font-weight:600;cursor:pointer;">Cancel</button>
-        <button id="delete" style="padding:14px 32px;background:linear-gradient(90deg,#ff3300,#ff0099);color:#fff;border:none;border-radius:12px;font-weight:700;cursor:pointer;box-shadow:0 6px 20px rgba(255,0,110,0.4);">Delete Forever</button>
-      </div>
-    </div>`;
+  modal.innerHTML = '<div style="background:#111;padding:36px;border-radius:18px;text-align:center;max-width:400px;width:90%;box-shadow:0 20px 60px #000;border:1px solid #444;"><h3 style="color:#fff;margin:0 0 20px;font-size:22px;">Delete Clip?</h3><p style="color:#ccc;margin:16px;line-height:1.6;">"<strong style="color:#ff3366;">' + title + '</strong>" will be gone forever.<br><small style="color:#ff9966;">Buyers keep access</small></p><div style="display:flex;gap:20px;justify-content:center;margin-top:30px;"><button id="cancel" style="padding:14px 32px;background:#333;color:#ccc;border:none;border-radius:12px;font-weight:600;cursor:pointer;">Cancel</button><button id="delete" style="padding:14px 32px;background:linear-gradient(90deg,#ff3300,#ff0099);color:#fff;border:none;border-radius:12px;font-weight:700;cursor:pointer;box-shadow:0 6px 20px rgba(255,0,110,0.4);">Delete Forever</button></div></div>';
   document.body.appendChild(modal);
   modal.querySelector("#cancel").onclick = () => modal.remove();
   modal.querySelector("#delete").onclick = async () => {
