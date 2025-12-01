@@ -4179,10 +4179,10 @@ async function loadMyClips() {
                 background:linear-gradient(90deg,#ff0099,#ff6600);
                 color:#fff;
                 border:none;
-                padding:11px 26px;
+                padding:11px 21px;
                 border-radius:10px;
                 font-weight:600;
-                font-size:14.5px;
+                font-size:13px;
                 cursor:pointer;
                 transition:all 0.25s ease;
                 box-shadow:0 4px 15px rgba(255,0,153,0.3);
