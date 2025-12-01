@@ -4153,13 +4153,28 @@ async function loadMyClips() {
             </div>
           </div>
  
-    document.querySelectorAll(".delete-clip-btn").forEach(btn => {
-      btn.onclick = () => showDeleteConfirmDelete(btn.dataset.id, btn.dataset.title);
-    });
-
-  } catch (e) {
-    console.error(e);
-    grid.innerHTML = '<div style="grid-column:1/-1;color:#f66;text-align:center;padding:60px;">Load failed</div>    `;
+              <!-- Delete Button -->
+          <div style="margin-top:auto;display:flex;justify-content:flex-end;">
+            <button class="delete-clip-btn"
+              data-id="${v.id}"
+              data-title="${(v.title || 'Clip').replace(/"/g, '&quot;')}"
+              style="
+                background:linear-gradient(90deg,#ff3300,#ff0099);
+                color:#fff;
+                border:none;
+                padding:11px 26px;
+                border-radius:10px;
+                font-weight:600;
+                font-size:14.5px;
+                cursor:pointer;
+                transition:all 0.25s ease;
+                box-shadow:0 4px 15px rgba(255,0,153,0.3);
+              "
+              onmouseover="this.style.background='linear-gradient(90deg,#ff5500,#ff33aa)'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 25px rgba(255,0,153,0.5)'"
+              onmouseout="this.style.background='linear-gradient(90deg,#ff3300,#ff0099)'; this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(255,0,153,0.3)'">
+              Delete Clip
+            </button>
+          </div>   `;
 
       // Hover video play
       const videos = card.querySelectorAll("video");
