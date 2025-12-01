@@ -2044,7 +2044,7 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 
 
   
-<!-- HIGHLIGHTS ($ELL CONTENT) — ULTRA CLEAN 2025 EDITION -->
+<!-- HIGHLIGHTS ($ELL CONTENT) — FINAL POLISHED VERSION -->
 <div id="sellContentBar" style="margin:40px auto 0; max-width:440px; font-family:'Inter', system-ui, -apple-system, sans-serif;">
   <div style="text-align:center; margin-bottom:28px;">
     <h2 style="
@@ -2068,39 +2068,40 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
                                inset 0 1px 0 rgba(255,255,255,0.05);
     position:relative; overflow:hidden;
   ">
-    <!-- Subtle inner glow -->
     <div style="position:absolute; inset:0; pointer-events:none;
                  background:radial-gradient(circle at 30% 30%, rgba(255,0,110,0.12), transparent 50%);
                  opacity:0.6;"></div>
 
     <div style="position:relative; z-index:2;">
 
-      <!-- Video Upload (File or URL) -->
-      <div style="margin-bottom:20px;">
-        <label style="display:block; color:#e0e0e0; font-size:14px; font-weight:600; margin-bottom:10px;">
+      <!-- Video Upload (File or URL) — PERFECTLY CENTERED -->
+      <div style="margin-bottom:22px; text-align:center;">
+        <div style="color:#e0e0e0; font-size:14px; font-weight:600; margin-bottom:12px;">
           Video <span style="color:#666; font-weight:500;">(MP4 • max 500MB)</span>
-        </label>
+        </div>
 
-        <!-- File Upload Button (Small & Clean) -->
+        <!-- Upload Button (Small & Clean) -->
         <label for="highlightUploadInput" style="
-          display:block; padding:11px 16px; background:#111111; border:1px solid #333;
-          border-radius:12px; text-align:center; cursor:pointer; transition:0.25s;
-          color:#ff2e78; font-size:14px; font-weight:600; margin-bottom:10px;
+          display:inline-block; padding:10px 20px; background:#111111; border:1px solid #333;
+          border-radius:12px; cursor:pointer; transition:0.25s;
+          color:#ff2e78; font-size:14px; font-weight:600;
         "
         onmouseover="this.style.background='#1a1a1a'; this.style.borderColor='#ff2e78'"
         onmouseout="this.style.background='#111111'; this.style.borderColor='#333'">
-          ↑ Upload from device
+          Upload from device
         </label>
         <input type="file" id="highlightUploadInput" accept="video/*" style="display:none;">
 
-        <!-- OR Divider -->
-        <div style="text-align:center; color:#555; font-size:13px; margin:12px 0; position:relative;">
-          <span style="background:rgba(12,12,14,0.9); padding:0 12px;">or</span>
-          <div style="position:absolute; top:50%; left:0; right:0; height:1px; background:#333;"></div>
+        <!-- Fixed OR Divider (line doesn't cut text) -->
+        <div style="margin:16px 0; position:relative; height:20px;">
+          <div style="position:absolute; top:50%; left:0; right:0; height:1px; background:#333; transform:translateY(-50%);"></div>
+          <span style="background:rgba(12,12,14,0.95); color:#666; font-size:13px; padding:0 16px; position:relative; z-index:1;">
+            or
+          </span>
         </div>
 
         <!-- URL Input -->
-        <input type="text" id="highlightVideoInput" placeholder="Paste video URL (YouTube, Twitch, etc.)"
+        <input type="text" id="highlightVideoInput" placeholder="Paste video URL"
                style="width:100%; padding:14px 16px; background:#0a0a0a; border:1px solid #333;
                       border-radius:12px; color:#fff; font-size:14.5px; transition:0.25s;"
                onfocus="this.style.borderColor='#ff2e78'; this.style.background='#111'"
@@ -2117,10 +2118,10 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
                onblur="this.style.borderColor='#333'; this.style.background='#0a0a0a'">
       </div>
 
-      <!-- Description -->
+      <!-- Description — (optional) on same line -->
       <div style="margin-bottom:24px;">
         <label style="display:block; color:#e0e0e0; font-size:14px; font-weight:600; margin-bottom:10px;">
-          Description <span style="color:#666;">(optional)</span>
+          Description <span style="color:#666; font-weight:500;">(optional)</span>
         </label>
         <textarea id="highlightDescInput" placeholder="What makes this clip legendary?"
                   style="width:100%; padding:14px 16px; background:#0a0a0a; border:1px solid #333;
@@ -2129,20 +2130,20 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
                   onblur="this.style.borderColor='#333'"></textarea>
       </div>
 
-      <!-- Price -->
-      <div style="margin-bottom:32px;">
-        <label style="display:block; color:#e0e0e0; font-size:14px; font-weight:600; margin-bottom:12px;">Unlock Price</label>
-        <div style="display:flex; align-items:center; justify-content:center; gap:14px;">
+      <!-- Price — NOW SUPER COMPACT & TIGHT -->
+      <div style="margin-bottom:32px; text-align:center;">
+        <div style="color:#e0e0e0; font-size:14px; font-weight:600; margin-bottom:12px;">Unlock Price</div>
+        <div style="display:inline-flex; align-items:center; gap:12px; background:#0a0a0a; padding:12px 20px; border-radius:16px; border:1px solid #333;">
           <input type="tel" id="highlightPriceInput" value="50" min="10" maxlength="5"
-                 style="width:140px; padding:16px; background:#0a0a0a; border:1px solid #333;
-                        border-radius:16px; color:#00ff9d; font-size:32px; font-weight:800; text-align:center;"
-                 onfocus="this.style.borderColor='#00ff9d'; this.style.boxShadow='0 0 0 4px rgba(0,255,157,0.15)'"
-                 onblur="this.style.borderColor='#333'; this.style.boxShadow='none'">
-          <span style="font-size:28px; font-weight:700; color:#aaa;">STRZ</span>
+                 style="width:90px; background:transparent; border:none; outline:none;
+                        color:#00ff9d; font-size:28px; font-weight:800; text-align:center;"
+                 onfocus="this.parentNode.parentNode.style.borderColor='#00ff9d'; this.parentNode.parentNode.style.boxShadow='0 0 0 4px rgba(0,255,157,0.15)'"
+                 onblur="this.parentNode.parentNode.style.borderColor='#333'; this.parentNode.parentNode.style.boxShadow='none'">
+          <span style="font-size:24px; font-weight:700; color:#aaa;">STRZ</span>
         </div>
       </div>
 
-      <!-- Upload Button — Small, Pill, Elegant -->
+      <!-- Upload Button -->
       <div style="text-align:center;">
         <button id="uploadHighlightBtn" style="
           padding:13px 36px; background:linear-gradient(90deg,#ff2e78,#ff5e2e);
@@ -2156,22 +2157,15 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
         </button>
       </div>
 
-      <!-- Status -->
-      <div id="highlightUploadStatus" style="
-        margin-top:20px; text-align:center; font-size:14px; font-weight:400;
-        min-height:24px; color:#00ff9d; opacity:0; transition:opacity 0.4s;
-      "></div>
+      <div id="highlightUploadStatus" style="margin-top:20px; text-align:center; font-size:14px; font-weight:600; min-height:24px; color:#00ff9d; opacity:0; transition:opacity .4s;"></div>
     </div>
   </div>
 
-  <!-- Tiny animated gradient for header -->
   <style>
-    @keyframes gradient {
-      0%, 100% { background-position: 0% 50%; }
-      50% { background-position: 100% 50%; }
-    }
+    @keyframes gradient { 0%,100%{background-position:0% 50%} 50%{background-position:100% 50%} }
   </style>
 </div>
+
 
   <!-- MY CLIPS ON SALE — THE DOPEST PANEL IN THE EMPIRE -->
 <div id="myClipsPanel" style="margin:40px auto 20px; max-width:900px; font-family:system-ui,sans-serif;">
