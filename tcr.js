@@ -4087,55 +4087,53 @@ async function loadMyClips() {
   }
 }
 
-function showDeleteConfirm(id, title) {
+function showUnlockConfirm(video, onUnlockCallback) {
+  document.querySelectorAll("video").forEach(v => v.pause());
+  document.getElementById("unlockConfirmModal")?.remove();
+
   const modal = document.createElement("div");
+  modal.id = "unlockConfirmModal";
   modal.style.cssText = `
     position:fixed;inset:0;background:rgba(0,0,0,0.9);
     display:flex;align-items:center;justify-content:center;
-    z-index:99999;font-family:system-ui,sans-serif;
+    z-index:1000001;font-family:system-ui,sans-serif;
   `;
 
   modal.innerHTML = `
     <div style="
       background:#111;padding:32px;border-radius:12px;
-      text-align:center;max-width:360px;width:90%;
+      text-align:center;max-width:340px;width:90%;
       border:1px solid #333;
     ">
       <h3 style="color:#fff;margin:0 0 16px;font-size:20px;font-weight:600;">
-        Delete Clip?
+        Unlock "${video.title}"?
       </h3>
       <p style="color:#ccc;margin:0 0 24px;line-height:1.5;">
-        "<strong style="color:#ff3366;">${title}</strong>" will be removed.<br>
-        <small style="color:#999;">Buyers keep access forever.</small>
+        This will cost <strong style="color:#ff006e;">${video.highlightVideoPrice} STRZ</strong>
       </p>
       <div style="display:flex;gap:16px;justify-content:center;">
-        <button id="cancel" style="
+        <button id="cancelUnlock" style="
           padding:10px 24px;background:#333;color:#ccc;
           border:none;border-radius:8px;cursor:pointer;font-weight:600;
         ">Cancel</button>
-        <button id="delete" style="
-          padding:10px 24px;background:#c42c2c;color:#fff;
+        <button id="confirmUnlock" style="
+          padding:10px 24px;background:#d42c5a;color:#fff;
           border:none;border-radius:8px;cursor:pointer;font-weight:600;
-        ">Delete</button>
+        ">Unlock</button>
       </div>
     </div>
   `;
 
   document.body.appendChild(modal);
 
-  modal.querySelector("#cancel").onclick = () => modal.remove();
-  modal.querySelector("#delete").onclick = async () => {
-    try {
-      await deleteDoc(doc(db, "highlightVideos", id));
-      showGoldAlert("Clip deleted");
-      modal.remove();
-      loadMyClips?.();
-    } catch (e) {
-      showGoldAlert("Delete failed");
-      modal.remove();
-    }
+  modal.querySelector("#cancelUnlock").onclick = () => modal.remove();
+
+  modal.querySelector("#confirmUnlock").onclick = async () => {
+    modal.remove();
+    await handleUnlockVideo(video);
+    if (onUnlockCallback) onUnlockCallback();
   };
 
-  // Close when clicking outside
+  // Click outside to close
   modal.onclick = (e) => e.target === modal && modal.remove();
 }
