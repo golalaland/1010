@@ -4062,6 +4062,35 @@ function playFullVideo(video) {
   videoEl.addEventListener("ended", () => videoEl.remove());
   videoEl.addEventListener("pause", () => setTimeout(() => videoEl.remove(), 1000));
 }
+
+async function loadMyClips() {
+  const grid = document.getElementById("myClipsGrid");
+  const noMsg = document.getElementById("noClipsMessage");
+  if (!grid || !currentUser?.uid) return;
+
+  grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:100px;color:#888;font-size:18px;">Loading...</div>';
+
+  try {
+    const q = query(collection(db, "highlightVideos"), where("uploaderId", "==", currentUser.uid), orderBy("uploadedAt", "desc"));
+    const snap = await getDocs(q);
+
+    if (snap.empty) {
+      grid.innerHTML = "";
+      if (noMsg) noMsg.style.display = "block";
+      return;
+    }
+    if (noMsg) noMsg.style.display = "none";
+    grid.innerHTML = "";
+
+    snap.forEach(doc => {
+      const v = { id: doc.id, ...doc.data() };
+      const videoSrc = v.videoUrl || v.highlightVideo || "";
+      const unlocks = v.unlockedBy?.length || 0;
+      const price = Number(v.highlightVideoPrice) || 50;
+      const earnings = unlocks * price; // Total STRZ earned
+
+      const card = document.createElement("div");
+      card.style.cssText = "background:#111;border-radius:16px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,0.6);border:1px solid #333;position:relative;";
 card.innerHTML = `
   <div style="position:relative;height:220px;background:#000;overflow:hidden;">
     <video src="${videoSrc}" muted loop playsinline style="width:100%;height:100%;object-fit:cover;filter:blur(10px);transform:scale(1.15);"></video>
