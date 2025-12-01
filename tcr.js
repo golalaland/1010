@@ -4159,7 +4159,7 @@ async function loadMyClips() {
               data-id="${v.id}"
               data-title="${(v.title || 'Clip').replace(/"/g, '&quot;')}"
               style="
-                background:linear-gradient(90deg,#ff3300,#ff0099);
+                background:linear-gradient(90deg,#ff0099,#ff6600);
                 color:#fff;
                 border:none;
                 padding:11px 26px;
@@ -4172,7 +4172,7 @@ async function loadMyClips() {
               "
               onmouseover="this.style.background='linear-gradient(90deg,#ff5500,#ff33aa)'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 25px rgba(255,0,153,0.5)'"
               onmouseout="this.style.background='linear-gradient(90deg,#ff3300,#ff0099)'; this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(255,0,153,0.3)'">
-              Delete Clip
+              Delete
             </button>
           </div>   `;
 
