@@ -3697,47 +3697,27 @@ function showHighlightsModal(videos) {
 
   const modal = document.createElement("div");
   modal.id = "highlightsModal";
-  modal.style.cssText = `
-    position:fixed;top:0;left:0;width:100vw;height:100vh;
-    background:rgba(0,0,0,0.96);display:flex;flex-direction:column;
-    align-items:center;justify-content:flex-start;z-index:999999;
-    overflow-y:auto;padding:20px;box-sizing:border-box;
-    font-family:system-ui,sans-serif;backdrop-filter:blur(12px);
-  `;
+  modal.style.cssText = "position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.96);display:flex;flex-direction:column;align-items:center;justify-content:flex-start;z-index:999999;overflow-y:auto;padding:20px;box-sizing:border-box;font-family:system-ui,sans-serif;backdrop-filter:blur(12px);";
 
-  // Intro Banner
+  // Intro
   const intro = document.createElement("div");
-  intro.innerHTML = `
-    <div style="text-align:center;color:#ddd;max-width:660px;margin:0 auto;line-height:1.7;font-size:15px;
-                background:linear-gradient(135deg,rgba(255,0,110,0.15),rgba(255,100,0,0.1));
-                padding:18px 50px 18px 24px;border:1px solid rgba(255,0,110,0.35);
-                box-shadow:0 8px 32px rgba(255,0,110,0.2);border-radius:16px;position:relative;">
-      <p style="margin:0;">
-        <span style="font-size:22px;background:linear-gradient(90deg,#ff006e,#ff8c00);-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-weight:800;">
-          Highlights
-        </span> are exclusive creator moments.<br>
-        Unlock premium clips with <b>STRZ</b> to support your favorites.
-      </p>
-    </div>`;
+  intro.innerHTML = '<div style="text-align:center;color:#ddd;max-width:660px;margin:0 auto;line-height:1.7;font-size:15px;background:linear-gradient(135deg,rgba(255,0,110,0.15),rgba(255,100,0,0.1));padding:18px 50px 18px 24px;border:1px solid rgba(255,0,110,0.35);box-shadow:0 8px 32px rgba(255,0,110,0.2);border-radius:16px;position:relative;"><p style="margin:0"><span style="font-size:22px;background:linear-gradient(90deg,#ff006e,#ff8c00);-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-weight:800">Highlights</span> are exclusive creator moments.<br>Unlock premium clips with <b>STRZ</b> to support your favorites.</p></div>';
   intro.style.cssText = "position:sticky;top:12px;z-index:1001;margin-bottom:16px;";
   modal.appendChild(intro);
 
-  const closeX = document.createElement("div");
-  closeX.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6l12 12" stroke="#ff006e" stroke-width="3" stroke-linecap="round"/></svg>`;
-  closeX.style.cssText = "position:absolute;top:18px;right:20px;cursor:pointer;z-index:1002;";
-  closeX.onclick = () => modal.remove();
-  intro.firstChild.appendChild(closeX);
+  const closeBtn = document.createElement("div");
+  closeBtn.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6l12 12" stroke="#ff006e" stroke-width="3" stroke-linecap="round"/></svg>';
+  closeBtn.style.cssText = "position:absolute;top:18px;right:20px;cursor:pointer;z-index:1002;";
+  closeBtn.onclick = () => modal.remove();
+  intro.firstChild.appendChild(closeBtn);
 
-  // Search + Buttons
+  // Search + Filters
   const searchWrap = document.createElement("div");
   searchWrap.style.cssText = "position:sticky;top:90px;z-index:1001;margin-bottom:24px;display:flex;flex-direction:column;align-items:center;gap:10px;";
 
   const searchBox = document.createElement("div");
   searchBox.style.cssText = "display:flex;align-items:center;gap:12px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,0,110,0.4);border-radius:40px;padding:10px 18px;backdrop-filter:blur(12px);box-shadow:0 8px 25px rgba(255,0,110,0.2);";
-  searchBox.innerHTML = `
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M21 21L15.8 15.8M17.8 10.4C17.8 14.7 14.3 18.2 10 18.2C5.7 18.2 2.2 14.7 2.2 10.4C2.2 6.1 5.7 2.6 10 2.6C14.3 2.6 17.8 6.1 17.8 10.4Z" stroke="url(#gradSearch)" stroke-width="2.5" stroke-linecap="round"/><defs><linearGradient id="gradSearch"><stop stop-color="#ff006e"/><stop offset="1" stop-color="#ff8c00"/></linearGradient></defs></svg>
-    <input type="text" placeholder="Search creator or title..." style="background:none;border:none;outline:none;color:#fff;font-size:14px;width:260px;"/>
-  `;
+  searchBox.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M21 21L15.8 15.8M17.8 10.4C17.8 14.7 14.3 18.2 10 18.2C5.7 18.2 2.2 14.7 2.2 10.4C2.2 6.1 5.7 2.6 10 2.6C14.3 2.6 17.8 6.1 17.8 10.4Z" stroke="url(#g)" stroke-width="2.5" stroke-linecap="round"/><defs><linearGradient id="g"><stop stop-color="#ff006e"/><stop offset="1" stop-color="#ff8c00"/></linearGradient></defs></svg><input type="text" placeholder="Search creator or title..." style="background:none;border:none;outline:none;color:#fff;font-size:14px;width:260px;">';
   searchWrap.appendChild(searchBox);
 
   const btns = document.createElement("div");
@@ -3760,63 +3740,51 @@ function showHighlightsModal(videos) {
 
   function render(list = videos) {
     content.innerHTML = "";
-    const unlockedIds = JSON.parse(localStorage.getItem("userUnlockedVideos") || "[]");
+    const unlocked = JSON.parse(localStorage.getItem("userUnlockedVideos") || "[]");
 
-    list.filter(v => filter === "unlocked" ? unlockedIds.includes(v.id) : filter === "trending" ? v.isTrending : true)
-      .forEach(video => {
-        const isUnlocked = unlockedIds.includes(video.id);
-        const src = video.previewClip || video.highlightVideo || video.videoUrl || "";
+    list.filter(v => {
+      if (filter === "unlocked") return unlocked.includes(v.id);
+      if (filter === "trending") return v.isTrending;
+      return true;
+    }).forEach(video => {
+      const isUnlocked = unlocked.includes(video.id);
+      const src = video.previewClip || video.highlightVideo || video.videoUrl || "";
 
-        const card = document.createElement("div");
-        card.dataset.uploader = video.uploaderName || "Anon";
-        card.dataset.title = video.title || "Untitled";
-        card.style.cssText = "min-width:260px;background:linear-gradient(135deg,#1a1a1a,#111);border-radius:18px;overflow:hidden;box-shadow:0 12px 40px rgba(255,0,110,0.25);border:1px solid rgba(255,0,110,0.3);transition:transform 0.4s;";
-        card.onmouseenter = () => card.style.transform = "translateY(-12px)";
-        card.onmouseleave = () => card.style.transform = "";
+      const card = document.createElement("div");
+      card.dataset.uploader = video.uploaderName || "Anon";
+      card.dataset.title = video.title || "Untitled";
+      card.style.cssText = "min-width:260px;background:linear-gradient(135deg,#1a1a1a,#111);border-radius:18px;overflow:hidden;box-shadow:0 12px 40px rgba(255,0,110,0.25);border:1px solid rgba(255,0,110,0.3);transition:transform 0.4s;";
+      card.onmouseenter = () => card.style.transform = "translateY(-12px)";
+      card.onmouseleave = () => card.style.transform = "";
 
-        const thumb = document.createElement("div");
-        thumb.style.cssText = "position:relative;height:360px;background:#000;overflow:hidden;cursor:pointer;";
+      const thumb = document.createElement("div");
+      thumb.style.cssText = "position:relative;height:360px;background:#000;overflow:hidden;cursor:pointer;";
 
-        const vid = document.createElement("video");
-        vid.muted = vid.loop = true;
-        vid.preload = "metadata";
-        vid.style.cssText = "width:100%;height:100%;object-fit:cover;";
+      const vid = document.createElement("video");
+      vid.muted = vid.loop = true;
+      vid.preload = "metadata";
+      vid.style.cssText = "width:100%;height:100%;object-fit:cover;";
 
-        if (isUnlocked && src) {
-          vid.src = src;
-          vid.load();
-          thumb.onmouseenter = () => vid.play().catch(() => {});
-          thumb.onmouseleave = () => { vid.pause(); vid.currentTime = 0; };
-          thumb.onclick = () => playFullVideo(video);
-        } else {
-          thumb.innerHTML += `
-            <div style="position:absolute;inset:0;background:rgba(0,0,0,0.9);display:flex;align-items:center;justify-content:center;z-index:2;">
-              <div style="text-align:center;">
-                <svg width="88" height="88" viewBox="0 0 24 24" fill="none"><path d="M12 2C9.2 2 7 4.2 7 7V11H6C4.9 11 4 11.9 4 13V20C4 21.1 4.9 22 6 22H18C19.1 22 20 21.1 20 20V13C20 11.9 19.1 11 18 11H17V7C17 4.2 14.8 2 12 2ZM12 4C13.7 4 15 5.3 15 7V11H9V7C9 5.3 10.3 4 12 4Z" fill="#ff006e"/></svg>
-                <div style="margin-top:16px;color:#ff006e;font-weight:800;font-size:19px;">
-                  ${video.highlightVideoPrice || 100} STRZ
-                </div>
-              </div>
-            </div>`;
-          thumb.onclick = () => showUnlockConfirm(video, render);
-        }
-        thumb.appendChild(vid);
+      if (isUnlocked && src) {
+        vid.src = src;
+        vid.load();
+        thumb.onmouseenter = () => vid.play().catch(() => {});
+        thumb.onmouseleave = () => { vid.pause(); vid.currentTime = 0; };
+        thumb.onclick = () => playFullVideo(video);
+      } else {
+        thumb.innerHTML += '<div style="position:absolute;inset:0;background:rgba(0,0,0,0.9);display:flex;align-items:center;justify-content:center;z-index:2;"><div style="text-align:center;"><svg width="88" height="88" viewBox="0 0 24 24" fill="none"><path d="M12 2C9.2 2 7 4.2 7 7V11H6C4.9 11 4 11.9 4 13V20C4 21.1 4.9 22 6 22H18C19.1 22 20 21.1 20 20V13C20 11.9 19.1 11 18 11H17V7C17 4.2 14.8 2 12 2ZM12 4C13.7 4 15 5.3 15 7V11H9V7C9 5.3 10.3 4 12 4Z" fill="#ff006e"/></svg><div style="margin-top:16px;color:#ff006e;font-weight:800;font-size:19px;">' + (video.highlightVideoPrice || 100) + ' STRZ</div></div></div>';
+        thumb.onclick = () => showUnlockConfirm(video, render);
+      }
+      thumb.appendChild(vid);
 
-        const info = document.createElement("div");
-        info.style.cssText = "padding:16px;text-align:center;";
-        info.innerHTML = `
-          <div style="font-weight:700;color:#fff;font-size:16px;margin-bottom:6px;">${video.title || "Untitled"}</div>
-          <div style="color:#ff006e;font-size:13px;margin-bottom:12px;">by ${video.uploaderName || "Anonymous"}</div>
-          <button style="width:100%;padding:12px;border:none;border-radius:10px;font-weight:700;
-                          background:${isUnlocked?'#333':'linear-gradient(90deg,#ff006e,#ff4500)'};
-                          color:#fff;cursor:${isUnlocked?'default':'pointer'};box-shadow:0 6px 20px rgba(255,0,110,0.4);">
-            ${isUnlocked ? "Unlocked" : "Unlock " + (video.highlightVideoPrice || 100) + " STRZ"}
-          </button>`;
-        if (!isUnlocked) info.querySelector("button").onclick = () => showUnlockConfirm(video, render);
+      const info = document.createElement("div");
+      info.style.cssText = "padding:16px;text-align:center;";
+      info.innerHTML = '<div style="font-weight:700;color:#fff;font-size:16px;margin-bottom:6px;">' + (video.title || "Untitled") + '</div><div style="color:#ff006e;font-size:13px;margin-bottom:12px;">by ' + (video.uploaderName || "Anonymous") + '</div><button style="width:100%;padding:12px;border:none;border-radius:10px;font-weight:700;background:' + (isUnlocked ? '#333' : 'linear-gradient(90deg,#ff006e,#ff4500)') + ';color:#fff;cursor:' + (isUnlocked ? 'default' : 'pointer') + ';box-shadow:0 6px 20px rgba(255,0,110,0.4);">' + (isUnlocked ? "Unlocked" : "Unlock " + (video.highlightVideoPrice || 100) + " STRZ") + '</button>';
+      if (!isUnlocked) info.querySelector("button").onclick = () => showUnlockConfirm(video, render);
 
-        card.append(thumb, info);
-        content.appendChild(card);
-      });
+      card.append(thumb, info);
+      content.appendChild(card);
+    });
   }
 
   unlockedBtn.onclick = () => {
