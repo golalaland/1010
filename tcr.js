@@ -4068,10 +4068,14 @@ async function loadMyClips() {
   const noMsg = document.getElementById("noClipsMessage");
   if (!grid || !currentUser?.uid) return;
 
-  grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:100px;color:#888;font-size:18px;">Loading...</div>';
+  grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:120px;color:#888;font-size:18px;">Loading clips...</div>`;
 
   try {
-    const q = query(collection(db, "highlightVideos"), where("uploaderId", "==", currentUser.uid), orderBy("uploadedAt", "desc"));
+    const q = query(
+      collection(db, "highlightVideos"),
+      where("uploaderId", "==", currentUser.uid),
+      orderBy("uploadedAt", "desc")
+    );
     const snap = await getDocs(q);
 
     if (snap.empty) {
@@ -4085,54 +4089,112 @@ async function loadMyClips() {
     snap.forEach(doc => {
       const v = { id: doc.id, ...doc.data() };
       const videoSrc = v.videoUrl || v.highlightVideo || "";
+      const price = Number(v.highlightVideoPrice) || 0;
       const unlocks = v.unlockedBy?.length || 0;
-      const price = Number(v.highlightVideoPrice) || 50;
-      const earnings = unlocks * price; // Total STRZ earned
+      const earnings = price * unlocks;
 
       const card = document.createElement("div");
-      card.style.cssText = "background:#111;border-radius:16px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,0.6);border:1px solid #333;position:relative;";
-card.innerHTML = `
-  <div style="position:relative;height:220px;background:#000;overflow:hidden;">
-    <video src="${videoSrc}" muted loop playsinline style="width:100%;height:100%;object-fit:cover;filter:blur(10px);transform:scale(1.15);"></video>
-    <div style="position:absolute;inset:0;background:linear-gradient(180deg,transparent,rgba(0,0,0,0.9));"></div>
-    <video src="${videoSrc}" muted loop playsinline style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:85%;height:85%;object-fit:contain;border-radius:12px;border:3px solid #444;box-shadow:0 10px 30px #000;"></video>
-  </div>
+      card.style.cssText = `
+        background:#111;
+        border-radius:16px;
+        overflow:hidden;
+        box-shadow:0 10px 30px rgba(0,0,0,0.6);
+        border:1px solid #333;
+        display:flex;
+        flex-direction:column;
+      `;
 
-  <div style="padding:20px;">
-    <!-- Title -->
-    <div style="font-weight:700;color:#fff;font-size:17px;margin-bottom:8px;word-break:break-word;">
-      ${v.title || "Untitled Clip"}
-    </div>
-
-    <!-- Description (optional) -->
-    ${v.description ? `<div style="color:#aaa;font-size:13.5px;line-height:1.5;margin-bottom:16px;opacity:0.9;">${v.description}</div>` : ''}
-
-    <!-- Stats Grid — Perfectly Aligned -->
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:18px;">
-      <div>
-        <div style="text-align:center;">
-          <div style="color:#888;font-size:13px;">Price</div>
-          <div style="color:#00ff9d;font-weight:800;font-size:18px;margin-top:4px;">${price} STRZ</div>
+      card.innerHTML = `
+        <!-- Video Preview -->
+        <div style="position:relative;height:220px;background:#000;overflow:hidden;">
+          <video src="${videoSrc}" muted loop playsinline 
+                 style="width:100%;height:100%;object-fit:cover;filter:blur(12px);transform:scale(1.2);"></video>
+          <div style="position:absolute;inset:0;background:linear-gradient(180deg,transparent 30%,rgba(0,0,0,0.95));"></div>
+          <video src="${videoSrc}" muted loop playsinline 
+                 style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+                        width:86%;height:86%;object-fit:contain;
+                        border-radius:14px;border:3px solid #444;
+                        box-shadow:0 12px 40px rgba(0,0,0,0.9);"></video>
         </div>
-        <div style="text-align:center;">
-          <div style="color:#888;font-size:13px;">Unlocked</div>
-          <div style="color:#00ff9d;font-weight:800;font-size:18px;margin-top:4px;">${unlocks}x</div>
-        </div>
-        <div style="text-align:center;">
-          <div style="color:#888;font-size:13px;">Earnings</div>
-          <div style="color:#00ffea;font-weight:800;font-size:20px;margin-top:4px;">${earnings} STRZ</div>
-        </div>
-      </div>
 
-    <!-- Delete Button — Right-aligned, clean -->
-    <div style="display:flex;justify-content:flex-end;">
-      <button class="delete-clip-btn" data-id="${v.id}" data-title="${(v.title || 'Clip').replace(/"/g, '&quot;')}"
-        style="background:#c42c2c;color:#fff;border:none;padding:11px 24px;border-radius:10px;font-weight:600;cursor:pointer;font-size:14px;">
-        Delete Clip
-      </button>
-    </div>
-  </div>
-`;
+        <!-- Content -->
+        <div style="padding:20px 22px 24px;flex-grow:1;display:flex;flex-direction:column;">
+          <!-- Title -->
+          <div style="font-weight:700;color:#fff;font-size:17px;line-height:1.3;margin-bottom:8px;word-break:break-word;">
+            ${v.title || "Untitled Clip"}
+          </div>
+
+          <!-- Description (optional) -->
+          ${v.description ? `
+            <div style="color:#aaa;font-size:13.5px;line-height:1.5;margin-bottom:16px;opacity:0.9;">
+              ${v.description}
+            </div>` : ''
+          }
+
+          <!-- Stats Grid — 3 Perfect Columns -->
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;margin:20px 0 24px;">
+            <div style="text-align:center;">
+              <div style="color:#888;font-size:13px;letter-spacing:0.5px;">Price</div>
+              <div style="color:#00ff9d;font-weight:800;font-size:19px;margin-top:5px;">
+                ${price} STRZ
+              </div>
+            </div>
+            <div style="text-align:center;">
+              <div style="color:#888;font-size:13px;letter-spacing:0.5px;">Unlocked</div>
+              <div style="color:#00ff9d;font-weight:800;font-size:19px;margin-top:5px;">
+                ${unlocks}x
+              </div>
+            </div>
+            <div style="text-align:center;">
+              <div style="color:#888;font-size:13px;letter-spacing:0.5px;">Earnings</div>
+              <div style="color:#00ffea;font-weight:800;font-size:22px;margin-top:5px;">
+                ${earnings} STRZ
+              </div>
+            </div>
+          </div>
+
+          <!-- Delete Button -->
+          <div style="margin-top:auto;display:flex;justify-content:flex-end;">
+            <button class="delete-clip-btn"
+              data-id="${v.id}"
+              data-title="${(v.title || 'Clip').replace(/"/g, '&quot;')}"
+              style="
+                background:#c42c2c;
+                color:#fff;
+                border:none;
+                padding:11px 26px;
+                border-radius:10px;
+                font-weight:600;
+                font-size:14.5px;
+                cursor:pointer;
+                transition:background 0.2s;
+              "
+              onmouseover="this.style.background='#e32d2d'"
+              onmouseout="this.style.background='#c42c2c'">
+              Delete Clip
+            </button>
+          </div>
+        </div>
+      `;
+
+      // Hover video play
+      const videos = card.querySelectorAll("video");
+      card.addEventListener("mouseenter", () => videos.forEach(vid => vid.play().catch(() => {})));
+      card.addEventListener("mouseleave", () => videos.forEach(vid => { vid.pause(); vid.currentTime = 0; }));
+
+      grid.appendChild(card);
+    });
+
+    // Attach delete handlers
+    document.querySelectorAll(".delete-clip-btn").forEach(btn => {
+      btn.onclick = () => showDeleteConfirm(btn.dataset.id, btn.dataset.title);
+    });
+
+  } catch (err) {
+    console.error("loadMyClips error:", err);
+    grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:80px;color:#f66;">Failed to load clips</div>`;
+  }
+}
 
 function showDeleteConfirm(id, title) {
   const modal = document.createElement("div");
