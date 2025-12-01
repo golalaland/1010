@@ -4062,7 +4062,6 @@ function playFullVideo(video) {
   videoEl.addEventListener("ended", () => videoEl.remove());
   videoEl.addEventListener("pause", () => setTimeout(() => videoEl.remove(), 1000));
 }
-
 async function loadMyClips() {
   const grid = document.getElementById("myClipsGrid");
   const noMsg = document.getElementById("noClipsMessage");
@@ -4085,19 +4084,66 @@ async function loadMyClips() {
     snap.forEach(doc => {
       const v = { id: doc.id, ...doc.data() };
       const videoSrc = v.videoUrl || v.highlightVideo || "";
+      const unlocks = v.unlockedBy?.length || 0;
+      const price = Number(v.highlightVideoPrice) || 50;
+      const earnings = unlocks * price; // Total STRZ earned
+
       const card = document.createElement("div");
-      card.style.cssText = "background:#111;border-radius:16px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,0.6);border:1px solid #333;";
-      card.innerHTML = '<div style="position:relative;height:220px;background:#000;overflow:hidden;"><video src="' + videoSrc + '" muted loop playsinline style="width:100%;height:100%;object-fit:cover;filter:blur(10px);transform:scale(1.15);"></video><div style="position:absolute;inset:0;background:linear-gradient(180deg,transparent,rgba(0,0,0,0.9));"></div><video src="' + videoSrc + '" muted loop playsinline style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:85%;height:85%;object-fit:contain;border-radius:12px;border:3px solid #444;box-shadow:0 10px 30px #000;"></video></div><div style="padding:18px;"><div style="font-weight:700;color:#fff;font-size:16px;margin-bottom:8px;">' + (v.title || "Untitled") + '</div><div style="color:#00ff9d;font-weight:700;margin:12px 0;">' + (v.highlightVideoPrice || 50) + ' STRZ</div><div style="display:flex;justify-content:space-between;align-items:center;"><small style="color:#888;">Unlocked <strong style="color:#00ff9d;">' + (v.unlockedBy?.length || 0) + '</strong>x</small><button class="delete-clip-btn" data-id="' + v.id + '" data-title="' + (v.title || 'Clip').replace(/"/g, '&quot;') + '" style="background:linear-gradient(90deg,#ff3300,#ff0099);color:#fff;border:none;padding:10px 20px;border-radius:10px;font-weight:600;cursor:pointer;">Delete</button></div></div>';
-      card.querySelectorAll("video").forEach(vid => {
-        card.onmouseenter = () => vid.play().catch(() => {});
-        card.onmouseleave = () => { vid.pause(); vid.currentTime = 0; };
-      });
+      card.style.cssText = "background:#111;border-radius:16px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,0.6);border:1px solid #333;position:relative;";
+
+      card.innerHTML = `
+        <div style="position:relative;height:220px;background:#000;overflow:hidden;">
+          <video src="${videoSrc}" muted loop playsinline style="width:100%;height:100%;object-fit:cover;filter:blur(10px);transform:scale(1.15);"></video>
+          <div style="position:absolute;inset:0;background:linear-gradient(180deg,transparent,rgba(0,0,0,0.9));"></div>
+          <video src="${videoSrc}" muted loop playsinline style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:85%;height:85%;object-fit:contain;border-radius:12px;border:3px solid #444;box-shadow:0 10px 30px #000;"></video>
+        </div>
+
+        <div style="padding:18px;">
+          <div style="font-weight:700;color:#fff;font-size:16px;margin-bottom:6px;">
+            ${v.title || "Untitled Clip"}
+          </div>
+          ${v.description ? `<div style="color:#aaa;font-size:13px;line-height:1.4;margin-bottom:12px;">${v.description}</div>` : ''}
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:14px;margin-bottom:16px;">
+            <div>
+              <div style="color:#888;">Price</div>
+              <div style="color:#00ff9d;font-weight:700;">${price} STRZ</div>
+            </div>
+            <div>
+              <div style="color:#888;">Unlocked</div>
+              <div style="color:#00ff9d;font-weight:700;">${unlocks}x</div>
+            </div>
+          </div>
+
+          <div style="background:#1a1a1a;padding:12px;border-radius:10px;margin-bottom:16px;">
+            <div style="color:#888;font-size:13px;">Earnings</div>
+            <div style="color:#00ffea;font-size:20px;font-weight:800;">
+              ${earnings} STRZ
+            </div>
+          </div>
+
+          <div style="display:flex;justify-content:flex-end;">
+            <button class="delete-clip-btn" data-id="${v.id}" data-title="${(v.title || 'Clip').replace(/"/g, '&quot;')}"
+              style="background:#c42c2c;color:#fff;border:none;padding:10px 20px;border-radius:10px;font-weight:600;cursor:pointer;">
+              Delete
+            </button>
+          </div>
+        </div>
+      `;
+
+      // Hover play/pause
+      const videos = card.querySelectorAll("video");
+      card.addEventListener("mouseenter", () => videos.forEach(vid => vid.play().catch(() => {})));
+      card.addEventListener("mouseleave", () => videos.forEach(vid => { vid.pause(); vid.currentTime = 0; }));
+
       grid.appendChild(card);
     });
 
+    // Delete buttons
     document.querySelectorAll(".delete-clip-btn").forEach(btn => {
-      btn.onclick = () => showDeleteConfirm(btn.dataset.id, btn.dataset.title);
+      btn.onclick = () => showDeleteConfirmDelete(btn.dataset.id, btn.dataset.title);
     });
+
   } catch (e) {
     console.error(e);
     grid.innerHTML = '<div style="grid-column:1/-1;color:#f66;text-align:center;padding:60px;">Load failed</div>';
