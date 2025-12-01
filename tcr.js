@@ -4088,50 +4088,40 @@ async function loadMyClips() {
 }
 
 function showDeleteConfirm(id, title) {
-  document.getElementById("deleteConfirmModal")?.remove();
-
   const modal = document.createElement("div");
-  modal.id = "deleteConfirmModal";
-  Object.assign(modal.style, {
-    style: `
-      position:fixed;top:0;left:0;width:100vw;height:100vh;
-      background:rgba(0,0,0,0.93);backdrop-filter:blur(8px);
-      display:flex;align-items:center;justify-content:center;
-      z-index:1000001;font-family:system-ui,sans-serif;
-    `
-  });
+  modal.style.cssText = `
+    position:fixed;inset:0;background:rgba(0,0,0,0.9);
+    display:flex;align-items:center;justify-content:center;
+    z-index:99999;font-family:system-ui,sans-serif;
+  `;
 
   modal.innerHTML = `
     <div style="
-      background:#111;padding:20px;border-radius:12px;
-      text-align:center;color:#fff;max-width:320px;
-      box-shadow:0 0 20px rgba(0,0,0,0.5);
+      background:#111;padding:32px;border-radius:12px;
+      text-align:center;max-width:360px;width:90%;
+      border:1px solid #333;
     ">
-      <h3 style="margin-bottom:10px;font-weight:600;">
-        Delete "${title}"?
+      <h3 style="color:#fff;margin:0 0 16px;font-size:20px;font-weight:600;">
+        You Wanna Delete Clip?
       </h3>
-      <p style="margin-bottom:16px;">
-        This clip will be removed forever.<br>
-        <small style="color:#ff9966;">Buyers keep access</small>
+      <p style="color:#ccc;margin:0 0 24px;line-height:1.5;">
+        "<strong style="color:#ff3366;">${title}</strong>" will be removed.<br>
+        <small style="color:#999;">Buyers keep access forever.</small>
       </p>
-      <div style="display:flex;gap:12px;justify-content:center;">
-        <button id="cancelDelete" style="
-          padding:8px 16px;background:#333;color:#fff;
-          border:none;border-radius:8px;font-weight:500;cursor:pointer;
+      <div style="display:flex;gap:16px;justify-content:center;">
+        <button id="cancel" style="
+          padding:10px 24px;background:#333;color:#ccc;
+          border:none;border-radius:8px;cursor:pointer;font-weight:600;
         ">Cancel</button>
-        <button id="confirmDelete" style="
-          padding:8px 16px;background:#c42c2c;color:#fff;
-          border:none;border-radius:8px;font-weight:600;cursor:pointer;
-        ">Delete</button>
+         <button id="delete" style="padding:8px 16px;background:linear-gradient(90deg,#ff0099,#ff6600);border:none;color:#fff;border-radius:8px;font-weight:600;">Yes</button>
       </div>
     </div>
   `;
 
   document.body.appendChild(modal);
 
-  modal.querySelector("#cancelDelete").onclick = () => modal.remove();
-
-  modal.querySelector("#confirmDelete").onclick = async () => {
+  modal.querySelector("#cancel").onclick = () => modal.remove();
+  modal.querySelector("#delete").onclick = async () => {
     try {
       await deleteDoc(doc(db, "highlightVideos", id));
       showGoldAlert("Clip deleted");
@@ -4143,6 +4133,6 @@ function showDeleteConfirm(id, title) {
     }
   };
 
-  // Click outside to close
+  // Close when clicking outside
   modal.onclick = (e) => e.target === modal && modal.remove();
 }
