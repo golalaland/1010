@@ -3194,67 +3194,84 @@ document.getElementById("uploadHighlightBtn")?.addEventListener("click", async (
   }
 });
 
-  // --- Initial random values for first load ---
 (function() {
   const onlineCountEl = document.getElementById('onlineCount');
-  const storageKey = 'lastOnlineCount';
-  
-  // Helper: format number as K if > 999
+  const storageKey = 'fakeOnlineCount';
+
   function formatCount(n) {
-    if(n >= 1000) return (n/1000).toFixed(n%1000===0?0:1) + 'K';
+    if (n >= 1000000) return (n/1000000).toFixed(1) + 'M';
+    if (n >= 1000) return (n/1000).toFixed(n%1000===0 ? 0 : 1) + 'K';
     return n;
   }
-  
-  // Function to get a random starting value
-  function getRandomStart() {
-    const options = [100, 105, 405, 455, 364, 224];
-    return options[Math.floor(Math.random() * options.length)];
-  }
-  
-  
-  // Initialize count from storage or random
-  let count = parseInt(localStorage.getItem(storageKey)) || getRandomStart();
-  onlineCountEl.textContent = formatCount(count);
-  
-  // Increment pattern
-  const increments = [5,3,4,1];
-  let idx = 0;
 
-  // Random threshold to start decreasing (2K–5K)
-  let decreaseThreshold = 2000 + Math.floor(Math.random()*3000); 
-  
-  setInterval(() => {
-    if(count < 5000) {
-      // Occasionally spike
-      if(Math.random() < 0.05) {
-        count += Math.floor(Math.random()*500); 
-      } else {
-        count += increments[idx % increments.length];
-      }
-      if(count > 5000) count = 5000;
-      idx++;
-    }
+  // Start somewhere believable
+  let count = parseInt(localStorage.getItem(storageKey)) || 2857;
+
+  function updateDisplay() {
     onlineCountEl.textContent = formatCount(count);
     localStorage.setItem(storageKey, count);
-    
-    // Reset threshold occasionally
-    if(count >= decreaseThreshold) {
-      decreaseThreshold = 2000 + Math.floor(Math.random()*3000);
-    }
-    
-  }, 4000);
+  }
+  updateDisplay();
 
-  // Slow decrease every 30s if above threshold
+  let baseTrend = 0; // -1 = slowly going down, 0 = stable, 1 = slowly growing
+
   setInterval(() => {
-    if(count > decreaseThreshold) {
-      count -= 10;
-      if(count < 500) count = 500;
-      onlineCountEl.textContent = formatCount(count);
-      localStorage.setItem(storageKey, count);
-    }
-  }, 30000);
-})();
+    // 1. Random micro-fluctuations (most common)
+    const dice = Math.random();
 
+    if (dice < 0.45) {
+      // 45% chance: tiny natural change (±1 to ±9)
+      count += Math.floor(Math.random() * 19) - 9;
+    } 
+    else if (dice < 0.75) {
+      // 30% chance: small wave (±10–40) – feels like people joining/leaving in groups
+      count += Math.floor(Math.random() * 61) - 30;
+    }
+    else if (dice < 0.93) {
+      // 18% chance: noticeable surge (someone shared the link, new post, etc.)
+      count += Math.floor(Math.random() * 180) + 60; // +60 to +240
+    }
+    else if (dice < 0.98) {
+      // 5% chance: mini drop-off (people closing tabs)
+      count -= Math.floor(Math.random() * 120) + 40;
+    }
+    else {
+      // 2% chance: big viral spike (feels like something just happened)
+      count += Math.floor(Math.random() * 600) + 300; // +300–900
+      baseTrend = 1;
+    }
+
+    // Gentle global trend (mimics time of day)
+    const hour = new Date().getHours();
+    if (hour >= 22 || hour < 7) baseTrend = -1;      // late night → slowly down
+    else if (hour >= 12 && hour <= 14) baseTrend = 1; // lunch/post time → up
+    else if (hour >= 18 && hour <= 21) baseTrend = 1; // evening peak
+    else baseTrend = 0;
+
+    if (baseTrend === 1) count += Math.random() > 0.7 ? 3 : 1;
+    if (baseTrend === -1) count -= Math.random() > 0.7 ? 3 : 1;
+
+    // Hard boundaries – change these to whatever range you want to live in
+    if (count < 2200) count = 2200 + Math.floor(Math.random() * 400);
+    if (count > 18400) count = 18400 - Math.floor(Math.random() * 800);
+
+    // Avoid perfectly round numbers too often
+    if (count % 1000 === 0 && Math.random() < 0.9) {
+      count += Math.floor(Math.random() * 80) - 40;
+    }
+
+    updateDisplay();
+
+  }, 3500 + Math.floor(Math.random() * 2000)); // 3.5–5.5 second jitter
+
+  // Very slow periodic "reset" so it never looks stuck forever
+  setInterval(() => {
+    const drift = Math.floor(Math.random() * 800) - 400;
+    count = Math.max(2200, Math.min(18400, count + drift));
+    updateDisplay();
+  }, 5 * 60 * 1000); // every ~5 minutes
+
+})();
 
 
 document.addEventListener("DOMContentLoaded", () => {
