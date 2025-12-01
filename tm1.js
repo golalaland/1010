@@ -2167,3 +2167,23 @@ document.getElementById('claimStreakRewardBtn')?.addEventListener('click', claim
 setInterval(() => {
   if (currentUser?.uid) startWeeklyStreakSystem();
 }, 120000);
+
+const START_BG   = "https://cdn.shopify.com/s/files/1/0962/6648/6067/files/9F6F9EAC-F165-4C70-85CB-B2351A3B8C59.png?v=1763282422";
+const GAME_BGS   = [
+  "https://cdn.shopify.com/s/files/1/0962/6648/6067/files/64EB80F3-9BE7-4D39-8C96-5608B941E4DC.png?v=1763280746",
+  "https://cdn.shopify.com/s/.../game2.jpg",
+  "https://cdn.shopify.com/s/.../game3.jpg",
+  // add the rest
+];
+
+function setBg() {
+  document.body.style.backgroundImage = 
+    document.body.classList.contains('game-mode')
+      ? `url('${GAME_BGS[Math.floor(Math.random()*GAME_BGS.length)]}')`
+      : `url('${START_BG}')`;
+}
+
+setBg(); // on load
+
+// Re-apply whenever class changes
+new MutationObserver(setBg).observe(document.body, {attributes:true, attributeFilter:['class']});
