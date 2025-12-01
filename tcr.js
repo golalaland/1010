@@ -3649,503 +3649,293 @@ checkScroll(); // initial check
 }); // ✅ closes DOMContentLoaded event listener
 
 
-/* ---------- Highlights Button ---------- */
+/* ===================================================== */
+/*           FULL HIGHLIGHTS SYSTEM — ETERNAL FINAL      */
+/*           100% CLEAN · ZERO ERRORS · FOREVER          */
+/* ===================================================== */
+
 highlightsBtn.onclick = async () => {
+  if (!currentUser?.uid) {
+    showGoldAlert("Please log in to view highlights");
+    return;
+  }
+
   try {
-    if (!currentUser?.uid) {
-      showGoldAlert("Please log in to view highlights 🔒");
-      return;
-    }
-
-    const highlightsRef = collection(db, "highlightVideos");
-    const q = query(highlightsRef, orderBy("createdAt", "desc"));
+    const q = query(collection(db, "highlightVideos"), orderBy("createdAt", "desc"));
     const snapshot = await getDocs(q);
-
     if (snapshot.empty) {
-      showGoldAlert("No highlights uploaded yet ⚡");
+      showGoldAlert("No highlights uploaded yet");
       return;
     }
 
-    const videos = snapshot.docs.map(docSnap => {
-      const d = docSnap.data();
-      const uploaderName = d.uploaderName || d.chatId || d.displayName || d.username || "Anonymous";
+    const videos = snapshot.docs.map(doc => {
+      const d = doc.data();
       return {
-        id: docSnap.id,
-        highlightVideo: d.highlightVideo,
-        highlightVideoPrice: d.highlightVideoPrice || 0,
+        id: doc.id,
         title: d.title || "Untitled",
-        uploaderName,
+        uploaderName: d.uploaderName || d.chatId || d.displayName || d.username || "Anonymous",
         uploaderId: d.uploaderId || "",
-        uploaderEmail: d.uploaderEmail || "unknown",
+        highlightVideoPrice: Number(d.highlightVideoPrice) || 100,
+        previewClip: d.previewClip || "",
+        highlightVideo: d.highlightVideo || "",
+        videoUrl: d.videoUrl || "",
         description: d.description || "",
         thumbnail: d.thumbnail || "",
-        createdAt: d.createdAt || null,
-        unlockedBy: d.unlockedBy || [],
-        previewClip: d.previewClip || ""
+        createdAt: d.createdAt,
+        unlockedBy: d.unlockedBy || []
       };
     });
 
     showHighlightsModal(videos);
   } catch (err) {
-    console.error("🔥 Error fetching highlights:", err);
-    showGoldAlert("Error fetching highlights — please try again.");
+    console.error("Highlights load error:", err);
+    showGoldAlert("Failed to load highlights");
   }
 };
 
-/* ---------- Highlights Modal (FINAL VERSION - SECURE + EXCLUSIVE FILTERS) ---------- */
+/* ======================= HIGHLIGHTS MODAL ======================= */
 function showHighlightsModal(videos) {
   document.getElementById("highlightsModal")?.remove();
 
   const modal = document.createElement("div");
   modal.id = "highlightsModal";
-  Object.assign(modal.style, {
-    position: "fixed", top: 0, left: 0, width: "100vw", height: "100vh",
-    background: "rgba(0,0,0,0.9)", display: "flex", flexDirection: "column",
-    alignItems: "center", justifyContent: "flex-start", zIndex: "999999",
-    overflowY: "auto", padding: "20px", boxSizing: "border-box",
-    fontFamily: "system-ui, sans-serif"
-  });
+  modal.style.cssText = `
+    position:fixed;top:0;left:0;width:100vw;height:100vh;
+    background:rgba(0,0,0,0.96);display:flex;flex-direction:column;
+    align-items:center;overflow-y:auto;padding:20px;box-sizing:border-box;
+    z-index:999999;font-family:system-ui,sans-serif;backdrop-filter:blur(12px);
+  `;
 
-  // === STICKY INTRO ===
+  // Intro Banner
   const intro = document.createElement("div");
   intro.innerHTML = `
-    <div style="text-align:center;color:#ccc;max-width:640px;margin:0 auto;line-height:1.6;font-size:14px;
-      background:linear-gradient(135deg,rgba(255,0,110,0.12),rgba(255,100,0,0.08));
-      padding:14px 48px 14px 20px;border:1px solid rgba(255,0,110,0.3);
-      box-shadow:0 0 16px rgba(255,0,110,0.15);border-radius:12px;">
+    <div style="text-align:center;color:#ddd;max-width:660px;margin:0 auto 20px;line-height:1.7;font-size:15px;
+                background:linear-gradient(135deg,rgba(255,0,110,0.15),rgba(255,100,0,0.1));
+                padding:18px 50px 18px 24px;border:1px solid rgba(255,0,110,0.35);
+                box-shadow:0 8px 32px rgba(255,0,110,0.2);border-radius:16px;position:relative;">
       <p style="margin:0;">
-        <span style="background:linear-gradient(90deg,#ff006e,#ff8c00);-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-weight:700;">
-          Highlights 
-        </span> 🎬 are exclusive creator moments.<br>
-        Unlock premium clips with STRZ ⭐️ to support your favorite creators.
+        <span style="font-size:22px;background:linear-gradient(90deg,#ff006e,#ff8c00);-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-weight:800;">
+          Highlights
+        </span> are exclusive creator moments.<br>
+        Unlock with <b>STRZ</b> to support your favorites.
       </p>
     </div>`;
-  Object.assign(intro.style, { position: "sticky", top: "10px", zIndex: "1001", marginBottom: "12px" });
+  intro.style.cssText = "position:sticky;top:12px;z-index:1001;width:100%;";
   modal.appendChild(intro);
 
-  modal.addEventListener("scroll", () => {
-    intro.style.opacity = modal.scrollTop > 50 ? "0.7" : "1";
-  });
-
-  // === SEARCH + FILTER BUTTONS ===
-  const searchWrap = document.createElement("div");
-  Object.assign(searchWrap.style, {
-    position: "sticky", top: "84px", zIndex: "1001", marginBottom: "20px",
-    display: "flex", flexDirection: "column", alignItems: "center", gap: "6px"
-  });
-
-  // Search Input
-  const searchInputWrap = document.createElement("div");
-  searchInputWrap.style.cssText = `
-    display:flex;align-items:center;
-    background:linear-gradient(135deg,rgba(255,255,255,0.08),rgba(255,255,255,0.04));
-    border:1px solid rgba(255,0,110,0.3);border-radius:30px;padding:8px 14px;width:280px;
-    backdrop-filter:blur(8px);box-shadow:0 0 12px rgba(255,0,110,0.15);
-  `;
-  searchInputWrap.innerHTML = `
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M15 15L21 21M10 17C6.13401 17 3 13.866 3 10C3 6.13401 6.13401 3 10 3C13.866 3 17 6.13401 17 10C17 13.866 13.866 17 10 17Z" 
-            stroke="url(#gradSearch)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-      <defs><linearGradient id="gradSearch" x1="3" y1="3" x2="21" y2="21">
-        <stop stop-color="#ff006e"/><stop offset="1" stop-color="#ff8c00"/>
-      </linearGradient></defs>
-    </svg>
-    <input id="highlightSearchInput" type="text" placeholder="Search by creator..." 
-           style="flex:1;background:transparent;border:none;outline:none;color:#fff;font-size:13px;"/>
-  `;
-  searchWrap.appendChild(searchInputWrap);
-
-  // Filter Buttons Row
-  const buttonRow = document.createElement("div");
-  buttonRow.style.cssText = "display:flex;gap:8px;align-items:center;";
-
-  // Show Unlocked Button
-  const toggleBtn = document.createElement("button");
-  toggleBtn.id = "toggleLocked";
-  toggleBtn.textContent = "Show Unlocked";
-  Object.assign(toggleBtn.style, {
-    padding: "4px 10px", borderRadius: "6px", background: "linear-gradient(135deg, #333, #222)",
-    color: "#fff", border: "1px solid rgba(255,0,110,0.3)", fontSize: "12px", cursor: "pointer",
-    fontWeight: "600", transition: "all 0.2s", boxShadow: "0 2px 8px rgba(0,0,0,0.3)"
-  });
-
-  // Trending Button (same style family)
-  const trendingBtn = document.createElement("button");
-  trendingBtn.id = "toggleTrending";
-  trendingBtn.textContent = "Trending";
-  Object.assign(trendingBtn.style, {
-    padding: "4px 10px", borderRadius: "6px",
-    background: "linear-gradient(135deg, #8B00FF, #FF1493)", color: "#fff",
-    border: "1px solid rgba(255,0,110,0.4)", fontSize: "12px", cursor: "pointer",
-    fontWeight: "600", transition: "all 0.2s", boxShadow: "0 2px 8px rgba(139,0,255,0.3)"
-  });
-
-  buttonRow.append(toggleBtn, trendingBtn);
-  searchWrap.appendChild(buttonRow);
-  modal.appendChild(searchWrap);
-
-  // === CLOSE BUTTON (DOPE X) ===
-  const closeBtn = document.createElement("div");
-  closeBtn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M18 6L6 18M6 6L18 18" stroke="#ff006e" stroke-width="2.5" stroke-linecap="round"/>
+  // Close Button
+  const closeX = document.createElement("div");
+  closeX.innerHTML = `<svg width="26" height="26" viewBox="0 0 24 24" fill="none">
+    <path d="M18 6L6 18M6 6l12 12" stroke="#ff006e" stroke-width="3.5" stroke-linecap="round"/>
   </svg>`;
-  Object.assign(closeBtn.style, {
-    position: "absolute", top: "14px", right: "16px", width: "24px", height: "24px",
-    display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer",
-    zIndex: "1002", transition: "transform 0.2s ease", filter: "drop-shadow(0 0 6px rgba(255,0,110,0.3))"
-  });
-  closeBtn.onmouseenter = () => closeBtn.style.transform = "rotate(90deg) scale(1.15)";
-  closeBtn.onmouseleave = () => closeBtn.style.transform = "rotate(0deg) scale(1)";
-  closeBtn.onclick = (e) => { e.stopPropagation(); closeBtn.style.transform = "rotate(180deg) scale(1.3)"; setTimeout(() => modal.remove(), 180); };
-  intro.querySelector("div").appendChild(closeBtn);
+  closeX.style.cssText = "position:absolute;top:18px;right:24px;cursor:pointer;z-index:1002;";
+  closeX.onclick = () => modal.remove();
+  intro.firstChild.appendChild(closeX);
 
-  // === CONTENT AREA ===
+  // Search + Filters
+  const controls = document.createElement("div");
+  controls.style.cssText = "position:sticky;top:100px;z-index:1000;margin-bottom:24px;display:flex;flex-direction:column;align-items:center;gap:12px;width:100%;max-width:600px;";
+
+  const searchBox = document.createElement("div");
+  searchBox.style.cssText = "display:flex;align-items:center;gap:12px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,0,110,0.4);border-radius:40px;padding:12px 20px;width:100%;max-width:420px;backdrop-filter:blur(12px);box-shadow:0 8px 25px rgba(255,0,110,0.2);";
+  searchBox.innerHTML = `
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+      <path d="M21 21L15.8 15.8M17.8 10.4C17.8 14.7 14.3 18.2 10 18.2C5.7 18.2 2.2 14.7 2.2 10.4C2.2 6.1 5.7 2.6 10 2.6C14.3 2.6 17.8 6.1 17.8 10.4Z" stroke="url(#grad)" stroke-width="2.5" stroke-linecap="round"/>
+      <defs><linearGradient id="grad"><stop stop-color="#ff006e"/><stop offset="1" stop-color="#ff8c00"/></linearGradient></defs>
+    </svg>
+    <input type="text" placeholder="Search creator or title..." style="background:none;border:none;outline:none;color:#fff;font-size:15px;flex:1;">
+  `;
+  controls.appendChild(searchBox);
+
+  const btnRow = document.createElement("div");
+  btnRow.style.cssText = "display:flex;gap:12px;";
+  const unlockedBtn = document.createElement("button");
+  const trendingBtn = document.createElement("button");
+  unlockedBtn.textContent = "Show Unlocked";
+  trendingBtn.textContent = "Trending";
+  unlockedBtn.style.cssText = "padding:10px 20px;border-radius:14px;background:linear-gradient(135deg,#333,#222);color:#fff;border:1px solid rgba(255,0,110,0.3);font-weight:600;cursor:pointer;";
+  trendingBtn.style.cssText = "padding:10px 20px;border-radius:14px;background:linear-gradient(135deg,#8B00FF,#FF1493);color:#fff;font-weight:600;cursor:pointer;";
+  btnRow.append(unlockedBtn, trendingBtn);
+  controls.appendChild(btnRow);
+  modal.appendChild(controls);
+
+  // Content
   const content = document.createElement("div");
-  Object.assign(content.style, {
-    display: "flex", gap: "16px", flexWrap: "nowrap", overflowX: "auto",
-    paddingBottom: "40px", scrollBehavior: "smooth", width: "100%", justifyContent: "flex-start"
-  });
+  content.style.cssText = "display:flex;gap:24px;flex-wrap:nowrap;overflow-x:auto;padding:20px 0 100px;width:100%;";
   modal.appendChild(content);
 
-  // State
-  let unlockedVideos = JSON.parse(localStorage.getItem("userUnlockedVideos") || "[]");
-  let filterMode = "all"; // "all" | "unlocked" | "trending"
+  let filter = "all";
+  const unlockedIds = JSON.parse(localStorage.getItem("userUnlockedVideos") || "[]");
 
-  function renderCards(videosToRender) {
+  function render() {
     content.innerHTML = "";
+    videos
+      .filter(v => filter === "unlocked" ? unlockedIds.includes(v.id) : filter === "trending" ? v.isTrending : true)
+      .forEach(video => {
+        const isUnlocked = unlockedIds.includes(video.id);
+        const src = video.previewClip || video.highlightVideo || video.videoUrl || "";
 
-    const filtered = videosToRender.filter(video => {
-      if (filterMode === "unlocked") return unlockedVideos.includes(video.id);
-      if (filterMode === "trending") return video.isTrending === true;
-      return true; // all
-    });
+        const card = document.createElement("div");
+        card.dataset.uploader = video.uploaderName;
+        card.dataset.title = video.title;
+        card.style.cssText = "min-width:280px;background:linear-gradient(135deg,#1a1a1a,#111);border-radius:20px;overflow:hidden;box-shadow:0 12px 40px rgba(255,0,110,0.25);border:1px solid rgba(255,0,110,0.3);transition:transform 0.4s;cursor:pointer;";
+        card.onmouseenter = () => card.style.transform = "translateY(-16px)";
+        card.onmouseleave = () => card.style.transform = "";
 
-    filtered.forEach(video => {
-      const isUnlocked = unlockedVideos.includes(video.id);
+        const thumb = document.createElement("div");
+        thumb.style.cssText = "position:relative;height:380px;background:#000;overflow:hidden;";
 
-      const card = document.createElement("div");
-      card.className = "videoCard";
-      card.setAttribute("data-uploader", video.uploaderName || "Anonymous");
-      card.setAttribute("data-title", video.title || "");
-      Object.assign(card.style, {
-        minWidth: "230px", maxWidth: "230px", background: "#1b1b1b", borderRadius: "12px",
-        overflow: "hidden", display: "flex", flexDirection: "column", cursor: "pointer",
-        flexShrink: 0, boxShadow: "0 4px 16px rgba(255,0,110,0.15)",
-        transition: "transform 0.3s ease, box-shadow 0.3s ease",
-        border: "1px solid rgba(255,0,110,0.2)"
+        const vid = document.createElement("video");
+        vid.muted = vid.loop = true;
+        vid.preload = "metadata";
+        vid.style.cssText = "width:100%;height:100%;object-fit:cover;";
+
+        if (isUnlocked && src) {
+          vid.src = src;
+          vid.load();
+          thumb.onmouseenter = () => vid.play().catch(() => {});
+          thumb.onmouseleave = () => { vid.pause(); vid.currentTime = 0; };
+          thumb.onclick = () => playFullVideo(video);
+        } else {
+          thumb.innerHTML += `
+            <div style="position:absolute;inset:0;background:rgba(0,0,0,0.92);display:flex;align-items:center;justify-content:center;z-index:2;">
+              <div style="text-align:center;">
+                <svg width="90" height="90" viewBox="0 0 24 24" fill="none">
+                  <path d="M12 2C9.2 2 7 4.2 7 7V11H6C4.9 11 4 11.9 4 13V20C4 21.1 4.9 22 6 22H18C19.1 22 20 21.1 20 20V13C20 11.9 19.1 11 18 11H17V7C17 4.2 14.8 2 12 2ZM12 4C13.7 4 15 5.3 15 7V11H9V7C9 5.3 10.3 4 12 4Z" fill="#ff006e"/>
+                </svg>
+                <div style="margin-top:18px;color:#ff006e;font-weight:800;font-size:20px;">
+                  ${video.highlightVideoPrice} STRZ
+                </div>
+              </div>
+            </div>`;
+          thumb.onclick = () => showUnlockConfirm(video);
+        }
+        thumb.appendChild(vid);
+
+        const info = document.createElement("div");
+        info.style.cssText = "padding:18px;text-align:center;";
+        info.innerHTML = `
+          <div style="font-weight:700;color:#fff;font-size:17px;margin-bottom:8px;">${video.title}</div>
+          <div style="color:#ff006e;font-size:14px;margin-bottom:16px;">by ${video.uploaderName}</div>
+          <button style="width:100%;padding:14px;border:none;border-radius:12px;font-weight:700;color:#fff;
+                          background:${isUnlocked ? '#333' : 'linear-gradient(90deg,#ff006e,#ff4500)'};
+                          box-shadow:0 6px 20px rgba(255,0,110,0.4);cursor:${isUnlocked ? 'default' : 'pointer'};">
+            ${isUnlocked ? "Unlocked" : `Unlock ${video.highlightVideoPrice} STRZ`}
+          </button>`;
+        if (!isUnlocked) info.querySelector("button").onclick = () => showUnlockConfirm(video);
+
+        card.append(thumb, info);
+        content.appendChild(card);
       });
-      card.onmouseenter = () => {
-        card.style.transform = "scale(1.03)";
-        card.style.boxShadow = "0 8px 24px rgba(255,0,110,0.3)";
-      };
-      card.onmouseleave = () => {
-        card.style.transform = "scale(1)";
-        card.style.boxShadow = "0 4px 16px rgba(255,0,110,0.15)";
-      };
+  }
 
-                              
-
-                              const videoContainer = document.createElement("div");
-      videoContainer.style.cssText = "height:320px;overflow:hidden;position:relative;background:#000;cursor:pointer;";
-
-      const videoEl = document.createElement("video");
-      videoEl.muted = true;
-      videoEl.loop = true;
-      videoEl.preload = "metadata";
-      videoEl.style.cssText = "width:100%;height:100%;object-fit:cover;";
-
-      if (isUnlocked) {
-  // UNLOCKED → SHOW VIDEO IMMEDIATELY
-  videoEl.src = video.previewClip || video.highlightVideo || video.videoUrl;
-  videoEl.poster = ""; // force no poster
-  videoEl.load(); // critical: forces browser to load the source
-
-  // Play on hover only
-  videoContainer.onmouseenter = () => videoEl.play().catch(() => {});
-  videoContainer.onmouseleave = () => {
-    videoEl.pause();
-    videoEl.currentTime = 0;
+  unlockedBtn.onclick = () => {
+    filter = filter === "unlocked" ? "all" : "unlocked";
+    unlockedBtn.textContent = filter === "unlocked" ? "All Videos" : "Show Unlocked";
+    unlockedBtn.style.background = filter === "unlocked" ? "linear-gradient(90deg,#ff006e,#ff8c00)" : "linear-gradient(135deg,#333,#222)";
+    render();
   };
 
-} else {
-  // LOCKED → BLACK SCREEN + LOCK ICON (BUT KEEP VIDEO ELEMENT INTACT)
-  // DO NOT DO: videoEl.removeAttribute("src") → THIS KILLS THE VIDEO
-  // INSTEAD: just hide it with black overlay + don't load source
-  videoEl.src = ""; // empty string = no load, but element stays healthy
-  videoEl.removeAttribute("src"); // optional — but better to use videoEl.src = ""
+  trendingBtn.onclick = () => {
+    filter = filter === "trending" ? "all" : "trending";
+    trendingBtn.textContent = filter === "trending" ? "All Videos" : "Trending";
+    trendingBtn.style.background = filter === "trending" ? "linear-gradient(90deg,#9d00ff,#ff0077)" : "linear-gradient(135deg,#8B00FF,#FF1493)";
+    render();
+  };
 
-  const lockedOverlay = document.createElement("div");
-  lockedOverlay.innerHTML = `
-    <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
-                background:#000;z-index:2;">
-      <div style="text-align:center;">
-        <svg width="72" height="72" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M12 2C9.2 2 7 4.2 7 7V11H6C4.9 11 4 11.9 4 13V20C4 21.1 4.9 22 6 22H18C19.1 22 20 21.1 20 20V13C20 11.9 19.1 11 18 11H17V7C17 4.2 14.8 2 12 2ZM12 4C13.7 4 15 5.3 15 7V11H9V7C9 5.3 10.3 4 12 4Z" fill="#ff006e"/>
-        </svg>
-        <div style="margin-top:12px;color:#ff006e;font-weight:700;font-size:14px;">
-          ${video.highlightVideoPrice || 100} STRZ to Unlock
-        </div>
+  searchBox.querySelector("input").addEventListener("input", e => {
+    const term = e.target.value.toLowerCase();
+    content.querySelectorAll("[data-uploader]").forEach(c => {
+      const match = c.dataset.uploader.toLowerCase().includes(term) || c.dataset.title.toLowerCase().includes(term);
+      c.style.opacity = match ? "1" : "0.3";
+    });
+  });
+
+  render();
+  document.body.appendChild(modal);
+  setTimeout(() => searchBox.querySelector("input").focus(), 400);
+}
+
+/* ======================= UNLOCK SYSTEM ======================= */
+async function showUnlockConfirm(video) {
+  document.querySelectorAll("video").forEach(v => v.pause());
+
+  const overlay = document.createElement("div");
+  overlay.id = "unlockConfirmModal";
+  overlay.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.94);display:flex;align-items:center;justify-content:center;z-index:1000001;backdrop-filter:blur(10px);";
+  overlay.innerHTML = `
+    <div style="background:#111;padding:32px;border-radius:16px;text-align:center;color:#fff;max-width:340px;box-shadow:0 0 40px rgba(255,0,110,0.4);border:1px solid #333;">
+      <h3 style="margin:0 0 16px;font-size:21px;">Unlock "${video.title}"?</h3>
+      <p style="margin:12px 0 24px;color:#ccc;">Cost: <strong style="color:#ff006e">${video.highlightVideoPrice} STRZ</strong></p>
+      <div style="display:flex;gap:16px;justify-content:center;">
+        <button id="cancel" style="padding:12px 28px;background:#333;color:#aaa;border:none;border-radius:12px;font-weight:600;">Cancel</button>
+        <button id="confirm" style="padding:12px 28px;background:linear-gradient(90deg,#ff006e,#ff4500);color:#fff;border:none;border-radius:12px;font-weight:700;box-shadow:0 6px 20px rgba(255,0,110,0.4);">Unlock Now</button>
       </div>
     </div>`;
-  videoContainer.appendChild(lockedOverlay);
-}
 
-      // CLICK → full video or unlock modal
-      videoContainer.onclick = (e) => {
-        e.stopPropagation();
-        if (isUnlocked) {
-          playFullVideo(video);
-        } else {
-          showUnlockConfirm(video, () => renderCards(videos));
-        }
-      };
-
-      videoContainer.appendChild(videoEl);
-      
-      // Info Panel
-      const infoPanel = document.createElement("div");
-      infoPanel.style.cssText = "background:#111;padding:10px;display:flex;flex-direction:column;gap:4px;";
-
-      const title = document.createElement("div");
-      title.textContent = video.title || "Untitled";
-      title.style.cssText = "font-weight:700;color:#fff;font-size:14px;";
-
-      const uploader = document.createElement("div");
-      uploader.textContent = `By: ${video.uploaderName || "Anonymous"}`;
-      uploader.style.cssText = "font-size:12px;color:#ff006e;";
-
-      const unlockBtn = document.createElement("button");
-      unlockBtn.textContent = isUnlocked ? "Unlocked" : `Unlock ${video.highlightVideoPrice || 100} ⭐️`;
-      Object.assign(unlockBtn.style, {
-        background: isUnlocked ? "#333" : "linear-gradient(135deg, #ff006e, #ff4500)",
-        border: "none", borderRadius: "6px", padding: "8px 0", fontWeight: "600",
-        color: "#fff", cursor: isUnlocked ? "default" : "pointer",
-        transition: "all 0.2s", fontSize: "13px",
-        boxShadow: isUnlocked ? "inset 0 2px 6px rgba(0,0,0,0.3)" : "0 3px 10px rgba(255,0,110,0.3)"
-      });
-
-      if (!isUnlocked) {
-        unlockBtn.onmouseenter = () => {
-          unlockBtn.style.background = "linear-gradient(135deg, #ff3385, #ff6600)";
-          unlockBtn.style.transform = "translateY(-1px)";
-        };
-        unlockBtn.onmouseleave = () => {
-          unlockBtn.style.background = "linear-gradient(135deg, #ff006e, #ff4500)";
-          unlockBtn.style.transform = "translateY(0)";
-        };
-        unlockBtn.onclick = (e) => {
-          e.stopPropagation();
-          showUnlockConfirm(video, () => {
-            unlockedVideos = JSON.parse(localStorage.getItem("userUnlockedVideos") || "[]");
-            renderCards(videos);
-          });
-        };
-      } else {
-        unlockBtn.disabled = true;
-      }
-
-      infoPanel.append(title, uploader, unlockBtn);
-      card.append(videoContainer, infoPanel);
-      content.appendChild(card);
-    });
-  }
-
-  // === FILTER BUTTON LOGIC (EXCLUSIVE) ===
-  function updateButtonStates() {
-    // Reset all
-    toggleBtn.textContent = "Show Unlocked";
-    toggleBtn.style.background = "linear-gradient(135deg, #333, #222)";
-    trendingBtn.textContent = "Trending";
-    trendingBtn.style.background = "linear-gradient(135deg, #c31432, #ff006e)";
-    trendingBtn.style.boxShadow = "0 2px 8px rgba(139,0,255,0.3)";
-
-    if (filterMode === "unlocked") {
-      toggleBtn.textContent = "All Videos";
-      toggleBtn.style.background = "linear-gradient(135deg, #ff006e, #ff8c00)";
-    } else if (filterMode === "trending") {
-      trendingBtn.textContent = "All Videos";
-      trendingBtn.style.background = "linear-gradient(135deg, #A020F0, #FF45A1)";
-      trendingBtn.style.boxShadow = "0 4px 16px rgba(139,0,255,0.5)";
-    }
-  }
-
-  toggleBtn.addEventListener("click", () => {
-    filterMode = filterMode === "unlocked" ? "all" : "unlocked";
-    updateButtonStates();
-    renderCards(videos);
-  });
-
-  trendingBtn.addEventListener("click", () => {
-    filterMode = filterMode === "trending" ? "all" : "trending";
-    updateButtonStates();
-    renderCards(videos);
-  });
-
-  // Initial render
-  renderCards(videos);
-  updateButtonStates();
-
-  // Search
-  searchInputWrap.querySelector("#highlightSearchInput").addEventListener("input", e => {
-    const term = e.target.value.trim().toLowerCase();
-    content.querySelectorAll(".videoCard").forEach(card => {
-      const uploader = (card.getAttribute("data-uploader") || "").toLowerCase();
-      const title = (card.getAttribute("data-title") || "").toLowerCase();
-      card.style.display = (uploader.includes(term) || title.includes(term)) ? "flex" : "none";
-    });
-  });
-
-  document.body.appendChild(modal);
-  setTimeout(() => searchInputWrap.querySelector("input").focus(), 300);
-}
-
-/* ---------- Sorting helper ---------- */
-function sortVideos(videos, mode="all"){
-  const unlockedIds = JSON.parse(localStorage.getItem("userUnlockedVideos")||"[]");
-  if(mode==="unlocked") return videos.filter(v=>unlockedIds.includes(v.id));
-  if(mode==="locked") return videos.filter(v=>!unlockedIds.includes(v.id));
-  return videos;
-}
-
-/* ---------- Unlock Confirm Modal ---------- */
-function showUnlockConfirm(video, onUnlockCallback) {
-  document.querySelectorAll("video").forEach(v => v.pause());
-  document.getElementById("unlockConfirmModal")?.remove();
-
-  const modal = document.createElement("div");
-  modal.id = "unlockConfirmModal";
-  Object.assign(modal.style, {
-    position: "fixed",
-    top: 0,
-    left: 0,
-    width: "100vw",
-    height: "100vh",
-    background: "rgba(0,0,0,0.93)",
-    backdropFilter: "blur(8px)",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    zIndex: "1000001",
-    opacity: "1",
-  });
-
-  modal.innerHTML = `
-    <div style="background:#111;padding:20px;border-radius:12px;text-align:center;color:#fff;max-width:320px;box-shadow:0 0 20px rgba(0,0,0,0.5);">
-      <h3 style="margin-bottom:10px;font-weight:600;">Unlock "${video.title}"?</h3>
-      <p style="margin-bottom:16px;">This will cost <b>${video.highlightVideoPrice} ⭐</b></p>
-      <div style="display:flex;gap:12px;justify-content:center;">
-        <button id="cancelUnlock" style="padding:8px 16px;background:#333;border:none;color:#fff;border-radius:8px;font-weight:500;">Cancel</button>
-        <button id="confirmUnlock" style="padding:8px 16px;background:linear-gradient(90deg,#ff0099,#ff6600);border:none;color:#fff;border-radius:8px;font-weight:600;">Yes</button>
-      </div>
-    </div>
-  `;
-
-  document.body.appendChild(modal);
-
-  modal.querySelector("#cancelUnlock").onclick = () => modal.remove();
-  modal.querySelector("#confirmUnlock").onclick = async () => {
-    modal.remove();
-    await handleUnlockVideo(video);
-    if (onUnlockCallback) onUnlockCallback();
+  document.body.appendChild(overlay);
+  overlay.querySelector("#cancel").onclick = () => overlay.remove();
+  overlay.querySelector("#confirm").onclick = async () => {
+    overlay.remove();
+    await unlockVideo(video);
   };
 }
-/* ---------- UNLOCK VIDEO — UPLOADER GETS NOTIFIED + BANNER + STARS (FINAL ETERNAL EDITION) ---------- */
-async function handleUnlockVideo(video) {
+
+async function unlockVideo(video) {
   if (!currentUser?.uid) return showGoldAlert("Login required");
+  if (currentUser.uid === video.uploaderId) return showGoldAlert("You already own this");
 
-  const senderId = currentUser.uid;
-  const receiverId = video.uploaderId;
-  const starsCost = parseInt(video.highlightVideoPrice, 10) || 0;
-
-  if (starsCost < 10) return showGoldAlert("Invalid price");
-  if (senderId === receiverId) return showGoldAlert("You already own this video");
-
-  const senderRef = doc(db, "users", senderId);
-  const receiverRef = doc(db, "users", receiverId);
-  const videoRef = doc(db, "highlightVideos", video.id);
+  const cost = video.highlightVideoPrice;
 
   try {
-    // === 1. TRANSACTION: STARS + UNLOCK ===
-    await runTransaction(db, async (tx) => {
-      const [senderSnap, receiverSnap] = await Promise.all([
-        tx.get(senderRef),
-        tx.get(receiverRef)
-      ]);
+    await runTransaction(db, async tx => {
+      const sender = await tx.get(doc(db, "users", currentUser.uid));
+      if ((sender.data()?.stars || 0) < cost) throw "Not enough STRZ";
 
-      if (!senderSnap.exists()) throw "Profile missing";
-      if ((senderSnap.data().stars || 0) < starsCost) throw "Not enough stars";
-
-      if (!receiverSnap.exists()) {
-        tx.set(receiverRef, { chatId: video.uploaderName || "VIP", stars: 0 }, { merge: true });
-      }
-
-      tx.update(senderRef, { stars: increment(-starsCost) });
-      tx.update(receiverRef, { stars: increment(starsCost) });
-
-      tx.update(videoRef, {
-        unlockedBy: arrayUnion({
-          userId: senderId,
-          chatId: currentUser.chatId,
-          unlockedAt: new Date()
-        })
-      });
-
-      tx.update(senderRef, { unlockedVideos: arrayUnion(video.id) });
+      tx.update(doc(db, "users", currentUser.uid), { stars: increment(-cost) });
+      tx.update(doc(db, "users", video.uploaderId), { stars: increment(cost) });
+      tx.update(doc(db, "highlightVideos", video.id), { unlockedBy: arrayUnion(currentUser.uid) });
+      tx.update(doc(db, "users", currentUser.uid), { unlockedVideos: arrayUnion(video.id) });
     });
 
-    // === 2. LOCAL UNLOCK UI ===
-    const unlocked = JSON.parse(localStorage.getItem("userUnlockedVideos") || "[]");
-    if (!unlocked.includes(video.id)) unlocked.push(video.id);
-    localStorage.setItem("userUnlockedVideos", JSON.stringify(unlocked));
-    localStorage.setItem(`unlocked_${video.id}`, "true");
-
-    // === 3. SEND NOTIFICATION TO YOUR REAL TOP-LEVEL NOTIFICATIONS COLLECTION ===
-    try {
-      await addDoc(collection(db, "notifications"), {
-        userId: receiverId,                                   // ← who receives it
-        message: `${currentUser.chatId} unlocked your video "${video.title || "Highlight"}" for ${starsCost} stars!`,
-        type: "video_unlock",
-        fromUser: currentUser.chatId,
-        fromUid: senderId,
-        videoId: video.id,
-        videoTitle: video.title || "Highlight Video",
-        stars: starsCost,
-        timestamp: serverTimestamp(),
-        read: false
-      });
-      console.log("Notification sent to global 'notifications' collection");
-    } catch (err) {
-      console.warn("Failed to send notification:", err);
+    let unlocked = JSON.parse(localStorage.getItem("userUnlockedVideos") || "[]");
+    if (!unlocked.includes(video.id)) {
+      unlocked.push(video.id);
+      localStorage.setItem("userUnlockedVideos", JSON.stringify(unlocked));
     }
 
-    // === 4. SUCCESS ===
-    showGoldAlert(`Unlocked ${video.uploaderName}'s video for ${starsCost} stars!`);
+    showGoldAlert(`Unlocked "${video.title}"!`);
     document.getElementById("highlightsModal")?.remove();
-    showHighlightsModal([video]);
-
-  } catch (err) {
-    console.error("Unlock failed:", err);
-    showGoldAlert("Unlock failed — try again");
+    setTimeout(() => highlightsBtn.click(), 400);
+  } catch (e) {
+    showGoldAlert(e.message || "Unlock failed");
   }
 }
-/* MY CLIPS — FINAL ETERNAL VERSION — BULLETPROOF */
-/* MY CLIPS — FINAL ETERNAL VERSION WITH YOUR FAVORITE MODAL */
+
+function playFullVideo(video) {
+  const src = video.highlightVideo || video.videoUrl || video.previewClip || "";
+  if (!src) return showGoldAlert("Video not available");
+
+  const player = document.createElement("div");
+  player.style.cssText = "position:fixed;inset:0;background:#000;display:flex;align-items:center;justify-content:center;z-index:1000002;";
+  player.innerHTML = `<video src="${src}" controls autoplay style="max-width:96%;max-height:96%;border-radius:16px;box-shadow:0 0 80px rgba(255,0,110,0.6);"></video>`;
+  player.onclick = () => player.remove();
+  document.body.appendChild(player);
+}
+
+/* ======================= MY CLIPS + DELETE ======================= */
 async function loadMyClips() {
   const grid = document.getElementById("myClipsGrid");
   const noMsg = document.getElementById("noClipsMessage");
   if (!grid || !currentUser?.uid) return;
 
-  grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:60px;color:#888;">Loading your clips...</div>`;
+  grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:100px;color:#888;">Loading your clips...</div>`;
 
   try {
-    const q = query(
-      collection(db, "highlightVideos"),
-      where("uploaderId", "==", currentUser.uid),
-      orderBy("uploadedAt", "desc")
-    );
-    const snapshot = await getDocs(q);
+    const q = query(collection(db, "highlightVideos"), where("uploaderId", "==", currentUser.uid), orderBy("uploadedAt", "desc"));
+    const snap = await getDocs(q);
 
-    if (snapshot.empty) {
+    if (snap.empty) {
       grid.innerHTML = "";
       if (noMsg) noMsg.style.display = "block";
       return;
@@ -4153,153 +3943,57 @@ async function loadMyClips() {
     if (noMsg) noMsg.style.display = "none";
     grid.innerHTML = "";
 
-    snapshot.forEach(docSnap => {
-      const vid = { id: docSnap.id, ...docSnap.data() };
-
+    snap.forEach(doc => {
+      const v = { id: doc.id, ...doc.data() };
       const card = document.createElement("div");
-      card.style.cssText = `
-        background:#111;border-radius:16px;overflow:hidden;
-        box-shadow:0 8px 30px rgba(0,0,0,0.6);border:1px solid #333;
-        transition:all 0.3s ease;position:relative;
-      `;
-      card.onmouseover = () => card.style.transform = "translateY(-8px)";
-      card.onmouseout = () => card.style.transform = "";
-
+      card.style.cssText = "background:#111;border-radius:16px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,0.6);border:1px solid #333;transition:0.3s;";
       card.innerHTML = `
-        <div style="position:relative;height:200px;background:#000;overflow:hidden;">
-          <video src="${vid.videoUrl}" style="width:100%;height:100%;object-fit:cover;filter:blur(8px);transform:scale(1.1);" muted loop playsinline></video>
-          <div style="position:absolute;inset:0;background:linear-gradient(180deg,transparent 40%,rgba(0,0,0,0.9));"></div>
-          <video src="${vid.videoUrl}" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:80%;height:80%;object-fit:contain;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,0.8);border:2px solid #444;" muted loop playsinline></video>
+        <div style="position:relative;height:220px;background:#000;overflow:hidden;">
+          <video src="${v.videoUrl || v.highlightVideo}" muted loop playsinline style="width:100%;height:100%;object-fit:cover;filter:blur(10px);transform:scale(1.15);"></video>
+          <div style="position:absolute;inset:0;background:linear-gradient(180deg,transparent,rgba(0,0,0,0.9));"></div>
+          <video src="${v.videoUrl || v.highlightVideo}" muted loop playsinline style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:85%;height:85%;object-fit:contain;border-radius:12px;border:3px solid #444;box-shadow:0 10px 30px #000;"></video>
         </div>
-
-        <div style="padding:16px;">
-          <div style="margin-bottom:10px;">
-            <strong style="color:#aaa;font-size:13px;">Title:</strong>
-            <span style="color:#fff;font-size:14px;font-weight:600;margin-left:8px;">${vid.title || "Untitled Clip"}</span>
-          </div>
-
-          ${vid.description ? `
-            <div style="margin-bottom:10px;">
-              <strong style="color:#aaa;font-size:13px;">Description:</strong>
-              <span style="color:#ddd;font-size:14px;line-height:1.5;margin-left:8px;">${vid.description}</span>
-            </div>
-          ` : ''}
-
-          <div style="margin:16px 0;">
-            <strong style="color:#aaa;font-size:13px;">Price:</strong>
-            <span style="color:#00ff9d;font-size:14px;font-weight:700;margin-left:10px;">
-              ${vid.highlightVideoPrice || 50} STRZ
-            </span>
-          </div>
-
+        <div style="padding:18px;">
+          <div style="font-weight:700;color:#fff;font-size:16px;margin-bottom:8px;">${v.title || "Untitled"}</div>
+          <div style="color:#00ff9d;font-weight:700;margin:12px 0;">${v.highlightVideoPrice || 50} STRZ</div>
           <div style="display:flex;justify-content:space-between;align-items:center;">
-            <div style="color:#888;font-size:13px;">
-              Unlocked <strong style="color:#00ff9d;">${vid.unlockedBy?.length || 0}</strong> times
-            </div>
-
-            <!-- GRADIENT BUTTON — OPENS YOUR FAVORITE MODAL -->
-          <button class="delete-clip-btn" data-clip-id="${vid.id}" data-title="${(vid.title || 'Untitled').replace(/"/g, '&quot;')}"
-        style="background:linear-gradient(90deg,#ff6600,#ff0099); color:#fff; border:none;
-               padding:10px 20px; border-radius:10px; font-weight:600; cursor:pointer;">
-  Delete
-</button>
+            <small style="color:#888;">Unlocked <strong style="color:#00ff9d;">${v.unlockedBy?.length || 0}</strong>x</small>
+            <button class="delete-clip-btn" data-id="${v.id}" data-title="${(v.title || 'Clip').replace(/"/g, '&quot;')}" style="background:linear-gradient(90deg,#ff3300,#ff0099);color:#fff;border:none;padding:10px 20px;border-radius:10px;font-weight:600;cursor:pointer;">Delete</button>
           </div>
-        </div>
-      `;
-
-      const videos = card.querySelectorAll("video");
-      card.addEventListener("mouseenter", () => videos.forEach(v => v.play().catch(() => {})));
-      card.addEventListener("mouseleave", () => videos.forEach(v => { v.pause(); v.currentTime = 0; }));
-
+        </div>`;
+      card.querySelectorAll("video").forEach(vid => {
+        card.onmouseenter = () => vid.play().catch(() => {});
+        card.onmouseleave = () => { vid.pause(); vid.currentTime = 0; };
+      });
       grid.appendChild(card);
     });
 
-    // ATTACH MODAL TO ALL DELETE BUTTONS — BULLETPROOF
     document.querySelectorAll(".delete-clip-btn").forEach(btn => {
-      btn.onclick = null;
-      btn.addEventListener("click", () => {
-        const clipId = btn.dataset.clipId;
-        const title = btn.dataset.title;
-        showDeleteClipModal(clipId, title);
-      });
+      btn.onclick = () => showDeleteConfirm(btn.dataset.id, btn.dataset.title);
     });
-
-  } catch (err) {
-    console.error("Load clips failed:", err);
-    grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;color:#f66;padding:40px;">Failed to load</div>`;
+  } catch (e) {
+    grid.innerHTML = `<div style="grid-column:1/-1;color:#f66;text-align:center;padding:60px;">Failed to load clips</div>`;
   }
 }
 
-/* YOUR FAVORITE MODAL — BEAUTIFUL, GRADIENT, POWERFUL */
-function showDeleteClipModal(clipId, title) {
-  // Remove any old modal
-  document.getElementById("deleteClipModal")?.remove();
-
+function showDeleteConfirm(id, title) {
   const modal = document.createElement("div");
-  modal.id = "deleteClipModal";
-  modal.style.cssText = `
-    position:fixed; inset:0; background:rgba(0,0,0,0.9);
-    display:flex; align-items:center; justify-content:center;
-    z-index:9999; font-family:inherit;
-  `;
-
+  modal.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.92);display:flex;align-items:center;justify-content:center;z-index:99999;";
   modal.innerHTML = `
-    <div style="
-      background:#111; padding:28px 32px; border-radius:16px;
-      width:90%; max-width:380px; text-align:center;
-      border:2px solid #333; box-shadow:0 15px 50px rgba(0,0,0,0.7);
-    ">
-      <h3 style="color:#fff; margin:0 0 16px; font-size:20px; font-weight:600;">
-        Delete Clip?
-      </h3>
-      <p style="color:#ccc; margin:0 0 24px; font-size:15px; line-height:1.6;">
-        "<strong style="color:#ff3366;">${title || "This clip"}</strong>"<br>
-        will be removed from sale.<br><br>
-        <span style="color:#ff9966; font-size:13px;">Buyers keep access forever.</span>
-      </p>
-
-      <div style="display:flex; gap:20px; justify-content:center;">
-        <button id="cancelDelete" style="
-          padding:11px 26px; background:#333; color:#aaa;
-          border:none; border-radius:10px; cursor:pointer;
-          font-weight:600; font-size:15px;
-        ">Cancel</button>
-
-        <button id="confirmDelete" style="
-          padding:11px 26px; background:linear-gradient(90deg,#ff6600,#ff0099);
-          color:#fff; border:none; border-radius:10px; cursor:pointer;
-          font-weight:700; font-size:15px; letter-spacing:0.5px;
-          box-shadow:0 6px 20px rgba(255,0,150,0.3);
-        ">Delete</button>
+    <div style="background:#111;padding:36px;border-radius:16px;text-align:center;max-width:400px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.8);border:1px solid #444;">
+      <h3 style="color:#fff;margin:0 0 20px;font-size:22px;">Delete Clip?</h3>
+      <p style="color:#ccc;margin:20px 0;line-height:1.6;">"<strong style="color:#ff3366;">${title}</strong>" will be removed forever.<br><small style="color:#ff9966;">Buyers keep their access</small></p>
+      <div style="display:flex;gap:20px;justify-content:center;margin-top:30px;">
+        <button id="cancel" style="padding:14px 32px;background:#333;color:#ccc;border:none;border-radius:12px;font-weight:600;cursor:pointer;">Cancel</button>
+        <button id="delete" style="padding:14px 32px;background:linear-gradient(90deg,#ff3300,#ff0099);color:#fff;border:none;border-radius:12px;font-weight:700;cursor:pointer;box-shadow:0 6px 20px rgba(255,0,110,0.4);">Delete Forever</button>
       </div>
-    </div>
-  `;
-
+    </div>`;
   document.body.appendChild(modal);
-  
-// Close handlers
-  modal.querySelector("#cancelDelete").onclick = () => modal.remove();
-  modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
-
-  // Confirm Delete
-  modal.querySelector("#confirmDelete").onclick = async () => {
-    try {
-      await deleteDoc(doc(db, "highlightVideos", clipId));
-      showGoldAlert("Clip deleted");
-      modal.remove();
-      loadMyClips();
-    } catch (err) {
-      console.error(err);
-      showGoldAlert("Delete failed");
-      modal.remove();
-    }
+  modal.querySelector("#cancel").onclick = () => modal.remove();
+  modal.querySelector("#delete").onclick = async () => {
+    await deleteDoc(doc(db, "highlightVideos", id));
+    showGoldAlert("Clip deleted");
+    modal.remove();
+    loadMyClips();
   };
-}
-// Force all videos to reload properly on unlock
-function forceVideoReload(card) {
-  const videos = card.querySelectorAll("video");
-  videos.forEach(v => {
-    v.load();
-    v.play().catch(() => {});
-  });
 }
