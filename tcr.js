@@ -4096,13 +4096,9 @@ function showDeleteConfirm(id, title) {
   `;
 
   modal.innerHTML = `
-    <div style="
-      background:#111;padding:32px;border-radius:12px;
-      text-align:center;max-width:360px;width:90%;
-      border:1px solid #333;
-    ">
+    <div style="background:#111;padding:25px;border-radius:12px;text-align:center;color:#fff;max-width:320px;box-shadow:0 0 20px rgba(0,0,0,0.5);">
       <h3 style="color:#fff;margin:0 0 16px;font-size:20px;font-weight:600;">
-        You Wanna Delete Clip?
+        Delete Clip?
       </h3>
       <p style="color:#ccc;margin:0 0 24px;line-height:1.5;">
         "<strong style="color:#ff3366;">${title}</strong>" will be removed.<br>
