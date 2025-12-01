@@ -4120,7 +4120,7 @@ async function loadMyClips() {
         <!-- Content -->
         <div style="padding:20px 22px 24px;flex-grow:1;display:flex;flex-direction:column;">
           <!-- Title -->
-          <div style="font-weight:700;color:#fff;font-size:17px;line-height:1.3;margin-bottom:8px;word-break:break-word;">
+          <div style="font-weight:700;color:#fff;font-size:11px;line-height:1.3;margin-bottom:8px;word-break:break-word;">
             ${v.title || "Untitled Clip"}
           </div>
 
@@ -4135,47 +4135,31 @@ async function loadMyClips() {
           <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;margin:20px 0 24px;">
             <div style="text-align:center;">
               <div style="color:#888;font-size:13px;letter-spacing:0.5px;">Price</div>
-              <div style="color:#00ff9d;font-weight:800;font-size:19px;margin-top:5px;">
+              <div style="color:#00ff9d;font-weight:800;font-size:9px;margin-top:5px;">
                 ${price} STRZ
               </div>
             </div>
             <div style="text-align:center;">
               <div style="color:#888;font-size:13px;letter-spacing:0.5px;">Unlocked</div>
-              <div style="color:#00ff9d;font-weight:800;font-size:19px;margin-top:5px;">
+              <div style="color:#00ff9d;font-weight:800;font-size:12px;margin-top:5px;">
                 ${unlocks}x
               </div>
             </div>
             <div style="text-align:center;">
               <div style="color:#888;font-size:13px;letter-spacing:0.5px;">Earnings</div>
-              <div style="color:#00ffea;font-weight:800;font-size:22px;margin-top:5px;">
-                ${earnings} STRZ
+              <div style="color:#00ffea;font-weight:800;font-size:11px;margin-top:5px;">
+                ${earnings} ⭐️
               </div>
             </div>
           </div>
+ 
+    document.querySelectorAll(".delete-clip-btn").forEach(btn => {
+      btn.onclick = () => showDeleteConfirmDelete(btn.dataset.id, btn.dataset.title);
+    });
 
-          <!-- Delete Button -->
-          <div style="margin-top:auto;display:flex;justify-content:flex-end;">
-            <button class="delete-clip-btn"
-              data-id="${v.id}"
-              data-title="${(v.title || 'Clip').replace(/"/g, '&quot;')}"
-              style="
-                background:#c42c2c;
-                color:#fff;
-                border:none;
-                padding:11px 26px;
-                border-radius:10px;
-                font-weight:600;
-                font-size:14.5px;
-                cursor:pointer;
-                transition:background 0.2s;
-              "
-              onmouseover="this.style.background='#e32d2d'"
-              onmouseout="this.style.background='#c42c2c'">
-              Delete Clip
-            </button>
-          </div>
-        </div>
-      `;
+  } catch (e) {
+    console.error(e);
+    grid.innerHTML = '<div style="grid-column:1/-1;color:#f66;text-align:center;padding:60px;">Load failed</div>    `;
 
       // Hover video play
       const videos = card.querySelectorAll("video");
