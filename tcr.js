@@ -3714,7 +3714,7 @@ function showHighlightsModal(videos) {
         <span style="background:linear-gradient(90deg,#ff006e,#ff8c00);-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-weight:700;">
           Highlights
         </span> are exclusive creator moments.<br>
-        Unlock premium clips with STRZ to support your favorite creators.
+        Unlock premium clips with STRZ ⭐️ to support your favorite creators.
       </p>
     </div>`;
   Object.assign(intro.style, { position: "sticky", top: "10px", zIndex: "1001", marginBottom: "12px" });
@@ -3724,7 +3724,7 @@ function showHighlightsModal(videos) {
     intro.style.opacity = modal.scrollTop > 50 ? "0.7" : "1";
   });
 
-  // === CLOSE BUTTON (YOUR DOPE X) — FIXED CRASH ===
+  // === CLOSE BUTTON (YOUR DOPE X)
   const closeBtn = document.createElement("div");
   closeBtn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
     <path d="M18 6L6 18M6 6L18 18" stroke="#ff006e" stroke-width="2.5" stroke-linecap="round"/>
@@ -3888,7 +3888,7 @@ function showHighlightsModal(videos) {
       uploader.textContent = `By: ${video.uploaderName || "Anonymous"}`;
       uploader.style.cssText = "font-size:12px;color:#ff006e;";
       const unlockBtn = document.createElement("button");
-      unlockBtn.textContent = isUnlocked ? "Unlocked" : `Unlock ${video.highlightVideoPrice || 100}`;
+      unlockBtn.textContent = isUnlocked ? "Unlocked" : `Unlock ${video.highlightVideoPrice || 100} ⭐️`;
       Object.assign(unlockBtn.style, {
         background: isUnlocked ? "#333" : "linear-gradient(135deg, #ff006e, #ff4500)",
         border: "none", borderRadius: "6px", padding: "8px 0", fontWeight: "600",
@@ -3965,16 +3965,45 @@ function showHighlightsModal(videos) {
   setTimeout(() => searchInputWrap.querySelector("input").focus(), 300);
 }
 
-async function showUnlockConfirm(video) {
+function showUnlockConfirm(video, onUnlockCallback) {
   document.querySelectorAll("video").forEach(v => v.pause());
-  const overlay = document.createElement("div");
-  overlay.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.95);display:flex;align-items:center;justify-content:center;z-index:1000001;backdrop-filter:blur(12px);";
-  overlay.innerHTML = '<div style="background:#111;padding:32px 40px;border-radius:18px;text-align:center;color:#fff;max-width:340px;box-shadow:0 0 50px rgba(255,0,110,0.5);border:1px solid #444;"><h3 style="margin:0 0 16px;font-size:21px;">Unlock Clip?</h3><p style="margin:16px 0 24px;color:#ccc;">"' + video.title + '"<br><strong style="color:#ff006e;font-size:22px;">' + video.highlightVideoPrice + ' STRZ</strong></p><div style="display:flex;gap:16px;justify-content:center;"><button id="cancelBtn" style="padding:12px 28px;background:#333;color:#aaa;border:none;border-radius:12px;font-weight:600;cursor:pointer;">Cancel</button><button id="unlockBtn" style="padding:12px 28px;background:linear-gradient(90deg,#ff006e,#ff4500);color:#fff;border:none;border-radius:12px;font-weight:700;cursor:pointer;box-shadow:0 6px 20px rgba(255,0,110,0.5);">Unlock Now</button></div></div>';
-  document.body.appendChild(overlay);
-  overlay.querySelector("#cancelBtn").onclick = () => overlay.remove();
-  overlay.querySelector("#unlockBtn").onclick = async () => {
-    overlay.remove();
-    await unlockVideo(video);
+  document.getElementById("unlockConfirmModal")?.remove();
+
+  const modal = document.createElement("div");
+  modal.id = "unlockConfirmModal";
+  Object.assign(modal.style, {
+    position: "fixed",
+    top: 0,
+    left: 0,
+    width: "100vw",
+    height: "100vh",
+    background: "rgba(0,0,0,0.93)",
+    backdropFilter: "blur(8px)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: "1000001",
+    opacity: "1",
+  });
+
+  modal.innerHTML = `
+    <div style="background:#111;padding:20px;border-radius:12px;text-align:center;color:#fff;max-width:320px;box-shadow:0 0 20px rgba(0,0,0,0.5);">
+      <h3 style="margin-bottom:10px;font-weight:600;">Unlock "${video.title}"?</h3>
+      <p style="margin-bottom:16px;">This will cost <b>${video.highlightVideoPrice} ⭐</b></p>
+      <div style="display:flex;gap:12px;justify-content:center;">
+        <button id="cancelUnlock" style="padding:8px 16px;background:#333;border:none;color:#fff;border-radius:8px;font-weight:500;">Cancel</button>
+        <button id="confirmUnlock" style="padding:8px 16px;background:linear-gradient(90deg,#ff0099,#ff6600);border:none;color:#fff;border-radius:8px;font-weight:600;">Yes</button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+
+  modal.querySelector("#cancelUnlock").onclick = () => modal.remove();
+  modal.querySelector("#confirmUnlock").onclick = async () => {
+    modal.remove();
+    await handleUnlockVideo(video);
+    if (onUnlockCallback) onUnlockCallback();
   };
 }
 
