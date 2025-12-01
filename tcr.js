@@ -4105,10 +4105,7 @@ function showDeleteConfirm(id, title) {
         <small style="color:#999;">Buyers keep access forever.</small>
       </p>
       <div style="display:flex;gap:16px;justify-content:center;">
-        <button id="cancel" style="
-          padding:10px 24px;background:#333;color:#ccc;
-          border:none;border-radius:8px;cursor:pointer;font-weight:600;
-        ">Cancel</button>
+        <button id="cancel" style="padding:8px 16px;background:#333;border:none;color:#fff;border-radius:8px;font-weight:500;">Cancel</button>
          <button id="delete" style="padding:8px 16px;background:linear-gradient(90deg,#ff0099,#ff6600);border:none;color:#fff;border-radius:8px;font-weight:600;">Yes</button>
       </div>
     </div>
