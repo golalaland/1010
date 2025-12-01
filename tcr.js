@@ -4000,14 +4000,13 @@ function showUnlockConfirm(video, onUnlockCallback) {
   modal.querySelector("#cancelUnlock").onclick = () => modal.remove();
   modal.querySelector("#confirmUnlock").onclick = async () => {
     modal.remove();
-    await handleUnlockVideo(video);
-    if (onUnlockCallback) onUnlockCallback();
+    await unlockVideo(video);
   };
 }
 
 async function unlockVideo(video) {
   if (!currentUser?.uid) return showGoldAlert("Login required");
-  if (currentUser.uid === video.uploaderId) return showGoldAlert("You already own this");
+  if (currentUser.uid === video.uploaderId) return showGoldAlert("You already own this video");
 
   const cost = video.highlightVideoPrice;
 
