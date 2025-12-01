@@ -2121,25 +2121,25 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
       <!-- Description — (optional) on same line -->
       <div style="margin-bottom:24px;">
         <label style="display:block; color:#e0e0e0; font-size:14px; font-weight:600; margin-bottom:10px;">
-          Description <span style="color:#666; font-weight:500;">(optional)</span>
+          Description <span style="color:#666; font-weight:500;"></span>
         </label>
-        <textarea id="highlightDescInput" placeholder="What makes this clip legendary?"
+        <textarea id="highlightDescInput" placeholder="What is this clip about ?"
                   style="width:100%; padding:14px 16px; background:#0a0a0a; border:1px solid #333;
                          border-radius:12px; color:#ddd; font-size:14.5px; min-height:90px; resize:vertical;"
                   onfocus="this.style.borderColor='#ff2e78'"
                   onblur="this.style.borderColor='#333'"></textarea>
       </div>
 
-      <!-- Price — NOW SUPER COMPACT & TIGHT -->
-      <div style="margin-bottom:32px; text-align:center;">
-        <div style="color:#e0e0e0; font-size:14px; font-weight:600; margin-bottom:12px;">Unlock Price</div>
-        <div style="display:inline-flex; align-items:center; gap:12px; background:#0a0a0a; padding:12px 20px; border-radius:16px; border:1px solid #333;">
+       <!-- Price -->
+      <div style="margin-bottom:32px;">
+        <label style="display:block; color:#e0e0e0; font-size:14px; font-weight:600; margin-bottom:12px;">Unlock Price</label>
+        <div style="display:flex; align-items:center; justify-content:center; gap:14px;">
           <input type="tel" id="highlightPriceInput" value="50" min="10" maxlength="5"
-                 style="width:90px; background:transparent; border:none; outline:none;
-                        color:#00ff9d; font-size:28px; font-weight:800; text-align:center;"
-                 onfocus="this.parentNode.parentNode.style.borderColor='#00ff9d'; this.parentNode.parentNode.style.boxShadow='0 0 0 4px rgba(0,255,157,0.15)'"
-                 onblur="this.parentNode.parentNode.style.borderColor='#333'; this.parentNode.parentNode.style.boxShadow='none'">
-          <span style="font-size:24px; font-weight:700; color:#aaa;">STRZ</span>
+                 style="width:140px; padding:12px; background:#0a0a0a; border:1px solid #333;
+                        border-radius:16px; color:#00ff9d; font-size:32px; font-weight:800; text-align:center;"
+                 onfocus="this.style.borderColor='#00ff9d'; this.style.boxShadow='0 0 0 4px rgba(0,255,157,0.15)'"
+                 onblur="this.style.borderColor='#333'; this.style.boxShadow='none'">
+          <span style="font-size:28px; font-weight:700; color:#aaa;">STRZ</span>
         </div>
       </div>
 
