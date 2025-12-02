@@ -4122,56 +4122,37 @@ async function loadMyClips() {
       `;
 
       card.innerHTML = `
-  <div style="background:#0d0d0d;border-radius:16px;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,0.8);border:1px solid #222;display:flex;gap:0;height:136px;position:relative;">
+  <div style="background:#0e0e0e;border-radius:12px;overflow:hidden;display:flex;align-items:center;gap:16px;padding:12px;height:110px;box-shadow:0 8px 25px rgba(0,0,0,0.6);border:1px solid #1f1f1f;position:relative;">
     
-    <!-- Tiny Video Frame Left -->
-    <div style="width:136px;flex-shrink:0;position:relative;overflow:hidden;background:#000;">
-      <video src="${videoSrc}" muted loop playsinline 
-             style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);min-width:140%;min-height:140%;object-fit:cover;filter:brightness(0.9);"></video>
-      <div style="position:absolute;inset:0;background:linear-gradient(90deg,rgba(13,13,13,0.95),transparent 60%);"></div>
-      <div style="position:absolute;bottom:6px;left:8px;color:#00ff9d;font-size:9px;font-weight:800;letter-spacing:1px;text-shadow:0 0 10px #000;">▶ PLAYBACK</div>
+    <!-- Tiny square thumbnail -->
+    <div style="width:86px;height:86px;flex-shrink:0;border-radius:10px;overflow:hidden;border:2px solid #333;box-shadow:inset 0 0 20px rgba(0,255,150,0.2);">
+      <video src="${videoSrc}" muted loop playsinline style="width:100%;height:100%;object-fit:cover;"></video>
     </div>
 
-    <!-- Right Side: Track Stats (Distro Style) -->
-    <div style="flex-grow:1;padding:16px 20px;display:flex;flex-direction:column;justify-content:space-between;background:linear-gradient(90deg,#0f0f0f,#111 50%);">
-      
-      <div>
-        <div style="color:#fff;font-weight:800;font-size:13px;letter-spacing:0.5px;text-shadow:0 1px 3px #000;">
-          ${v.title || "Untitled Drop"}
-        </div>
-        <div style="color:#888;font-size:10px;margin-top:2px;opacity:0.8;">
-          ID: ${v.id.slice(-8)}
-        </div>
+    <!-- Info + Stats -->
+    <div style="flex-grow:1;">
+      <div style="color:#fff;font-weight:700;font-size:13px;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+        ${v.title || "No Title"}
+      </div>
+      <div style="color:#666;font-size:10px;margin-top:2px;">#${v.id.slice(-8)}</div>
+
+      <!-- Waveform-style stat bar -->
+      <div style="display:flex;align-items:center;gap:20px;margin-top:12px;font-size:11px;">
+        <div><span style="color:#888;">Price</span> <strong style="color:#00ff9d;">${price} STRZ</strong></div>
+        <div><span style="color:#888;">×${unlocks}</span> <strong style="color:#00ffea;">${earnings} ⭐</strong></div>
       </div>
 
-      <!-- Stats Row - Like DistroKid / SoundCloud -->
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-top:12px;">
-        <div>
-          <div style="color:#666;font-size:9px;text-transform:uppercase;letter-spacing:1px;">Price</div>
-          <div style="color:#00ff9d;font-weight:900;font-size:14px;margin-top:3px;">${price} STRZ</div>
-        </div>
-        <div>
-          <div style="color:#666;font-size:9px;text-transform:uppercase;letter-spacing:1px;">Streams</div>
-          <div style="color:#00ffea;font-weight:900;font-size:14px;margin-top:3px;">${unlocks}x</div>
-        </div>
-        <div>
-          <div style="color:#666;font-size:9px;text-transform:uppercase;letter-spacing:1px;">Revenue</div>
-          <div style="color:#ff00ff;font-weight:900;font-size:14px;margin-top:3px;">${earnings} ⭐</div>
-        </div>
+      <!-- Micro delete cross -->
+      <div style="position:absolute;top:8px;right:8px;">
+        <button class="delete-clip-btn" data-id="${v.id}" data-title="${(v.title||'Clip').replace(/"/g,'&quot;')}"
+          style="background:none;border:none;color:#f44;font-size:18px;font-weight:bold;cursor:pointer;width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:50%;transition:all .2s;"
+          onmouseover="this.style.background='#f443'" onmouseout="this.style.background='none'">
+          ×
+        </button>
       </div>
-
-      <!-- Delete Button (small but deadly) -->
-      <button class="delete-clip-btn" data-id="${v.id}" data-title="${(v.title||'Clip').replace(/"/g,'&quot;')}"
-        style="position:absolute;top:8px;right:8px;background:#ff0033;border:none;color:#fff;padding:6px 10px;border-radius:8px;font-size:8px;font-weight:800;cursor:pointer;opacity:0.85;box-shadow:0 2px 10px rgba(255,0,51,0.4);transition:all .2s;"
-        onmouseover="this.style.opacity='1';this.style.transform='scale(1.08)';"
-        onmouseout="this.style.opacity='0.85';this.style.transform='scale(1)';">
-        DELETE
-      </button>
     </div>
   </div>
 `;
-card.style.height = "136px"; // enforce uniform height
-
       // Hover video play
       const videos = card.querySelectorAll("video");
       card.addEventListener("mouseenter", () => videos.forEach(vid => vid.play().catch(() => {})));
