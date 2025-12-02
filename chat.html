@@ -2104,7 +2104,7 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   "></div>
   <div style="
     position:absolute; top:50%; left:50%; transform:translate(-50%, -50%);
-    color:#888; font-size:12px; font-weight:700; letter-spacing:1px;
+    color:#888; font-size:13px; font-weight:700; letter-spacing:1px;
     text-transform:uppercase; padding:0 12px; background:transparent;
     z-index:2;
   ">
@@ -2165,7 +2165,7 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
     </span>
   </label>
 
-  <textarea id="highlightDescInput" placeholder="What makes this clip legendary?"
+  <textarea id="highlightDescInput" placeholder="What's the lore behind this clip?"
             style="
               width:100%; padding:14px 16px; background:#0a0a0a; border:1px solid #333;
               border-radius:12px; color:#ddd; font-size:14.5px; min-height:90px;
@@ -2189,7 +2189,7 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
     <input type="tel" id="highlightPriceInput" value="50" min="10" maxlength="5"
            style="
              width:78px; background:transparent; border:none; outline:none;
-             color:#00ff9d; font-size:30px; font-weight:800; text-align:center;
+             color:#00ff9d; font-size:25px; font-weight:800; text-align:center;
              padding:0; margin:0; height:36px;
            "
            onfocus="this.parentNode.style.borderColor='#00ff9d'; this.parentNode.style.boxShadow='0 0 0 3px rgba(0,255,157,0.18)'"
@@ -2202,19 +2202,25 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   </div>
 </div>
 
-      <!-- Upload Button -->
-      <div style="text-align:center;">
-        <button id="uploadHighlightBtn" style="
-          padding:13px 36px; background:linear-gradient(90deg,#ff2e78,#ff5e2e);
-          color:#fff; border:none; border-radius:50px; font-weight:700; font-size:15px;
-          cursor:pointer; letter-spacing:0.5px; transition:all 0.3s;
-          box-shadow:0 4px 15px rgba(255,46,120,0.3);
-        "
-        onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 10px 25px rgba(255,46,120,0.4)'"
-        onmouseout="this.style.transform=''; this.style.boxShadow='0 4px 15px rgba(255,46,120,0.3)'">
-          Upload
-        </button>
-      </div>
+     <!-- Upload Button -->
+<div style="text-align:center;">
+  <button id="uploadHighlightBtn" style="
+    padding:10px 24px; 
+    background:linear-gradient(90deg,#ff2e78,#ff5e2e);
+    color:#fff; 
+    border:none; 
+    border-radius:40px; 
+    font-weight:600; 
+    font-size:14px;
+    cursor:pointer; 
+    letter-spacing:0.4px; 
+    transition:background 0.25s, opacity 0.25s;
+  "
+  onmouseover="this.style.opacity='0.85'"
+  onmouseout="this.style.opacity='1'">
+    Upload
+  </button>
+</div>
 
       <div id="highlightUploadStatus" style="margin-top:20px; text-align:center; font-size:14px; font-weight:600; min-height:24px; color:#00ff9d; opacity:0; transition:opacity .4s;"></div>
     </div>
