@@ -4122,15 +4122,19 @@ async function loadMyClips() {
       `;
 
 card.innerHTML = `
-  <div style="background:#0d0d0d;border-radius:16px;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,0.8);border:1px solid #222;display:flex;gap:0;height:136px;position:relative;">
-    
-    <!-- Video thumbnail – finally zoomed out for real -->
-    <div style="width:136px;height:136px;flex-shrink:0;position:relative;overflow:hidden;background:#000;">
-      <video src="${videoSrc}" muted loop playsinline 
-             style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) scale(0.58);
-                    min-width:100%;min-height:100%;object-fit:cover;filter:brightness(0.94);"></video>
-      <div style="position:absolute;inset:0;background:linear-gradient(90deg,rgba(13,13,13,0.98),transparent 70%);pointer-events:none;"></div>
-      <div style="position:absolute;bottom:7px;left:9px;color:#00ff9d;font-size:9px;font-weight:800;letter-spacing:1.2px;text-shadow:0 0 8px #000;">
+  <!-- Video thumbnail – MAX ZOOMED OUT, full clip visible -->
+<div style="width:136px;height:136px;flex-shrink:0;position:relative;overflow:hidden;background:#000;">
+  <video src="${videoSrc}" muted loop playsinline 
+         style="position:absolute;
+                top:50%;left:50%;
+                transform:translate(-50%,-50%) scale(0.38);   /* ← MAX ZOOM OUT */
+                min-width:100%;min-height:100%;
+                object-fit:contain;                          /* ← CONTAIN = FULL VIDEO VISIBLE */
+                filter:brightness(0.96);"></video>
+  
+  <!-- Dark overlay + little play icon still there -->
+  <div style="position:absolute;inset:0;background:linear-gradient(90deg,rgba(13,13,13,0.98),transparent 70%);pointer-events:none;"></div>
+  <div style="position:absolute;bottom:7px;left:9px;color:#00ff9d;font-size:9px;font-weight:800;letter-spacing:1.2px;text-shadow:0 0 8px #000;">
         ▶ CLIP
       </div>
     </div>
@@ -4158,7 +4162,7 @@ card.innerHTML = `
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-top:10px;text-align:center;">
         <div>
           <div style="color:#666;font-size:9px;text-transform:uppercase;letter-spacing:1px;">Price</div>
-          <div style="color:#00ff9d;font-weight:900;font-size:14px;margin-top:4px;">${price} STRZ</div>
+          <div style="color:#00ff9d;font-weight:900;font-size:11px;margin-top:4px;">${price} STRZ</div>
         </div>
         <div>
           <div style="color:#666;font-size:9px;text-transform:uppercase;letter-spacing:1px;">Unlocks</div>
@@ -4166,17 +4170,24 @@ card.innerHTML = `
         </div>
         <div>
           <div style="color:#666;font-size:9px;text-transform:uppercase;letter-spacing:1px;">Revenue</div>
-          <div style="color:#ff00ff;font-weight:900;font-size:14px;margin-top:4px;">${earnings} ⭐</div>
+          <div style="color:#ff00ff;font-weight:900;font-size:13px;margin-top:4px;">${earnings} ⭐</div>
         </div>
       </div>
 
       <!-- Your signature gradient delete button -->
       <button class="delete-clip-btn" data-id="${v.id}" data-title="${(v.title||'Clip').replace(/"/g,'&quot;')}"
-        style="position:absolute;top:8px;right:8px;background:linear-gradient(90deg,#ff0099,#ff6600);border:none;color:#fff;padding:7px 11px;border-radius:8px;font-size:8px;font-weight:800;letter-spacing:0.5px;cursor:pointer;opacity:0.95;box-shadow:0 3px 12px rgba(255,0,153,0.45);transition:all .25s ease;"
-        onmouseover="this.style.background='linear-gradient(90deg,#ff5500,#ff33aa)'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 20px rgba(255,0,153,0.6)'; this.style.opacity='1'"
-        onmouseout="this.style.background='linear-gradient(90deg,#ff0099,#ff6600)'; this.style.transform='translateY(0)'; this.style.box-shadow: 0 1px 4px rgba(255, 0, 153, 0.08)'; this.style.opacity='0.95'">
-        DELETE
-      </button>
+  style="position:absolute;top:8px;right:8px;
+         background:linear-gradient(90deg,#ff0099,#ff6600);
+         border:none;color:#fff;
+         padding:7px 11px;border-radius:8px;
+         font-size:8px;font-weight:800;letter-spacing:0.5px;
+         cursor:pointer;opacity:0.95;
+         box-shadow:none;   /* ← GLOW REMOVED */
+         transition:all .25s ease;"
+  onmouseover="this.style.background='linear-gradient(90deg,#ff5500,#ff33aa)'; this.style.transform='translateY(-1px)'; this.style.opacity='1'"
+  onmouseout="this.style.background='linear-gradient(90deg,#ff0099,#ff6600)'; this.style.transform='translateY(0)'; this.style.opacity='0.95'">
+  DELETE
+</button>
     </div>
   </div>
 `;
