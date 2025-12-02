@@ -4122,22 +4122,17 @@ async function loadMyClips() {
       `;
 
 card.innerHTML = `
-  <!-- Video thumbnail – MAX ZOOMED OUT, full clip visible -->
-<div style="width:136px;height:136px;flex-shrink:0;position:relative;overflow:hidden;background:#000;">
-  <video src="${videoSrc}" muted loop playsinline 
-         style="position:absolute;
-                top:50%;left:50%;
-                transform:translate(-50%,-50%) scale(0.38);   /* ← MAX ZOOM OUT */
-                min-width:100%;min-height:100%;
-                object-fit:contain;                          /* ← CONTAIN = FULL VIDEO VISIBLE */
-                filter:brightness(0.96);"></video>
-  
-  <!-- Dark overlay + little play icon still there -->
-  <div style="position:absolute;inset:0;background:linear-gradient(90deg,rgba(13,13,13,0.98),transparent 70%);pointer-events:none;"></div>
-  <div style="position:absolute;bottom:7px;left:9px;color:#00ff9d;font-size:9px;font-weight:800;letter-spacing:1.2px;text-shadow:0 0 8px #000;">
+  <!-- Video thumbnail – finally zoomed out for real -->
+    <div style="width:136px;height:136px;flex-shrink:0;position:relative;overflow:hidden;background:#000;">
+      <video src="${videoSrc}" muted loop playsinline 
+             style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) scale(0.58);
+                    min-width:100%;min-height:100%;object-fit:cover;filter:brightness(0.94);"></video>
+      <div style="position:absolute;inset:0;background:linear-gradient(90deg,rgba(13,13,13,0.98),transparent 70%);pointer-events:none;"></div>
+      <div style="position:absolute;bottom:7px;left:9px;color:#00ff9d;font-size:9px;font-weight:800;letter-spacing:1.2px;text-shadow:0 0 8px #000;">
         ▶ CLIP
       </div>
     </div>
+
 
     <!-- Right side -->
     <div style="flex-grow:1;padding:16px 20px;display:flex;flex-direction:column;justify-content:space-between;background:linear-gradient(90deg,#0f0f0f,#111 50%);">
