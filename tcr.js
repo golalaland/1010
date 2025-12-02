@@ -4125,12 +4125,17 @@ card.innerHTML = `
   <div style="background:#0d0d0d;border-radius:16px;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,0.8);border:1px solid #222;display:flex;gap:0;height:136px;position:relative;">
     
     <!-- Video thumbnail – finally zoomed out for real -->
-    <div style="width:136px;height:136px;flex-shrink:0;position:relative;overflow:hidden;background:#000;">
-      <video src="${videoSrc}" muted loop playsinline 
-             style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) scale(0.58);
-                    min-width:100%;min-height:100%;object-fit:cover;filter:brightness(0.94);"></video>
-      <div style="position:absolute;inset:0;background:linear-gradient(90deg,rgba(13,13,13,0.98),transparent 70%);pointer-events:none;"></div>
-      <div style="position:absolute;bottom:7px;left:9px;color:#00ff9d;font-size:9px;font-weight:800;letter-spacing:1.2px;text-shadow:0 0 8px #000;">
+<div style="width:136px;height:136px;flex-shrink:0;position:relative;overflow:hidden;background:#000;">
+  <video src="${videoSrc}" muted loop playsinline 
+         style="position:absolute;
+                top:50%;left:50%;
+                width:200%;height:200%;
+                object-fit:cover;
+                transform:translate(-50%,-50%) scale(0.29);
+                filter:brightness(0.96);">
+  </video>
+  <div style="position:absolute;inset:0;background:linear-gradient(90deg,rgba(13,13,13,0.98),transparent 70%);pointer-events:none;"></div>
+  <div style="position:absolute;bottom:7px;left:9px;color:#00ff9d;font-size:9px;font-weight:800;letter-spacing:1.2px;text-shadow:0 0 8px #000;">
         ▶ CLIP
       </div>
     </div>
