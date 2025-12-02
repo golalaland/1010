@@ -2096,22 +2096,43 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
         </label>
         <input type="file" id="highlightUploadInput" accept="video/*" style="display:none;">
 
-        <!-- Fixed OR Divider (line doesn't cut text) -->
-        <div style="margin:16px 0; position:relative; height:20px;">
-          <div style="position:absolute; top:50%; left:0; right:0; height:1px; background:#333; transform:translateY(-50%);"></div>
-          <span style="background:rgba(12,12,14,0.95); color:#666; font-size:13px; padding:0 16px; position:relative; z-index:1;">
-            or
-          </span>
-        </div>
+     <!-- OR Divider — Clean, uppercase, no background box -->
+<div style="margin:18px 0; position:relative; height:20px; overflow:hidden;">
+  <div style="
+    position:absolute; top:50%; left:0; right:0; height:1px; 
+    background:#333; transform:translateY(-50%);
+  "></div>
+  <div style="
+    position:absolute; top:50%; left:50%; transform:translate(-50%, -50%);
+    color:#888; font-size:12px; font-weight:700; letter-spacing:1px;
+    text-transform:uppercase; padding:0 12px; background:transparent;
+    z-index:2;
+  ">
+    OR
+  </div>
+</div>
 
-        <!-- URL Input -->
-        <input type="text" id="highlightVideoInput" placeholder="Paste video URL"
-               style="width:100%; padding:14px 16px; background:#0a0a0a; border:1px solid #333;
-                      border-radius:12px; color:#fff; font-size:14.5px; transition:0.25s;"
-               onfocus="this.style.borderColor='#ff2e78'; this.style.background='#111'"
-               onblur="this.style.borderColor='#333'; this.style.background='#0a0a0a'">
-      </div>
+      <!-- Video URL — with proper label, same style as others -->
+<div style="margin-bottom:20px;">
+  <label style="
+    display:flex; align-items:center; gap:8px;
+    color:#e0e0e0; font-size:14px; font-weight:600;
+    margin-bottom:10px; height:20px; line-height:1;
+  ">
+    <span>Video URL</span>
+    <!-- remove or uncomment if you want it later →
+    <span style="color:#666; font-weight:500; font-size:13.5px; white-space:nowrap;">(optional)</span>
+    ← -->
+  </label>
 
+  <input type="text" id="highlightVideoInput" placeholder="https://youtube.com/watch?v=..." 
+         style="
+           width:100%; padding:14px 16px; background:#0a0a0a; border:1px solid #333;
+           border-radius:12px; color:#fff; font-size:14.5px; transition:0.25s;
+         "
+         onfocus="this.style.borderColor='#ff2e78'; this.style.background='#111'"
+         onblur="this.style.borderColor='#333'; this.style.background='#0a0a0a'">
+</div>
       <!-- Title -->
       <div style="margin-bottom:20px;">
         <label style="display:block; color:#e0e0e0; font-size:14px; font-weight:600; margin-bottom:10px;">Title</label>
