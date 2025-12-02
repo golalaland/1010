@@ -2133,15 +2133,24 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
          onfocus="this.style.borderColor='#ff2e78'; this.style.background='#111'"
          onblur="this.style.borderColor='#333'; this.style.background='#0a0a0a'">
 </div>
-      <!-- Title -->
-      <div style="margin-bottom:20px;">
-        <label style="display:block; color:#e0e0e0; font-size:14px; font-weight:600; margin-bottom:10px;">Title</label>
-        <input type="text" id="highlightTitleInput" placeholder="e.g. Insane 1v5 ace in OT"
-               style="width:100%; padding:14px 16px; background:#0a0a0a; border:1px solid #333;
-                      border-radius:12px; color:#fff; font-size:15px;"
-               onfocus="this.style.borderColor='#ff2e78'; this.style.background='#111'"
-               onblur="this.style.borderColor='#333'; this.style.background='#0a0a0a'">
-      </div>
+   <!-- Title — now 100% aligned with Video URL & Description -->
+<div style="margin-bottom:20px;">
+  <label style="
+    display:flex; align-items:center; gap:8px;
+    color:#e0e0e0; font-size:14px; font-weight:600;
+    margin-bottom:10px; height:20px; line-height:1;
+  ">
+    <span>Title</span>
+  </label>
+
+  <input type="text" id="highlightTitleInput" placeholder="e.g. Insane 1v5 ace in OT"
+         style="
+           width:100%; padding:14px 16px; background:#0a0a0a; border:1px solid #333;
+           border-radius:12px; color:#fff; font-size:15px; transition:0.25s;
+         "
+         onfocus="this.style.borderColor='#ff2e78'; this.style.background='#111'"
+         onblur="this.style.borderColor='#333'; this.style.background='#0a0a0a'">
+</div>
 
     <!-- Description — truly on the same line, forever -->
 <div style="margin-bottom:24px;">
