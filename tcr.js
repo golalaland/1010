@@ -4131,7 +4131,7 @@ card.innerHTML = `
                 top:50%;left:50%;
                 width:200%;height:200%;
                 object-fit:cover;
-                transform:translate(-50%,-50%) scale(0.29);
+                transform:translate(-50%,-50%) scale(0.52);
                 filter:brightness(0.96);">
   </video>
   <div style="position:absolute;inset:0;background:linear-gradient(90deg,rgba(13,13,13,0.98),transparent 70%);pointer-events:none;"></div>
