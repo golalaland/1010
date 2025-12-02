@@ -2152,9 +2152,9 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
          onblur="this.style.borderColor='#333'; this.style.background='#0a0a0a'">
 </div>
 
-    <!-- Description — truly on the same line, forever -->
+  <!-- Description — perfectly left-aligned with Title & Video URL -->
 <div style="margin-bottom:24px;">
-  <label style="
+  <div style="
     display:flex; align-items:center; gap:8px;
     color:#e0e0e0; font-size:14px; font-weight:600;
     margin-bottom:10px; height:20px; line-height:1;
@@ -2163,8 +2163,17 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
     <span style="color:#666; font-weight:500; font-size:13.5px; white-space:nowrap;">
       (optional)
     </span>
-  </label>
+  </div>
 
+  <textarea id="highlightDescInput" placeholder="What makes this clip legendary?"
+            style="
+              width:100%; padding:14px 16px; background:#0a0a0a; border:1px solid #333;
+              border-radius:12px; color:#ddd; font-size:14.5px; min-height:90px; resize:vertical;
+              box-sizing:border-box; transition:0.25s;
+            "
+            onfocus="this.style.borderColor='#ff2e78'; this.style.background='#111'"
+            onblur="this.style.borderColor='#333'; this.style.background='#0a0a0a'"></textarea>
+</div>
   <textarea id="highlightDescInput" placeholder="What makes this clip legendary?"
             style="width:100%; padding:14px 16px; background:#0a0a0a; border:1px solid #333;
                    border-radius:12px; color:#ddd; font-size:14.5px; min-height:90px; resize:vertical;"
