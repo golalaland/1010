@@ -2122,30 +2122,50 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
                onblur="this.style.borderColor='#333'; this.style.background='#0a0a0a'">
       </div>
 
-      <!-- Description — (optional) on same line -->
-      <div style="margin-bottom:24px;">
-        <label style="display:block; color:#e0e0e0; font-size:14px; font-weight:600; margin-bottom:10px;">
-          Description <span style="color:#666; font-weight:500;">(optional)</span>
-        </label>
-        <textarea id="highlightDescInput" placeholder="What makes this clip legendary?"
-                  style="width:100%; padding:14px 16px; background:#0a0a0a; border:1px solid #333;
-                         border-radius:12px; color:#ddd; font-size:14.5px; min-height:90px; resize:vertical;"
-                  onfocus="this.style.borderColor='#ff2e78'"
-                  onblur="this.style.borderColor='#333'"></textarea>
-      </div>
+    <!-- Description — truly on the same line, forever -->
+<div style="margin-bottom:24px;">
+  <label style="
+    display:flex; align-items:center; gap:8px;
+    color:#e0e0e0; font-size:14px; font-weight:600;
+    margin-bottom:10px; height:20px; line-height:1;
+  ">
+    <span>Description</span>
+    <span style="color:#666; font-weight:500; font-size:13.5px; white-space:nowrap;">
+      (optional)
+    </span>
+  </label>
 
-      <!-- Price — NOW SUPER COMPACT & TIGHT -->
-      <div style="margin-bottom:32px; text-align:center;">
-        <div style="color:#e0e0e0; font-size:14px; font-weight:600; margin-bottom:12px;">Unlock Price</div>
-        <div style="display:inline-flex; align-items:center; gap:12px; background:#0a0a0a; padding:12px 20px; border-radius:16px; border:1px solid #333;">
-          <input type="tel" id="highlightPriceInput" value="50" min="10" maxlength="5"
-                 style="width:90px; background:transparent; border:none; outline:none;
-                        color:#00ff9d; font-size:28px; font-weight:800; text-align:center;"
-                 onfocus="this.parentNode.parentNode.style.borderColor='#00ff9d'; this.parentNode.parentNode.style.boxShadow='0 0 0 4px rgba(0,255,157,0.15)'"
-                 onblur="this.parentNode.parentNode.style.borderColor='#333'; this.parentNode.parentNode.style.boxShadow='none'">
-          <span style="font-size:24px; font-weight:700; color:#aaa;">STRZ</span>
-        </div>
-      </div>
+  <textarea id="highlightDescInput" placeholder="What makes this clip legendary?"
+            style="width:100%; padding:14px 16px; background:#0a0a0a; border:1px solid #333;
+                   border-radius:12px; color:#ddd; font-size:14.5px; min-height:90px; resize:vertical;"
+            onfocus="this.style.borderColor='#ff2e78'"
+            onblur="this.style.borderColor='#333'"></textarea>
+</div>
+
+    <!-- Price — MAXIMUM COMPACT & PERFECTLY BALANCED -->
+<div style="margin-bottom:28px; text-align:center;">
+  <div style="color:#e0e0e0; font-size:14px; font-weight:600; margin-bottom:10px;">Unlock Price</div>
+  
+  <div style="
+    display:inline-flex; align-items:center; gap:9px;
+    background:#0a0a0a; padding:9px 16px; border-radius:14px;
+    border:1px solid #333; line-height:1;
+  ">
+    <input type="tel" id="highlightPriceInput" value="50" min="10" maxlength="5"
+           style="
+             width:78px; background:transparent; border:none; outline:none;
+             color:#00ff9d; font-size:30px; font-weight:800; text-align:center;
+             padding:0; margin:0; height:36px;
+           "
+           onfocus="this.parentNode.style.borderColor='#00ff9d'; this.parentNode.style.boxShadow='0 0 0 3px rgba(0,255,157,0.18)'"
+           onblur="this.parentNode.style.borderColor='#333'; this.parentNode.style.boxShadow='none'">
+
+    <span style="
+      font-size:30px; font-weight:800; color:#00ff9d; letter-spacing:-0.5px;
+      margin-top:-1px; /* perfect optical alignment */
+    ">STRZ</span>
+  </div>
+</div>
 
       <!-- Upload Button -->
       <div style="text-align:center;">
@@ -2157,7 +2177,7 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
         "
         onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 10px 25px rgba(255,46,120,0.4)'"
         onmouseout="this.style.transform=''; this.style.boxShadow='0 4px 15px rgba(255,46,120,0.3)'">
-          Upload Highlight
+          Upload
         </button>
       </div>
 
