@@ -4122,76 +4122,55 @@ async function loadMyClips() {
       `;
 
       card.innerHTML = `
-        <!-- Video Preview -->
-        <div style="position:relative;height:220px;background:#000;overflow:hidden;">
-          <video src="${videoSrc}" muted loop playsinline 
-                 style="width:100%;height:100%;object-fit:cover;filter:blur(12px);transform:scale(1.2);"></video>
-          <div style="position:absolute;inset:0;background:linear-gradient(180deg,transparent 30%,rgba(0,0,0,0.95));"></div>
-          <video src="${videoSrc}" muted loop playsinline 
-                 style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
-                        width:86%;height:86%;object-fit:contain;
-                        border-radius:14px;border:3px solid #444;
-                        box-shadow:0 12px 40px rgba(0,0,0,0.9);"></video>
+  <div style="background:#0d0d0d;border-radius:16px;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,0.8);border:1px solid #222;display:flex;gap:0;height:136px;position:relative;">
+    
+    <!-- Tiny Video Frame Left -->
+    <div style="width:136px;flex-shrink:0;position:relative;overflow:hidden;background:#000;">
+      <video src="${videoSrc}" muted loop playsinline 
+             style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);min-width:140%;min-height:140%;object-fit:cover;filter:brightness(0.9);"></video>
+      <div style="position:absolute;inset:0;background:linear-gradient(90deg,rgba(13,13,13,0.95),transparent 60%);"></div>
+      <div style="position:absolute;bottom:6px;left:8px;color:#00ff9d;font-size:9px;font-weight:800;letter-spacing:1px;text-shadow:0 0 10px #000;">▶ PLAYBACK</div>
+    </div>
+
+    <!-- Right Side: Track Stats (Distro Style) -->
+    <div style="flex-grow:1;padding:16px 20px;display:flex;flex-direction:column;justify-content:space-between;background:linear-gradient(90deg,#0f0f0f,#111 50%);">
+      
+      <div>
+        <div style="color:#fff;font-weight:800;font-size:13px;letter-spacing:0.5px;text-shadow:0 1px 3px #000;">
+          ${v.title || "Untitled Drop"}
         </div>
+        <div style="color:#888;font-size:10px;margin-top:2px;opacity:0.8;">
+          ID: ${v.id.slice(-8)}
+        </div>
+      </div>
 
-        <!-- Content -->
-        <div style="padding:20px 22px 24px;flex-grow:1;display:flex;flex-direction:column;">
-          <!-- Title -->
-          <div style="font-weight:700;color:#fff;font-size:11px;line-height:1.3;margin-bottom:8px;word-break:break-word;">
-            ${v.title || "Untitled Clip"}
-          </div>
+      <!-- Stats Row - Like DistroKid / SoundCloud -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-top:12px;">
+        <div>
+          <div style="color:#666;font-size:9px;text-transform:uppercase;letter-spacing:1px;">Price</div>
+          <div style="color:#00ff9d;font-weight:900;font-size:14px;margin-top:3px;">${price} STRZ</div>
+        </div>
+        <div>
+          <div style="color:#666;font-size:9px;text-transform:uppercase;letter-spacing:1px;">Streams</div>
+          <div style="color:#00ffea;font-weight:900;font-size:14px;margin-top:3px;">${unlocks}x</div>
+        </div>
+        <div>
+          <div style="color:#666;font-size:9px;text-transform:uppercase;letter-spacing:1px;">Revenue</div>
+          <div style="color:#ff00ff;font-weight:900;font-size:14px;margin-top:3px;">${earnings} ⭐</div>
+        </div>
+      </div>
 
-          <!-- Description (optional) -->
-          ${v.description ? `
-            <div style="color:#aaa;font-size:13.5px;line-height:1.5;margin-bottom:16px;opacity:0.9;">
-              ${v.description}
-            </div>` : ''
-          }
-
-          <!-- Stats Grid — 3 Perfect Columns -->
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;margin:20px 0 24px;">
-            <div style="text-align:center;">
-              <div style="color:#888;font-size:13px;letter-spacing:0.5px;">Price</div>
-              <div style="color:#00ff9d;font-weight:800;font-size:11px;margin-top:5px;">
-                ${price} STRZ
-              </div>
-            </div>
-            <div style="text-align:center;">
-              <div style="color:#888;font-size:13px;letter-spacing:0.5px;">Unlocked</div>
-              <div style="color:#00ff9d;font-weight:800;font-size:12px;margin-top:5px;">
-                ${unlocks}x
-              </div>
-            </div>
-            <div style="text-align:center;">
-              <div style="color:#888;font-size:13px;letter-spacing:0.5px;">Earnings</div>
-              <div style="color:#00ffea;font-weight:800;font-size:11px;margin-top:5px;">
-                ${earnings} ⭐️
-              </div>
-            </div>
-          </div>
- 
-              <!-- Delete Button -->
-          <div style="margin-top:auto;display:flex;justify-content:flex-end;">
-            <button class="delete-clip-btn"
-              data-id="${v.id}"
-              data-title="${(v.title || 'Clip').replace(/"/g, '&quot;')}"
-              style="
-                background:linear-gradient(90deg,#ff0099,#ff6600);
-                color:#fff;
-                border:none;
-                padding:9px 15px;
-                border-radius:10px;
-                font-weight:600;
-                font-size:9px;
-                cursor:pointer;
-                transition:all 0.25s ease;
-                box-shadow:0 4px 15px rgba(255,0,153,0.3);
-              "
-              onmouseover="this.style.background='linear-gradient(90deg,#ff5500,#ff33aa)'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 25px rgba(255,0,153,0.5)'"
-              onmouseout="this.style.background='linear-gradient(90deg,#ff3300,#ff0099)'; this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(255,0,153,0.3)'">
-              Delete
-            </button>
-          </div>   `;
+      <!-- Delete Button (small but deadly) -->
+      <button class="delete-clip-btn" data-id="${v.id}" data-title="${(v.title||'Clip').replace(/"/g,'&quot;')}"
+        style="position:absolute;top:8px;right:8px;background:#ff0033;border:none;color:#fff;padding:6px 10px;border-radius:8px;font-size:8px;font-weight:800;cursor:pointer;opacity:0.85;box-shadow:0 2px 10px rgba(255,0,51,0.4);transition:all .2s;"
+        onmouseover="this.style.opacity='1';this.style.transform='scale(1.08)';"
+        onmouseout="this.style.opacity='0.85';this.style.transform='scale(1)';">
+        DELETE
+      </button>
+    </div>
+  </div>
+`;
+card.style.height = "136px"; // enforce uniform height
 
       // Hover video play
       const videos = card.querySelectorAll("video");
