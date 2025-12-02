@@ -4122,37 +4122,73 @@ async function loadMyClips() {
       `;
 
 card.innerHTML = `
-  <div style="background:#0a0a0a;border:1px solid #333;border-radius:14px;overflow:hidden;box-shadow:0 0 30px rgba(255,0,255,0.15);position:relative;height:148px;">
+  <div style="background:#0d0d0d;border-radius:16px;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,0.8);border:1px solid #222;display:flex;gap:0;height:136px;position:relative;">
     
-    <!-- Mini corrupted video frame -->
-    <div style="position:absolute;top:12px;left:12px;width:90px;height:90px;overflow:hidden;border-radius:10px;border:2px solid #ff00ff;box-shadow:0 0 20px rgba(255,0,255,0.4);">
-      <video src="${videoSrc}" muted loop playsinline style="width:100%;height:100%;object-fit:cover;filter:contrast(1.3) saturate(1.4);"></video>
-      <div style="position:absolute;inset:0;background:linear-gradient(45deg,transparent 40%,rgba(255,0,255,0.15) 100%);mix-blend-mode:overlay;"></div>
+    <!-- Tiny Video Frame Left — Zoomed out 68% -->
+    <div style="width:136px;height:136px;flex-shrink:0;position:relative;overflow:hidden;background:#000;">
+      <video src="${videoSrc}" muted loop playsinline 
+             style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) scale(0.68);
+                    min-width:100%;min-height:100%;object-fit:cover;filter:brightness(0.92);"></video>
+      <div style="position:absolute;inset:0;background:linear-gradient(90deg,rgba(13,13,13,0.98),transparent 70%);pointer-events:none;"></div>
+      <div style="position:absolute;bottom:7px;left:9px;color:#00ff9d;font-size:9px;font-weight:800;letter-spacing:1.2px;text-shadow:0 0 8px #000;">
+        ▶ CLIP
+      </div>
     </div>
 
-    <!-- Glitchy Stats Block -->
-    <div style="margin-left:118px;padding:18px 20px 18px 0;">
-      <div style="color:#0ff;font-weight:900;font-size:14px;letter-spacing:1px;text-shadow:0 0 8px #0ff;">
-        ${v.title || "UNTITLED.exe"}
-      </div>
-      <div style="color:#f0f;font-size:9px;margin:4px 0 12px;opacity:0.7;">${v.id.slice(-12)}</div>
+    <!-- Right Side: Title + Description + Stats -->
+    <div style="flex-grow:1;padding:16px 20px;display:flex;flex-direction:column;justify-content:space-between;background:linear-gradient(90deg,#0f0f0f,#111 50%);">
+      
+      <div>
+        <div style="color:#fff;font-weight:800;font-size:13.5px;letter-spacing:0.6px;text-shadow:0 1px 3px #000;">
+          ${v.title || "Untitled Drop"}
+        </div>
 
-      <div style="display:flex;gap:20px;font-family:'Courier New',monospace;">
-        <div><span style="color:#666;">PRICE</span> <span style="color:#0f0;font-weight:bold;">${price} STRZ</span></div>
-        <div><span style="color:#666;">UNLOCKS</span> <span style="color:#ff0;font-weight:bold;">${unlocks}</span></div>
-        <div><span style="color:#666;">EARNED</span> <span style="color:#f0f;font-weight:bold;">${earnings}⭐</span></div>
+        <!-- NEW: Description line (only if exists) -->
+        ${v.description ? `
+          <div style="color:#999;font-size:10.5px;margin-top:4px;line-height:1.3;
+                      overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
+                      opacity:0.88;">
+            ${v.description}
+          </div>` : ''}
+
+        <div style="color:#666;font-size:10px;margin-top:${v.description ? '6px' : '3px'};opacity:0.75;">
+          ID: ${v.id.slice(-8)}
+        </div>
       </div>
 
-      <div style="position:absolute;bottom:10px;right:12px;">
-        <button class="delete-clip-btn" data-id="${v.id}" data-title="${(v.title||'Clip').replace(/"/g,'&quot;')}"
-          style="background:none;border:1px solid #f33;color:#f33;padding:5px 11px;border-radius:6px;font-size:9px;font-weight:900;animation:pulse 2s infinite;">
-          ERADICATE
-        </button>
+      <!-- Stats Grid — unchanged fire -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-top:10px;">
+        <div>
+          <div style="color:#666;font-size:9px;text-transform:uppercase;letter-spacing:1px;">Price</div>
+          <div style="color:#00ff9d;font-weight:900;font-size:14px;margin-top:3px;">${price} STRZ</div>
+        </div>
+        <div>
+          <div style="color:#666;font-size:9px;text-transform:uppercase;letter-spacing:1px;">Unlocks</div>
+          <div style="color:#00ffea;font-weight:900;font-size:14px;margin-top:3px;">${unlocks}x</div>
+        </div>
+        <div>
+          <div style="color:#666;font-size:9px;text-transform:uppercase;letter-spacing:1px;">Revenue</div>
+          <div style="color:#ff00ff;font-weight:900;font-size:14px;margin-top:3px;">${earnings} ⭐</div>
+        </div>
       </div>
+
+     <button class="delete-clip-btn" data-id="${v.id}" data-title="${(v.title||'Clip').replace(/"/g,'&quot;')}"
+  style="
+    position:absolute;top:8px;right:8px;
+    background:linear-gradient(90deg,#ff0099,#ff6600);
+    border:none;color:#fff;
+    padding:7px 11px;border-radius:8px;
+    font-size:8px;font-weight:800;letter-spacing:0.5px;
+    cursor:pointer;opacity:0.95;
+    box-shadow:0 3px 12px rgba(255,0,153,0.45);
+    transition:all .25s ease;
+  "
+  onmouseover="this.style.background='linear-gradient(90deg,#ff5500,#ff33aa)'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 20px rgba(255,0,153,0.6)'; this.style.opacity='1'"
+  onmouseout="this.style.background='linear-gradient(90deg,#ff0099,#ff6600)'; this.style.transform='translateY(0)'; this.style.boxShadow='0 3px 12px rgba(255,0,153,0.45)'; this.style.opacity='0.95'">
+  DELETE
+</button>
     </div>
   </div>
-
-  <style>@keyframes pulse{0%,100%{box-shadow:0 0 5px #f33}50%{box-shadow:0 0 20px #f33}}</style>
 `;
       // Hover video play
       const videos = card.querySelectorAll("video");
