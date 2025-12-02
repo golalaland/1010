@@ -2171,8 +2171,8 @@ setInterval(() => {
 const START_BG   = "https://cdn.shopify.com/s/files/1/0962/6648/6067/files/9F6F9EAC-F165-4C70-85CB-B2351A3B8C59.png?v=1763282422";
 const GAME_BGS   = [
   "https://cdn.shopify.com/s/files/1/0962/6648/6067/files/64EB80F3-9BE7-4D39-8C96-5608B941E4DC.png?v=1763280746",
-  "https://cdn.shopify.com/s/.../game2.jpg",
-  "https://cdn.shopify.com/s/.../game3.jpg",
+  "https://cdn.shopify.com/s/files/1/0962/6648/6067/files/IMG_2461.jpg?v=1764634530",
+  "https://cdn.shopify.com/s/files/1/0962/6648/6067/files/IMG_2447.jpg?v=1764634569",
   // add the rest
 ];
 
