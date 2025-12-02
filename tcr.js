@@ -4171,12 +4171,19 @@ card.innerHTML = `
       </div>
 
       <!-- Your signature gradient delete button -->
-      <button class="delete-clip-btn" data-id="${v.id}" data-title="${(v.title||'Clip').replace(/"/g,'&quot;')}"
-        style="position:absolute;top:8px;right:8px;background:linear-gradient(90deg,#ff0099,#ff6600);border:none;color:#fff;padding:7px 11px;border-radius:8px;font-size:8px;font-weight:800;letter-spacing:0.5px;cursor:pointer;opacity:0.95;box-shadow:0 3px 12px rgba(255,0,153,0.45);transition:all .25s ease;"
-        onmouseover="this.style.background='linear-gradient(90deg,#ff5500,#ff33aa)'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 20px rgba(255,0,153,0.6)'; this.style.opacity='1'"
-        onmouseout="this.style.background='linear-gradient(90deg,#ff0099,#ff6600)'; this.style.transform='translateY(0)'; this.style.boxShadow='0 3px 12px rgba(255,0,153,0.45)'; this.style.opacity='0.95'">
-        DELETE
-      </button>
+    <button class="delete-clip-btn" data-id="${v.id}" data-title="${(v.title||'Clip').replace(/"/g,'&quot;')}"
+  style="position:absolute;top:8px;right:8px;
+         background:linear-gradient(90deg,#ff0099,#ff6600);
+         border:none;color:#fff;
+         padding:7px 11px;border-radius:8px;
+         font-size:8px;font-weight:800;letter-spacing:0.5px;
+         cursor:pointer;opacity:0.95;
+         box-shadow:none;   /* ← GLOW REMOVED */
+         transition:all .25s ease;"
+  onmouseover="this.style.background='linear-gradient(90deg,#ff5500,#ff33aa)'; this.style.transform='translateY(-1px)'; this.style.opacity='1'"
+  onmouseout="this.style.background='linear-gradient(90deg,#ff0099,#ff6600)'; this.style.transform='translateY(0)'; this.style.opacity='0.95'">
+  DELETE
+</button>
     </div>
   </div>
 `;
