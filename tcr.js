@@ -4121,37 +4121,38 @@ async function loadMyClips() {
         flex-direction:column;
       `;
 
-      card.innerHTML = `
-  <div style="background:#0e0e0e;border-radius:12px;overflow:hidden;display:flex;align-items:center;gap:16px;padding:12px;height:110px;box-shadow:0 8px 25px rgba(0,0,0,0.6);border:1px solid #1f1f1f;position:relative;">
+card.innerHTML = `
+  <div style="background:#0a0a0a;border:1px solid #333;border-radius:14px;overflow:hidden;box-shadow:0 0 30px rgba(255,0,255,0.15);position:relative;height:148px;">
     
-    <!-- Tiny square thumbnail -->
-    <div style="width:86px;height:86px;flex-shrink:0;border-radius:10px;overflow:hidden;border:2px solid #333;box-shadow:inset 0 0 20px rgba(0,255,150,0.2);">
-      <video src="${videoSrc}" muted loop playsinline style="width:100%;height:100%;object-fit:cover;"></video>
+    <!-- Mini corrupted video frame -->
+    <div style="position:absolute;top:12px;left:12px;width:90px;height:90px;overflow:hidden;border-radius:10px;border:2px solid #ff00ff;box-shadow:0 0 20px rgba(255,0,255,0.4);">
+      <video src="${videoSrc}" muted loop playsinline style="width:100%;height:100%;object-fit:cover;filter:contrast(1.3) saturate(1.4);"></video>
+      <div style="position:absolute;inset:0;background:linear-gradient(45deg,transparent 40%,rgba(255,0,255,0.15) 100%);mix-blend-mode:overlay;"></div>
     </div>
 
-    <!-- Info + Stats -->
-    <div style="flex-grow:1;">
-      <div style="color:#fff;font-weight:700;font-size:13px;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
-        ${v.title || "No Title"}
+    <!-- Glitchy Stats Block -->
+    <div style="margin-left:118px;padding:18px 20px 18px 0;">
+      <div style="color:#0ff;font-weight:900;font-size:14px;letter-spacing:1px;text-shadow:0 0 8px #0ff;">
+        ${v.title || "UNTITLED.exe"}
       </div>
-      <div style="color:#666;font-size:10px;margin-top:2px;">#${v.id.slice(-8)}</div>
+      <div style="color:#f0f;font-size:9px;margin:4px 0 12px;opacity:0.7;">${v.id.slice(-12)}</div>
 
-      <!-- Waveform-style stat bar -->
-      <div style="display:flex;align-items:center;gap:20px;margin-top:12px;font-size:11px;">
-        <div><span style="color:#888;">Price</span> <strong style="color:#00ff9d;">${price} STRZ</strong></div>
-        <div><span style="color:#888;">×${unlocks}</span> <strong style="color:#00ffea;">${earnings} ⭐</strong></div>
+      <div style="display:flex;gap:20px;font-family:'Courier New',monospace;">
+        <div><span style="color:#666;">PRICE</span> <span style="color:#0f0;font-weight:bold;">${price} STRZ</span></div>
+        <div><span style="color:#666;">UNLOCKS</span> <span style="color:#ff0;font-weight:bold;">${unlocks}</span></div>
+        <div><span style="color:#666;">EARNED</span> <span style="color:#f0f;font-weight:bold;">${earnings}⭐</span></div>
       </div>
 
-      <!-- Micro delete cross -->
-      <div style="position:absolute;top:8px;right:8px;">
+      <div style="position:absolute;bottom:10px;right:12px;">
         <button class="delete-clip-btn" data-id="${v.id}" data-title="${(v.title||'Clip').replace(/"/g,'&quot;')}"
-          style="background:none;border:none;color:#f44;font-size:18px;font-weight:bold;cursor:pointer;width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:50%;transition:all .2s;"
-          onmouseover="this.style.background='#f443'" onmouseout="this.style.background='none'">
-          ×
+          style="background:none;border:1px solid #f33;color:#f33;padding:5px 11px;border-radius:6px;font-size:9px;font-weight:900;animation:pulse 2s infinite;">
+          ERADICATE
         </button>
       </div>
     </div>
   </div>
+
+  <style>@keyframes pulse{0%,100%{box-shadow:0 0 5px #f33}50%{box-shadow:0 0 20px #f33}}</style>
 `;
       // Hover video play
       const videos = card.querySelectorAll("video");
