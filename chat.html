@@ -2048,55 +2048,38 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 
 
 
-<div id="sellContentBar" style="margin:50px auto 0;max-width:380px;">
-  <h2 style="text-align:center;margin:0 0 12px;font-size:24px;font-weight:900;
-             background:linear-gradient(120deg,#ff1493,#ff8c00,#ff1493);
-             -webkit-background-clip:text;-webkit-text-fill-color:transparent;">
-    Drop a Highlight → Get Paid
+<div id="sellContentBar" style="margin:60px auto;max-width:340px;">
+  <h2 style="text-align:center;margin:0 0 30px;font-size:28px;font-weight:900;
+             background:linear-gradient(90deg,#ff2e92,#ffb74d);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">
+    Upload Highlight
   </h2>
-  <p style="text-align:center;color:#aaa;font-size:13px;margin:0 0 24px;">
-    Your best clips = instant <span style="color:#00ff9d;font-weight:800;">STRZ</span>
-  </p>
 
-  <div style="background:#0f0f0f;border:2px solid #333;border-radius:24px;padding:24px 20px;
-              box-shadow:0 15px 40px rgba(0,0,0,0.6),inset 0 1px 10px rgba(255,20,120,0.08);
-              position:relative;overflow:hidden;">
+  <div style="background:#0c0c0c;border-radius:20px;padding:28px;
+              border:1px solid #222;box-shadow:0 20px 50px rgba(0,0,0,0.7);">
     
-    <!-- Cute mini file drop -->
-    <label for="highlightUploadInput" style="display:block;margin-bottom:16px;cursor:pointer;">
+    <label for="highlightUploadInput" class="dropzone" style="display:block;margin-bottom:20px;cursor:pointer;">
       <input type="file" id="highlightUploadInput" accept="video/*" style="display:none;">
-      <div style="background:#1a1a1a;border:2px dashed #ff1493;border-radius:16px;padding:20px 16px;
-                  text-align:center;transition:all .3s;font-size:14px;color:#ff1493;font-weight:700;">
-        Upload Clip or Drop Here
+      <div style="border:2px dashed #555;padding:24px;border-radius:16px;text-align:center;background:#111;transition:.3s;">
+        <div style="font-size:32px;margin-bottom:8px;">Upload Video</div>
+        <div style="color:#888;font-size:13px;">Click or drop file</div>
       </div>
     </label>
 
-    <!-- Title + Price in one row – super compact -->
-    <div style="display:grid;grid-template-columns:1fr 110px;gap:12px;margin-bottom:16px;">
-      <input type="text" id="highlightTitleInput" placeholder="Title (e.g. 200 IQ play)"
-             style="padding:12px 14px;background:#111;border:1px solid #444;border-radius:12px;color:#fff;font-size:14px;">
-      <div style="background:#111;border:1px solid #444;border-radius:12px;display:flex;align-items:center;justify-content:center;">
-        <input type="number" id="highlightPriceInput" value="50" min="10" style="width:60px;background:transparent;border:none;color:#00ff9d;font-size:20px;font-weight:900;text-align:center;">
-        <span style="color:#00ff9d;font-size:14px;font-weight:800;">STRZ</span>
-      </div>
+    <input type="text" id="highlightTitleInput" placeholder="Title" 
+           style="width:100%;padding:14px;margin-bottom:14px;background:#111;border:none;border-bottom:2px solid #333;color:#fff;font-size:15px;transition:.3s;"
+           onfocus="this.style.borderColor='#ff2e92'">
+
+    <div style="display:flex;align-items:center;justify-content:center;gap:12px;margin:20px 0;">
+      <input type="number" id="highlightPriceInput" value="50" style="width:90px;padding:10px;background:transparent;border:none;border-bottom:3px solid #00ff9d;color:#00ff9d;font-size:28px;font-weight:900;text-align:center;">
+      <span style="font-size:28px;color:#00ff9d;">STRZ</span>
     </div>
 
-    <!-- Tiny description -->
-    <textarea id="highlightDescInput" placeholder="Optional description..." rows="2"
-              style="width:100%;padding:10px 14px;background:#111;border:1px solid #444;border-radius:12px;color:#ccc;font-size:13px;resize:none;margin-bottom:20px;"></textarea>
-
-    <!-- CUTE AF upload button -->
-    <div style="text-align:center;">
-      <button id="uploadHighlightBtn" style="
-        padding:13px 36px;background:linear-gradient(90deg,#ff1493,#ff5e00);
-        color:white;border:none;border-radius:50px;font-weight:900;font-size:15px;
-        letter-spacing:1px;cursor:pointer;transition:all .3s;
-        box-shadow:0 8px 25px rgba(255,20,147,0.4);text-transform:uppercase;">
-        Drop It
-      </button>
-    </div>
-
-    <div id="highlightUploadStatus" style="margin-top:14px;text-align:center;font-size:13px;color:#00ff9d;height:20px;"></div>
+    <button id="uploadHighlightBtn" style="
+      width:100%;padding:16px;background:linear-gradient(90deg,#ff2e92,#ff8c00);
+      border:none;border-radius:50px;color:white;font-weight:900;font-size:17px;
+      letter-spacing:1px;box-shadow:0 10px 30px rgba(255,46,146,0.4);transition:all .3s;">
+      Go Live
+    </button>
   </div>
 </div>
 
