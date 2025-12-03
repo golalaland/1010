@@ -2308,19 +2308,15 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
     ">Mark all as read</button>
   </div>
 
-  <!-- Notifications list — full bleed, max dopamine -->
- <!-- NOTIFICATIONS TAB — PURE DOPAMINE -->
-<div id="notificationsTab" class="tab-content" style="display:none; max-height:400px; overflow-y:auto; padding:4px 0;">
-  
-  <!-- Super minimal header — just the button -->
-  <div style="padding:8px 12px 4px; text-align:right;">
-    <button id="markAllRead" style="
-      font-size:11px; padding:5px 10px; background:#333; border:none; 
-      color:#aaa; border-radius:8px; opacity:0.9;
-    ">Mark all read</button>
+<!-- 🔔 NOTIFICATIONS TAB — CLEAN, NO BADGE INSIDE -->
+<div id="notificationsTab" class="tab-content" style="display:none; max-height:400px; overflow-y:auto;">
+  <div class="notifications-header">
+    <h3>Notifications</h3>
+    <button id="markAllRead" class="themed-btn small">Mark all as read</button>
   </div>
-
-  <div id="notificationsList" style="padding:0 8px;"></div>
+  <div id="notificationsList" class="notifications-list">
+    <p style="opacity:0.7;">No new notifications yet.</p>
+  </div>
 </div>
 
 
