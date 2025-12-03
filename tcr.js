@@ -3142,7 +3142,7 @@ document.getElementById("uploadHighlightBtn")?.addEventListener("click", async (
   const price         = parseInt(document.getElementById("highlightPriceInput").value) || 0;
 
   // ——— VALIDATION ———
-  if (!title)                     return showGiftAlert("Title is required", "error");
+  if (!title)                     return showStarPopup("Title is required", "error");
   if (price < 10)                 return showGiftAlert("Minimum price: 10 STRZ", "error");
   if (!fileInput.files[0] && !videoUrlInput.value.trim())
                                   return showGiftAlert("Upload a file or paste a URL", "error");
