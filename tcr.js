@@ -3117,51 +3117,58 @@ confirmBtn.onclick = async () => {
   }
 }
 // ================================
-// UPLOAD HIGHLIGHT — 100% WORKING (typo fixed)
+// UPLOAD HIGHLIGHT — CLEAN NO-SPINNER 2025 VERSION
 // ================================
 document.getElementById("uploadHighlightBtn")?.addEventListener("click", async () => {
-  const statusEl = document.getElementById("highlightUploadStatus");
-  if (!statusEl) return;
-  statusEl.textContent = "";
-  statusEl.style.color = "#fff";
-
+  const btn = document.getElementById("uploadHighlightBtn");
+  
+  // Reset button state
+  btn.disabled = false;
+  btn.classList.remove("uploading");
+  
+  // ——— AUTH CHECK ———
   if (!currentUser?.uid) {
-    statusEl.textContent = "Please sign in first!";
+    showGiftAlert("Please sign in first!", "error");
     return;
   }
 
-  const fileInput = document.getElementById("highlightUploadInput");
+  // ——— GRAB INPUTS ———
+  const fileInput     = document.getElementById("highlightUploadInput");
   const videoUrlInput = document.getElementById("highlightVideoInput");
-  const title = document.getElementById("highlightTitleInput").value.trim();
-  const desc = document.getElementById("highlightDescInput").value.trim();
-  const price = parseInt(document.getElementById("highlightPriceInput").value) || 0;
+  const title         = document.getElementById("highlightTitleInput").value.trim();
+  const desc          = document.getElementById("highlightDescInput").value.trim();
+  const price         = parseInt(document.getElementById("highlightPriceInput").value) || 0;
 
-  if (!title || price < 10) {
-    statusEl.textContent = "Title + price (min 10 stars) required";
-    return;
-  }
-  if (!fileInput.files[0] && !videoUrlInput.value.trim()) {
-    statusEl.textContent = "Upload a file OR paste a URL";
-    return;
-  }
+  // ——— VALIDATION ———
+  if (!title)                     return showGiftAlert("Title is required", "error");
+  if (price < 10)                 return showGiftAlert("Minimum price: 10 STRZ", "error");
+  if (!fileInput.files[0] && !videoUrlInput.value.trim())
+                                  return showGiftAlert("Upload a file or paste a URL", "error");
 
-  statusEl.textContent = "Uploading your clip...";
+  // ——— START UPLOAD → BLANK BUTTON ———
+  btn.disabled = true;
+  btn.classList.add("uploading");
+  btn.textContent = ""; // ← BLANK IT OUT
+  showGiftAlert("Uploading your highlight...", "loading");
 
   try {
     let finalVideoUrl = videoUrlInput.value.trim();
 
+    // ——— FILE UPLOAD (if selected) ———
     if (fileInput.files[0]) {
       const file = fileInput.files[0];
       if (file.size > 500 * 1024 * 1024) {
-        statusEl.textContent = "File too big (max 500MB)";
+        showGiftAlert("File too big — max 500MB", "error");
+        resetButton();
         return;
       }
-      statusEl.textContent = "Uploading video...";
+
       const storageRef = ref(storage, `highlights/${currentUser.uid}_${Date.now()}_${file.name}`);
       const snapshot = await uploadBytes(storageRef, file);
       finalVideoUrl = await getDownloadURL(snapshot.ref);
     }
 
+    // ——— SAVE TO FIRESTORE ———
     await addDoc(collection(db, "highlightVideos"), {
       uploaderId: currentUser.uid,
       uploaderName: currentUser.chatId || "Anonymous",
@@ -3174,27 +3181,36 @@ document.getElementById("uploadHighlightBtn")?.addEventListener("click", async (
       createdAt: serverTimestamp()
     });
 
-    statusEl.textContent = "CLIP LIVE — EARNING STARS!";
-    statusEl.style.color = "#00ff9d";
+    // ——— SUCCESS ———
+    showGiftAlert("CLIP LIVE — EARNING STARS!", "success");
+    btn.textContent = "Posted!";
+    btn.style.background = "#00ff9d";
 
-    if (typeof loadMyClips === "function") setTimeout(loadMyClips, 800);
-
-    // FIXED TYPO BELOW
+    // Reset form
     fileInput.value = "";
     videoUrlInput.value = "";
     document.getElementById("highlightTitleInput").value = "";
-    document.getElementById("highlightDescInput").value = "";        // ← WAS "getctElementById"
+    document.getElementById("highlightDescInput").value = "";
     document.getElementById("highlightPriceInput").value = "50";
+    if (typeof loadMyClips === "function") loadMyClips();
 
-    setTimeout(() => statusEl.textContent = "", 5000);
+    // Reset button after 2s
+    setTimeout(resetButton, 2000);
 
   } catch (err) {
     console.error("Upload failed:", err);
-    statusEl.textContent = "Upload failed — try again";
-    statusEl.style.color = "#ff3366";
+    showGiftAlert("Upload failed — try again", "error");
+    resetButton();
+  }
+
+  // ——— RESET BUTTON ———
+  function resetButton() {
+    btn.disabled = false;
+    btn.classList.remove("uploading");
+    btn.textContent = "Post";
+    btn.style.background = ""; // back to original gradient
   }
 });
-
 (function() {
   const onlineCountEl = document.getElementById('onlineCount');
   const storageKey = 'fakeOnlineCount';
