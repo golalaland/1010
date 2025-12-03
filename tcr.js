@@ -259,13 +259,13 @@ async function pushNotification(userId, message) {
 // ON AUTH STATE CHANGED — FINAL 2025 ETERNAL EDITION
 // YAH IS THE ONE TRUE EL — THE CODE IS NOW PURE
 onAuthStateChanged(auth, async (firebaseUser) => {
-  // ALWAYS CLEAN NOTIFICATIONS FIRST
+  // ——— CLEANUP PREVIOUS LISTENERS ———
   if (typeof notificationsUnsubscribe === "function") {
     notificationsUnsubscribe();
     notificationsUnsubscribe = null;
   }
 
-  // USER LOGGED OUT
+  // ——— USER LOGGED OUT ———
   if (!firebaseUser) {
     currentUser = null;
     localStorage.removeItem("userId");
@@ -275,8 +275,9 @@ onAuthStateChanged(auth, async (firebaseUser) => {
     document.querySelectorAll(".before-login-only").forEach(el => el.style.display = "block");
 
     if (typeof showLoginUI === "function") showLoginUI();
-    console.log("YAH: User logged out");
+    console.log("User logged out");
 
+    // Clear my clips
     const grid = document.getElementById("myClipsGrid");
     const noMsg = document.getElementById("noClipsMessage");
     if (grid) grid.innerHTML = "";
@@ -285,25 +286,24 @@ onAuthStateChanged(auth, async (firebaseUser) => {
     return;
   }
 
-  // USER LOGGED IN
+  // ——— USER LOGGED IN ———
   const email = firebaseUser.email.toLowerCase().trim();
   const uid = sanitizeKey(email);
   const userRef = doc(db, "users", uid);
 
   try {
     const userSnap = await getDoc(userRef);
-
-    // FIXED: userSnap, not user
+    
     if (!userSnap.exists()) {
-      console.error("Profile missing:", uid);
-      showStarPopup("Profile not found. Contact admin.");
+      console.error("Profile not found for:", uid);
+      showStarPopup("Profile missing — contact support");
       await signOut(auth);
       return;
     }
 
-    // FIXED: userSnap.data(), not user.data()
     const data = userSnap.data();
 
+    // ——— BUILD CURRENT USER OBJECT ———
     currentUser = {
       uid,
       email,
@@ -329,48 +329,62 @@ onAuthStateChanged(auth, async (firebaseUser) => {
       hostLink: data.hostLink || null
     };
 
-    console.log("YAH HAS LOGGED IN:", currentUser.chatId);
+    console.log("WELCOME BACK:", currentUser.chatId.toUpperCase());
 
-    // SHOW LOGGED-IN UI
+    // ——— UI STATE ———
     document.querySelectorAll(".after-login-only").forEach(el => el.style.display = "block");
     document.querySelectorAll(".before-login-only").forEach(el => el.style.display = "none");
 
     localStorage.setItem("userId", uid);
     localStorage.setItem("lastVipEmail", email);
 
-    // CORE SYSTEMS
+    // ——— CORE SYSTEMS ———
     if (typeof showChatUI === "function") showChatUI(currentUser);
     if (typeof attachMessagesListener === "function") attachMessagesListener();
     if (typeof startStarEarning === "function") startStarEarning(uid);
     if (typeof setupPresence === "function") setupPresence(currentUser);
+    if (typeof setupNotificationsListener === "function") setupNotificationsListener(uid);
 
     updateRedeemLink();
     updateTipLink();
 
-    if (typeof syncUserUnlocks === "function") setTimeout(syncUserUnlocks, 600);
-    if (typeof setupNotificationsListener === "function") setupNotificationsListener(uid);
+    // ——— BACKGROUND TASKS ———
+    setTimeout(() => {
+      if (typeof syncUserUnlocks === "function") syncUserUnlocks();
+      if (typeof loadNotifications === "function") loadNotifications(); // Badge update
+    }, 600);
 
-    // GUEST NAME PROMPT
+    // ——— MY CLIPS ———
+    if (document.getElementById("myClipsPanel") && typeof loadMyClips === "function") {
+      setTimeout(loadMyClips, 1000);
+    }
+
+    // ——— GUEST → PROMPT FOR NAME ———
     if (currentUser.chatId.startsWith("GUEST")) {
       setTimeout(() => {
-        if (typeof promptForChatID === "function") promptForChatID(userRef, data);
+        if (typeof promptForChatID === "function") {
+          promptForChatID(userRef, data);
+        }
       }, 2000);
     }
 
-    // MY CLIPS PANEL
-    if (document.getElementById("myClipsPanel") && typeof loadMyClips === "function") {
-      setTimeout(loadMyClips, 1200);
-    }
+    // ——— DIVINE WELCOME POPUP ———
+    const holyColors = ["#FF1493", "#FFD700", "#00FFFF", "#FF4500", "#DA70D6", "#FF69B4", "#32CD32", "#FFA500", "#FF00FF"];
+    const glow = holyColors[Math.floor(Math.random() * holyColors.length)];
 
-    // DIVINE WELCOME — NOW INSIDE AND GLOWING
-    const holyColors = ["#FF1493","#FFD700","#00FFFF","#FF4500","#DA70D6","#FF69B4","#32CD32","#FFA500","#FF00FF"];
-    const divineColor = holyColors[Math.floor(Math.random() * holyColors.length)];
+    showStarPopup(`
+      <div style="text-align:center;line-height:1.7;font-size:15px;">
+        Welcome back,<br>
+        <b style="font-size:18px;color:${glow};text-shadow:0 0 25px ${glow}88;">
+          ${currentUser.chatId.toUpperCase()}
+        </b>
+      </div>
+    `);
 
-showStarPopup(`<div style="text-align:center;line-height:1.6;">Welcome back, <b style="font-size:13px;color:${divineColor};text-shadow:0 0 21px ${divineColor}77;">${currentUser.chatId.toUpperCase()}</b></div>`);
-    console.log("YOU'RE IN THE CUBE ETERNAL");
+    console.log("YOU HAVE ENTERED THE ETERNAL CUBE");
 
   } catch (err) {
-    console.error("Auth error:", err);
+    console.error("Auth state error:", err);
     showStarPopup("Login failed — please try again");
     await signOut(auth);
   }
