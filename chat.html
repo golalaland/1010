@@ -1921,11 +1921,23 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
     <h3 id="hostPanelTitle">Loading...</h3>
 
     <!-- 🧭 TAB HEADER -->
-    <div class="tab-header">
-      <button class="tab-btn active" data-tab="mediaTab">Profile</button>
-      <button class="tab-btn" data-tab="infoTab">Tools</button>
-      <button class="tab-btn" data-tab="notificationsTab">Notifications</button>
-    </div>
+    <!-- TAB HEADER — RED BADGE ON NOTIFICATIONS BUTTON -->
+<div class="tab-header" style="display:flex; gap:12px; padding:16px 0; border-bottom:1px solid #333; position:relative;">
+  <button class="tab-btn active" data-tab="mediaTab">Profile</button>
+  <button class="tab-btn" data-tab="infoTab">Tools</button>
+  <button class="tab-btn" data-tab="notificationsTab" style="position:relative;">
+    Notifications
+    <span id="notif-badge" style="
+      position:absolute; top:-8px; right:-12px;
+      background:#ff006e; color:#fff; font-size:10px; font-weight:900;
+      min-width:18px; height:18px; border-radius:9px;
+      display:none; align-items:center; justify-content:center;
+      padding:0 6px; box-shadow:0 0 14px rgba(255,0,110,0.7);
+      border:2px solid #000; z-index:10;
+      animation:pulse 2s infinite;
+    "></span>
+  </button>
+</div>
 
     <!-- 🎥 MEDIA TAB -->
     <div id="mediaTab" class="tab-content active" style="max-height:500px; overflow-y:auto; padding-right:8px;">
@@ -2258,7 +2270,7 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
     margin:0 0 20px;
     letter-spacing:1px;
   ">
-    MY CLIPS ON SALE
+    MY CLIPS LIST
   </h2>
   <p style="text-align:center; color:#aaa; font-size:14px; margin:-10px 0 30px;">
     Your uploaded highlights · Delete anytime · Earn from your clips
@@ -2293,25 +2305,13 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
     </div>
   </div>
 </div>
-<!-- NOTIFICATIONS TAB — RED BADGE ON h3 -->
+<!-- NOTIFICATIONS TAB — CLEAN HEADER: "What you need to know" -->
 <div id="notificationsTab" class="tab-content" style="display:none; max-height:400px; overflow-y:auto;">
-  <div class="notifications-header" style="position:relative; display:flex; justify-content:space-between; align-items:center;">
-    
-    <h3 style="margin:0; position:relative; display:inline-block;">
-      Notifications
-      <span id="notif-badge" style="
-        position:absolute; top:-10px; right:-20px;
-        background:#ff006e; color:#fff; font-size:10px; font-weight:900;
-        min-width:20px; height:20px; border-radius:10px;
-        display:none; align-items:center; justify-content:center;
-        padding:0 7px; box-shadow:0 0 16px rgba(255,0,110,0.7);
-        animation:pulse 2s infinite;
-        border:2px solid #000;
-        z-index:10;
-      "></span>
+  <div class="notifications-header" style="padding:16px 20px; border-bottom:1px solid #333; margin-bottom:8px;">
+    <h3 style="margin:0; font-size:16px; font-weight:700; color:#fff;">
+      What you need to know
     </h3>
-
-    <button id="markAllRead" class="themed-btn small">Mark all as read</button>
+    <button id="markAllRead" class="themed-btn small" style="margin-top:8px;">Mark all as read</button>
   </div>
 
   <div id="notificationsList" class="notifications-list">
