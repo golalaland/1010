@@ -1121,6 +1121,98 @@ window.addEventListener("beforeunload", () => {
   }
 });
 
+// Whenever user logs in or opens notifications tab
+document.getElementById("notificationsTabBtn")?.addEventListener("click", loadNotifications);
+
+// Load notifications + update badge
+async function loadNotifications() {
+  const list = document.getElementById("notificationsList");
+  const header = document.querySelector(".notifications-header h3");
+  if (!list || !currentUser?.uid) return;
+
+  list.innerHTML = `<p style="opacity:0.6;text-align:center;padding:40px;">Loading...</p>`;
+
+  try {
+    const q = query(
+      collection(db, "notifications"),
+      where("recipientId", "==", currentUser.uid),
+      orderBy("createdAt", "desc")
+    );
+    const snap = await getDocs(q);
+
+    const unreadCount = snap.docs.filter(doc => !doc.data().read).length;
+
+    // UPDATE RED BADGE
+    let badge = document.getElementById("notif-badge");
+    if (!badge) {
+      badge = document.createElement("span");
+      badge.id = "notif-badge";
+      badge.style.cssText = `
+        position:absolute;top:-8px;right:-8px;
+        background:#ff006e;color:#fff;font-size:10px;font-weight:900;
+        min-width:18px;height:18px;border-radius:9px;
+        display:flex;align-items:center;justify-content:center;
+        padding:0 6px;box-shadow:0 0 10px rgba(255,0,110,0.6);
+        animation: pulse 2s infinite;
+      `;
+      document.querySelector(".notifications-header h3").style.position = "relative";
+      document.querySelector(".notifications-header h3").appendChild(badge);
+    }
+    badge.textContent = unreadCount;
+    badge.style.display = unreadCount > 0 ? "flex" : "none";
+
+    if (snap.empty) {
+      list.innerHTML = `<p style="opacity:0.7;text-align:center;padding:60px;">No notifications yet.</p>`;
+      return;
+    }
+
+    list.innerHTML = "";
+    snap.forEach(doc => {
+      const n = doc.data();
+      const item = document.createElement("div");
+      item.style.cssText = `
+        padding:14px 16px;border-bottom:1px solid #333;
+        background:${n.read ? "#111" : "rgba(255,0,110,0.08)"};
+        cursor:pointer;transition:all 0.2s;
+      `;
+      item.innerHTML = `
+        <div style="font-weight:700;font-size:14px;color:#fff;">
+          ${n.title}
+          ${!n.read ? `<span style="color:#ff006e;font-size:10px;"> ● NEW</span>` : ""}
+        </div>
+        <div style="font-size:13px;color:#aaa;margin-top:4px;">${n.message}</div>
+        <div style="font-size:11px;color:#666;margin-top:6px;">
+          ${timeAgo(n.createdAt?.toDate())}
+        </div>
+      `;
+      item.onclick = async () => {
+        if (!n.read) {
+          await updateDoc(doc.ref, { read: true });
+          loadNotifications(); // refresh badge
+        }
+        // Optional: jump to clip
+        if (n.videoId) {
+          // you can trigger highlights tab + scroll to clip later
+        }
+      };
+      list.appendChild(item);
+    });
+
+  } catch (err) {
+    console.error("Failed to load notifications:", err);
+    list.innerHTML = `<p style="color:#f66;text-align:center;">Failed to load</p>`;
+  }
+}
+
+// Helper: time ago
+function timeAgo(date) {
+  const seconds = Math.floor((new Date() - date) / 1000);
+  if (seconds < 60) return "just now";
+  if (seconds < 3600) return Math.floor(seconds / 60) + "m ago";
+  if (seconds < 86400) return Math.floor(seconds / 3600) + "h ago";
+  return Math.floor(seconds / 86400) + "d ago";
+}
+
 /* ---------- 🆔 ChatID Modal ---------- */
 async function promptForChatID(userRef, userData) {
   if (!refs.chatIDModal || !refs.chatIDInput || !refs.chatIDConfirmBtn)
@@ -4039,33 +4131,90 @@ function showUnlockConfirm(video, onUnlockCallback) {
 }
 
 async function unlockVideo(video) {
-  if (!currentUser?.uid) return showGoldAlert("Login required");
-  if (currentUser.uid === video.uploaderId) return showGoldAlert("You already own this video");
+  if (!currentUser?.uid) {
+    return showGoldAlert("Login required");
+  }
 
-  const cost = video.highlightVideoPrice;
+  if (currentUser.uid === video.uploaderId) {
+    return showGoldAlert("You already own this clip");
+  }
+
+  const cost = Number(video.highlightVideoPrice) || 0;
+  if (cost <= 0) {
+    return showGoldAlert("Invalid price");
+  }
 
   try {
-    await runTransaction(db, async tx => {
-      const senderSnap = await tx.get(doc(db, "users", currentUser.uid));
-      if ((senderSnap.data()?.stars || 0) < cost) throw "Not enough STRZ";
+    // ——— ATOMIC TRANSACTION: Transfer STRZ + Unlock ———
+    await runTransaction(db, async (tx) => {
+      const buyerDoc = await tx.get(doc(db, "users", currentUser.uid));
+      const buyerData = buyerDoc.data();
 
-      tx.update(doc(db, "users", currentUser.uid), { stars: increment(-cost) });
-      tx.update(doc(db, "users", video.uploaderId), { stars: increment(cost) });
-      tx.update(doc(db, "highlightVideos", video.id), { unlockedBy: arrayUnion(currentUser.uid) });
-      tx.update(doc(db, "users", currentUser.uid), { unlockedVideos: arrayUnion(video.id) });
+      if ((buyerData?.stars || 0) < cost) {
+        throw new Error("Not enough STRZ");
+      }
+
+      // Deduct from buyer, add to uploader
+      tx.update(doc(db, "users", currentUser.uid), {
+        stars: increment(-cost)
+      });
+      tx.update(doc(db, "users", video.uploaderId), {
+        stars: increment(cost)
+      });
+
+      // Mark video as unlocked
+      tx.update(doc(db, "highlightVideos", video.id), {
+        unlockedBy: arrayUnion(currentUser.uid)
+      });
+
+      // Add to buyer's unlocked list
+      tx.update(doc(db, "users", currentUser.uid), {
+        unlockedVideos: arrayUnion(video.id)
+      });
     });
 
+    // ——— LOCAL CACHE UPDATE ———
     const unlocked = JSON.parse(localStorage.getItem("userUnlockedVideos") || "[]");
     if (!unlocked.includes(video.id)) {
       unlocked.push(video.id);
       localStorage.setItem("userUnlockedVideos", JSON.stringify(unlocked));
     }
 
-    showGoldAlert('Unlocked "' + video.title + '"!');
+    // ——— SEND NOTIFICATION TO UPLOADER —
+    try {
+      await addDoc(collection(db, "notifications"), {
+        type: "clip_purchased",
+        title: "Your clip was unlocked!",
+        message: `${currentUser.chatId || "Someone"} paid ${cost} STRZ for "${video.title}"`,
+        videoId: video.id,
+        videoTitle: video.title,
+        buyerId: currentUser.uid,
+        buyerName: currentUser.chatId || "Anonymous",
+        recipientId: video.uploaderId,
+        read: false,
+        createdAt: serverTimestamp()
+      });
+    } catch (notifErr) {
+      console.warn("Notification failed (non-critical):", notifErr);
+      // Don't break unlock if notification fails
+    }
+
+    // — SUCCESS —
+    showGoldAlert(`Unlocked "${video.title}"!`);
+    
+    // Close modal & refresh highlights
     document.getElementById("highlightsModal")?.remove();
-    setTimeout(() => highlightsBtn.click(), 400);
-  } catch (e) {
-    showGoldAlert("Unlock failed: " + (e.message || e));
+    setTimeout(() => highlightsBtn?.click(), 400);
+
+    // Optional: refresh notifications badge instantly
+    if (typeof loadNotifications === "function") {
+      loadNotifications();
+    }
+
+  } catch (error) {
+    console.error("Unlock failed:", error);
+    const msg = error.message || error;
+    showGoldAlert(msg === "Not enough STRZ" ? "Not enough STRZ" : "Unlock failed — try again");
   }
 }
 
