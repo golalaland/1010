@@ -3116,16 +3116,19 @@ confirmBtn.onclick = async () => {
   }
 }
 // ================================
-// UPLOAD HIGHLIGHT — 100% WORKING (typo fixed)
+// UPLOAD HIGHLIGHT — PREMIUM 2025 EDITION
 // ================================
 document.getElementById("uploadHighlightBtn")?.addEventListener("click", async () => {
-  const statusEl = document.getElementById("highlightUploadStatus");
-  if (!statusEl) return;
-  statusEl.textContent = "";
-  statusEl.style.color = "#fff";
+  const btn = document.getElementById("uploadHighlightBtn");
+  const spinner = btn.querySelector(".btn-spinner");
+  const btnText = btn.querySelector(".btn-text");
+
+  // Reset state
+  btn.classList.remove("uploading");
+  spinner.classList.remove("visible");
 
   if (!currentUser?.uid) {
-    statusEl.textContent = "Please sign in first!";
+    showGiftAlert("Please sign in first!", "error");
     return;
   }
 
@@ -3135,16 +3138,24 @@ document.getElementById("uploadHighlightBtn")?.addEventListener("click", async (
   const desc = document.getElementById("highlightDescInput").value.trim();
   const price = parseInt(document.getElementById("highlightPriceInput").value) || 0;
 
-  if (!title || price < 10) {
-    statusEl.textContent = "Title + price (min 10 stars) required";
+  // === Validation with showGiftAlert ===
+  if (!title) {
+    showGiftAlert("Title is required", "error");
+    return;
+  }
+  if (price < 10) {
+    showGiftAlert("Minimum price is 10 STRZ", "error");
     return;
   }
   if (!fileInput.files[0] && !videoUrlInput.value.trim()) {
-    statusEl.textContent = "Upload a file OR paste a URL";
+    showGiftAlert("Upload a file or paste a URL", "error");
     return;
   }
 
-  statusEl.textContent = "Uploading your clip...";
+  // === START UPLOAD — SHOW SPINNER ===
+  btn.classList.add("uploading");
+  btn.disabled = true;
+  showGiftAlert("Uploading your highlight...", "loading"); // optional: show progress
 
   try {
     let finalVideoUrl = videoUrlInput.value.trim();
@@ -3152,15 +3163,18 @@ document.getElementById("uploadHighlightBtn")?.addEventListener("click", async (
     if (fileInput.files[0]) {
       const file = fileInput.files[0];
       if (file.size > 500 * 1024 * 1024) {
-        statusEl.textContent = "File too big (max 500MB)";
+        showGiftAlert("File too big — max 500MB", "error");
+        btn.classList.remove("uploading");
+        btn.disabled = false;
         return;
       }
-      statusEl.textContent = "Uploading video...";
+
       const storageRef = ref(storage, `highlights/${currentUser.uid}_${Date.now()}_${file.name}`);
       const snapshot = await uploadBytes(storageRef, file);
       finalVideoUrl = await getDownloadURL(snapshot.ref);
     }
 
+    // === SAVE TO FIRESTORE ===
     await addDoc(collection(db, "highlightVideos"), {
       uploaderId: currentUser.uid,
       uploaderName: currentUser.chatId || "Anonymous",
@@ -3173,24 +3187,33 @@ document.getElementById("uploadHighlightBtn")?.addEventListener("click", async (
       createdAt: serverTimestamp()
     });
 
-    statusEl.textContent = "CLIP LIVE — EARNING STARS!";
-    statusEl.style.color = "#00ff9d";
+    // === SUCCESS ===
+    btn.classList.remove("uploading");
+    btnText.textContent = "Uploaded!";
+    btn.style.background = "linear-gradient(90deg, #00ff9d, #00cc7a)";
+    showGiftAlert("CLIP LIVE — EARNING STARS!", "success");
 
-    if (typeof loadMyClips === "function") setTimeout(loadMyClips, 800);
-
-    // FIXED TYPO BELOW
+    // Reset form
     fileInput.value = "";
     videoUrlInput.value = "";
     document.getElementById("highlightTitleInput").value = "";
-    document.getElementById("highlightDescInput").value = "";        // ← WAS "getctElementById"
+    document.getElementById("highlightDescInput").value = "";
     document.getElementById("highlightPriceInput").value = "50";
 
-    setTimeout(() => statusEl.textContent = "", 5000);
+    if (typeof loadMyClips === "function") loadMyClips();
+
+    // Reset button text after 2s
+    setTimeout(() => {
+      btnText.textContent = "Upload Highlight";
+      btn.style.background = ""; // back to original gradient
+      btn.disabled = false;
+    }, 2000);
 
   } catch (err) {
     console.error("Upload failed:", err);
-    statusEl.textContent = "Upload failed — try again";
-    statusEl.style.color = "#ff3366";
+    showGiftAlert("Upload failed — try again", "error");
+    btn.classList.remove("uploading");
+    btn.disabled = false;
   }
 });
 
@@ -3204,8 +3227,8 @@ document.getElementById("uploadHighlightBtn")?.addEventListener("click", async (
     return n;
   }
 
-  // Start somewhere believable
-  let count = parseInt(localStorage.getItem(storageKey)) || 2857;
+  // Start somewhere between 2500–3500
+  let count = parseInt(localStorage.getItem(storageKey)) || (2500 + Math.floor(Math.random() * 900));
 
   function updateDisplay() {
     onlineCountEl.textContent = formatCount(count);
@@ -3213,63 +3236,68 @@ document.getElementById("uploadHighlightBtn")?.addEventListener("click", async (
   }
   updateDisplay();
 
-  let baseTrend = 0; // -1 = slowly going down, 0 = stable, 1 = slowly growing
+  let baseTrend = 0;
 
   setInterval(() => {
-    // 1. Random micro-fluctuations (most common)
     const dice = Math.random();
 
     if (dice < 0.45) {
-      // 45% chance: tiny natural change (±1 to ±9)
+      // micro wiggles ±1–9
       count += Math.floor(Math.random() * 19) - 9;
     } 
     else if (dice < 0.75) {
-      // 30% chance: small wave (±10–40) – feels like people joining/leaving in groups
+      // small waves ±10–40
       count += Math.floor(Math.random() * 61) - 30;
     }
     else if (dice < 0.93) {
-      // 18% chance: noticeable surge (someone shared the link, new post, etc.)
-      count += Math.floor(Math.random() * 180) + 60; // +60 to +240
+      // medium surges +40 to +120
+      count += Math.floor(Math.random() * 81) + 40;
     }
     else if (dice < 0.98) {
-      // 5% chance: mini drop-off (people closing tabs)
-      count -= Math.floor(Math.random() * 120) + 40;
+      // mini drop-offs -20 to -80
+      count -= Math.floor(Math.random() * 61) + 20;
     }
     else {
-      // 2% chance: big viral spike (feels like something just happened)
-      count += Math.floor(Math.random() * 600) + 300; // +300–900
+      // rare viral spike +120 to +300
+      count += Math.floor(Math.random() * 181) + 120;
       baseTrend = 1;
     }
 
-    // Gentle global trend (mimics time of day)
+    // Natural day-cycle influence
     const hour = new Date().getHours();
-    if (hour >= 22 || hour < 7) baseTrend = -1;      // late night → slowly down
-    else if (hour >= 12 && hour <= 14) baseTrend = 1; // lunch/post time → up
-    else if (hour >= 18 && hour <= 21) baseTrend = 1; // evening peak
+    if (hour >= 22 || hour < 7) baseTrend = -1;
+    else if (hour >= 12 && hour <= 14) baseTrend = 1;
+    else if (hour >= 18 && hour <= 21) baseTrend = 1;
     else baseTrend = 0;
 
     if (baseTrend === 1) count += Math.random() > 0.7 ? 3 : 1;
     if (baseTrend === -1) count -= Math.random() > 0.7 ? 3 : 1;
 
-    // Hard boundaries – change these to whatever range you want to live in
-    if (count < 2200) count = 2200 + Math.floor(Math.random() * 400);
-    if (count > 18400) count = 18400 - Math.floor(Math.random() * 800);
+    // *** NEW RANGE LIMIT: 2000–5000 ***
+    const MIN = 2000;
+    const MAX = 5000;
 
-    // Avoid perfectly round numbers too often
+    if (count < MIN) count = MIN + Math.floor(Math.random() * 150);
+    if (count > MAX) count = MAX - Math.floor(Math.random() * 100);
+
+    // avoid perfect 1000s
     if (count % 1000 === 0 && Math.random() < 0.9) {
       count += Math.floor(Math.random() * 80) - 40;
     }
 
     updateDisplay();
 
-  }, 3500 + Math.floor(Math.random() * 2000)); // 3.5–5.5 second jitter
+  }, 3500 + Math.floor(Math.random() * 2000));
 
-  // Very slow periodic "reset" so it never looks stuck forever
+  // slow drift reset every 5 mins
   setInterval(() => {
-    const drift = Math.floor(Math.random() * 800) - 400;
-    count = Math.max(2200, Math.min(18400, count + drift));
+    const drift = Math.floor(Math.random() * 300) - 150;
+    const MIN = 2000;
+    const MAX = 5000;
+
+    count = Math.max(MIN, Math.min(MAX, count + drift));
     updateDisplay();
-  }, 5 * 60 * 1000); // every ~5 minutes
+  }, 5 * 60 * 1000);
 
 })();
 
