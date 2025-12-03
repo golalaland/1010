@@ -1138,7 +1138,7 @@ window.addEventListener("beforeunload", () => {
 // Whenever user logs in or opens notifications tab
 document.getElementById("notificationsTabBtn")?.addEventListener("click", loadNotifications);
 
-// On tab button click
+// When user opens notifications tab
 document.getElementById("notificationsTabBtn")?.addEventListener("click", () => {
   showTab("notificationsTab");
   loadNotifications();
