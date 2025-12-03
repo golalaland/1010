@@ -1149,9 +1149,12 @@ async function loadNotifications() {
   const list = document.getElementById("notificationsList");
   const badge = document.getElementById("notif-badge");
 
-  if (!list || !currentUser?.uid) return;
+  if (!list || !currentUser?.uid) {
+    console.log("No user or list — skipping notifications");
+    return;
+  }
 
-  list.innerHTML = `<div style="text-align:center; padding:80px 20px; color:#666; font-size:13px;">Loading...</div>`;
+  list.innerHTML = `<div style="text-align:center;padding:80px;color:#666;font-size:13px;">Loading...</div>`;
 
   try {
     const q = query(
@@ -1159,10 +1162,11 @@ async function loadNotifications() {
       where("recipientId", "==", currentUser.uid),
       orderBy("createdAt", "desc")
     );
-    const snap = await getDocs(q);
-    const unreadCount = snap.docs.filter(d => !d.data().read).length;
 
-    // PERFECT CIRCULAR RED BADGE — NO BLACK BORDER
+    const snap = await getDocs(q);
+    const unreadCount = snap.docs.filter(doc => !doc.data().read).length;
+
+    // PERFECT RED BADGE — NO BLACK BORDER
     if (badge) {
       badge.textContent = unreadCount > 99 ? "99+" : unreadCount;
       badge.style.cssText = `
@@ -1173,17 +1177,17 @@ async function loadNotifications() {
         align-items:center; justify-content:center;
         box-shadow:0 0 16px rgba(255,0,110,0.8);
         animation:pulse 1.8s infinite;
-        border:none !important;
-        z-index:100;
+        border:none; z-index:100;
       `;
     }
 
     if (snap.empty) {
-      list.innerHTML = `<div style="text-align:center; padding:100px 20px; color:#888; font-size:14px;">No notifications yet.</div>`;
+      list.innerHTML = `<div style="text-align:center;padding:100px 20px;color:#888;font-size:14px;">No notifications yet.</div>`;
       return;
     }
 
     list.innerHTML = "";
+
     snap.forEach(doc => {
       const n = doc.data();
       const isNew = !n.read && Date.now() - (n.createdAt?.toDate?.() || 0) < 30_000;
@@ -1194,7 +1198,6 @@ async function loadNotifications() {
         background:${n.read ? "rgba(255,255,255,0.04)" : "rgba(255,0,110,0.1)"};
         border-left:${isNew ? "3px solid #ff006e" : "3px solid transparent"};
         cursor:pointer; transition:all 0.2s;
-        position:relative; overflow:hidden;
       `;
 
       item.innerHTML = `
@@ -1213,7 +1216,7 @@ async function loadNotifications() {
       item.onclick = async () => {
         if (!n.read) {
           await updateDoc(doc.ref, { read: true });
-          loadNotifications();
+          loadNotifications(); // refresh instantly
         }
       };
 
@@ -1222,7 +1225,7 @@ async function loadNotifications() {
 
   } catch (err) {
     console.error("Notifications failed:", err);
-    list.innerHTML = `<div style="color:#f66; text-align:center; padding:80px;">Failed to load</div>`;
+    list.innerHTML = `<div style="color:#f66;text-align:center;padding:80px;">Failed to load</div>`;
   }
 }
 // Helper: time ago
