@@ -1141,7 +1141,7 @@ document.getElementById("notificationsTabBtn")?.addEventListener("click", loadNo
 // Load notifications + update badge
 async function loadNotifications() {
   const list = document.getElementById("notificationsList");
-  const header = document.querySelector(".notifications-header h3");
+  const badge = document.getElementById("notif-badge"); // ← tab button badge
   if (!list || !currentUser?.uid) return;
 
   list.innerHTML = `<p style="opacity:0.6;text-align:center;padding:40px;">Loading...</p>`;
@@ -1156,24 +1156,11 @@ async function loadNotifications() {
 
     const unreadCount = snap.docs.filter(doc => !doc.data().read).length;
 
-    // UPDATE RED BADGE
-    let badge = document.getElementById("notif-badge");
-    if (!badge) {
-      badge = document.createElement("span");
-      badge.id = "notif-badge";
-      badge.style.cssText = `
-        position:absolute;top:-8px;right:-8px;
-        background:#ff006e;color:#fff;font-size:10px;font-weight:900;
-        min-width:18px;height:18px;border-radius:9px;
-        display:flex;align-items:center;justify-content:center;
-        padding:0 6px;box-shadow:0 0 10px rgba(255,0,110,0.6);
-        animation: pulse 2s infinite;
-      `;
-      document.querySelector(".notifications-header h3").style.position = "relative";
-      document.querySelector(".notifications-header h3").appendChild(badge);
+    // UPDATE BADGE ON TAB BUTTON
+    if (badge) {
+      badge.textContent = unreadCount;
+      badge.style.display = unreadCount > 0 ? "flex" : "none";
     }
-    badge.textContent = unreadCount;
-    badge.style.display = unreadCount > 0 ? "flex" : "none";
 
     if (snap.empty) {
       list.innerHTML = `<p style="opacity:0.7;text-align:center;padding:60px;">No notifications yet.</p>`;
@@ -1185,17 +1172,17 @@ async function loadNotifications() {
       const n = doc.data();
       const item = document.createElement("div");
       item.style.cssText = `
-        padding:14px 16px;border-bottom:1px solid #333;
+        padding:14px 16px; border-bottom:1px solid #333;
         background:${n.read ? "#111" : "rgba(255,0,110,0.08)"};
-        cursor:pointer;transition:all 0.2s;
+        cursor:pointer; transition:all 0.2s;
       `;
       item.innerHTML = `
-        <div style="font-weight:700;font-size:14px;color:#fff;">
+        <div style="font-weight:700; font-size:14px; color:#fff;">
           ${n.title}
-          ${!n.read ? `<span style="color:#ff006e;font-size:10px;"> ● NEW</span>` : ""}
+          ${!n.read ? `<span style="color:#ff006e; font-size:10px;"> ● NEW</span>` : ""}
         </div>
-        <div style="font-size:13px;color:#aaa;margin-top:4px;">${n.message}</div>
-        <div style="font-size:11px;color:#666;margin-top:6px;">
+        <div style="font-size:13px; color:#aaa; margin-top:4px;">${n.message}</div>
+        <div style="font-size:11px; color:#666; margin-top:6px;">
           ${timeAgo(n.createdAt?.toDate())}
         </div>
       `;
@@ -1204,20 +1191,15 @@ async function loadNotifications() {
           await updateDoc(doc.ref, { read: true });
           loadNotifications(); // refresh badge
         }
-        // Optional: jump to clip
-        if (n.videoId) {
-          // you can trigger highlights tab + scroll to clip later
-        }
       };
       list.appendChild(item);
     });
 
   } catch (err) {
     console.error("Failed to load notifications:", err);
-    list.innerHTML = `<p style="color:#f66;text-align:center;">Failed to load</p>`;
+    list.innerHTML = `<p style="color:#f66; text-align:center;">Failed to load</p>`;
   }
 }
-
 // Helper: time ago
 function timeAgo(date) {
   const seconds = Math.floor((new Date() - date) / 1000);
