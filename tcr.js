@@ -1147,11 +1147,11 @@ document.getElementById("notificationsTabBtn")?.addEventListener("click", () => 
 // Load notifications + update badge
 async function loadNotifications() {
   const list = document.getElementById("notificationsList");
-  const badge = document.getElementById("notif-badge"); // ← badge inside <h3>
-  
+  const badge = document.getElementById("notif-badge"); // ← on TAB BUTTON
+
   if (!list || !currentUser?.uid) return;
 
-  list.innerHTML = `<p style="opacity:0.6; text-align:center; padding:40px;">Loading...</p>`;
+  list.innerHTML = `<p style="opacity:0.6;text-align:center;padding:80px;color:#666;">Loading...</p>`;
 
   try {
     const q = query(
@@ -1162,14 +1162,14 @@ async function loadNotifications() {
     const snap = await getDocs(q);
     const unreadCount = snap.docs.filter(d => !d.data().read).length;
 
-    // UPDATE RED BADGE ON <h3>
+    // Update badge on TAB BUTTON only
     if (badge) {
       badge.textContent = unreadCount > 99 ? "99+" : unreadCount;
       badge.style.display = unreadCount > 0 ? "flex" : "none";
     }
 
     if (snap.empty) {
-      list.innerHTML = `<p style="opacity:0.7; text-align:center; padding:60px;">No notifications yet.</p>`;
+      list.innerHTML = `<p style="opacity:0.7;text-align:center;padding:100px 20px;color:#888;font-size:14px;">No new notifications yet.</p>`;
       return;
     }
 
@@ -1177,30 +1177,29 @@ async function loadNotifications() {
     snap.forEach(doc => {
       const n = doc.data();
       const item = document.createElement("div");
-      item.style.cssText = `
-        padding:16px 18px; border-bottom:1px solid #333;
-        background:${n.read ? "#111" : "rgba(255,0,110,0.08)"};
-        cursor:pointer; transition:all 0.2s; position:relative;
-      `;
-
-      // Auto-hide "NEW" tag after 30 seconds (or when read)
+      
       const isNew = !n.read && Date.now() - (n.createdAt?.toDate?.() || 0) < 30_000;
 
+      item.style.cssText = `
+        padding:16px; margin:8px 8px; border-radius:12px;
+        background:${n.read ? "rgba(255,255,255,0.03)" : "rgba(255,0,110,0.09)"};
+        border:${n.read ? "1px solid #333" : "1px solid rgba(255,0,110,0.3)"};
+        cursor:pointer; transition:all 0.25s; backdrop-filter:blur(4px);
+      `;
+
       item.innerHTML = `
-        <div style="font-weight:700; font-size:14px; color:#fff; display:flex; justify-content:space-between; align-items:center;">
-          <span>${n.title}</span>
-          ${isNew ? `<span style="color:#ff006e; font-size:10px; font-weight:900; animation:blink 1.5s infinite;">● NEW</span>` : ""}
+        <div style="font-weight:800; font-size:14.5px; color:#fff; display:flex; justify-content:space-between; align-items:center;">
+          ${n.title}
+          ${isNew ? `<span style="color:#ff006e; font-size:11px; font-weight:900; animation:blink 1.4s infinite;">● NEW</span>` : ""}
         </div>
-        <div style="font-size:13px; color:#ccc; margin-top:5px;">${n.message}</div>
-        <div style="font-size:11px; color:#666; margin-top:8px;">
-          ${timeAgo(n.createdAt?.toDate())}
-        </div>
+        <div style="font-size:13px; color:#ddd; margin-top:6px; line-height:1.4;">${n.message}</div>
+        <div style="font-size:11px; color:#777; margin-top:10px;">${timeAgo(n.createdAt?.toDate())}</div>
       `;
 
       item.onclick = async () => {
         if (!n.read) {
           await updateDoc(doc.ref, { read: true });
-          loadNotifications(); // refresh badge + remove "NEW"
+          loadNotifications();
         }
       };
 
@@ -1208,8 +1207,8 @@ async function loadNotifications() {
     });
 
   } catch (err) {
-    console.error("Notifications load failed:", err);
-    list.innerHTML = `<p style="color:#f66; text-align:center;">Failed to load</p>`;
+    console.error("Notifications error:", err);
+    list.innerHTML = `<p style="color:#f66; text-align:center; padding:80px;">Failed to load</p>`;
   }
 }
 // Helper: time ago
