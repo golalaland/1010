@@ -1138,6 +1138,12 @@ window.addEventListener("beforeunload", () => {
 // Whenever user logs in or opens notifications tab
 document.getElementById("notificationsTabBtn")?.addEventListener("click", loadNotifications);
 
+// On tab button click
+document.getElementById("notificationsTabBtn")?.addEventListener("click", () => {
+  showTab("notificationsTab");
+  loadNotifications();
+});
+
 // Load notifications + update badge
 async function loadNotifications() {
   const list = document.getElementById("notificationsList");
