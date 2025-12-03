@@ -3884,6 +3884,7 @@ function showHighlightsModal(videos) {
 
 function renderCards(videosToRender) {
   content.innerHTML = "";
+
   const filtered = videosToRender.filter(video => {
     if (filterMode === "unlocked") return unlockedVideos.includes(video.id);
     if (filterMode === "trending") return video.isTrending === true;
@@ -3898,10 +3899,18 @@ function renderCards(videosToRender) {
     card.setAttribute("data-uploader", video.uploaderName || "Anonymous");
     card.setAttribute("data-title", video.title || "");
     Object.assign(card.style, {
-      minWidth: "240px", maxWidth: "240px", background: "#1b1b1b", borderRadius: "16px",
-      overflow: "hidden", display: "flex", flexDirection: "column", cursor: "pointer",
-      flexShrink: 0, boxShadow: "0 6px 20px rgba(255,0,110,0.18)",
-      transition: "all 0.3s ease", border: "1px solid rgba(255,0,110,0.15)"
+      minWidth: "240px",
+      maxWidth: "240px",
+      background: "#1b1b1b",
+      borderRadius: "16px",
+      overflow: "hidden",
+      display: "flex",
+      flexDirection: "column",
+      cursor: "pointer",
+      flexShrink: 0,
+      boxShadow: "0 6px 20px rgba(255,0,110,0.18)",
+      transition: "all 0.3s ease",
+      border: "1px solid rgba(255,0,110,0.15)"
     });
 
     card.onmouseenter = () => {
@@ -3913,12 +3922,14 @@ function renderCards(videosToRender) {
       card.style.boxShadow = "0 6px 20px rgba(255,0,110,0.18)";
     };
 
-    // === VIDEO PREVIEW ===
+    // === VIDEO CONTAINER ===
     const videoContainer = document.createElement("div");
     videoContainer.style.cssText = "height:340px;overflow:hidden;position:relative;background:#000;";
-    
+
     const videoEl = document.createElement("video");
-    videoEl.muted = true; videoEl.loop = true; videoEl.preload = "metadata";
+    videoEl.muted = true;
+    videoEl.loop = true;
+    videoEl.preload = "metadata";
     videoEl.style.cssText = "width:100%;height:100%;object-fit:cover;";
 
     if (isUnlocked) {
@@ -3927,9 +3938,10 @@ function renderCards(videosToRender) {
       videoContainer.onmouseenter = () => videoEl.play().catch(() => {});
       videoContainer.onmouseleave = () => { videoEl.pause(); videoEl.currentTime = 0; };
     } else {
+      // Locked overlay
       const lockedOverlay = document.createElement("div");
       lockedOverlay.innerHTML = `
-        <div style="position:absolute;inset:0;background:rgba(0,0,0,0.8);display:flex;align-items:center;justify-content:center;z-index:2;">
+        <div style="position:absolute;inset:0;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;z-index:2;">
           <div style="text-align:center;">
             <svg width="80" height="80" viewBox="0 0 24 24" fill="#ff006e">
               <path d="M12 2C9.2 2 7 4.2 7 7V11H6C4.9 11 4 11.9 4 13V20C4 21.1 4.9 22 6 22H18C19.1 22 20 21.1 20 20V13C20 11.9 19.1 11 18 11H17V7C17 4.2 14.8 2 12 2ZM12 4C13.7 4 15 5.3 15 7V11H9V7C9 5.3 10.3 4 12 4Z"/>
@@ -3942,14 +3954,19 @@ function renderCards(videosToRender) {
       videoContainer.appendChild(lockedOverlay);
     }
 
+    // Click handler — this was the source of the syntax error!
     videoContainer.onclick = (e) => {
       e.stopPropagation();
-      if (isUnlocked) playFullVideo(video);
-      else showUnlockConfirm(video, () => renderCards(videos));
+      if (isUnlocked) {
+        playFullVideo(video);
+      } else {
+        showUnlockConfirm(video, () => renderCards(videosToRender));
+      }
     };
+
     videoContainer.appendChild(videoEl);
 
-    // === INFO PANEL WITH DESCRIPTION ===
+    // === INFO PANEL ===
     const infoPanel = document.createElement("div");
     infoPanel.style.cssText = "padding:14px 12px 16px;background:#111;flex-grow:1;display:flex;flex-direction:column;gap:6px;";
 
@@ -3958,7 +3975,7 @@ function renderCards(videosToRender) {
     titleEl.textContent = video.title || "Untitled Clip";
     titleEl.style.cssText = "font-weight:800;color:#fff;font-size:15px;line-height:1.3;";
 
-    // Description — NEW & BEAUTIFUL
+    // Description
     const descEl = document.createElement("div");
     const descText = (video.description || "").trim();
     descEl.textContent = descText || "No description";
@@ -3979,7 +3996,7 @@ function renderCards(videosToRender) {
     uploaderEl.textContent = `by ${video.uploaderName || "Anonymous"}`;
     uploaderEl.style.cssText = "font-size:12px;color:#ff006e;font-weight:600;";
 
-    // Unlock Button
+    // Unlock button
     const unlockBtn = document.createElement("button");
     unlockBtn.textContent = isUnlocked ? "Unlocked" : `Unlock • ${video.highlightVideoPrice || 100} STRZ`;
     Object.assign(unlockBtn.style, {
@@ -4007,14 +4024,11 @@ function renderCards(videosToRender) {
       };
       unlockBtn.onclick = (e) => {
         e.stopPropagation();
-        showUnlockConfirm(video, () => renderCards(videos));
+        showUnlockConfirm(video, () => renderCards(videosToRender));
       };
     }
 
-    // Assemble info panel
     infoPanel.append(titleEl, descEl, uploaderEl, unlockBtn);
-
-    // Final card
     card.append(videoContainer, infoPanel);
     content.appendChild(card);
   });
