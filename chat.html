@@ -2305,17 +2305,23 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
     </div>
   </div>
 </div>
-<!-- NOTIFICATIONS TAB — CLEAN HEADER: "What you need to know" -->
+
+<!-- NOTIFICATIONS TAB — MINIMAL & DOPE -->
 <div id="notificationsTab" class="tab-content" style="display:none; max-height:400px; overflow-y:auto;">
-  <div class="notifications-header" style="padding:16px 20px; border-bottom:1px solid #333; margin-bottom:8px;">
-    <h3 style="margin:0; font-size:16px; font-weight:700; color:#fff;">
-      What you need to know
-    </h3>
-    <button id="markAllRead" class="themed-btn small" style="margin-top:8px;">Mark all as read</button>
+  
+  <!-- Tiny header: just the button, floating right -->
+  <div style="padding:12px 16px; display:flex; justify-content:flex-end; border-bottom:1px solid #333;">
+    <button id="markAllRead" class="themed-btn small" style="
+      font-size:12px; padding:6px 12px; opacity:0.9;
+    ">Mark all as read</button>
   </div>
 
-  <div id="notificationsList" class="notifications-list">
-    <p style="opacity:0.7; text-align:center; padding:60px;">No new notifications yet.</p>
+  <!-- Notifications list — full bleed, max dopamine -->
+  <div id="notificationsList" class="notifications-list" style="padding:0 8px;">
+    <p style="
+      opacity:0.7; text-align:center; padding:80px 20px; 
+      font-size:14px; color:#888;
+    ">No new notifications yet.</p>
   </div>
 </div>
 
