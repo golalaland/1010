@@ -1,3 +1,4 @@
+
 <!doctype html>
 <html lang="en">
 <head>
@@ -1737,7 +1738,6 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
     background: rgba(255, 51, 102, 0.22);
     transform: translateY(0);
   }
-    @keyframes gradient { 0%,100%{background-position:0% 50%} 50%{background-position:100% 50%} }
 </style>
 </head>
 <body>
@@ -2203,33 +2203,34 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   </div>
 </div>
 
-<!-- Upload Button -->
+     <!-- Upload Button -->
 <div style="text-align:center;">
-&nbsp;&nbsp;<button id="uploadHighlightBtn" style="
-&nbsp;&nbsp;&nbsp;&nbsp;padding:10px 24px;
-&nbsp;&nbsp;&nbsp;&nbsp;background:linear-gradient(90deg,#ff2e78,#ff5e2e);
-&nbsp;&nbsp;&nbsp;&nbsp;color:#fff;
-&nbsp;&nbsp;&nbsp;&nbsp;border:none;
-&nbsp;&nbsp;&nbsp;&nbsp;border-radius:40px;
-&nbsp;&nbsp;&nbsp;&nbsp;font-weight:600;
-&nbsp;&nbsp;&nbsp;&nbsp;font-size:14px;
-&nbsp;&nbsp;&nbsp;&nbsp;cursor:pointer;
-&nbsp;&nbsp;&nbsp;&nbsp;letter-spacing:0.4px;
-&nbsp;&nbsp;&nbsp;&nbsp;transition:background 0.25s, opacity 0.25s;
-&nbsp;&nbsp;"
-&nbsp;&nbsp;onmouseover="this.style.opacity='0.85'"
-&nbsp;&nbsp;onmouseout="this.style.opacity='1'">
-&nbsp;&nbsp;&nbsp;&nbsp;Post
-&nbsp;&nbsp;</button>
-</div>
-    <!-- Old status div → replaced with this (optional, can fully delete) -->
-<div id="highlightUploadStatus" role="status" aria-live="polite"
-     style="position:absolute; left:-9999px; opacity:0; pointer-events:none;">
-  <!-- Hidden from view, only for screen readers -->
-</div>
+  <button id="uploadHighlightBtn" style="
+    padding:10px 24px; 
+    background:linear-gradient(90deg,#ff2e78,#ff5e2e);
+    color:#fff; 
+    border:none; 
+    border-radius:40px; 
+    font-weight:600; 
+    font-size:14px;
+    cursor:pointer; 
+    letter-spacing:0.4px; 
+    transition:background 0.25s, opacity 0.25s;
+  "
+  onmouseover="this.style.opacity='0.85'"
+  onmouseout="this.style.opacity='1'">
+    Post
+  </button>
 </div>
 
-      
+      <div id="highlightUploadStatus" style="margin-top:20px; text-align:center; font-size:14px; font-weight:600; min-height:24px; color:#00ff9d; opacity:0; transition:opacity .4s;"></div>
+    </div>
+  </div>
+
+  <style>
+    @keyframes gradient { 0%,100%{background-position:0% 50%} 50%{background-position:100% 50%} }
+  </style>
+</div>
   
 <!-- MY CLIPS ON SALE — THE DOPEST PANEL IN THE EMPIRE -->
 <div id="myClipsPanel" style="margin:40px auto 20px; max-width:900px; font-family:system-ui,sans-serif;">
