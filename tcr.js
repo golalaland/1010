@@ -1147,11 +1147,11 @@ document.getElementById("notificationsTabBtn")?.addEventListener("click", () => 
 // Load notifications + update badge
 async function loadNotifications() {
   const list = document.getElementById("notificationsList");
-  const badge = document.getElementById("notif-badge"); // ← on TAB BUTTON
+  const badge = document.getElementById("notif-badge");
 
   if (!list || !currentUser?.uid) return;
 
-  list.innerHTML = `<p style="opacity:0.6;text-align:center;padding:80px;color:#666;">Loading...</p>`;
+  list.innerHTML = `<div style="text-align:center; padding:80px 20px; color:#666; font-size:13px;">Loading...</div>`;
 
   try {
     const q = query(
@@ -1162,38 +1162,52 @@ async function loadNotifications() {
     const snap = await getDocs(q);
     const unreadCount = snap.docs.filter(d => !d.data().read).length;
 
-    // Update badge on TAB BUTTON only
+    // PERFECT CIRCULAR RED BADGE — NO BLACK BORDER
     if (badge) {
       badge.textContent = unreadCount > 99 ? "99+" : unreadCount;
-      badge.style.display = unreadCount > 0 ? "flex" : "none";
+      badge.style.cssText = `
+        position:absolute; top:-6px; right:-10px;
+        background:#ff006e; color:#fff; font-size:10px; font-weight:900;
+        width:20px; height:20px; border-radius:50%;
+        display:${unreadCount > 0 ? "flex" : "none"};
+        align-items:center; justify-content:center;
+        box-shadow:0 0 16px rgba(255,0,110,0.8);
+        animation:pulse 1.8s infinite;
+        border:none !important;
+        z-index:100;
+      `;
     }
 
     if (snap.empty) {
-      list.innerHTML = `<p style="opacity:0.7;text-align:center;padding:100px 20px;color:#888;font-size:14px;">No new notifications yet.</p>`;
+      list.innerHTML = `<div style="text-align:center; padding:100px 20px; color:#888; font-size:14px;">No notifications yet.</div>`;
       return;
     }
 
     list.innerHTML = "";
     snap.forEach(doc => {
       const n = doc.data();
-      const item = document.createElement("div");
-      
       const isNew = !n.read && Date.now() - (n.createdAt?.toDate?.() || 0) < 30_000;
 
+      const item = document.createElement("div");
       item.style.cssText = `
-        padding:16px; margin:8px 8px; border-radius:12px;
-        background:${n.read ? "rgba(255,255,255,0.03)" : "rgba(255,0,110,0.09)"};
-        border:${n.read ? "1px solid #333" : "1px solid rgba(255,0,110,0.3)"};
-        cursor:pointer; transition:all 0.25s; backdrop-filter:blur(4px);
+        padding:11px 14px; margin:3px 6px; border-radius:10px;
+        background:${n.read ? "rgba(255,255,255,0.04)" : "rgba(255,0,110,0.1)"};
+        border-left:${isNew ? "3px solid #ff006e" : "3px solid transparent"};
+        cursor:pointer; transition:all 0.2s;
+        position:relative; overflow:hidden;
       `;
 
       item.innerHTML = `
-        <div style="font-weight:800; font-size:14.5px; color:#fff; display:flex; justify-content:space-between; align-items:center;">
-          ${n.title}
-          ${isNew ? `<span style="color:#ff006e; font-size:11px; font-weight:900; animation:blink 1.4s infinite;">● NEW</span>` : ""}
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px;">
+          <div style="flex:1;">
+            <div style="font-weight:800; font-size:13.5px; color:#fff;">${n.title}</div>
+            <div style="font-size:12.5px; color:#ccc; margin-top:3px; line-height:1.35;">${n.message}</div>
+          </div>
+          ${isNew ? `<div style="color:#ff006e; font-size:9px; font-weight:900; animation:blink 1.6s infinite;">NEW</div>` : ""}
         </div>
-        <div style="font-size:13px; color:#ddd; margin-top:6px; line-height:1.4;">${n.message}</div>
-        <div style="font-size:11px; color:#777; margin-top:10px;">${timeAgo(n.createdAt?.toDate())}</div>
+        <div style="font-size:10.5px; color:#666; margin-top:6px; opacity:0.8;">
+          ${timeAgo(n.createdAt?.toDate())}
+        </div>
       `;
 
       item.onclick = async () => {
@@ -1207,8 +1221,8 @@ async function loadNotifications() {
     });
 
   } catch (err) {
-    console.error("Notifications error:", err);
-    list.innerHTML = `<p style="color:#f66; text-align:center; padding:80px;">Failed to load</p>`;
+    console.error("Notifications failed:", err);
+    list.innerHTML = `<div style="color:#f66; text-align:center; padding:80px;">Failed to load</div>`;
   }
 }
 // Helper: time ago
