@@ -372,7 +372,15 @@ onAuthStateChanged(auth, async (firebaseUser) => {
     const holyColors = ["#FF1493", "#FFD700", "#00FFFF", "#FF4500", "#DA70D6", "#FF69B4", "#32CD32", "#FFA500", "#FF00FF"];
     const glow = holyColors[Math.floor(Math.random() * holyColors.length)];
 
-   showStarPopup(<div style="text-align:center;line-height:1.6;">Welcome back, <b style="font-size:13px;color:${divineColor};text-shadow:0 0 21px ${divineColor}77;">${currentUser.chatId.toUpperCase()}</b></div>);
+    showStarPopup(`
+      <div style="text-align:center;line-height:1.7;font-size:15px;">
+        Welcome back,<br>
+        <b style="font-size:18px;color:${glow};text-shadow:0 0 20px ${glow}88;">
+          ${currentUser.chatId.toUpperCase()}
+        </b>
+      </div>
+    `);
+
     console.log("YOU HAVE ENTERED THE ETERNAL CUBE");
 
   } catch (err) {
