@@ -3116,14 +3116,14 @@ confirmBtn.onclick = async () => {
   }
 }
 // ================================
-// UPLOAD HIGHLIGHT — FINAL ULTRA CLEAN 2025 VERSION
+// UPLOAD HIGHLIGHT — FINAL 2025 CLEAN VERSION (NO ERRORS)
 // ================================
 document.getElementById("uploadHighlightBtn")?.addEventListener("click", async () => {
   const btn       = document.getElementById("uploadHighlightBtn");
   const btnText   = btn.querySelector(".btn-text");
   const spinner   = btn.querySelector(".btn-spinner");
 
-  // Reset any previous state
+  // Reset button state (in case of previous upload)
   btn.disabled = false;
   btnText.classList.remove("hiding");
   spinner.classList.remove("spinning");
@@ -3142,12 +3142,12 @@ document.getElementById("uploadHighlightBtn")?.addEventListener("click", async (
   const price         = parseInt(document.getElementById("highlightPriceInput").value) || 0;
 
   // ——— VALIDATION ———
-  if (!title)          return showGiftAlert("Title is required", "error");
-  if (price < 10)      return showGiftAlert("Minimum price: 10 STRZ", "error");
+  if (!title)                     return showGiftAlert("Title is required", "error");
+  if (price < 10)                 return showGiftAlert("Minimum price: 10 STRZ", "error");
   if (!fileInput.files[0] && !videoUrlInput.value.trim())
-                       return showGiftAlert("Upload a file or paste a URL", "error");
+                                  return showGiftAlert("Upload a file or paste a URL", "error");
 
-  // ——— START UPLOAD: SHOW SPINNER ONLY ———
+  // ——— START UPLOAD → SHOW SPINNER ONLY ———
   btn.disabled = true;
   btnText.classList.add("hiding");
   spinner.classList.add("spinning");
@@ -3156,7 +3156,7 @@ document.getElementById("uploadHighlightBtn")?.addEventListener("click", async (
   try {
     let finalVideoUrl = videoUrlInput.value.trim();
 
-    // ——— FILE UPLOAD (if chosen) ———
+    // ——— FILE UPLOAD (if selected) ———
     if (fileInput.files[0]) {
       const file = fileInput.files[0];
       if (file.size > 500 * 1024 * 1024) {
@@ -3187,7 +3187,7 @@ document.getElementById("uploadHighlightBtn")?.addEventListener("click", async (
     showGiftAlert("CLIP LIVE — EARNING STARS!", "success");
     btnText.textContent = "Posted!";
     btn.style.background = "#00ff9d";
-    
+
     // Reset form
     fileInput.value = "";
     videoUrlInput.value = "";
@@ -3196,7 +3196,7 @@ document.getElementById("uploadHighlightBtn")?.addEventListener("click", async (
     document.getElementById("highlightPriceInput").value = "50";
     if (typeof loadMyClips === "function") loadMyClips();
 
-    // Back to normal after 1.8s
+    // Reset button after 1.8s
     setTimeout(resetButton, 1800);
 
   } catch (err) {
@@ -3215,119 +3215,67 @@ document.getElementById("uploadHighlightBtn")?.addEventListener("click", async (
   }
 });
 
-    // === SUCCESS ===
-    btn.classList.remove("uploading");
-    btnText.textContent = "Uploaded!";
-    btn.style.background = "linear-gradient(90deg, #00ff9d, #00cc7a)";
-    showGiftAlert("CLIP LIVE — EARNING STARS!", "success");
-
-    // Reset form
-    fileInput.value = "";
-    videoUrlInput.value = "";
-    document.getElementById("highlightTitleInput").value = "";
-    document.getElementById("highlightDescInput").value = "";
-    document.getElementById("highlightPriceInput").value = "50";
-
-    if (typeof loadMyClips === "function") loadMyClips();
-
-    // Reset button text after 2s
-    setTimeout(() => {
-      btnText.textContent = "Upload Highlight";
-      btn.style.background = ""; // back to original gradient
-      btn.disabled = false;
-    }, 2000);
-
-  } catch (err) {
-    console.error("Upload failed:", err);
-    showGiftAlert("Upload failed — try again", "error");
-    btn.classList.remove("uploading");
-    btn.disabled = false;
-  }
-});
-
+// --- Initial random values for first load ---
 (function() {
   const onlineCountEl = document.getElementById('onlineCount');
-  const storageKey = 'fakeOnlineCount';
-
+  const storageKey = 'lastOnlineCount';
+  
+  // Helper: format number as K if > 999
   function formatCount(n) {
-    if (n >= 1000000) return (n/1000000).toFixed(1) + 'M';
-    if (n >= 1000) return (n/1000).toFixed(n%1000===0 ? 0 : 1) + 'K';
+    if(n >= 1000) return (n/1000).toFixed(n%1000===0?0:1) + 'K';
     return n;
   }
+  
+  // Function to get a random starting value
+  function getRandomStart() {
+    const options = [100, 105, 405, 455, 364, 224];
+    return options[Math.floor(Math.random() * options.length)];
+  }
+  
+  
+  // Initialize count from storage or random
+  let count = parseInt(localStorage.getItem(storageKey)) || getRandomStart();
+  onlineCountEl.textContent = formatCount(count);
+  
+  // Increment pattern
+  const increments = [5,3,4,1];
+  let idx = 0;
 
-  // Start somewhere between 2500–3500
-  let count = parseInt(localStorage.getItem(storageKey)) || (2500 + Math.floor(Math.random() * 900));
-
-  function updateDisplay() {
+  // Random threshold to start decreasing (2K–5K)
+  let decreaseThreshold = 2000 + Math.floor(Math.random()*3000); 
+  
+  setInterval(() => {
+    if(count < 5000) {
+      // Occasionally spike
+      if(Math.random() < 0.05) {
+        count += Math.floor(Math.random()*500); 
+      } else {
+        count += increments[idx % increments.length];
+      }
+      if(count > 5000) count = 5000;
+      idx++;
+    }
     onlineCountEl.textContent = formatCount(count);
     localStorage.setItem(storageKey, count);
-  }
-  updateDisplay();
+    
+    // Reset threshold occasionally
+    if(count >= decreaseThreshold) {
+      decreaseThreshold = 2000 + Math.floor(Math.random()*3000);
+    }
+    
+  }, 4000);
 
-  let baseTrend = 0;
-
+  // Slow decrease every 30s if above threshold
   setInterval(() => {
-    const dice = Math.random();
-
-    if (dice < 0.45) {
-      // micro wiggles ±1–9
-      count += Math.floor(Math.random() * 19) - 9;
-    } 
-    else if (dice < 0.75) {
-      // small waves ±10–40
-      count += Math.floor(Math.random() * 61) - 30;
+    if(count > decreaseThreshold) {
+      count -= 10;
+      if(count < 500) count = 500;
+      onlineCountEl.textContent = formatCount(count);
+      localStorage.setItem(storageKey, count);
     }
-    else if (dice < 0.93) {
-      // medium surges +40 to +120
-      count += Math.floor(Math.random() * 81) + 40;
-    }
-    else if (dice < 0.98) {
-      // mini drop-offs -20 to -80
-      count -= Math.floor(Math.random() * 61) + 20;
-    }
-    else {
-      // rare viral spike +120 to +300
-      count += Math.floor(Math.random() * 181) + 120;
-      baseTrend = 1;
-    }
-
-    // Natural day-cycle influence
-    const hour = new Date().getHours();
-    if (hour >= 22 || hour < 7) baseTrend = -1;
-    else if (hour >= 12 && hour <= 14) baseTrend = 1;
-    else if (hour >= 18 && hour <= 21) baseTrend = 1;
-    else baseTrend = 0;
-
-    if (baseTrend === 1) count += Math.random() > 0.7 ? 3 : 1;
-    if (baseTrend === -1) count -= Math.random() > 0.7 ? 3 : 1;
-
-    // *** NEW RANGE LIMIT: 2000–5000 ***
-    const MIN = 2000;
-    const MAX = 5000;
-
-    if (count < MIN) count = MIN + Math.floor(Math.random() * 150);
-    if (count > MAX) count = MAX - Math.floor(Math.random() * 100);
-
-    // avoid perfect 1000s
-    if (count % 1000 === 0 && Math.random() < 0.9) {
-      count += Math.floor(Math.random() * 80) - 40;
-    }
-
-    updateDisplay();
-
-  }, 3500 + Math.floor(Math.random() * 2000));
-
-  // slow drift reset every 5 mins
-  setInterval(() => {
-    const drift = Math.floor(Math.random() * 300) - 150;
-    const MIN = 2000;
-    const MAX = 5000;
-
-    count = Math.max(MIN, Math.min(MAX, count + drift));
-    updateDisplay();
-  }, 5 * 60 * 1000);
-
+  }, 30000);
 })();
+
 
 
 document.addEventListener("DOMContentLoaded", () => {
