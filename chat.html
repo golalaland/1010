@@ -2202,15 +2202,10 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   </div>
 </div>
 
- <!-- Upload Button — 2025 PRO EDITION -->
 <div style="text-align:center;">
   <button id="uploadHighlightBtn" style="
     position:relative;
-    display:inline-flex;
-    align-items:center;
-    justify-content:center;
-    gap:10px;
-    padding:10px 28px;
+    padding:10px 32px;
     background:linear-gradient(90deg,#ff2e78,#ff5e2e);
     color:#fff;
     border:none;
@@ -2221,32 +2216,34 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
     letter-spacing:0.4px;
     overflow:hidden;
     transition:all 0.3s ease;
-    min-width:110px;
   "
   onmouseover="this.style.opacity='0.9'"
   onmouseout="this.style.opacity='1'">
     
     <span class="btn-text">Post</span>
     
-    <!-- Tiny spinner inside button -->
     <div class="btn-spinner" style="
-      width:16px;
-      height:16px;
-      border:2px solid transparent;
+      position:absolute;
+      top:50%; left:50%;
+      transform:translate(-50%,-50%);
+      width:18px; height:18px;
+      border:2.5px solid transparent;
       border-top-color:#fff;
       border-radius:50%;
-      animation:spin 0.8s linear infinite;
       opacity:0;
-      transition:opacity 0.25s;
     "></div>
   </button>
 </div>
 
-<!-- Spin animation -->
 <style>
   @keyframes spin {
-    to { transform: rotate(360deg); }
+    to { transform: translate(-50%,-50%) rotate(360deg); }
   }
+  .btn-spinner.spinning {
+    opacity:1;
+    animation: spin 0.8s linear infinite;
+  }
+  .btn-text.hiding { opacity:0; }
 </style>
 
     <!-- Old status div → replaced with this (optional, can fully delete) -->
