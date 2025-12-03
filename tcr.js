@@ -3140,16 +3140,16 @@ document.getElementById("uploadHighlightBtn")?.addEventListener("click", async (
   const price         = parseInt(document.getElementById("highlightPriceInput").value) || 0;
 
   // ——— VALIDATION ———
-  if (!title)                     return showGiftAlert("Title is required", "error");
-  if (price < 10)                 return showGiftAlert("Minimum price: 10 STRZ", "error");
+  if (!title)                     return showStarPopup("Title is required", "error");
+  if (price < 10)                 return showStarPopup("Minimum price: 10 STRZ", "error");
   if (!fileInput.files[0] && !videoUrlInput.value.trim())
-                                  return showGiftAlert("Upload a file or paste a URL", "error");
+                                  return showStarPopup("Upload a file or paste a URL", "error");
 
   // ——— START UPLOAD → BLANK BUTTON ———
   btn.disabled = true;
   btn.classList.add("uploading");
   btn.textContent = ""; // ← BLANK IT OUT
-  showGiftAlert("Uploading your highlight...", "loading");
+  showStarPopup("Uploading your highlight...", "loading");
 
   try {
     let finalVideoUrl = videoUrlInput.value.trim();
@@ -3182,7 +3182,7 @@ document.getElementById("uploadHighlightBtn")?.addEventListener("click", async (
     });
 
     // ——— SUCCESS ———
-    showGiftAlert("CLIP LIVE — EARNING STARS!", "success");
+   showStarPopup("CLIP LIVE — EARNING STARS!", "success");
     btn.textContent = "Posted!";
     btn.style.background = "#00ff9d";
 
@@ -3199,7 +3199,7 @@ document.getElementById("uploadHighlightBtn")?.addEventListener("click", async (
 
   } catch (err) {
     console.error("Upload failed:", err);
-    showGiftAlert("Upload failed — try again", "error");
+   showStarPopup("Upload failed — try again", "error");
     resetButton();
   }
 
