@@ -839,12 +839,12 @@ function renderMessagesFromArray(messages) {
     wrapper.className = "msg";
     wrapper.id = id;
 
-    // === BANNER MESSAGES ===
-    if (m. || m.isBanner || m.type === "banner") {
-      // Keep your existing banner code here if any
-      refs.messagesEl.appendChild(wrapper);
-      return;
-    }
+  // === BANNER MESSAGES ===
+if (m.isBanner || m.type === "banner" || m.systemBanner) {
+  // Your existing banner rendering code
+  refs.messagesEl.appendChild(wrapper);
+  return;
+}
 
     // === USERNAME — NOW TAPABLE & OPENS SOCIAL CARD ===
   const metaEl = document.createElement("span");
