@@ -1296,144 +1296,123 @@ document.addEventListener("DOMContentLoaded", () => {
 
 });
 
-document.addEventListener('DOMContentLoaded', () => {
-  const smModal       = document.getElementById('sm-modal');
-  const smOpenBtn     = document.getElementById('starMarketBtn');
-  const smCloseBtn    = document.querySelector('.sm-close');
-  const smListings    = document.getElementById('sm-listings-container');
-  const smMyListings  = document.getElementById('sm-my-listings');
-  const smUserStars   = document.getElementById('sm-user-stars');
-
-  if (!smModal || !smOpenBtn) return;
-
-  smOpenBtn.onclick = () => {
-    smModal.style.display = 'flex';
-    smUserStars.textContent = (currentUser?.stars || 0).toLocaleString();
-    loadBuyTab();
-    loadSellTab();
-    switchToTab('buy');
-  };
-
-  smCloseBtn.onclick = () => smModal.style.display = 'none';
-  smModal.onclick = e => { if (e.target === smModal) smModal.style.display = 'none'; };
-
-  // Tab switching
-  document.querySelectorAll('.sm-tab-btn').forEach(btn => {
-    btn.onclick = () => {
-      document.querySelectorAll('.sm-tab-btn').forEach(b => b.classList.remove('sm-active'));
-      document.querySelectorAll('.sm-tab-content').forEach(c => c.classList.remove('sm-active'));
-      btn.classList.add('sm-active');
-      document.getElementById('sm-' + btn.dataset.tab + '-tab').classList.add('sm-active');
-    };
-  });
-
-  function switchToTab(tab) {
-    document.querySelector(`.sm-tab-btn[data-tab="${tab}"]`).click();
-  }
-
-  // BUY TAB
-  async function loadBuyTab() {
-    smListings.innerHTML = '<p class="sm-empty">Loading...</p>';
-    try {
-      const q = query(collection(db, "starListings"), where("status", "==", "active"), orderBy("createdAt", "desc"));
-      const snap = await getDocs(q);
-      smListings.innerHTML = '';
-
-      let hasAny = false;
-      snap.forEach(doc => {
-        const d = doc.data();
-        if (d.sellerId === currentUser?.uid) return;
-        hasAny = true;
-
-        const div = document.createElement('div');
-        div.className = 'sm-listing';
-        div.innerHTML = `
-          <div>
-            <strong>STRZ ${d.amount} for ₦${d.price.toLocaleString()}</strong>
-            <div class="seller">Seller: <strong>${d.sellerName || 'Anonymous'}</strong></div>
-          </div>
-          <button class="sm-buy-btn" data-id="${doc.id}" data-amt="${d.amount}" data-price="${d.price}">
-            Buy Now
-          </button>
-        `;
-        smListings.appendChild(div);
-      });
-
-      if (!hasAny) smListings.innerHTML = '<p class="sm-empty">No stars for sale right now</p>';
-
-      // Buy buttons
-      smListings.querySelectorAll('.sm-buy-btn').forEach(btn => {
-        btn.onclick = () => {
-          showNiceAlert(`Buy ${btn.dataset.amt} stars for ₦${Number(btn.dataset.price).toLocaleString()}?`, {
-            confirm: true,
-            onConfirm: () => showNiceAlert("Purchase successful! (Real version soon) Star")
-          });
-        };
-      });
-
-    } catch (e) { console.error(e); smListings.innerHTML = '<p class="sm-empty">Error loading</p>'; }
-  }
-
-  // SELL TAB
-  async function loadSellTab() {
-    smMyListings.innerHTML = '';
-    try {
-      const q = query(collection(db, "starListings"), where("sellerId", "==", currentUser?.uid), where("status", "==", "active"));
-      const snap = await getDocs(q);
-
-      if (snap.empty) {
-        smMyListings.innerHTML = '<p class="sm-empty">You have no active listings</p>';
-        return;
-      }
-
-      snap.forEach(doc => {
-        const d = doc.data();
-        const div = document.createElement('div');
-        div.className = 'sm-listing';
-        div.innerHTML = `
-          <div>
-            <strong>STRZ ${d.amount} for ₦${d.price.toLocaleString()}</strong>
-            <div class="seller">Seller: <strong>You</strong></div>
-          </div>
-          <button class="sm-cancel-btn" data-id="${doc.id}">Cancel</button>
-        `;
-        smMyListings.appendChild(div);
-      });
-
-      smMyListings.querySelectorAll('.sm-cancel-btn').forEach(btn => {
-        btn.onclick = () => {
-          showNiceAlert("Cancel listing and get stars back?", {
-            confirm: true,
-            onConfirm: async () => {
-              await deleteDoc(doc(db, "starListings", btn.dataset.id));
-              showNiceAlert("Cancelled! Stars returned Star");
-              loadSellTab(); loadBuyTab();
-            }
-          });
-        };
-      });
-
-    } catch (e) { smMyListings.innerHTML = '<p class="sm-empty">Error</p>'; }
-  }
-
-  // LIST FOR SALE BUTTON
-  document.getElementById('sm-list-btn')?.addEventListener('click', async () => {
-    const amount = Number(document.getElementById('sm-sell-amount').value);
-    const price = Number(document.getElementById('sm-sell-price').value);
-
-    if (!amount || amount < 100 || amount % 100 !== 0) return showNiceAlert("Minimum 100 stars, multiples of 100 only");
-    if (!price || price < 50) return showNiceAlert("Price too low");
-    if ((currentUser?.stars || 0) < amount) return showNiceAlert("Not enough stars!");
-
-    showNiceAlert(`List ${amount} stars for ₦${price.toLocaleString()}?`, {
-      confirm: true,
-      onConfirm: async () => {
-        // Real listing code here (same as before)
-        showNiceAlert("Listed successfully! Star");
-      }
-    });
-  });
+// OPEN STAR MARKET
+document.getElementById('starMarketBtn')?.addEventListener('click', () => {
+  document.getElementById('starMarketModal').style.display = 'flex';
+  updateBankDisplay();
 });
+
+document.getElementById('closeStarMarket')?.addEventListener('click', () => {
+  document.getElementById('starMarketModal').style.display = 'none';
+});
+
+// UPDATE BALANCES
+function updateBankDisplay() {
+  const name = currentUser?.chatId || currentUser?.email?.split('@')[0] || "Player";
+  const cash = currentUser?.cash || 0;
+  const stars = currentUser?.stars || 0;
+
+  document.getElementById('bankUsername').textContent = name;
+  document.getElementById('bankCash').textContent = cash.toLocaleString();
+  document.getElementById('bankStars').textContent = stars.toLocaleString();
+
+  const amountInput = document.getElementById('withdrawAmount');
+  const btn = document.getElementById('withdrawBtn');
+
+  amountInput.value = '';
+  btn.style.opacity = cash >= 5000 ? "1" : "0.5";
+  btn.style.cursor = cash >= 5000 ? "pointer" : "not-allowed";
+  btn.disabled = cash < 5000;
+}
+
+// WITHDRAW LOGIC
+document.getElementById('withdrawBtn')?.addEventListener('click', () => {
+  const amount = parseInt(document.getElementById('withdrawAmount').value);
+  if (!amount || amount < 5000 || amount > currentUser.cash) {
+    alert("Invalid amount! Minimum ₦5,000");
+    return;
+  }
+
+  // RE-USE YOUR EXISTING CONFIRM MODAL
+  document.querySelector('#confirmBidModal h3').textContent = "WITHDRAW ₦" + amount.toLocaleString() + "?";
+  document.querySelector('#confirmBidModal p').innerHTML = `
+    This sends your withdrawal request.<br>
+    <strong>Processing: 1–3 days</strong><br><br>
+    <em style="color:#00ff88;">Want it faster?</em>
+  `;
+
+  document.getElementById('finalConfirmBtn').textContent = "PROCESS (FREE)";
+  document.getElementById('finalCancelBtn').innerHTML = "FAST TRACK<br><small style='opacity:0.8;'>(21 STRZ)</small>";
+
+  document.getElementById('confirmBidModal').style.display = 'flex';
+
+  // FREE PROCESS
+  document.getElementById('finalConfirmBtn').onclick = () => processWithdrawal(amount, false);
+
+  // FAST TRACK
+  document.getElementById('finalCancelBtn').onclick = () => {
+    if (currentUser.stars < 21) {
+      alert("Not enough STRZ for Fast Track!");
+      return;
+    }
+    processWithdrawal(amount, true);
+  };
+});
+
+async function processWithdrawal(amount, isFastTrack = false) {
+  document.getElementById('confirmBidModal').style.display = 'none';
+
+  const userRef = doc(db, "users", currentUser.uid);
+  const withdrawalRef = doc(collection(db, "withdrawals"));
+
+  try {
+    await runTransaction(db, async (t) => {
+      const userSnap = await t.get(userRef);
+      const userData = userSnap.data();
+
+      if (userData.cash < amount) throw "Insufficient funds";
+      if (isFastTrack && userData.stars < 21) throw "Not enough STRZ";
+
+      t.update(userRef, {
+        cash: userData.cash - amount,
+        stars: isFastTrack ? userData.stars - 21 : userData.stars,
+        updatedAt: serverTimestamp()
+      });
+
+      t.set(withdrawalRef, {
+        uid: currentUser.uid,
+        username: currentUser.chatId || currentUser.email.split('@')[0],
+        amount: amount,
+        status: isFastTrack ? "fast_track" : "pending",
+        requestedAt: serverTimestamp(),
+        processed: false,
+        method: "bank_transfer",
+        note: isFastTrack ? "User paid 21 STRZ for priority" : "Standard processing"
+      });
+    });
+
+    // Update local
+    currentUser.cash -= amount;
+    if (isFastTrack) currentUser.stars -= 21;
+
+    updateBankDisplay();
+    triggerConfetti();
+
+    // SUCCESS MESSAGE
+    alert(isFastTrack 
+      ? "FAST TRACK ACTIVATED! ₦" + amount.toLocaleString() + " sent for priority processing! Check Telegram in 1hr" 
+      : "Withdrawal request sent! ₦" + amount.toLocaleString() + " processing in 1–3 days");
+
+    // FAST TRACK → AUTO OPEN TELEGRAM
+    if (isFastTrack) {
+      const msg = encodeURIComponent(`I just processed my withdrawal of ₦${amount.toLocaleString()}, please help fast track! @${currentUser.chatId || 'user'}`);
+      window.open(`https://t.me/your_support_username?text=${msg}`, '_blank');
+    }
+
+  } catch (err) {
+    alert("Withdrawal failed: " + err);
+  }
+}
 
 /* ============================================================
    TAPMASTER CORE — CLEAN, MODERN, FULLY WORKING (2025+)
