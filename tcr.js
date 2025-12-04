@@ -1549,51 +1549,45 @@ function sanitizeKey(email) {
   window.typeWriterEffect = typeWriterEffect;
 
 })(); 
+
 async function sendStarsToUser(targetUser, amt) {
   if (amt < 100 || !currentUser?.uid) {
     showGoldAlert("Invalid gift", 4000);
     return;
   }
 
-  // UNIVERSAL ID — WORKS FOR VIP, HOST, REGULAR
-  let receiverId;
-  if (targetUser.uid && (targetUser.isVIP || targetUser.isHost || targetUser.uid.length > 20)) {
-    receiverId = targetUser.uid;
-  } else if (targetUser.email) {
-    receiverId = targetUser.email.replace(/[.@/\\]/g, '_');
-  } else if (targetUser._docId) {
-    receiverId = targetUser._docId;
-  } else {
-    showGoldAlert("User not found", 4000);
-    return;
-  }
+  const sanitize = (email) => email?.toLowerCase().replace(/[.@/\\]/g, '_');
+  const senderId   = sanitize(currentUser.email);
+  const receiverId = sanitize(targetUser.email);
 
-  if (receiverId === currentUser.uid) {
+  if (!receiverId || senderId === receiverId) {
     showGoldAlert("Can't gift yourself", 4000);
     return;
   }
 
-  console.log("Sending gift → FROM:", currentUser.uid, "TO:", receiverId, "(", targetUser.chatId, ")");
-
-  const fromRef = doc(db, "users", currentUser.uid);
-  const toRef = doc(db, "users", receiverId);
+  const fromRef = doc(db, "users", senderId);
+  const toRef   = doc(db, "users", receiverId);
   const glowColor = randomColor();
 
   try {
     await runTransaction(db, async (tx) => {
       const senderSnap = await tx.get(fromRef);
-      if (!senderSnap.exists() || (senderSnap.data().stars || 0) < amt) {
-        throw "Not enough stars";
-      }
+      if (!senderSnap.exists()) throw "Profile missing";
+      if ((senderSnap.data().stars || 0) < amt) throw "Not enough stars";
+
       const receiverSnap = await tx.get(toRef);
       if (!receiverSnap.exists()) {
-        tx.set(toRef, { chatId: targetUser.chatId || "User", stars: 0 }, { merge: true });
+        tx.set(toRef, {
+          chatId: targetUser.chatId || "User",
+          email: targetUser.email,
+          stars: 0
+        }, { merge: true });
       }
+
       tx.update(fromRef, { stars: increment(-amt), starsGifted: increment(amt) });
-      tx.update(toRef, { stars: increment(amt) });
+      tx.update(toRef,   { stars: increment(amt) });
     });
 
-    // Banner
     const bannerMsg = {
       content: `${currentUser.chatId} gifted ${amt} stars to ${targetUser.chatId}!`,
       timestamp: serverTimestamp(),
@@ -1602,6 +1596,7 @@ async function sendStarsToUser(targetUser, amt) {
       buzzColor: glowColor,
       type: "banner"
     };
+
     const docRef = await addDoc(collection(db, "messages_room5"), bannerMsg);
     renderMessagesFromArray([{ id: docRef.id, data: () => bannerMsg }], true);
 
@@ -1612,13 +1607,14 @@ async function sendStarsToUser(targetUser, amt) {
 
     showGoldAlert(`You sent ${amt} stars to ${targetUser.chatId}!`, 4000);
 
-    await updateDoc(toRef, { lastGift: { from: currentUser.chatId, amt, at: Date.now() } });
+    await updateDoc(toRef, {
+      lastGift: { from: currentUser.chatId, amt, at: Date.now() }
+    });
 
-    // NOTIFICATION
     await addDoc(collection(db, "notifications"), {
       recipientId: receiverId,
-      title: "Star Gift!",
-      message: `${currentUser.chatId} sent you ${amt} stars!`,
+      title: "Star Gift Received!",
+      message: `${currentUser.chatId} gifted you ${amt} stars!`,
       type: "starGift",
       fromChatId: currentUser.chatId,
       amount: amt,
@@ -1628,10 +1624,11 @@ async function sendStarsToUser(targetUser, amt) {
     await updateDoc(doc(db, "messages_room5", docRef.id), { bannerShown: true });
 
   } catch (err) {
-    console.error("Gift failed:", err);
-    showGoldAlert("Gift failed", 4000);
+    console.error("sendStarsToUser failed:", err);
+    showGoldAlert("Gift failed — try again", 4000);
   }
 }
+
 /* ===============================
    FINAL VIP LOGIN SYSTEM — 100% WORKING
    Google disabled | VIP button works | Safe auto-login
