@@ -1550,7 +1550,7 @@ function sanitizeKey(email) {
 
 })(); 
 // ← ONLY ONE OF THESE — THE FINAL SEAL
-
+console.log("TARGET USER OBJECT:", targetUser);
 async function sendStarsToUser(targetUser, amt) {
   if (amt < 100 || !currentUser?.uid) {
     showGoldAlert("Invalid gift", 4000);
