@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>cube.xixi.live • Go Live. Own Your Vibe.</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;500;700;900&family=Orbitron:wght@900&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+  <style>
+    :root {
+      --pink: #ff00a5;
+      --hot: #ff2ec1;
+      --gold: #fdb813;
+      --deepgold: #e09d00;
+      --black: #0a0010;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      background: #000;
+      color: white;
+      font-family: 'Inter', sans-serif;
+      overflow-x: hidden;
+    }
+
+    /* Floating Particles */
+    #particles {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 1;
+    }
+    .particle {
+      position: absolute;
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: linear-gradient(45deg, var(--pink), var(--gold));
+      box-shadow: 0 0 25px var(--hot);
+      animation: float 16s infinite linear;
+    }
+    @keyframes float {
+      0% { transform: translateY(100vh) scale(0); opacity: 0; }
+      15% { opacity: 1; }
+      85% { opacity: 0.9; }
+      100% { transform: translateY(-100px) translateX(60px) scale(1.2); opacity: 0; }
+    }
+
+    /* Hero with Cube Canvas */
+    .hero {
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      z-index: 2;
+      background: radial-gradient(circle at 40% 60%, rgba(255,0,165,0.25) 0%, transparent 55%),
+                  radial-gradient(circle at 70% 40%, rgba(253,184,19,0.15) 0%, transparent 45%);
+    }
+    #cube-canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+    }
+    .hero-content {
+      text-align: center;
+      z-index: 3;
+    }
+    .logo {
+      font-family: 'Orbitron', sans-serif;
+      font-size: clamp(4rem, 12vw, 10rem);
+      font-weight: 900;
+      background: linear-gradient(135deg, var(--pink), var(--gold), var(--hot));
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 0 0 90px rgba(255,0,165,0.8);
+      margin-bottom: 1rem;
+    }
+    .tagline {
+      font-size: 2.2rem;
+      background: linear-gradient(90deg, var(--gold), var(--pink));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 3rem;
+    }
+    .cta, .waitlist {
+      padding: 1.4rem 4rem;
+      font-size: 1.6rem;
+      font-weight: 700;
+      border: none;
+      border-radius: 60px;
+      cursor: pointer;
+      transition: all 0.4s ease;
+      position: relative;
+      overflow: hidden;
+      margin: 0 1rem;
+    }
+    .cta {
+      background: linear-gradient(135deg, var(--pink), var(--hot));
+      color: white;
+      box-shadow: 0 15px 50px rgba(255,0,165,0.6);
+    }
+    .waitlist {
+      background: linear-gradient(135deg, var(--gold), var(--deepgold));
+      color: #000;
+      box-shadow: 0 15px 50px rgba(253,184,19,0.5);
+      font-weight: 900;
+    }
+    .cta:hover, .waitlist:hover {
+      transform: translateY(-12px) scale(1.08);
+      box-shadow: 0 30px 80px rgba(255,0,165,0.9);
+    }
+    .waitlist:hover { box-shadow: 0 30px 80px rgba(253,184,19,0.9); color: white; }
+
+    /* Features */
+    .features {
+      padding: 150px 10%;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 3rem;
+      position: relative;
+      z-index: 2;
+    }
+    .card {
+      background: rgba(20,0,30,0.5);
+      backdrop-filter: blur(25px);
+      border: 1px solid rgba(255,0,165,0.3);
+      border-radius: 24px;
+      padding: 2.5rem;
+      text-align: center;
+      transition: all 0.4s ease;
+    }
+    .card:hover {
+      transform: translateY(-25px) rotateX(5deg);
+      border-color: var(--gold);
+      box-shadow: 0 25px 70px rgba(253,184,19,0.3);
+    }
+    .card h3 {
+      font-size: 1.8rem;
+      margin: 1.5rem 0;
+      background: linear-gradient(135deg, #ff69e0, var(--gold));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    /* Scrolling Picture Frames (Orbiting the Cube Vibe) */
+    .gallery {
+      padding: 150px 8%;
+      position: relative;
+      z-index: 2;
+    }
+    .frames {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 4rem;
+      perspective: 2000px;
+    }
+    .frame {
+      position: relative;
+      border-radius: 24px;
+      overflow: hidden;
+      aspect-ratio: 9/16;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.9);
+      transform-style: preserve-3d;
+    }
+    .frame::before {
+      content: '';
+      position: absolute;
+      inset: -12px;
+      background: linear-gradient(45deg, var(--pink), var(--gold), transparent, var(--hot));
+      background-size: 400% 400%;
+      z-index: -1;
+      filter: blur(25px);
+      opacity: 0.8;
+      animation: borderGlow 6s infinite linear;
+    }
+    .frame img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.7s ease;
+    }
+    .frame:hover img {
+      transform: scale(1.15) rotate(3deg);
+    }
+    @keyframes borderGlow {
+      0%,100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+    }
+
+    /* Cube Vault Footer */
+    footer {
+      background: linear-gradient(to top, var(--black), transparent),
+                  url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320"><path fill="%23fdb81330" d="M0,96L48,112C96,128,192,160,288,160C384,160,480,128,576,112C672,96,768,96,864,112C960,128,1056,160,1152,160C1248,160,1344,128,1392,112L1440,96L1440,320L0,320Z"></path></svg>') bottom no-repeat;
+      background-size: cover;
+      padding: 200px 10% 100px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .vault {
+      font-family: 'Orbitron', sans-serif;
+      font-size: clamp(3.5rem, 9vw, 8rem);
+      background: linear-gradient(135deg, var(--gold), #fff, var(--deepgold));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 0 0 100px rgba(253,184,19,0.7);
+      margin-bottom: 2rem;
+    }
+    .vault-sub {
+      font-size: 2rem;
+      background: linear-gradient(90deg, var(--gold), var(--pink));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 4rem;
+    }
+    .socials a {
+      font-size: 3.5rem;
+      margin: 0 2rem;
+      color: var(--gold);
+      transition: all 0.4s;
+    }
+    .socials a:hover {
+      color: white;
+      transform: scale(1.5) rotate(15deg);
+      text-shadow: 0 0 50px var(--gold);
+    }
+  </style>
+</head>
+<body>
+
+  <div id="particles"></div>
+
+  <!-- HERO WITH 3D CUBE -->
+  <section class="hero">
+    <canvas id="cube-canvas"></canvas>
+    <div class="hero-content">
+      <h1 class="logo">cube.xixi</h1>
+      <p class="tagline">Go Live. Own Your Vibe.<br>Powered by Gold-Backed $STRZ</p>
+      <div>
+        <button class="cta" onclick="alert('Cube activated – streaming chaos incoming 🔥')">Go Live Now</button>
+        <button class="waitlist" onclick="alert('Cube vault unlocked. Waitlist spot claimed 🏆')">Join the Waitlist</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section class="features">
+    <div class="card">
+      <h3>Instant Streaming</h3>
+      <p>Zero lag, 4K, and that signature xixi glow. Go live in one tap.</p>
+    </div>
+    <div class="card">
+      <h3>Real Rewards</h3>
+      <p>Earn $STRZ, unlock spicy content, and climb the xixi throne.</p>
+    </div>
+    <div class="card">
+      <h3>Wild Community</h3>
+      <p>Chat that moves as fast as you do. Emotes, raids, and pure chaos.</p>
+    </div>
+  </section>
+
+  <!-- SCROLLING FRAMES GALLERY -->
+  <section class="gallery">
+    <div class="frames">
+      <div class="frame"><img src="https://images.unsplash.com/photo-1614680376739-5ab870d9d3b9?w=800" alt="Creator Vibes"></div>
+      <div class="frame"><img src="https://images.unsplash.com/photo-1573164574232-14f8e3a96c4f?w=800" alt="Stream Chaos"></div>
+      <div class="frame"><img src="https://images.unsplash.com/photo-1594736797933-d0501ba2fe65?w=800" alt="$STRZ Gold"></div>
+      <div class="frame"><img src="https://images.unsplash.com/photo-1511512578047-dfb367046420?w=800" alt="Live Crown"></div>
+      <div class="frame"><img src="https://images.unsplash.com/photo-1622977257808-1ed2e8e0487b?w=800" alt="Influencer Orbit"></div>
+      <div class="frame"><img src="https://images.unsplash.com/photo-1594737625797-7d19c0384a9c?w=800" alt="Cube Realm"></div>
+    </div>
+  </section>
+
+  <!-- CUBE VAULT FOOTER -->
+  <footer>
+    <div class="vault">$STRZ CUBE VAULT</div>
+    <p class="vault-sub">Gold-Backed Currency • Influencer-Owned Rooms • Infinite Rotations</p>
+    <div class="socials">
+      <a href="#">✕</a>
+      <a href="#">💎</a>
+      <a href="#">🏆</a>
+      <a href="#">🔥</a>
+    </div>
+    <p style="margin-top:4rem; opacity:0.7;">© 2025 cube.xixi.live • Spin the future. The money is gold. The vibes are cubed.</p>
+  </footer>
+
+  <script>
+    // Particles
+    for(let i = 0; i < 120; i++) {
+      const p = document.createElement('div');
+      p.classList.add('particle');
+      p.style.left = Math.random() * 100 + 'vw';
+      p.style.animationDelay = Math.random() * 16 + 's';
+      p.style.animationDuration = 10 + Math.random() * 12 + 's';
+      document.getElementById('particles').appendChild(p);
+    }
+
+    // 3D Cube Setup (Three.js)
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('cube-canvas'), alpha: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setClearColor(0x000000, 0);
+
+    const geometry = new THREE.BoxGeometry(2, 2, 2);
+    const material = new THREE.MeshBasicMaterial({ 
+      color: 0xff00a5, 
+      wireframe: true,
+      transparent: true,
+      opacity: 0.8
+    });
+    const cube = new THREE.Mesh(geometry, material);
+    scene.add(cube);
+
+    // Gold-Pink Gradient Faces
+    const faceMaterial = new THREE.MeshBasicMaterial({ 
+      color: 0xfdb813, 
+      transparent: true, 
+      opacity: 0.6 
+    });
+    const faces = [
+      new THREE.Mesh(new THREE.PlaneGeometry(2, 2), faceMaterial.clone()),
+      new THREE.Mesh(new THREE.PlaneGeometry(2, 2), faceMaterial.clone()),
+      new THREE.Mesh(new THREE.PlaneGeometry(2, 2), faceMaterial.clone()),
+      new THREE.Mesh(new THREE.PlaneGeometry(2, 2), faceMaterial.clone()),
+      new THREE.Mesh(new THREE.PlaneGeometry(2, 2), faceMaterial.clone()),
+      new THREE.Mesh(new THREE.PlaneGeometry(2, 2), faceMaterial.clone())
+    ];
+    faces[0].position.z = 1.01; faces[1].position.z = -1.01;
+    faces[2].position.x = 1.01; faces[3].position.x = -1.01;
+    faces[4].rotation.x = Math.PI / 2; faces[4].position.y = 1.01;
+    faces[5].rotation.x = -Math.PI / 2; faces[5].position.y = -1.01;
+    faces.forEach(face => { scene.add(face); face.material.color.setHex(0xff00a5 + Math.random() * 0x800000); });
+
+    camera.position.z = 5;
+
+    function animateCube() {
+      requestAnimationFrame(animateCube);
+      cube.rotation.x += 0.005; cube.rotation.y += 0.01;
+      faces.forEach((face, i) => { face.rotation.x += 0.003; face.rotation.y += 0.007; });
+      renderer.render(scene, camera);
+    }
+    animateCube();
+
+    // Resize Handler
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    // GSAP Animations
+    gsap.from('.logo', { y: 140, opacity: 0, duration: 1.8, ease: 'power4.out' });
+    gsap.from('.tagline', { y: 100, opacity: 0, delay: 0.7, duration: 1.5 });
+    gsap.from('.cta', { scale: 0, opacity: 0, delay: 1.3, duration: 1, ease: 'back.out(1.8)' });
+    gsap.from('.waitlist', { scale: 0, opacity: 0, delay: 1.5, duration: 1, ease: 'back.out(2)' });
+
+    gsap.utils.toArray('.card').forEach((card, i) => {
+      gsap.from(card, {
+        y: 250,
+        opacity: 0,
+        duration: 1.2,
+        delay: i * 0.25,
+        scrollTrigger: { trigger: '.features', start: 'top 75%' }
+      });
+    });
+
+    // Parallax Frames + Cube Tie-In
+    gsap.utils.toArray('.frame').forEach((frame, i) => {
+      gsap.to(frame, {
+        y: -200,
+        rotationY: i % 2 === 0 ? 20 : -20,
+        rotationX: 15,
+        ease: "none",
+        scrollTrigger: {
+          trigger: ".gallery",
+          start: "top bottom",
+          end: "bottom top",
+          scrub: 2
+        }
+      });
+      // Link to cube rotation on hover
+      frame.addEventListener('mouseenter', () => { cube.rotation.y += 0.5; });
+    });
+
+    // Cube Interaction
+    document.querySelector('.hero').addEventListener('mousemove', (e) => {
+      const mouseX = (e.clientX / window.innerWidth) * 2 - 1;
+      const mouseY = -(e.clientY / window.innerHeight) * 2 + 1;
+      gsap.to(cube.rotation, { y: mouseX * 0.5, x: mouseY * 0.5, duration: 1 });
+    });
+  </script>
+</body>
+</html>
