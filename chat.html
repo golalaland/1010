@@ -1921,14 +1921,31 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
     <h3 id="hostPanelTitle">Loading...</h3>
 
     <!-- 🧭 TAB HEADER -->
-    <!-- TAB HEADER — RED BADGE ON NOTIFICATIONS BUTTON -->
-<div class="tab-header" style="display:flex; gap:12px; padding:16px 0; border-bottom:1px solid #333; position:relative;">
-  <button class="tab-btn active" data-tab="mediaTab">Profile</button>
+   <!-- TAB HEADER -->
+<div class="tab-header" style="display:flex; gap:12px; padding:12px; border-bottom:1px solid #333;">
+  <button class="tab-btn" data-tab="mediaTab">Profile</button>
   <button class="tab-btn" data-tab="infoTab">Tools</button>
- <button class="tab-btn" data-tab="notificationsTab" style="position:relative; padding:10px 16px;">
-  Notifications
-  <span id="notif-badge"></span>
-</button>
+  <button id="notificationsTabBtn" class="tab-btn" data-tab="notificationsTab" style="position:relative;">
+    Notifications
+    <span id="notif-badge" style="
+      position:absolute; top:-8px; right:-10px;
+      background:#ff006e; color:#fff; font-size:10px; font-weight:900;
+      width:20px; height:20px; border-radius:50%;
+      display:none; align-items:center; justify-content:center;
+      box-shadow:0 0 16px #ff006e88;
+      animation:pulse 2s infinite;
+    ">0</span>
+  </button>
+</div>
+
+<!-- NOTIFICATIONS TAB -->
+<div id="notificationsTab" class="tab-content" style="display:none; max-height:400px; overflow-y:auto;">
+  <div style="padding:8px 12px 4px; text-align:right;">
+    <button id="markAllRead" style="font-size:11px; padding:5px 9px; background:#333; color:#aaa; border:none; border-radius:6px;">Mark all read</button>
+  </div>
+  <div id="notificationsList" style="padding:0 8px;">
+    <!-- Items will appear here -->
+  </div>
 </div>
 
     <!-- 🎥 MEDIA TAB -->
@@ -2295,27 +2312,6 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
         <!-- Messages or host-specific info will be dynamically loaded here -->
       </div>
     </div>
-  </div>
-</div>
-
-<!-- NOTIFICATIONS TAB — MINIMAL & DOPE -->
-<div id="notificationsTab" class="tab-content" style="display:none; max-height:400px; overflow-y:auto;">
-  
-  <!-- Tiny header: just the button, floating right -->
-  <div style="padding:12px 16px; display:flex; justify-content:flex-end; border-bottom:1px solid #333;">
-    <button id="markAllRead" class="themed-btn small" style="
-      font-size:12px; padding:6px 12px; opacity:0.9;
-    ">Mark all as read</button>
-  </div>
-
-<!-- 🔔 NOTIFICATIONS TAB — CLEAN, NO BADGE INSIDE -->
-<div id="notificationsTab" class="tab-content" style="display:none; max-height:400px; overflow-y:auto;">
-  <div class="notifications-header">
-    <h3>Notifications</h3>
-    <button id="markAllRead" class="themed-btn small">Mark all as read</button>
-  </div>
-  <div id="notificationsList" class="notifications-list">
-    <p style="opacity:0.7;">No new notifications yet.</p>
   </div>
 </div>
 
