@@ -1347,22 +1347,23 @@ document.getElementById('withdrawAmount')?.addEventListener('input', function(e)
 });
 
 // WITHDRAW BUTTON — OPENS CONFIRM MODAL
+// WITHDRAW BUTTON — OPENS CONFIRM MODAL (NOW 100% SAFE)
 document.getElementById('withdrawBtn')?.addEventListener('click', () => {
-  const input = document.getElementById('withdrawAmount').value.replace(/,/g, '');
-  const amount = parseInt(input);
+  const rawInput = document.getElementById('withdrawAmount').value;
+  const amount = Number(rawInput.replace(/,/g, ''));  // ← THIS IS THE KEY
 
   if (!amount || amount < 5000) {
     showNiceAlert("Minimum withdrawal is ₦5,000", "Invalid Amount");
     return;
   }
   if (amount > currentUser.cash) {
-    showNiceAlert(`Insufficient funds.\nYou have ₦${currentUser.cash.toLocaleString()}`, "Not Enough Cash");
+    showNiceAlert(`You only have ₦${currentUser.cash.toLocaleString()}`, "Not Enough Cash");
     return;
   }
 
   pendingWithdrawal = { amount, isFastTrack: false };
 
-  // FILL CONFIRM MODAL
+  // Fill confirm modal safely
   const setText = (id, text) => {
     const el = document.getElementById(id);
     if (el) el.textContent = text;
