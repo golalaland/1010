@@ -1133,30 +1133,43 @@ window.addEventListener("beforeunload", () => {
   }
 });
 
-// Whenever user logs in or opens notifications tab
-document.getElementById("notificationsTabBtn")?.addEventListener("click", loadNotifications);
-
-// When user opens notifications tab
+// ——— CLICKING THE NOTIFICATIONS TAB BUTTON ———
 document.getElementById("notificationsTabBtn")?.addEventListener("click", () => {
-  showTab("notificationsTab");
+  // Hide all tabs
+  document.querySelectorAll(".tab-content")?.forEach(tab => {
+    tab.style.display = "none";
+  });
+  
+  // Remove active class from all buttons
+  document.querySelectorAll(".tab-btn").forEach(btn => {
+    btn.classList.remove("active");
+  });
+
+  // Show notifications tab
+  const notifTab = document.getElementById("notificationsTab");
+  if (notifTab) notifTab.style.display = "block";
+
+  // Mark this button as active
+  document.getElementById("notificationsTabBtn")?.classList.add("active");
+
+  // Load notifications
   loadNotifications();
 });
+
 
 // Load notifications + update badge
 async function loadNotifications() {
   const list = document.getElementById("notificationsList");
   const badge = document.getElementById("notif-badge");
 
-  if (!currentUser?.uid) {
-    console.log("No user logged in");
+  if (!list || !currentUser?.uid) {
+    console.log("No user — skipping notifications");
     return;
   }
 
-  // Show loading
-  list.innerHTML = `<div style="padding:60px;text-align:center;color:#666;">Loading...</div>`;
+  list.innerHTML = `<div style="padding:60px;text-align:center;color:#666;font-size:13px;">Loading...</div>`;
 
   try {
-    // Fetch notifications for THIS user only
     const q = query(
       collection(db, "notifications"),
       where("recipientId", "==", currentUser.uid),
@@ -1164,58 +1177,58 @@ async function loadNotifications() {
     );
 
     const snapshot = await getDocs(q);
+    const unreadCount = snapshot.docs.filter(doc => !doc.data().read).length;
 
-    // Count unread
-    const unread = snapshot.docs.filter(doc => !doc.data().read).length;
-
-    // Update badge
+    // Update badge — perfect circle, no border
     if (badge) {
-      badge.textContent = unread > 99 ? "99+" : unread;
-      badge.style.display = unread > 0 ? "flex" : "none";
+      badge.textContent = unreadCount > 99 ? "99+" : unreadCount;
+      badge.style.display = unreadCount > 0 ? "flex" : "none";
     }
 
-    // Empty?
     if (snapshot.empty) {
       list.innerHTML = `<div style="padding:100px;text-align:center;color:#888;font-size:14px;">No notifications yet.</div>`;
       return;
     }
 
-    // Render each notification
     list.innerHTML = "";
     snapshot.forEach(doc => {
-      const data = doc.data();
-      const isNew = !data.read && Date.now() - (data.createdAt?.toDate?.() || 0) < 30_000;
+      const n = doc.data();
+      const isNew = !n.read && Date.now() - (n.createdAt?.toDate?.() || 0) < 30000;
 
-      const div = document.createElement("div");
-      div.style.cssText = `
-        padding:12px 14px; margin:4px 6px; border-radius:10px;
-        background:${data.read ? "rgba(255,255,255,0.03)" : "rgba(255,0,110,0.09)"};
-        border-left:${isNew ? "4px solid #ff006e" : "none"};
+      const item = document.createElement("div");
+      item.style.cssText = `
+        padding:10px 12px;
+        margin:2px 6px;
+        border-radius:9px;
+        background:${n.read ? "rgba(255,255,255,0.03)" : "rgba(255,0,110,0.11)"};
+        border-left:${isNew ? "3px solid #ff006e" : "none"};
         cursor:pointer;
+        transition:background 0.2s;
+        font-size:13px;
       `;
 
-      div.innerHTML = `
-        <div style="font-weight:800; font-size:13.5px; color:#fff;">${data.title || "Notification"}</div>
-        <div style="font-size:12.5px; color:#ccc; margin-top:4px;">${data.message || ""}</div>
-        <div style="font-size:10.5px; color:#666; margin-top:6px;">
-          ${timeAgo(data.createdAt?.toDate())}
-          ${isNew ? ' <span style="color:#ff006e; font-weight:900; font-size:9px;">NEW</span>' : ""}
+      item.innerHTML = `
+        <div style="font-weight:700;color:#fff;line-height:1.3;">${n.title || "Update"}</div>
+        <div style="color:#ccc;margin-top:3px;line-height:1.35;font-size:12.5px;">${n.message}</div>
+        <div style="color:#666;font-size:10.5px;margin-top:5px;display:flex;justify-content:space-between;align-items:center;">
+          <span>${timeAgo(n.createdAt?.toDate())}</span>
+          ${isNew ? `<span style="color:#ff006e;font-weight:900;font-size:9px;animation:blink 1.5s infinite;">NEW</span>` : ""}
         </div>
       `;
 
-      div.onclick = async () => {
-        if (!data.read) {
+      item.onclick = async () => {
+        if (!n.read) {
           await updateDoc(doc.ref, { read: true });
-          loadNotifications(); // refresh instantly
+          loadNotifications(); // refresh badge + list
         }
       };
 
-      list.appendChild(div);
+      list.appendChild(item);
     });
 
-  } catch (error) {
-    console.error("loadNotifications error:", error);
-    list.innerHTML = `<div style="padding:60px;text-align:center;color:#f66;">Failed to load</div>`;
+  } catch (err) {
+    console.error("Failed to load notifications:", err);
+    list.innerHTML = `<div style="padding:60px;text-align:center;color:#f66;">Error loading</div>`;
   }
 }
 // Helper: time ago
