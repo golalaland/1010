@@ -1296,6 +1296,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
 });
 
+let pendingWithdrawal = null;
+
 // ==================== STAR MARKET + WITHDRAWAL SYSTEM — FINAL & BULLETPROOF ====================
 
 // OPEN STAR MARKET
@@ -1358,8 +1360,6 @@ document.getElementById('withdrawBtn')?.addEventListener('click', () => {
     showNiceAlert(`You only have ₦${currentUser.cash.toLocaleString()}`, "Not Enough Cash");
     return;
   }
-
-  pendingWithdrawal = { amount, isFastTrack: false };
 
   // Fill confirm modal safely
   const setText = (id, text) => {
