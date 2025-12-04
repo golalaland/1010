@@ -1559,9 +1559,11 @@ async function sendStarsToUser(targetUser, amt) {
   }
 
   // UNIVERSAL ID RESOLUTION — WORKS FOR REGULAR, VIP, AND HOST
-  const receiverId = targetUser.isVIP || targetUser.isHost
-    ? targetUser.uid
-    : (targetUser.email?.replace(/[.@/\\]/g, '_') || targetUser._docId);
+ const receiverId = (targetUser.isVIP || targetUser.isHost)
+  ? targetUser.uid
+  : targetUser.email
+    ? targetUser.email.replace(/[.@/\\]/g, '_')
+    : targetUser._docId || null;
 
   const senderId = currentUser.uid;
 
