@@ -691,6 +691,11 @@ bar + footer */
   width: 100%;
   flex-shrink: 0;
 }
+@keyframes realAlertPop {
+  0% { transform:translate(-50%,-50%) scale(0.3); opacity:0; }
+  70% { transform:translate(-50%,-50%) scale(1.05); }
+  100% { transform:translate(-50%,-50%) scale(1); opacity:1; }
+}
 </style>
 </head>
 </body>
@@ -1307,9 +1312,17 @@ bar + footer */
 <div id="withdrawConfirmModal" class="modal-backdrop" style="display:none;z-index:99999;">
   <div class="modal" style="width:88%;max-width:340px;background:#0f0f0f;border:3px solid #00ff88;border-radius:20px;box-shadow:0 0 80px rgba(0,255,136,0.55);padding:26px 20px;text-align:center;">
     
-    <h2 style="margin:0 0 18px;color:#00ff88;font-size:18px;font-family:'Press Start 2P',cursive;letter-spacing:1px;text-shadow:0 0 12px #00ff88;">
-      WITHDRAW?
-    </h2>
+   <h2 style="
+  margin:0 0 18px;
+  color:#00ff88;
+  font-size:18px;
+  font-family:'Press Start 2P',cursive;
+  letter-spacing:1px;
+  text-shadow:0 0 0.12px #00ff88;
+">
+  WITHDRAW?
+</h2>
+
 
     <div style="background:rgba(0,255,136,0.12);border:2px dashed #00ff88;border-radius:16px;padding:20px;margin:16px 0;">
       <div style="font-size:36px;font-weight:900;color:#fff;">
@@ -1319,11 +1332,11 @@ bar + footer */
 
     <div style="display:flex;gap:12px;margin-top:20px;">
       <button id="standardWithdrawBtn" style="flex:1;padding:14px;background:#222;color:#ccc;border:2px solid #444;border-radius:14px;font-weight:900;font-size:14px;">
-        STANDARD<br><small style="opacity:0.7;font-size:10px;">1–3 days • Free</small>
+        STANDARD<br><small style="opacity:0.7;font-size:10px;">24 HRS • Free</small>
       </button>
       
       <button id="fastTrackWithdrawBtn" style="flex:1;padding:14px;background:linear-gradient(135deg,#00ff88,#00cc66);color:#000;border:none;border-radius:14px;font-weight:900;font-size:14px;box-shadow:0 0 30px rgba(0,255,136,0.6);">
-        FAST TRACK<br><small style="opacity:0.9;font-size:10px;">21 STRZ • Instant</small>
+        FAST TRACK<br><small style="opacity:0.9;font-size:10px;">30 MINUTES • 21 STRZ</small>
       </button>
     </div>
 
@@ -1338,19 +1351,19 @@ bar + footer */
   <div class="modal" style="width:88%;max-width:320px;background:#0f0f0f;border:3px solid #FFD700;border-radius:18px;padding:24px 20px;text-align:center;box-shadow:0 0 80px rgba(255,215,0,0.6);">
     
     <h3 style="margin:0 0 16px;color:#FFD700;font-size:17px;font-family:'Press Start 2P',cursive;">
-      FAST TRACK?
+      BOOST?
     </h3>
     
     <p style="margin:14px 0 20px;color:#fff;font-size:15px;line-height:1.5;">
-      Pay <strong style="color:#FFD700;">21 STRZ</strong> for<br>instant priority processing?
+      Pay <strong style="color:#FFD700;">21 ⭐️ STRZ</strong> for<br> priority processing?
     </p>
     
     <div style="display:flex;gap:12px;">
       <button id="cancelFastTrack" style="flex:1;padding:12px;background:#333;color:#999;border:1px solid #555;border-radius:12px;font-weight:700;font-size:14px;">
-        Nah
+        NO
       </button>
       <button id="confirmFastTrack" style="flex:1;padding:12px;background:linear-gradient(90deg,#FFD700,#FF8C00);color:#000;border:none;border-radius:12px;font-weight:900;font-size:14px;box-shadow:0 6px 20px rgba(255,215,0,0.5);">
-        YES! 21 STRZ
+        YES!
       </button>
     </div>
   </div>
@@ -1372,13 +1385,6 @@ bar + footer */
   </div>
 </div>
 
-<style>
-@keyframes realAlertPop {
-  0% { transform:translate(-50%,-50%) scale(0.3); opacity:0; }
-  70% { transform:translate(-50%,-50%) scale(1.05); }
-  100% { transform:translate(-50%,-50%) scale(1); opacity:1; }
-}
-</style>
 <!-- SOUNDS - All your GitHub sounds in one place -->
 <audio id="tapSound"     src="https://raw.githubusercontent.com/golalaland/1010/main/pop-reverb-423718.mp3"     preload="auto"></audio>
 <audio id="confettiSound" src="https://raw.githubusercontent.com/golalaland/1010/main/material-mold-394512.mp3" preload="auto"></audio>
