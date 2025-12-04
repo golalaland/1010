@@ -1298,8 +1298,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // ==================== STAR MARKET + WITHDRAWAL SYSTEM — FINAL & BULLETPROOF ====================
 
-let pendingWithdrawal = null;
-
 // OPEN STAR MARKET
 document.getElementById('starMarketBtn')?.addEventListener('click', () => {
   document.getElementById('starMarketModal').style.display = 'flex';
