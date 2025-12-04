@@ -1551,7 +1551,7 @@ function sanitizeKey(email) {
 })(); 
 // ← ONLY ONE OF THESE — THE FINAL SEAL
 
-// --- SEND STARS FUNCTION — FINAL, FLAWLESS, 2025 EDITION ---
+// --- SEND STARS — FINAL 2025 ELITE EDITION (FULL NOTIF SUPPORT) ---
 async function sendStarsToUser(targetUser, amt) {
   if (amt < 100 || !currentUser?.uid) {
     showGoldAlert("Invalid gift", 4000);
@@ -1572,44 +1572,47 @@ async function sendStarsToUser(targetUser, amt) {
   const glowColor = randomColor();
 
   try {
-    // 1. Update balances (safe transaction)
+    // 1. Transfer stars safely
     await runTransaction(db, async (tx) => {
-      const s = await tx.get(fromRef);
-      if (!s.exists()) throw "Profile missing";
-      if ((s.data().stars || 0) < amt) throw "Not enough stars";
+      const senderSnap = await tx.get(fromRef);
+      if (!senderSnap.exists()) throw "Sender profile missing";
+      if ((senderSnap.data().stars || 0) < amt) throw "Not enough stars";
 
-      const r = await tx.get(toRef);
-      if (!r.exists()) {
+      const receiverSnap = await tx.get(toRef);
+      if (!receiverSnap.exists()) {
         tx.set(toRef, { chatId: targetUser.chatId || "VIP", stars: 0 }, { merge: true });
       }
 
-      tx.update(fromRef, { stars: increment(-amt), starsGifted: increment(amt) });
+      tx.update(fromRef, {
+        stars: increment(-amt),
+        starsGifted: increment(amt)
+      });
       tx.update(toRef, { stars: increment(amt) });
     });
 
-       const bannerMsg = {
+    // 2. Send banner message
+    const bannerMsg = {
       content: `${currentUser.chatId} gifted ${amt} stars to ${targetUser.chatId}!`,
       timestamp: serverTimestamp(),
-      systemBanner: true,
+      isBanner: true,
       highlight: true,
       buzzColor: glowColor,
       type: "banner"
     };
 
-        const docRef = await addDoc(collection(db, "messages_room5"), bannerMsg);
-
+    const docRef = await addDoc(collection(db, "messages_room5"), bannerMsg);
     renderMessagesFromArray([{
       id: docRef.id,
       data: () => bannerMsg
     }], true);
 
-    // HOLY LINE — BRINGS GLOW TO LIFE
+    // Trigger banner glow
     setTimeout(() => {
       const el = document.getElementById(docRef.id);
       if (el) triggerBannerEffect(el);
     }, 100);
-    
-    // 4. Glow animation
+
+    // 3. Glow animation
     setTimeout(() => {
       const msgEl = document.getElementById(docRef.id);
       if (!msgEl) return;
@@ -1618,38 +1621,42 @@ async function sendStarsToUser(targetUser, amt) {
       contentEl.classList.add("baller-highlight");
       setTimeout(() => {
         contentEl.classList.remove("baller-highlight");
-        contentEl.style.boxShadow = "none";
       }, 21000);
     }, 80);
 
-    // 5. Success popup
-    showGoldAlert(`✅ You sent ${amt} ⭐ to ${targetUser.chatId}!`, 4000);
+    // 4. Success feedback
+    showGoldAlert(`You sent ${amt} stars to ${targetUser.chatId}!`, 4000);
 
-    // 6. Receiver sync
+    // 5. Update receiver's last gift
     await updateDoc(toRef, {
       lastGift: {
         from: currentUser.chatId,
         amt,
         at: Date.now(),
-      },
+      }
     });
 
-    // 6.5 Notification
+    // 6. SEND NOTIFICATION — FULLY COMPATIBLE WITH NEW SYSTEM
     await addDoc(collection(db, "notifications"), {
-      userId: receiverId,
-      message: `💫 ${currentUser.chatId} gifted you ${amt} ⭐!`,
-      read: false,
-      timestamp: serverTimestamp(),
+      recipientId: receiverId,                    // REQUIRED for new system
+      title: "Star Gift Received!",
+      message: `${currentUser.chatId} gifted you ${amt} stars!`,
       type: "starGift",
       fromUserId: currentUser.uid,
+      fromChatId: currentUser.chatId,
+      amount: amt,
+      createdAt: serverTimestamp(),
+      // read: false ← default in Firestore rules
     });
 
     // 7. Mark banner as shown
     await updateDoc(doc(db, "messages_room5", docRef.id), { bannerShown: true });
 
+    console.log("Gift sent + notification delivered");
+
   } catch (err) {
-    console.error("❌ sendStarsToUser failed:", err);
-    showGoldAlert(`⚠️ Error: ${err.message || "Gift failed"}`, 4000);
+    console.error("sendStarsToUser failed:", err);
+    showGoldAlert(`Error: ${err.message || "Gift failed"}`, 4000);
   }
 }
 /* ===============================
