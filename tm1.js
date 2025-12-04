@@ -691,9 +691,6 @@ function getWeekNumber(date) {
 }
 
 // ======================================================
-//  END SESSION RECORD — 1 ATOMIC WRITE ONLY
-// ======================================================
-// ======================================================
 // END SESSION RECORD — FINAL FIXED & BULLETPROOF VERSION
 // ======================================================
 let sessionAlreadySaved = false; // ← Global guard (reset in startSession())
@@ -816,6 +813,7 @@ const RedHotMode = {
     updateBonusBar();
   }
 };
+
 
 // ======================================================
 //  UI & GLOW
@@ -1295,6 +1293,37 @@ document.addEventListener("DOMContentLoaded", () => {
   replaceStarsWithSVG();
 
 });
+
+
+// REAL ALERT — CANNOT BE IGNORED, ALWAYS ON TOP OF EVERYTHING
+function realAlert(message) {
+  return new Promise((resolve) => {
+    const alertEl = document.getElementById('realAlert');
+    const msgEl = document.getElementById('realAlertMessage');
+    const btnEl = document.getElementById('realAlertBtn');
+
+    if (!alertEl || !msgEl || !btnEl) {
+      alert(message); // fallback
+      resolve();
+      return;
+    }
+
+    msgEl.innerHTML = message.replace(/\n/g, '<br>');
+    alertEl.style.display = 'block';
+
+    const close = () => {
+      alertEl.style.display = 'none';
+      btnEl.onclick = null;
+      alertEl.onclick = null;
+      resolve();
+    };
+
+    btnEl.onclick = close;
+    alertEl.onclick = (e) => {
+      if (e.target === alertEl) close();
+    };
+  });
+}
 
 
 // ==================== STAR MARKET + WITHDRAWAL SYSTEM — FINAL & BULLETPROOF ====================
