@@ -1296,7 +1296,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
 });
 
-let pendingWithdrawal = null;
 
 // ==================== STAR MARKET + WITHDRAWAL SYSTEM — FINAL & BULLETPROOF ====================
 
