@@ -1221,57 +1221,6 @@ bar + footer */
   </div>
 </div>
 
-<!-- WITHDRAWAL CONFIRM MODAL — DEADLY CLEAN -->
-<div id="withdrawConfirmModal" class="modal-backdrop" style="display:none;z-index:99999;">
-  <div class="modal" style="width:92%;max-width:380px;background:#0f0f0f;border:3px solid #00ff88;border-radius:20px;box-shadow:0 0 80px rgba(0,255,136,0.55);padding:24px 20px;text-align:center;">
-    
-    <h2 style="margin:0 0 16px;color:#00ff88;font-size:19px;font-family:'Press Start 2P',cursive;letter-spacing:1px;text-shadow:0 0 14px #00ff88;">
-      CONFIRM WITHDRAWAL
-    </h2>
-
-    <div style="background:rgba(0,255,136,0.12);border:2px dashed #00ff88;border-radius:14px;padding:18px;margin:16px 0;font-size:16px;">
-      <div style="font-size:24px;font-weight:900;color:#fff;margin:8px 0;">
-        ₦<span id="confirmAmount">0</span>
-      </div>
-      <div style="color:#00ff88;margin:10px 0;">
-        To: <strong id="confirmBankName">Bank Name</strong><br>
-        Acc: <strong id="confirmAccountNum">0000000000</strong>
-      </div>
-    </div>
-
-    <div style="display:flex;gap:12px;margin-top:20px;">
-      <button id="standardWithdrawBtn" style="flex:1;padding:14px;background:#222;color:#ccc;border:2px solid #444;border-radius:14px;font-weight:900;font-size:15px;">
-        STANDARD<br><small style="opacity:0.8;font-size:11px;">1–3 days • Free</small>
-      </button>
-      
-      <button id="fastTrackWithdrawBtn" style="flex:1;padding:14px;background:linear-gradient(135deg,#00ff88,#00cc66);color:#000;border:none;border-radius:14px;font-weight:900;font-size:15px;box-shadow:0 0 30px rgba(0,255,136,0.6);">
-        FAST TRACK<br><small style="opacity:0.9;font-size:11px;">21 STRZ • Instant</small>
-      </button>
-    </div>
-
-    <button id="cancelWithdrawBtn" style="margin-top:16px;width:100%;padding:12px;background:#111;color:#666;border:1px solid #333;border-radius:12px;font-weight:600;">
-      CANCEL
-    </button>
-  </div>
-</div>
-
-<!-- SUCCESS / PROCESSING OVERLAY — FLOATING ODOMETER STYLE -->
-<div id="withdrawSuccessOverlay" class="modal-backdrop" style="display:none;z-index:999999;background:rgba(0,0,0,0.92);">
-  <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;">
-    <div style="font-size:50px;color:#00ff88;text-shadow:0 0 30px #00ff88;animation:pulseGlow 1.5s infinite;">
-      SUCCESS
-    </div>
-    <div style="margin:30px 0;font-size:60px;font-weight:900;color:#fff;letter-spacing:8px;font-family:monospace;">
-      ₦<span id="odometerDeduction">0</span>
-    </div>
-    <div id="successMessage" style="font-size:18px;color:#00ff88;margin:20px 0;opacity:0.9;">
-      Withdrawal requested!
-    </div>
-    <button id="closeSuccessBtn" style="padding:14px 40px;background:#00ff88;color:#000;border:none;border-radius:14px;font-weight:900;font-size:16px;margin-top:30px;cursor:pointer;">
-      DONE
-    </button>
-  </div>
-</div>
 
 <!-- STAR MARKET / BANK MODAL -->
 <div id="starMarketModal" class="modal-backdrop" style="display:none;">
@@ -1318,7 +1267,118 @@ bar + footer */
     </button>
   </div>
 </div>
+
+  <!-- LUXURY SUCCESS OVERLAY — GOLDEN MONEY RAIN -->
+<div id="withdrawSuccessOverlay" class="modal-backdrop" style="display:none;z-index:9999999;background:linear-gradient(135deg,rgba(0,0,0,0.95),rgba(15,15,15,0.98));">
+  <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;">
+    
+    <div style="font-size:60px;color:#FFD700;text-shadow:0 0 40px #FFD700;animation:pulseGlow 1.8s infinite;margin-bottom:20px;font-family:'Press Start 2P',cursive;">
+      PAID!
+    </div>
+
+    <div style="font-size:70px;font-weight:900;color:#FFD700;letter-spacing:6px;margin:30px 0;text-shadow:0 0 50px #FFD700,0 0 80px #FF8C00;">
+      ₦<span id="goldenAmount">0</span>
+    </div>
+
+    <div id="successMessage" style="font-size:20px;color:#00ff88;margin:20px 0;font-weight:700;">
+      Withdrawal requested!
+    </div>
+
+    <button id="closeSuccessBtn" style="padding:16px 50px;background:#FFD700;color:#000;border:none;border-radius:16px;font-weight:900;font-size:18px;margin-top:40px;cursor:pointer;box-shadow:0 10px 40px rgba(255,215,0,0.6);">
+      HELL YEAH
+    </button>
+  </div>
+</div>
+
+<!-- CHEERING SOUND (you can change the URL) -->
+<audio id="cheerSound" src="https://cdn.glitch.global/8f8e1f45-7e3f-4b5c-9f0a-4d8e9f1a2b3c/cheer.mp3"></audio>
+
+
   
+
+<style>
+@keyframes pulseGlow {
+  0%, 100% { text-shadow: 0 0 40px #FFD700; }
+  50% { text-shadow: 0 0 80px #FFD700, 0 0 120px #FF8C00; }
+}
+</style>
+
+<!-- WITHDRAWAL CONFIRM MODAL — CUTE & DEADLY (NO BANK DETAILS) -->
+<div id="withdrawConfirmModal" class="modal-backdrop" style="display:none;z-index:99999;">
+  <div class="modal" style="width:88%;max-width:340px;background:#0f0f0f;border:3px solid #00ff88;border-radius:20px;box-shadow:0 0 80px rgba(0,255,136,0.55);padding:26px 20px;text-align:center;">
+    
+    <h2 style="margin:0 0 18px;color:#00ff88;font-size:18px;font-family:'Press Start 2P',cursive;letter-spacing:1px;text-shadow:0 0 12px #00ff88;">
+      WITHDRAW?
+    </h2>
+
+    <div style="background:rgba(0,255,136,0.12);border:2px dashed #00ff88;border-radius:16px;padding:20px;margin:16px 0;">
+      <div style="font-size:36px;font-weight:900;color:#fff;">
+        ₦<span id="confirmAmount">0</span>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:12px;margin-top:20px;">
+      <button id="standardWithdrawBtn" style="flex:1;padding:14px;background:#222;color:#ccc;border:2px solid #444;border-radius:14px;font-weight:900;font-size:14px;">
+        STANDARD<br><small style="opacity:0.7;font-size:10px;">1–3 days • Free</small>
+      </button>
+      
+      <button id="fastTrackWithdrawBtn" style="flex:1;padding:14px;background:linear-gradient(135deg,#00ff88,#00cc66);color:#000;border:none;border-radius:14px;font-weight:900;font-size:14px;box-shadow:0 0 30px rgba(0,255,136,0.6);">
+        FAST TRACK<br><small style="opacity:0.9;font-size:10px;">21 STRZ • Instant</small>
+      </button>
+    </div>
+
+    <button id="cancelWithdrawBtn" style="margin-top:16px;width:100%;padding:12px;background:#111;color:#666;border:1px solid #333;border-radius:12px;font-weight:600;font-size:13px;">
+      CANCEL
+    </button>
+  </div>
+</div>
+  
+  <!-- FAST TRACK CONFIRM MODAL -->
+<div id="fastTrackConfirmModal" class="modal-backdrop" style="display:none;z-index:999999;">
+  <div class="modal" style="width:88%;max-width:320px;background:#0f0f0f;border:3px solid #FFD700;border-radius:18px;padding:24px 20px;text-align:center;box-shadow:0 0 80px rgba(255,215,0,0.6);">
+    
+    <h3 style="margin:0 0 16px;color:#FFD700;font-size:17px;font-family:'Press Start 2P',cursive;">
+      FAST TRACK?
+    </h3>
+    
+    <p style="margin:14px 0 20px;color:#fff;font-size:15px;line-height:1.5;">
+      Pay <strong style="color:#FFD700;">21 STRZ</strong> for<br>instant priority processing?
+    </p>
+    
+    <div style="display:flex;gap:12px;">
+      <button id="cancelFastTrack" style="flex:1;padding:12px;background:#333;color:#999;border:1px solid #555;border-radius:12px;font-weight:700;font-size:14px;">
+        Nah
+      </button>
+      <button id="confirmFastTrack" style="flex:1;padding:12px;background:linear-gradient(90deg,#FFD700,#FF8C00);color:#000;border:none;border-radius:12px;font-weight:900;font-size:14px;box-shadow:0 6px 20px rgba(255,215,0,0.5);">
+        YES! 21 STRZ
+      </button>
+    </div>
+  </div>
+</div>
+
+  <!-- REAL ALERT — ALWAYS ON TOP, CANNOT BE HIDDEN -->
+<div id="realAlert" class="modal-backdrop" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.94);z-index:9999999 !important;">
+  <div class="modal" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:90%;max-width:360px;background:#0f0f0f;border:4px solid #00FFA3;border-radius:20px;box-shadow:0 0 80px rgba(0,255,163,0.8),inset 0 0 30px rgba(0,255,163,0.2);padding:28px 20px;text-align:center;animation:realAlertPop 0.4s cubic-bezier(0.175,0.885,0.32,1.275);">
+    
+    <div style="font-size:48px;margin-bottom:16px;">Alert</div>
+    
+    <p id="realAlertMessage" style="margin:20px 0;color:#eee;font-size:16px;line-height:1.6;font-weight:500;">
+      Message goes here
+    </p>
+    
+    <button id="realAlertBtn" style="padding:14px 60px;background:linear-gradient(90deg,#00FFA3,#00E676);color:#000;border:none;border-radius:14px;font-weight:900;font-size:16px;cursor:pointer;box-shadow:0 8px 30px rgba(0,255,163,0.5);min-width:180px;">
+      OKAY
+    </button>
+  </div>
+</div>
+
+<style>
+@keyframes realAlertPop {
+  0% { transform:translate(-50%,-50%) scale(0.3); opacity:0; }
+  70% { transform:translate(-50%,-50%) scale(1.05); }
+  100% { transform:translate(-50%,-50%) scale(1); opacity:1; }
+}
+</style>
 <!-- SOUNDS - All your GitHub sounds in one place -->
 <audio id="tapSound"     src="https://raw.githubusercontent.com/golalaland/1010/main/pop-reverb-423718.mp3"     preload="auto"></audio>
 <audio id="confettiSound" src="https://raw.githubusercontent.com/golalaland/1010/main/material-mold-394512.mp3" preload="auto"></audio>
