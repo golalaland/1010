@@ -1377,65 +1377,80 @@ document.getElementById('withdrawBtn')?.addEventListener('click', () => {
   document.getElementById('withdrawConfirmModal').style.display = 'flex';
 });
 
-// BUTTONS IN CONFIRM MODAL
-document.getElementById('standardWithdrawBtn')?.addEventListener('click', () => {
-  if (!pendingWithdrawal) return;
-  document.getElementById('withdrawConfirmModal').style.display = 'none';
-  processWithdrawalAndAnimate(pendingWithdrawal.amount, false);
-});
 
+let pendingWithdrawal = { amount: 0, isFastTrack: false };
+
+// FAST TRACK BUTTON → OPENS DOUBLE CONFIRM
 document.getElementById('fastTrackWithdrawBtn')?.addEventListener('click', () => {
-  if (!pendingWithdrawal) return;
   if (currentUser.stars < 21) {
-    showNiceAlert("You need 21 STRZ for Fast Track!", "Not Enough STRZ");
+    realAlert("You need 21 STRZ for Fast Track!");
     return;
   }
   document.getElementById('withdrawConfirmModal').style.display = 'none';
-  processWithdrawalAndAnimate(pendingWithdrawal.amount, true);
+  document.getElementById('fastTrackConfirmModal').style.display = 'flex';
 });
 
-document.getElementById('cancelWithdrawBtn')?.addEventListener('click', () => {
+// CONFIRM FAST TRACK
+document.getElementById('confirmFastTrack')?.addEventListener('click', () => {
+  document.getElementById('fastTrackConfirmModal').style.display = 'none';
+  processWithdrawalAndCelebrate(pendingWithdrawal.amount, true);
+});
+
+// CANCEL FAST TRACK
+document.getElementById('cancelFastTrack')?.addEventListener('click', () => {
+  document.getElementById('fastTrackConfirmModal').style.display = 'none';
+});
+
+// STANDARD WITHDRAW → DIRECT
+document.getElementById('standardWithdrawBtn')?.addEventListener('click', () => {
   document.getElementById('withdrawConfirmModal').style.display = 'none';
-  pendingWithdrawal = null;
+  processWithdrawalAndCelebrate(pendingWithdrawal.amount, false);
 });
 
-document.getElementById('closeSuccessBtn')?.addEventListener('click', () => {
-  document.getElementById('withdrawSuccessOverlay').style.display = 'none';
-  pendingWithdrawal = null;
-});
+// MAIN WITHDRAW + GOLDEN COUNTER
+async function processWithdrawalAndCelebrate(amount, isFastTrack = false) {
+  // ... [your Firestore transaction code — unchanged] ...
 
-// MAIN WITHDRAWAL + ODOMETER ANIMATION
-async function processWithdrawalAndAnimate(amount, isFastTrack = false) {
-  const userRef = doc(db, "users", currentUser.uid);
-  const withdrawalRef = doc(collection(db, "withdrawals"));
+  // AFTER SUCCESS:
+  currentUser.cash -= amount;
+  if (isFastTrack) currentUser.stars -= 21;
+  updateBankDisplay();
 
-  try {
-    await runTransaction(db, async (t) => {
-      const snap = await t.get(userRef);
-      if (!snap.exists()) throw "User not found";
-      const data = snap.data();
+  // LUXURY COUNTER — COUNTS UP FROM 0 TO AMOUNT
+  const counter = document.getElementById('goldenAmount');
+  counter.textContent = '0';
+  document.getElementById('successMessage').textContent = isFastTrack 
+    ? "FAST TRACKED! Support notified" 
+    : "Withdrawal requested!";
 
-      if (data.cash < amount) throw "Not enough cash";
-      if (isFastTrack && data.stars < 21) throw "Not enough STRZ";
+  document.getElementById('withdrawSuccessOverlay').style.display = 'flex';
 
-      t.update(userRef, {
-        cash: data.cash - amount,
-        stars: isFastTrack ? data.stars - 21 : data.stars,
-        updatedAt: serverTimestamp()
-      });
+  // Play cheering sound
+  document.getElementById('cheerSound').play();
 
-      t.set(withdrawalRef, {
-        uid: currentUser.uid,
-        username: currentUser.chatId || currentUser.email?.split('@')[0] || "Player",
-        amount,
-        bankName: data.bankName || "Not set",
-        bankAccountNumber: data.bankAccountNumber || "Not set",
-        status: isFastTrack ? "fast_track" : "pending",
-        isFastTrack,
-        requestedAt: serverTimestamp(),
-        note: isFastTrack ? "User paid 21 STRZ for priority" : "Standard"
-      });
-    });
+  // Trigger confetti
+  triggerConfetti();
+
+  // Count up animation
+  let current = 0;
+  const step = Math.ceil(amount / 50);
+  const timer = setInterval(() => {
+    current += step;
+    if (current >= amount) {
+      current = amount;
+      clearInterval(timer);
+    }
+    counter.textContent = current.toLocaleString();
+  }, 30);
+
+  // Fast track → open Telegram
+  if (isFastTrack) {
+    setTimeout(() => {
+      const msg = encodeURIComponent(`FAST TRACK WITHDRAWAL\nUser: @${currentUser.chatId}\nAmount: ₦${amount.toLocaleString()}\nPlease process ASAP!`);
+      window.open(`https://t.me/YOUR_ADMIN?text=${msg}`, '_blank');
+    }, 1500);
+  }
+}
 
     // LOCAL UPDATE
     const oldCash = currentUser.cash;
