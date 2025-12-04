@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>xixi.live • Live Fast. Stream Wild.</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;500;700;900&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+  <style>
+    :root {
+      --pink: #ff00a5;
+      --hot: #ff2ec1;
+      --deep: #1a0022;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      background: #000;
+      color: white;
+      font-family: 'Inter', sans-serif;
+      overflow-x: hidden;
+    }
+    /* Floating Particles Background */
+    #particles {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 1;
+    }
+    .particle {
+      position: absolute;
+      width: 4px;
+      height: 4px;
+      background: var(--pink);
+      border-radius: 50%;
+      box-shadow: 0 0 20px var(--hot);
+      animation: float 20s infinite linear;
+    }
+    @keyframes float {
+      0%   { transform: translateY(100vh) translateX(0); opacity: 0; }
+      10%  { opacity: 1; }
+      90%  { opacity: 1; }
+      100% { transform: translateY(-100px) translateX(100px); opacity: 0; }
+    }
+
+    /* Hero */
+    .hero {
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      z-index: 2;
+      background: radial-gradient(circle at 30% 70%, rgba(255,0,165,0.25) 0%, transparent 60%),
+                  radial-gradient(circle at 80% 20%, rgba(255,46,193,0.2) 0%, transparent 50%);
+    }
+    .logo {
+      font-size: clamp(4rem, 12vw, 10rem);
+      font-weight: 900;
+      background: linear-gradient(135deg, #ff00a5, #ff2ec1, #ff69e0);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: -0.02em;
+      text-shadow: 0 0 80px rgba(255,0,165,0.6);
+    }
+    .tagline {
+      font-size: 1.8rem;
+      margin-top: 1rem;
+      opacity: 0.9;
+      background: linear-gradient(90deg, #ff69e0, #ff00a5);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .cta {
+      margin-top: 3rem;
+      padding: 1.2rem 3.5rem;
+      font-size: 1.4rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--pink), var(--hot));
+      color: white;
+      border: none;
+      border-radius: 60px;
+      cursor: pointer;
+      box-shadow: 0 10px 40px rgba(255,0,165,0.5);
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    .cta::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, transparent, rgba(255,255,255,0.3), transparent);
+      transform: translateX(-100%);
+      transition: transform 0.6s;
+    }
+    .cta:hover::before { transform: translateX(100%); }
+    .cta:hover { transform: translateY(-8px); box-shadow: 0 20px 60px rgba(255,0,165,0.7); }
+
+    /* Features */
+    .features {
+      padding: 150px 10%;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 3rem;
+      position: relative;
+      z-index: 2;
+    }
+    .card {
+      background: rgba(20,0,30,0.4);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255,0,165,0.2);
+      border-radius: 24px;
+      padding: 2.5rem;
+      text-align: center;
+      transition: all 0.4s ease;
+    }
+    .card:hover {
+      transform: translateY(-20px);
+      border-color: var(--pink);
+      box-shadow: 0 20px 60px rgba(255,0,165,0.25);
+    }
+    .card h3 {
+      font-size: 1.8rem;
+      margin: 1.5rem 0;
+      background: linear-gradient(135deg, #ff69e0, #ff00a5);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    /* Footer */
+    footer {
+      text-align: center;
+      padding: 80px 20px;
+      background: linear-gradient(to top, #0a0010, transparent);
+    }
+    .socials a {
+      color: #ff69e0;
+      font-size: 2rem;
+      margin: 0 1rem;
+      transition: all 0.3s;
+    }
+    .socials a:hover { color: white; transform: scale(1.3); }
+  </style>
+</head>
+<body>
+
+  <div id="particles"></div>
+
+  <section class="hero">
+    <div style="text-align:center">
+      <h1 class="logo">xixi</h1>
+      <p class="tagline">Live Fast. Stream Wild. Pee the Moment.</p>
+      <button class="cta" onclick="alert('Launching soon — get ready to go live 🔥')">Go Live Now</button>
+    </div>
+  </section>
+
+  <section class="features">
+    <div class="card">
+      <h3>Instant Streaming</h3>
+      <p>Zero lag, 4K, and that signature xixi glow. Go live in one tap.</p>
+    </div>
+    <div class="card">
+      <h3>Cheeky Rewards</h3>
+      <p>Earn pink coins, unlock spicy content, and climb the xixi throne.</p>
+    </div>
+    <div class="card">
+      <h3>Wild Community</h3>
+      <p>Chat that moves as fast as you do. Emotes, raids, and pure chaos.</p>
+    </div>
+  </section>
+
+  <footer>
+    <div class="socials">
+      <a href="#">✕</a>
+      <a href="#">🎀</a>
+      <a href="#">💦</a>
+    </div>
+    <p>© 2025 xixi.live • Made for the bold, the wild, and the unapologetic.</p>
+  </footer>
+
+  <script>
+    // Floating pink particles
+    const particlesContainer = document.getElementById('particles');
+    for(let i = 0; i < 80; i++) {
+      const p = document.createElement('div');
+      p.classList.add('particle');
+      p.style.left = Math.random() * 100 + 'vw';
+      p.style.animationDelay = Math.random() * 20 + 's';
+      p.style.animationDuration = 15 + Math.random() * 20 + 's';
+      particlesContainer.appendChild(p);
+    }
+
+    // GSAP Scroll Animations
+    gsap.from('.logo', { y: 100, opacity: 0, duration: 1.5, ease: 'power4.out' });
+    gsap.from('.tagline', { y: 60, opacity: 0, duration: 1.2, delay: 0.5, ease: 'power3.out' });
+    gsap.from('.cta', { scale: 0.8, opacity: 0, duration: 1, delay: 1, ease: 'back.out(1.7)' });
+
+    gsap.utils.toArray('.card').forEach((card, i) => {
+      gsap.from(card, {
+        y: 200,
+        opacity: 0,
+        duration: 1,
+        delay: i * 0.2,
+        scrollTrigger: {
+          trigger: '.features',
+          start: 'top 70%',
+        }
+      });
+    });
+  </script>
+</body>
+</html>
