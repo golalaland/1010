@@ -1296,62 +1296,66 @@ document.addEventListener("DOMContentLoaded", () => {
 
 });
 
+// ==================== STAR MARKET + WITHDRAWAL SYSTEM ====================
+
 // OPEN STAR MARKET
 document.getElementById('starMarketBtn')?.addEventListener('click', () => {
   document.getElementById('starMarketModal').style.display = 'flex';
   updateBankDisplay();
 });
 
+// CLOSE STAR MARKET
 document.getElementById('closeStarMarket')?.addEventListener('click', () => {
   document.getElementById('starMarketModal').style.display = 'none';
 });
 
-// UPDATE BALANCES
+// UPDATE BALANCE DISPLAY
 function updateBankDisplay() {
-  const name = currentUser?.chatId || currentUser?.email?.split('@')[0] || "Player";
+  const name = currentUser?.chatId?.replace(/^@/, '') || currentUser?.email?.split('@')[0] || "Player";
   const cash = currentUser?.cash || 0;
   const stars = currentUser?.stars || 0;
 
-  document.getElementById('bankUsername').textContent = name;
-  document.getElementById('bankCash').textContent = cash.toLocaleString();
-  document.getElementById('bankStars').textContent = stars.toLocaleString();
-
+  const usernameEl = document.getElementById('bankUsername');
+  const cashEl = document.getElementById('bankCash');
+  const starsEl = document.getElementById('bankStars');
   const amountInput = document.getElementById('withdrawAmount');
   const btn = document.getElementById('withdrawBtn');
 
-  amountInput.value = '';
-  btn.style.opacity = cash >= 5000 ? "1" : "0.5";
-  btn.style.cursor = cash >= 5000 ? "pointer" : "not-allowed";
-  btn.disabled = cash < 5000;
+  if (usernameEl) usernameEl.textContent = name;
+  if (cashEl) cashEl.textContent = cash.toLocaleString();
+  if (starsEl) starsEl.textContent = stars.toLocaleString();
+  if (amountInput) amountInput.value = '';
+  if (btn) {
+    btn.style.opacity = cash >= 5000 ? "1" : "0.5";
+    btn.style.cursor = cash >= 5000 ? "pointer" : "not-allowed";
+    btn.disabled = cash < 5000;
+  }
 }
 
+// ==================== WITHDRAWAL FLOW — FLAWLESS ====================
+let pendingWithdrawal = null;
 
-// ==================== WITHDRAWAL SYSTEM — FINAL PERFECTION ====================
-
-let pendingWithdrawal = null; // stores amount + fastTrack during flow
-
-// INPUT — AUTO FORMAT WITH COMMAS
-document.getElementById('withdrawAmount')?.addEventListener('input', function(e) {
+// INPUT — AUTO-FORMAT WITH COMMAS
+document.getElementById('withdrawAmount')?.addEventListener('input', (e) => {
   let value = e.target.value.replace(/\D/g, ''); // remove non-digits
-  if (value === '') {
+  if (!value) {
     e.target.value = '';
     return;
   }
-  const num = parseInt(value);
-  e.target.value = num.toLocaleString();
+  e.target.value = parseInt(value).toLocaleString();
 });
 
-// WITHDRAW BUTTON — OPENS CUSTOM CONFIRM MODAL
+// WITHDRAW BUTTON — OPENS CONFIRM MODAL
 document.getElementById('withdrawBtn')?.addEventListener('click', () => {
-  let input = document.getElementById('withdrawAmount').value.replace(/,/g, '');
-  const amount = parseInt(input);
+  const input = document.getElementById('withdrawAmount')?.value?.replace(/,/g, '');
+  const amount = parseInt(input || 0);
 
   if (!amount || amount < 5000) {
     showNiceAlert("Minimum withdrawal is ₦5,000", "Invalid Amount");
     return;
   }
-  if (amount > currentUser.cash) {
-    showNiceAlert(`You only have ₦${currentUser.cash.toLocaleString()}`, "Not Enough Cash");
+  if (amount > (currentUser?.cash || 0)) {
+    showNiceAlert(`You only have ₦${(currentUser?.cash || 0).toLocaleString()}`, "Not Enough Cash");
     return;
   }
 
@@ -1359,12 +1363,15 @@ document.getElementById('withdrawBtn')?.addEventListener('click', () => {
   pendingWithdrawal = { amount, isFastTrack: false };
 
   // FILL CONFIRM MODAL
-  document.getElementById('confirmAmount').textContent = amount.toLocaleString();
-  document.getElementById('confirmBankName').textContent = currentUser.bankName || "Not Set";
-  ";
-  document.getElementById('confirmAccountNum').textContent = currentUser.bankAccountNumber || "Not Set";
+  const confirmAmount = document.getElementById('confirmAmount');
+  const confirmBankName = document.getElementById('confirmBankName');
+  const confirmAccountNum = document.getElementById('confirmAccountNum');
 
-  // CLOSE BANK → OPEN CONFIRM (z-index 99999)
+  if (confirmAmount) confirmAmount.textContent = amount.toLocaleString();
+  if (confirmBankName) confirmBankName.textContent = currentUser.bankName || "Not Set";
+  if (confirmAccountNum) confirmAccountNum.textContent = currentUser.bankAccountNumber || "Not Set";
+
+  // CLOSE BANK → OPEN CONFIRM
   document.getElementById('starMarketModal').style.display = 'none';
   document.getElementById('withdrawConfirmModal').style.display = 'flex';
 });
@@ -1376,10 +1383,10 @@ document.getElementById('standardWithdrawBtn')?.addEventListener('click', () => 
   processWithdrawalAndAnimate(pendingWithdrawal.amount, false);
 });
 
-// FAST TRACK
+// FAST TRACK WITHDRAW
 document.getElementById('fastTrackWithdrawBtn')?.addEventListener('click', () => {
   if (!pendingWithdrawal) return;
-  if (currentUser.stars < 21) {
+  if ((currentUser?.stars || 0) < 21) {
     showNiceAlert("You need 21 STRZ for Fast Track!", "Not Enough STRZ");
     return;
   }
@@ -1387,19 +1394,19 @@ document.getElementById('fastTrackWithdrawBtn')?.addEventListener('click', () =>
   processWithdrawalAndAnimate(pendingWithdrawal.amount, true);
 });
 
-// CANCEL
+// CANCEL WITHDRAW
 document.getElementById('cancelWithdrawBtn')?.addEventListener('click', () => {
   document.getElementById('withdrawConfirmModal').style.display = 'none';
   pendingWithdrawal = null;
 });
 
-// SUCCESS OVERLAY CLOSE
+// CLOSE SUCCESS OVERLAY
 document.getElementById('closeSuccessBtn')?.addEventListener('click', () => {
   document.getElementById('withdrawSuccessOverlay').style.display = 'none';
   pendingWithdrawal = null;
 });
 
-// MAIN PROCESS + ODOMETER
+// PROCESS WITHDRAWAL + ODOMETER ANIMATION
 async function processWithdrawalAndAnimate(amount, isFastTrack = false) {
   const userRef = doc(db, "users", currentUser.uid);
   const withdrawalRef = doc(collection(db, "withdrawals"));
@@ -1407,15 +1414,15 @@ async function processWithdrawalAndAnimate(amount, isFastTrack = false) {
   try {
     await runTransaction(db, async (t) => {
       const snap = await t.get(userRef);
-      if (!snap.exists()) throw "User not found";
+      if (!snap.exists()) throw new Error("User not found");
       const data = snap.data();
 
-      if (data.cash < amount) throw "Insufficient cash";
-      if (isFastTrack && data.stars < 21) throw "Not enough STRZ";
+      if ((data.cash || 0) < amount) throw new Error("Insufficient cash");
+      if (isFastTrack && (data.stars || 0) < 21) throw new Error("Not enough STRZ");
 
       t.update(userRef, {
-        cash: data.cash - amount,
-        stars: isFastTrack ? data.stars - 21 : data.stars,
+        cash: (data.cash || 0) - amount,
+        stars: isFastTrack ? (data.stars || 0) - 21 : (data.stars || 0),
         updatedAt: serverTimestamp()
       });
 
@@ -1423,38 +1430,46 @@ async function processWithdrawalAndAnimate(amount, isFastTrack = false) {
         uid: currentUser.uid,
         username: currentUser.chatId || currentUser.email?.split('@')[0] || "Player",
         amount,
-        bankName: data.bankName || "Not set",
-        bankAccountNumber: data.bankAccountNumber || "Not set",
+        bankName: data.bankName || "Not Set",
+        bankAccountNumber: data.bankAccountNumber || "Not Set",
         status: isFastTrack ? "fast_track" : "pending",
         isFastTrack,
         requestedAt: serverTimestamp(),
-        note: isFastTrack ? "User paid 21 STRZ for priority" : "Standard"
+        processed: false,
+        note: isFastTrack ? "User paid 21 STRZ for priority" : "Standard request"
       });
     });
 
-    // UPDATE LOCAL
-    const oldCash = currentUser.cash;
-    currentUser.cash -= amount;
-    if (isFastTrack) currentUser.stars -= 21;
+    // UPDATE LOCAL STATE
+    const oldCash = currentUser.cash || 0;
+    currentUser.cash = (currentUser.cash || 0) - amount;
+    if (isFastTrack) currentUser.stars = (currentUser.stars || 0) - 21;
+
     updateBankDisplay();
 
     // ODOMETER ANIMATION
-    document.getElementById('odometerDeduction').textContent = oldCash.toLocaleString();
-    document.getElementById('successMessage').innerHTML = isFastTrack
-      ? "FAST TRACK ACTIVATED!<br>Support notified — expect payment soon"
-      : "Withdrawal requested!<br>Processing in 1–3 days";
+    const odometerEl = document.getElementById('odometerDeduction');
+    const successMsgEl = document.getElementById('successMessage');
+
+    if (odometerEl) odometerEl.textContent = oldCash.toLocaleString();
+    if (successMsgEl) {
+      successMsgEl.innerHTML = isFastTrack
+        ? "FAST TRACK ACTIVATED!<br>Support notified — expect payment soon"
+        : "Withdrawal requested!<br>Processing in 1–3 days";
+    }
 
     document.getElementById('withdrawSuccessOverlay').style.display = 'flex';
 
     let current = oldCash;
-    const step = Math.max(1, Math.ceil((oldCash - currentUser.cash) / 40));
+    const target = currentUser.cash || 0;
+    const step = Math.max(1, Math.ceil((oldCash - target) / 40));
     const timer = setInterval(() => {
       current -= step;
-      if (current <= currentUser.cash) {
-        current = currentUser.cash;
+      if (current <= target) {
+        current = target;
         clearInterval(timer);
       }
-      document.getElementById('odometerDeduction').textContent = current.toLocaleString();
+      if (odometerEl) odometerEl.textContent = current.toLocaleString();
     }, 40);
 
     triggerConfetti();
@@ -1475,8 +1490,8 @@ async function processWithdrawalAndAnimate(amount, isFastTrack = false) {
     }
 
   } catch (err) {
-    console.error(err);
-    showNiceAlert("Withdrawal failed. Try again.", "Error");
+    console.error("Withdrawal error:", err);
+    showNiceAlert(`Withdrawal failed: ${err.message || 'Unknown error'}`, "Error");
   }
 }
 /* ============================================================
