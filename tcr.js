@@ -1147,83 +1147,75 @@ async function loadNotifications() {
   const list = document.getElementById("notificationsList");
   const badge = document.getElementById("notif-badge");
 
-  if (!list || !currentUser?.uid) {
-    console.log("No user or list — skipping notifications");
+  if (!currentUser?.uid) {
+    console.log("No user logged in");
     return;
   }
 
-  list.innerHTML = `<div style="text-align:center;padding:80px;color:#666;font-size:13px;">Loading...</div>`;
+  // Show loading
+  list.innerHTML = `<div style="padding:60px;text-align:center;color:#666;">Loading...</div>`;
 
   try {
+    // Fetch notifications for THIS user only
     const q = query(
       collection(db, "notifications"),
       where("recipientId", "==", currentUser.uid),
       orderBy("createdAt", "desc")
     );
 
-    const snap = await getDocs(q);
-    const unreadCount = snap.docs.filter(doc => !doc.data().read).length;
+    const snapshot = await getDocs(q);
 
-    // PERFECT RED BADGE — NO BLACK BORDER
+    // Count unread
+    const unread = snapshot.docs.filter(doc => !doc.data().read).length;
+
+    // Update badge
     if (badge) {
-      badge.textContent = unreadCount > 99 ? "99+" : unreadCount;
-      badge.style.cssText = `
-        position:absolute; top:-6px; right:-10px;
-        background:#ff006e; color:#fff; font-size:10px; font-weight:900;
-        width:20px; height:20px; border-radius:50%;
-        display:${unreadCount > 0 ? "flex" : "none"};
-        align-items:center; justify-content:center;
-        box-shadow:0 0 16px rgba(255,0,110,0.8);
-        animation:pulse 1.8s infinite;
-        border:none; z-index:100;
-      `;
+      badge.textContent = unread > 99 ? "99+" : unread;
+      badge.style.display = unread > 0 ? "flex" : "none";
     }
 
-    if (snap.empty) {
-      list.innerHTML = `<div style="text-align:center;padding:100px 20px;color:#888;font-size:14px;">No notifications yet.</div>`;
+    // Empty?
+    if (snapshot.empty) {
+      list.innerHTML = `<div style="padding:100px;text-align:center;color:#888;font-size:14px;">No notifications yet.</div>`;
       return;
     }
 
+    // Render each notification
     list.innerHTML = "";
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      const isNew = !data.read && Date.now() - (data.createdAt?.toDate?.() || 0) < 30_000;
 
-    snap.forEach(doc => {
-      const n = doc.data();
-      const isNew = !n.read && Date.now() - (n.createdAt?.toDate?.() || 0) < 30_000;
-
-      const item = document.createElement("div");
-      item.style.cssText = `
-        padding:11px 14px; margin:3px 6px; border-radius:10px;
-        background:${n.read ? "rgba(255,255,255,0.04)" : "rgba(255,0,110,0.1)"};
-        border-left:${isNew ? "3px solid #ff006e" : "3px solid transparent"};
-        cursor:pointer; transition:all 0.2s;
+      const div = document.createElement("div");
+      div.style.cssText = `
+        padding:12px 14px; margin:4px 6px; border-radius:10px;
+        background:${data.read ? "rgba(255,255,255,0.03)" : "rgba(255,0,110,0.09)"};
+        border-left:${isNew ? "4px solid #ff006e" : "none"};
+        cursor:pointer;
       `;
 
-      item.innerHTML = `
-        <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px;">
-          <div style="flex:1;">
-            <div style="font-weight:800; font-size:13.5px; color:#fff;">${n.title}</div>
-            <div style="font-size:12.5px; color:#ccc; margin-top:3px; line-height:1.35;">${n.message}</div>
-          </div>
-          ${isNew ? `<div style="color:#ff006e; font-size:9px; font-weight:900; animation:blink 1.6s infinite;">NEW</div>` : ""}
-        </div>
-        <div style="font-size:10.5px; color:#666; margin-top:6px; opacity:0.8;">
-          ${timeAgo(n.createdAt?.toDate())}
+      div.innerHTML = `
+        <div style="font-weight:800; font-size:13.5px; color:#fff;">${data.title || "Notification"}</div>
+        <div style="font-size:12.5px; color:#ccc; margin-top:4px;">${data.message || ""}</div>
+        <div style="font-size:10.5px; color:#666; margin-top:6px;">
+          ${timeAgo(data.createdAt?.toDate())}
+          ${isNew ? ' <span style="color:#ff006e; font-weight:900; font-size:9px;">NEW</span>' : ""}
         </div>
       `;
 
-      item.onclick = async () => {
-        if (!n.read) {
+      div.onclick = async () => {
+        if (!data.read) {
           await updateDoc(doc.ref, { read: true });
           loadNotifications(); // refresh instantly
         }
       };
 
-      list.appendChild(item);
+      list.appendChild(div);
     });
 
-  } catch (err) {
-    console.error("Notifications failed:", err);
-    list.innerHTML = `<div style="color:#f66;text-align:center;padding:80px;">Failed to load</div>`;
+  } catch (error) {
+    console.error("loadNotifications error:", error);
+    list.innerHTML = `<div style="padding:60px;text-align:center;color:#f66;">Failed to load</div>`;
   }
 }
 // Helper: time ago
