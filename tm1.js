@@ -1326,70 +1326,109 @@ function updateBankDisplay() {
 }
 
 
-// WITHDRAW BUTTON — OPENS CUSTOM CONFIRM
+// ==================== WITHDRAWAL SYSTEM — FINAL PERFECTION ====================
+
+let pendingWithdrawal = null; // stores amount + fastTrack during flow
+
+// INPUT — AUTO FORMAT WITH COMMAS
+document.getElementById('withdrawAmount')?.addEventListener('input', function(e) {
+  let value = e.target.value.replace(/\D/g, ''); // remove non-digits
+  if (value === '') {
+    e.target.value = '';
+    return;
+  }
+  const num = parseInt(value);
+  e.target.value = num.toLocaleString();
+});
+
+// WITHDRAW BUTTON — OPENS CUSTOM CONFIRM MODAL
 document.getElementById('withdrawBtn')?.addEventListener('click', () => {
-  const amount = parseInt(document.getElementById('withdrawAmount').value || 0);
-  if (amount < 5000 || amount > currentUser.cash) {
-    showNiceAlert("Invalid amount!\nMinimum ₦5,000", "Error");
+  let input = document.getElementById('withdrawAmount').value.replace(/,/g, '');
+  const amount = parseInt(input);
+
+  if (!amount || amount < 5000) {
+    showNiceAlert("Minimum withdrawal is ₦5,000", "Invalid Amount");
+    return;
+  }
+  if (amount > currentUser.cash) {
+    showNiceAlert(`You only have ₦${currentUser.cash.toLocaleString()}`, "Not Enough Cash");
     return;
   }
 
-  // Fill confirm modal
+  // SAVE FOR CONFIRMATION
+  pendingWithdrawal = { amount, isFastTrack: false };
+
+  // FILL CONFIRM MODAL
   document.getElementById('confirmAmount').textContent = amount.toLocaleString();
   document.getElementById('confirmBankName').textContent = currentUser.bankName || "Not Set";
-  document.getElementById('confirmAccountNum').textContent = currentUser.bankAccountNumber || "0000000000";
+  ";
+  document.getElementById('confirmAccountNum').textContent = currentUser.bankAccountNumber || "Not Set";
 
+  // CLOSE BANK → OPEN CONFIRM (z-index 99999)
   document.getElementById('starMarketModal').style.display = 'none';
   document.getElementById('withdrawConfirmModal').style.display = 'flex';
-
-  // STANDARD
-  document.getElementById('standardWithdrawBtn').onclick = () => {
-    document.getElementById('withdrawConfirmModal').style.display = 'none';
-    processWithdrawalAndShowOdometer(amount, false);
-  };
-
-  // FAST TRACK
-  document.getElementById('fastTrackWithdrawBtn').onclick = () => {
-    if (currentUser.stars < 21) {
-      showNiceAlert("Not enough STRZ for Fast Track!", "Low STRZ");
-      return;
-    }
-    document.getElementById('withdrawConfirmModal').style.display = 'none';
-    processWithdrawalAndShowOdometer(amount, true);
-  };
-
-  // CANCEL
-  document.getElementById('cancelWithdrawBtn').onclick = () => {
-    document.getElementById('withdrawConfirmModal').style.display = 'none';
-  };
 });
 
-// MAIN PROCESS + ODOMETER ANIMATION
-async function processWithdrawalAndShowOdometer(amount, isFastTrack = false) {
+// STANDARD WITHDRAW
+document.getElementById('standardWithdrawBtn')?.addEventListener('click', () => {
+  if (!pendingWithdrawal) return;
+  document.getElementById('withdrawConfirmModal').style.display = 'none';
+  processWithdrawalAndAnimate(pendingWithdrawal.amount, false);
+});
+
+// FAST TRACK
+document.getElementById('fastTrackWithdrawBtn')?.addEventListener('click', () => {
+  if (!pendingWithdrawal) return;
+  if (currentUser.stars < 21) {
+    showNiceAlert("You need 21 STRZ for Fast Track!", "Not Enough STRZ");
+    return;
+  }
+  document.getElementById('withdrawConfirmModal').style.display = 'none';
+  processWithdrawalAndAnimate(pendingWithdrawal.amount, true);
+});
+
+// CANCEL
+document.getElementById('cancelWithdrawBtn')?.addEventListener('click', () => {
+  document.getElementById('withdrawConfirmModal').style.display = 'none';
+  pendingWithdrawal = null;
+});
+
+// SUCCESS OVERLAY CLOSE
+document.getElementById('closeSuccessBtn')?.addEventListener('click', () => {
+  document.getElementById('withdrawSuccessOverlay').style.display = 'none';
+  pendingWithdrawal = null;
+});
+
+// MAIN PROCESS + ODOMETER
+async function processWithdrawalAndAnimate(amount, isFastTrack = false) {
   const userRef = doc(db, "users", currentUser.uid);
   const withdrawalRef = doc(collection(db, "withdrawals"));
 
   try {
     await runTransaction(db, async (t) => {
       const snap = await t.get(userRef);
+      if (!snap.exists()) throw "User not found";
       const data = snap.data();
-      if (data.cash < amount) throw "Not enough cash";
+
+      if (data.cash < amount) throw "Insufficient cash";
       if (isFastTrack && data.stars < 21) throw "Not enough STRZ";
 
       t.update(userRef, {
         cash: data.cash - amount,
-        stars: isFastTrack ? data.stars - 21 : data.stars
+        stars: isFastTrack ? data.stars - 21 : data.stars,
+        updatedAt: serverTimestamp()
       });
 
       t.set(withdrawalRef, {
         uid: currentUser.uid,
-        username: currentUser.chatId || "Player",
+        username: currentUser.chatId || currentUser.email?.split('@')[0] || "Player",
         amount,
         bankName: data.bankName || "Not set",
         bankAccountNumber: data.bankAccountNumber || "Not set",
         status: isFastTrack ? "fast_track" : "pending",
         isFastTrack,
-        requestedAt: serverTimestamp()
+        requestedAt: serverTimestamp(),
+        note: isFastTrack ? "User paid 21 STRZ for priority" : "Standard"
       });
     });
 
@@ -1397,51 +1436,49 @@ async function processWithdrawalAndShowOdometer(amount, isFastTrack = false) {
     const oldCash = currentUser.cash;
     currentUser.cash -= amount;
     if (isFastTrack) currentUser.stars -= 21;
-
     updateBankDisplay();
 
-    // ODOMETER DEDUCTION ANIMATION
+    // ODOMETER ANIMATION
     document.getElementById('odometerDeduction').textContent = oldCash.toLocaleString();
-    document.getElementById('successMessage').textContent = isFastTrack 
-      ? "FAST TRACK ACTIVATED!\nPriority processing + support notified" 
-      : "Withdrawal requested!\nProcessing in 1–3 days";
+    document.getElementById('successMessage').innerHTML = isFastTrack
+      ? "FAST TRACK ACTIVATED!<br>Support notified — expect payment soon"
+      : "Withdrawal requested!<br>Processing in 1–3 days";
 
     document.getElementById('withdrawSuccessOverlay').style.display = 'flex';
 
-    // Animate down to new balance
     let current = oldCash;
-    const target = currentUser.cash;
-    const step = Math.ceil((oldCash - target) / 30);
-
+    const step = Math.max(1, Math.ceil((oldCash - currentUser.cash) / 40));
     const timer = setInterval(() => {
       current -= step;
-      if (current <= target) {
-        current = target;
+      if (current <= currentUser.cash) {
+        current = currentUser.cash;
         clearInterval(timer);
       }
       document.getElementById('odometerDeduction').textContent = current.toLocaleString();
-    }, 50);
-
-    // FAST TRACK → OPEN SUPPORT
-    if (isFastTrack) {
-      setTimeout(() => {
-        const msg = encodeURIComponent(`FAST TRACK WITHDRAWAL\nUser: @${currentUser.chatId}\nAmount: ₦${amount.toLocaleString()}\nBank: ${currentUser.bankName}\nAccount: ${currentUser.bankAccountNumber}\nPlease process ASAP!`);
-        window.open(`https://t.me/YOUR_SUPPORT?text=${msg}`, '_blank');
-      }, 1000);
-    }
+    }, 40);
 
     triggerConfetti();
 
+    // FAST TRACK → AUTO OPEN TELEGRAM
+    if (isFastTrack) {
+      setTimeout(() => {
+        const msg = encodeURIComponent(
+          `FAST TRACK WITHDRAWAL\n\n` +
+          `User: @${currentUser.chatId || 'unknown'}\n` +
+          `Amount: ₦${amount.toLocaleString()}\n` +
+          `Bank: ${currentUser.bankName || 'Not set'}\n` +
+          `Account: ${currentUser.bankAccountNumber || 'Not set'}\n\n` +
+          `Please process urgently!`
+        );
+        window.open(`https://t.me/YOUR_SUPPORT_USERNAME?text=${msg}`, '_blank');
+      }, 1200);
+    }
+
   } catch (err) {
-    showNiceAlert("Withdrawal failed!\nPlease try again.", "Error");
+    console.error(err);
+    showNiceAlert("Withdrawal failed. Try again.", "Error");
   }
 }
-
-// CLOSE SUCCESS OVERLAY
-document.getElementById('closeSuccessBtn')?.addEventListener('click', () => {
-  document.getElementById('withdrawSuccessOverlay').style.display = 'none';
-});
-
 /* ============================================================
    TAPMASTER CORE — CLEAN, MODERN, FULLY WORKING (2025+)
    ALL SETTINGS IN ONE PLACE — CHANGE IN 5 SECONDS
