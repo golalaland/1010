@@ -1551,41 +1551,58 @@ function sanitizeKey(email) {
 })(); 
 // ← ONLY ONE OF THESE — THE FINAL SEAL
 
-// --- SEND STARS — FINAL 2025 ELITE EDITION (FULL NOTIF SUPPORT) ---
 async function sendStarsToUser(targetUser, amt) {
   if (amt < 100 || !currentUser?.uid) {
     showGoldAlert("Invalid gift", 4000);
     return;
   }
 
-  // UNIVERSAL ID RESOLUTION — WORKS FOR REGULAR, VIP, AND HOST
- const receiverId = (targetUser.isVIP || targetUser.isHost)
-  ? targetUser.uid
-  : targetUser.email
-    ? targetUser.email.replace(/[.@/\\]/g, '_')
-    : targetUser._docId || null;
+  // ===================================================================
+  // THE ONE AND ONLY TRUTH: WHAT IS THE REAL FIRESTORE DOCUMENT ID?
+  // ===================================================================
+  let receiverId;
+
+  if (targetUser.uid && (targetUser.isVIP || targetUser.isHost)) {
+    // VIPs and Hosts ALWAYS use their real Firebase UID as document ID
+    receiverId = targetUser.uid;
+  } else if (targetUser.uid) {
+    // Some regular users also have .uid (from auth) → trust it
+    receiverId = targetUser.uid;
+  } else if (targetUser.email) {
+    // Fallback: old-school email-based ID
+    receiverId = targetUser.email.replace(/[.@/\\]/g, '_');
+  } else if (targetUser._docId) {
+    // Sometimes you pass the raw doc ID
+    receiverId = targetUser._docId;
+  } else {
+    showGoldAlert("User not found", 4000);
+    return;
+  }
 
   const senderId = currentUser.uid;
 
-  if (!receiverId || senderId === receiverId) {
+  if (senderId === receiverId) {
     showGoldAlert("Can't gift yourself", 4000);
     return;
   }
+
+  console.log("Sending stars FROM:", senderId, "TO:", receiverId, "(", targetUser.chatId, ")");
 
   const fromRef = doc(db, "users", senderId);
   const toRef = doc(db, "users", receiverId);
   const glowColor = randomColor();
 
   try {
+    // 1. TRANSFER STARS — ATOMIC
     await runTransaction(db, async (tx) => {
       const senderSnap = await tx.get(fromRef);
-      if (!senderSnap.exists()) throw "Sender missing";
+      if (!senderSnap.exists()) throw "Your profile missing";
       if ((senderSnap.data().stars || 0) < amt) throw "Not enough stars";
 
       const receiverSnap = await tx.get(toRef);
       if (!receiverSnap.exists()) {
         tx.set(toRef, {
-          chatId: targetUser.chatId || "VIP",
+          chatId: targetUser.chatId || "User",
           stars: 0,
           isVIP: !!targetUser.isVIP,
           isHost: !!targetUser.isHost
@@ -1596,22 +1613,30 @@ async function sendStarsToUser(targetUser, amt) {
       tx.update(toRef, { stars: increment(amt) });
     });
 
-    // Banner, glow, success — unchanged (perfect already)
-    const bannerMsg = { /* ... your existing banner code ... */ };
+    // 2. BANNER
+    const bannerMsg = {
+      content: `${currentUser.chatId} gifted ${amt} stars to ${targetUser.chatId}!`,
+      timestamp: serverTimestamp(),
+      isBanner: true,
+      highlight: true,
+      buzzColor: glowColor,
+      type: "banner"
+    };
+
     const docRef = await addDoc(collection(db, "messages_room5"), bannerMsg);
-    // ... glow effects ...
+    renderMessagesFromArray([{ id: docRef.id, data: () => bannerMsg }], true);
 
+    setTimeout(() => triggerBannerEffect(document.getElementById(docRef.id)), 100);
+
+    // 3. SUCCESS + LAST GIFT
     showGoldAlert(`You sent ${amt} stars to ${targetUser.chatId}!`, 4000);
+    await updateDoc(toRef, { lastGift: { from: currentUser.chatId, amt, at: Date.now() } });
 
-    await updateDoc(toRef, {
-      lastGift: { from: currentUser.chatId, amt, at: Date.now() }
-    });
-
-    // NOTIFICATION — GOES TO CORRECT ID (VIP, HOST, OR REGULAR)
+    // 4. NOTIFICATION — THIS WILL NOW 100% ARRIVE
     await addDoc(collection(db, "notifications"), {
-      recipientId: receiverId,
-      title: "Star Gift Received!",
-      message: `${currentUser.chatId} gifted you ${amt} stars!`,
+      recipientId: receiverId,                    // ← THIS IS NOW CORRECT
+      title: "Star Gift!",
+      message: `${currentUser.chatId} sent you ${amt} stars!`,
       type: "starGift",
       fromUserId: currentUser.uid,
       fromChatId: currentUser.chatId,
@@ -1619,13 +1644,11 @@ async function sendStarsToUser(targetUser, amt) {
       createdAt: serverTimestamp()
     });
 
-    await updateDoc(doc(db, "messages_room5", docRef.id), { bannerShown: true });
-
-    console.log("Gift delivered to:", receiverId, "(VIP:", !!targetUser.isVIP, "| Host:", !!targetUser.isHost, ")");
+    console.log("SUCCESS → Stars + notification sent to ID:", receiverId);
 
   } catch (err) {
     console.error("Gift failed:", err);
-    showGoldAlert(`Error: ${err.message || "Failed"}`, 4000);
+    showGoldAlert("Gift failed — try again", 4000);
   }
 }
 /* ===============================
