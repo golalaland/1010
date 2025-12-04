@@ -1240,6 +1240,36 @@ function timeAgo(date) {
   return Math.floor(seconds / 86400) + "d ago";
 }
 
+
+// MARK ALL AS READ BUTTON
+document.getElementById("markAllRead")?.addEventListener("click", async () => {
+  if (!currentUser?.uid) return;
+
+  try {
+    const q = query(
+      collection(db, "notifications"),
+      where("recipientId", "==", currentUser.uid),
+      where("read", "==", false)
+    );
+
+    const snapshot = await getDocs(q);
+
+    const batch = writeBatch(db);
+    snapshot.docs.forEach(doc => {
+      batch.update(doc.ref, { read: true });
+    });
+
+    await batch.commit();
+
+    // Refresh everything
+    loadNotifications();
+
+    console.log("All notifications marked as read");
+  } catch (err) {
+    console.error("Mark all read failed:", err);
+  }
+});
+
 /* ---------- 🆔 ChatID Modal ---------- */
 async function promptForChatID(userRef, userData) {
   if (!refs.chatIDModal || !refs.chatIDInput || !refs.chatIDConfirmBtn)
