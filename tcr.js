@@ -1556,23 +1556,30 @@ async function sendStarsToUser(targetUser, amt) {
     return;
   }
 
-  const sanitize = (email) => email?.toLowerCase().replace(/[.@/\\]/g, '_');
+  const sanitize = (str) => str?.toLowerCase().replace(/[.@/\\]/g, '_');
 
-  // SENDER: always email-based (your system)
+  // SENDER = always email-based
   const senderId = sanitize(currentUser.email);
+  if (!senderId) return showGoldAlert("Your profile error", 4000);
 
-  // RECEIVER: SMART DETECTION — works for VIPs, Hosts, and regular users
-  let receiverId;
+  // RECEIVER = smart detection (THIS IS THE FIX)
+  let receiverId = null;
 
-  if (targetUser.isVIP || targetUser.isHost) {
-    // VIPs & Hosts: use their stored email field in their doc
-    // We fetch it safely in the transaction below
-    receiverId = null; // will be resolved inside transaction
-  } else if (targetUser.email) {
+  // 1. If they have email → use it (regular users)
+  if (targetUser.email) {
     receiverId = sanitize(targetUser.email);
-  } else if (targetUser.chatId && targetUser.chatId.includes("@")) {
+  }
+  // 2. If they are VIP/Host → use their chatId (because chatId = email for them)
+  else if ((targetUser.isVIP || targetUser.isHost) && targetUser.chatId) {
+    receiverId = sanitize(targetUser.chatId); // chatId is their email
+  }
+  // 3. Last resort: if chatId looks like email
+  else if (targetUser.chatId?.includes("@")) {
     receiverId = sanitize(targetUser.chatId);
-  } else {
+  }
+
+  if (!receiverId) {
+    console.error("Cannot resolve receiver ID:", targetUser);
     showGoldAlert("Cannot identify user", 4000);
     return;
   }
@@ -1583,35 +1590,25 @@ async function sendStarsToUser(targetUser, amt) {
   }
 
   const fromRef = doc(db, "users", senderId);
+  const toRef   = doc(db, "users", receiverId);
   const glowColor = randomColor();
 
   try {
+    // TRANSFER STARS
     await runTransaction(db, async (tx) => {
       const senderSnap = await tx.get(fromRef);
-      if (!senderSnap.exists()) throw "Your profile missing";
-      if ((senderSnap.data().stars || 0) < amt) throw "Not enough stars";
-
-      let finalReceiverId = receiverId;
-
-      // VIP/Host fallback: get their actual document ID from their email field
-      if (!finalReceiverId && (targetUser.isVIP || targetUser.isHost)) {
-        const usersSnap = await getDocs(query(collection(db, "users"), where("email", "==", targetUser.email || targetUser.chatId)));
-        if (usersSnap.empty) throw "VIP user not found";
-        finalReceiverId = usersSnap.docs[0].id;
+      if (!senderSnap.exists() || (senderSnap.data().stars || 0) < amt) {
+        throw "Not enough stars";
       }
 
-      if (!finalReceiverId) throw "Receiver not found";
-
-      const toRef = doc(db, "users", finalReceiverId);
       const receiverSnap = await tx.get(toRef);
-
       if (!receiverSnap.exists()) {
         tx.set(toRef, {
-          chatId: targetUser.chatId || "VIP",
+          chatId: targetUser.chatId || "User",
           email: targetUser.email || targetUser.chatId,
-          stars: 0,
           isVIP: !!targetUser.isVIP,
-          isHost: !!targetUser.isHost
+          isHost: !!targetUser.isHost,
+          stars: 0
         }, { merge: true });
       }
 
@@ -1619,7 +1616,7 @@ async function sendStarsToUser(targetUser, amt) {
       tx.update(toRef,   { stars: increment(amt) });
     });
 
-    // === BANNER ===
+    // BANNER
     const bannerMsg = {
       content: `${currentUser.chatId} gifted ${amt} stars to ${targetUser.chatId}!`,
       timestamp: serverTimestamp(),
@@ -1632,18 +1629,17 @@ async function sendStarsToUser(targetUser, amt) {
     renderMessagesFromArray([{ id: docRef.id, data: () => bannerMsg }], true);
     setTimeout(() => triggerBannerEffect(document.getElementById(docRef.id)), 100);
 
-    // === SUCCESS ===
+    // SUCCESS
     showGoldAlert(`You sent ${amt} stars to ${targetUser.chatId}!`, 4000);
 
-    // === LAST GIFT + NOTIFICATION (using email-based ID) ===
-    const finalReceiverId = receiverId || sanitize(targetUser.email || targetUser.chatId);
-
-    await updateDoc(doc(db, "users", finalReceiverId), {
+    // LAST GIFT
+    await updateDoc(toRef, {
       lastGift: { from: currentUser.chatId, amt, at: Date.now() }
     });
 
+    // NOTIFICATION — 100% lands
     await addDoc(collection(db, "notifications"), {
-      recipientId: finalReceiverId,
+      recipientId: receiverId,
       title: "Star Gift Received!",
       message: `${currentUser.chatId} gifted you ${amt} stars!`,
       type: "starGift",
@@ -1653,6 +1649,8 @@ async function sendStarsToUser(targetUser, amt) {
     });
 
     await updateDoc(doc(db, "messages_room5", docRef.id), { bannerShown: true });
+
+    console.log("Gift sent to:", receiverId, "(VIP:", !!targetUser.isVIP, "| Host:", !!targetUser.isHost, ")");
 
   } catch (err) {
     console.error("Gift failed:", err);
