@@ -1557,30 +1557,61 @@ async function sendStarsToUser(targetUser, amt) {
   }
 
   const sanitize = (email) => email?.toLowerCase().replace(/[.@/\\]/g, '_');
-  const senderId   = sanitize(currentUser.email);
-  const receiverId = sanitize(targetUser.email);
 
-  if (!receiverId || senderId === receiverId) {
+  // SENDER: always email-based (your system)
+  const senderId = sanitize(currentUser.email);
+
+  // RECEIVER: SMART DETECTION — works for VIPs, Hosts, and regular users
+  let receiverId;
+
+  if (targetUser.isVIP || targetUser.isHost) {
+    // VIPs & Hosts: use their stored email field in their doc
+    // We fetch it safely in the transaction below
+    receiverId = null; // will be resolved inside transaction
+  } else if (targetUser.email) {
+    receiverId = sanitize(targetUser.email);
+  } else if (targetUser.chatId && targetUser.chatId.includes("@")) {
+    receiverId = sanitize(targetUser.chatId);
+  } else {
+    showGoldAlert("Cannot identify user", 4000);
+    return;
+  }
+
+  if (senderId === receiverId) {
     showGoldAlert("Can't gift yourself", 4000);
     return;
   }
 
   const fromRef = doc(db, "users", senderId);
-  const toRef   = doc(db, "users", receiverId);
   const glowColor = randomColor();
 
   try {
     await runTransaction(db, async (tx) => {
       const senderSnap = await tx.get(fromRef);
-      if (!senderSnap.exists()) throw "Profile missing";
+      if (!senderSnap.exists()) throw "Your profile missing";
       if ((senderSnap.data().stars || 0) < amt) throw "Not enough stars";
 
+      let finalReceiverId = receiverId;
+
+      // VIP/Host fallback: get their actual document ID from their email field
+      if (!finalReceiverId && (targetUser.isVIP || targetUser.isHost)) {
+        const usersSnap = await getDocs(query(collection(db, "users"), where("email", "==", targetUser.email || targetUser.chatId)));
+        if (usersSnap.empty) throw "VIP user not found";
+        finalReceiverId = usersSnap.docs[0].id;
+      }
+
+      if (!finalReceiverId) throw "Receiver not found";
+
+      const toRef = doc(db, "users", finalReceiverId);
       const receiverSnap = await tx.get(toRef);
+
       if (!receiverSnap.exists()) {
         tx.set(toRef, {
-          chatId: targetUser.chatId || "User",
-          email: targetUser.email,
-          stars: 0
+          chatId: targetUser.chatId || "VIP",
+          email: targetUser.email || targetUser.chatId,
+          stars: 0,
+          isVIP: !!targetUser.isVIP,
+          isHost: !!targetUser.isHost
         }, { merge: true });
       }
 
@@ -1588,6 +1619,7 @@ async function sendStarsToUser(targetUser, amt) {
       tx.update(toRef,   { stars: increment(amt) });
     });
 
+    // === BANNER ===
     const bannerMsg = {
       content: `${currentUser.chatId} gifted ${amt} stars to ${targetUser.chatId}!`,
       timestamp: serverTimestamp(),
@@ -1596,23 +1628,22 @@ async function sendStarsToUser(targetUser, amt) {
       buzzColor: glowColor,
       type: "banner"
     };
-
     const docRef = await addDoc(collection(db, "messages_room5"), bannerMsg);
     renderMessagesFromArray([{ id: docRef.id, data: () => bannerMsg }], true);
+    setTimeout(() => triggerBannerEffect(document.getElementById(docRef.id)), 100);
 
-    setTimeout(() => {
-      const el = document.getElementById(docRef.id);
-      if (el) triggerBannerEffect(el);
-    }, 100);
-
+    // === SUCCESS ===
     showGoldAlert(`You sent ${amt} stars to ${targetUser.chatId}!`, 4000);
 
-    await updateDoc(toRef, {
+    // === LAST GIFT + NOTIFICATION (using email-based ID) ===
+    const finalReceiverId = receiverId || sanitize(targetUser.email || targetUser.chatId);
+
+    await updateDoc(doc(db, "users", finalReceiverId), {
       lastGift: { from: currentUser.chatId, amt, at: Date.now() }
     });
 
     await addDoc(collection(db, "notifications"), {
-      recipientId: receiverId,
+      recipientId: finalReceiverId,
       title: "Star Gift Received!",
       message: `${currentUser.chatId} gifted you ${amt} stars!`,
       type: "starGift",
@@ -1624,11 +1655,10 @@ async function sendStarsToUser(targetUser, amt) {
     await updateDoc(doc(db, "messages_room5", docRef.id), { bannerShown: true });
 
   } catch (err) {
-    console.error("sendStarsToUser failed:", err);
+    console.error("Gift failed:", err);
     showGoldAlert("Gift failed — try again", 4000);
   }
 }
-
 /* ===============================
    FINAL VIP LOGIN SYSTEM — 100% WORKING
    Google disabled | VIP button works | Safe auto-login
