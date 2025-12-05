@@ -1559,7 +1559,10 @@ async function sendStarsToUser(targetUser, amt) {
   const sanitize = (str) => str?.toLowerCase().replace(/[.@/\\]/g, '_');
 
   const senderId = sanitize(currentUser.email);
-  if (!senderId) return showGoldAlert("Your profile error", 4000);
+  if (!senderId) {
+    showGoldAlert("Your profile error", 4000);
+    return;
+  }
 
   let receiverId = null;
 
@@ -1588,25 +1591,23 @@ async function sendStarsToUser(targetUser, amt) {
   const glowColor = randomColor();
 
   try {
-    await runTransaction(db, async (tx => {
-      const senderSnap = tx.get(fromRef);
-      const receiverSnap = tx.get(toRef);
+    await runTransaction(db, async (tx) => {
+      const senderSnap = await tx.get(fromRef);
+      const receiverSnap = await tx.get(toRef);
 
-      return Promise.all([senderSnap, receiverSnap]).then(([s, r]) => {
-        if (!s.exists()) throw "Profile missing";
-        if ((s.data().stars || 0) < amt) throw "Not enough stars";
+      if (!senderSnap.exists()) throw "Profile missing";
+      if ((senderSnap.data().stars || 0) < amt) throw "Not enough stars";
 
-        if (!r.exists()) {
-          tx.set(toRef, {
-            chatId: targetUser.chatId || "User",
-            email: targetUser.email || targetUser.chatId,
-            stars: 0
-          }, { merge: true });
-        }
+      if (!receiverSnap.exists()) {
+        tx.set(toRef, {
+          chatId: targetUser.chatId || "User",
+          email: targetUser.email || targetUser.chatId,
+          stars: 0
+        }, { merge: true });
+      }
 
-        tx.update(fromRef, { stars: increment(-amt), starsGifted: increment(amt) });
-        tx.update(toRef, { stars: increment(amt) });
-      });
+      tx.update(fromRef, { stars: increment(-amt), starsGifted: increment(amt) });
+      tx.update(toRef, { stars: increment(amt) });
     });
 
     const bannerMsg = {
@@ -1620,6 +1621,7 @@ async function sendStarsToUser(targetUser, amt) {
 
     const docRef = await addDoc(collection(db, "messages_room5"), bannerMsg);
     renderMessagesFromArray([{ id: docRef.id, data: () => bannerMsg }], true);
+
     setTimeout(() => {
       const el = document.getElementById(docRef.id);
       if (el) triggerBannerEffect(el);
