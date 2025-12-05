@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>xixi.live • Live Fast. Stream Wild.</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;500;700;900&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+  <style>
+    :root {
+      --neon: #00ff88;
+      --neon-dark: #00cc70;
+      --deep: #000a05;
+      --glow: rgba(0, 255, 136, 0.6);
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      background: #000;
+      color: white;
+      font-family: 'Inter', sans-serif;
+      overflow-x: hidden;
+    }
+
+    /* Floating Neon Cubes */
+    #particles {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 1;
+    }
+    .cube {
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      transform-style: preserve-3d;
+      animation: float 20s infinite linear;
+    }
+    .cube div {
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      background: var(--neon);
+      border: 1px solid var(--neon);
+      box-shadow: 0 0 20px var(--glow), inset 0 0 10px rgba(0,255,136,0.4);
+      opacity: 0.8;
+    }
+    .cube .front  { transform: translateZ(10px); }
+    .cube .back   { transform: rotateY(180deg) translateZ(10px); }
+    .cube .right  { transform: rotateY(90deg) translateZ(10px); }
+    .cube .left   { transform: rotateY(-90deg) translateZ(10px); }
+    .cube .top    { transform: rotateX(90deg) translateZ(10px); }
+    .cube .bottom { transform: rotateX(-90deg) translateZ(10px); }
+
+    @keyframes float {
+      0%   { transform: translateY(100vh) rotateX(0deg) rotateY(0deg); opacity: 0; }
+      10%  { opacity: 0.9; }
+      90%  { opacity: 0.9; }
+      100% { transform: translateY(-150px) translateX(120px) rotateX(360deg) rotateY(360deg); opacity: 0; }
+    }
+
+    /* Hero */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      z-index: 2;
+      background: radial-gradient(circle at 30% 70%, rgba(0,255,136,0.25) 0%, transparent 60%),
+                  radial-gradient(circle at 80% 20%, rgba(0,255,136,0.15) 0%, transparent 50%);
+    }
+    .logo {
+      font-size: clamp(4rem, 12vw, 10rem);
+      font-weight: 900;
+      background: linear-gradient(135deg, #00ff88, #00cc70, #00ffaa);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: -0.02em;
+      text-shadow: 0 0 80px rgba(0,255,136,0.6);
+    }
+    .tagline {
+      font-size: 1.4rem;
+      margin-top: 1rem;
+      opacity: 0.9;
+      background: linear-gradient(90deg, #00ffaa, #00ff88);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .cta, .waitlist-btn {
+      margin-top: 3rem;
+      padding: 1.3rem 4rem;
+      font-size: 1.4rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #00ff88, #00cc70);
+      color: #000;
+      border: none;
+      border-radius: 60px;
+      cursor: pointer;
+      box-shadow: 0 10px 40px rgba(0,255,136,0.5);
+      transition: all 0.4s ease;
+      position: relative;
+      overflow: hidden;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .cta:hover, .waitlist-btn:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 20px 60px rgba(0,255,136,0.8);
+    }
+    .cta::before, .waitlist-btn::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, transparent, rgba(255,255,255,0.4), transparent);
+      transform: translateX(-100%);
+      transition: transform 0.6s;
+    }
+    .cta:hover::before, .waitlist-btn:hover::before { transform: translateX(100%); }
+
+    /* Features */
+    .features {
+      padding: 150px 10%;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 3rem;
+      position: relative;
+      z-index: 2;
+    }
+    .card {
+      background: rgba(0,30,15,0.4);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(0,255,136,0.3);
+      border-radius: 24px;
+      padding: 2.5rem;
+      text-align: center;
+      transition: all 0.4s ease;
+    }
+    .card:hover {
+      transform: translateY(-20px);
+      border-color: var(--neon);
+      box-shadow: 0 20px 60px rgba(0,255,136,0.3);
+    }
+    .card h3 {
+      font-size: 1.8rem;
+      margin: 1.5rem 0;
+      background: linear-gradient(135deg, #00ffaa, #00ff88);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    /* Dope Footer */
+    footer {
+      position: relative;
+      padding: 120px 10% 80px;
+      background: linear-gradient(to top, #001a0d, transparent);
+      text-align: center;
+      overflow: hidden;
+    }
+    footer::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--neon), transparent);
+      box-shadow: 0 0 20px var(--neon);
+    }
+    .footer-glow {
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 50% 0%, rgba(0,255,136,0.15), transparent 70%);
+      pointer-events: none;
+    }
+    .socials a {
+      color: var(--neon);
+      font-size: 2.5rem;
+      margin: 0 1.5rem;
+      transition: all 0.4s;
+      text-shadow: 0 0 20px var(--glow);
+    }
+    .socials a:hover { 
+      color: white; 
+      transform: translateY(-10px) scale(1.4); 
+      text-shadow: 0 0 40px var(--glow);
+    }
+    .footer-text {
+      margin-top: 3rem;
+      font-size: 1rem;
+      opacity: 0.8;
+    }
+  </style>
+</head>
+<body>
+  <div id="particles"></div>
+
+  <section class="hero">
+    <div style="text-align:center">
+      <h1 class="logo">乂丨乂丨</h1>
+      <p class="tagline">Go Live. Own Your Vibe</p>
+      <button class="waitlist-btn" onclick="alert('You’re on the list — get ready to go nuclear ⚡')">Join Waitlist</button>
+    </div>
+  </section>
+
+  <section class="features">
+    <div class="card">
+      <h3>Unique Chatrooms</h3>
+      <p>Zero lag, 4K, and that signature xixi neon glow. Go live in one tap.</p>
+    </div>
+    <div class="card">
+      <h3>Real Rewards</h3>
+      <p>Earn $STRZ, unlock contents, and climb the xixi throne.</p>
+    </div>
+    <div class="card">
+      <h3>Real Community</h3>
+      <p>Chat that moves as fast as you do. Emotes, raids, and pure chaos.</p>
+    </div>
+    <div class="card">
+      <h3>Wild Energy</h3>
+      <p>Neon vibes only. This is where legends are born.</p>
+    </div>
+  </section>
+
+  <footer>
+    <div class="footer-glow"></div>
+    <button class="waitlist-btn" style="margin-bottom: 3rem;" onclick="alert('Locked in — see you on the other side 🟢')">
+      Join Waitlist
+    </button>
+    <div class="socials">
+      <a href="#">✕</a>
+      <a href="#">🟢</a>
+      <a href="#">⚡</a>
+    </div>
+    <p class="footer-text">© 2025 xixi.live • Built for the untamed, the electric, the unstoppable.</p>
+  </footer>
+
+  <script>
+    // Neon floating cubes
+    const particlesContainer = document.getElementById('particles');
+    for(let i = 0; i < 60; i++) {
+      const cube = document.createElement('div');
+      cube.classList.add('cube');
+      
+      const faces = ['front','back','right','left','top','bottom'];
+      faces.forEach(face => {
+        const div = document.createElement('div');
+        div.classList.add(face);
+        cube.appendChild(div);
+      });
+
+      cube.style.left = Math.random() * 100 + 'vw';
+      cube.style.animationDelay = Math.random() * 20 + 's';
+      cube.style.animationDuration = 18 + Math.random() * 25 + 's';
+      
+      particlesContainer.appendChild(cube);
+    }
+
+    // GSAP Animations
+    gsap.from('.logo', { y: 100, opacity: 0, duration: 1.5, ease: 'power4.out' });
+    gsap.from('.tagline', { y: 60, opacity: 0, duration: 1.2, delay: 0.5, ease: 'power3.out' });
+    gsap.from('.waitlist-btn', { scale: 0.8, opacity: 0, duration: 1, delay: 1, ease: 'back.out(1.7)' });
+    gsap.utils.toArray('.card').forEach((card, i) => {
+      gsap.from(card, {
+        y: 200, opacity: 0, duration: 1, delay: i * 0.2,
+        scrollTrigger: { trigger: '.features', start: 'top 70%' }
+      });
+    });
+  </script>
+</body>
+</html>
