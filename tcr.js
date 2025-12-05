@@ -1565,14 +1565,11 @@ async function sendStarsToUser(targetUser, amt) {
 
   if (targetUser._docId) {
     receiverId = targetUser._docId;
-  }
-  else if (targetUser.email) {
+  } else if (targetUser.email) {
     receiverId = sanitize(targetUser.email);
-  }
-  else if (targetUser.chatId?.includes("@")) {
+  } else if (targetUser.chatId?.includes("@")) {
     receiverId = sanitize(targetUser.chatId);
-  }
-  else if (targetUser.uid) {
+  } else if (targetUser.uid) {
     receiverId = targetUser.uid;
   }
 
@@ -1587,19 +1584,19 @@ async function sendStarsToUser(targetUser, amt) {
   }
 
   const fromRef = doc(db, "users", senderId);
-  const toRef   = doc(db, "users", receiverId);
+  const toRef = doc(db, "users", receiverId);
   const glowColor = randomColor();
 
   try {
     await runTransaction(db, async (tx => {
-      return Promise.all([
-        tx.get(fromRef),
-        tx.get(toRef)
-      ]).then(([senderSnap, receiverSnap]) => {
-        if (!senderSnap.exists()) throw "Profile missing";
-        if ((senderSnap.data().stars || 0) < amt) throw "Not enough stars";
+      const senderSnap = tx.get(fromRef);
+      const receiverSnap = tx.get(toRef);
 
-        if (!receiverSnap.exists()) {
+      return Promise.all([senderSnap, receiverSnap]).then(([s, r]) => {
+        if (!s.exists()) throw "Profile missing";
+        if ((s.data().stars || 0) < amt) throw "Not enough stars";
+
+        if (!r.exists()) {
           tx.set(toRef, {
             chatId: targetUser.chatId || "User",
             email: targetUser.email || targetUser.chatId,
@@ -1608,7 +1605,7 @@ async function sendStarsToUser(targetUser, amt) {
         }
 
         tx.update(fromRef, { stars: increment(-amt), starsGifted: increment(amt) });
-        tx.update(toRef,   { stars: increment(amt) });
+        tx.update(toRef, { stars: increment(amt) });
       });
     });
 
@@ -1623,11 +1620,16 @@ async function sendStarsToUser(targetUser, amt) {
 
     const docRef = await addDoc(collection(db, "messages_room5"), bannerMsg);
     renderMessagesFromArray([{ id: docRef.id, data: () => bannerMsg }], true);
-    setTimeout(() => triggerBannerEffect(document.getElementById(docRef.id)), 100);
+    setTimeout(() => {
+      const el = document.getElementById(docRef.id);
+      if (el) triggerBannerEffect(el);
+    }, 100);
 
     showGoldAlert(`You sent ${amt} stars to ${targetUser.chatId}!`, 4000);
 
-    await updateDoc(toRef, { lastGift: { from: currentUser.chatId, amt, at: Date.now() } });
+    await updateDoc(toRef, {
+      lastGift: { from: currentUser.chatId, amt, at: Date.now() }
+    });
 
     await addDoc(collection(db, "notifications"), {
       recipientId: receiverId,
