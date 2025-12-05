@@ -463,6 +463,28 @@
     0%   { transform: translateX(-100%); }
     100% { transform: translateX(100%); }
   }
+  .column-title {
+  display: block;
+  font-size: 1.1rem !important;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: #00ff88 !important;
+  margin-bottom: 20px !important;
+  text-shadow: 0 0 20px rgba(0,255,136,0.7);
+  text-decoration: none !important;
+  transition: all 0.3s ease;
+}
+
+.column-title:hover {
+  color: white !important;
+  text-shadow: 0 0 30px #00ff88;
+  transform: translateX(6px);
+}
+
+.logo-link {
+  text-decoration: none;
+}
   </style>
 </head>
 <body>
@@ -510,39 +532,58 @@
       <div class="shine"></div>
     </button>
   </div>
+<footer class="neon-footer">
+  <div class="footer-glow-top"></div>
+  
+  <!-- JOIN WAITLIST BUTTON WITH REAL LINK -->
+  <div class="waitlist-wrapper">
+    <a href="https://t.co/yourwaitlistlink" target="_blank" class="waitlist-btn-footer">
+      <span>Join Waitlist →</span>
+      <div class="shine"></div>
+    </a>
+  </div>
 
   <div class="footer-container">
     <div class="footer-grid">
+      <!-- Logo column – make the logo itself clickable -->
       <div class="footer-col logo-col">
-        <h4 class="neon-logo">乂丨乂丨</h4>
+        <a href="https://xixi.live" class="logo-link">
+          <h4 class="neon-logo">xixi</h4>
+        </a>
         <p>Go Live. Own Your Vibe</p>
       </div>
+
+      <!-- EXPLORE – title clickable + items -->
       <div class="footer-col">
-        <h4>Explore</h4>
-        <a href="#">Games</a>
-        <a href="#">Livestreams</a>
-        <a href="#">Gigs</a>
-        <a href="#">Events</a>
+        <a href="/explore" class="column-title">Explore</a>
+        <a href="/games">Games</a>
+        <a href="/streams">Livestreams</a>
+        <a href="/gigs">Gigs</a>
+        <a href="/events">Events</a>
       </div>
+
+      <!-- SUPPORT – title clickable -->
       <div class="footer-col">
-        <h4>Support</h4>
-        <a href="#">Help Center</a>
-        <a href="#">Contact</a>
-        <a href="#">Privacy Policy</a>
-        <a href="#">Terms of Service</a>
+        <a href="/support" class="column-title">Support</a>
+        <a href="/help">Help Center</a>
+        <a href="mailto:hello@xixi.live">Contact</a>
+        <a href="/privacy">Privacy Policy</a>
+        <a href="/terms">Terms of Service</a>
       </div>
+
+      <!-- CONNECT – title + real social links -->
       <div class="footer-col">
-        <h4>Connect</h4>
-        <a href="#">Twitter / X</a>
-        <a href="#">Instagram</a>
-        <a href="#">Telegram</a>
-        <a href="#">Discord</a>
+        <a href="#" class="column-title">Connect</a>
+        <a href="https://twitter.com/yourhandle" target="_blank" rel="noopener">Twitter / X</a>
+        <a href="https://instagram.com/yourhandle" target="_blank" rel="noopener">Instagram</a>
+        <a href="https://t.me/yourchannel" target="_blank" rel="noopener">Telegram</a>
+        <a href="https://discord.gg/yourinvite" target="_blank" rel="noopener">Discord</a>
       </div>
     </div>
 
     <div class="footer-bottom">
       <div class="scanline"></div>
-      <p>© 2025 xixi.live • Built by 96 Agency — All rights reserved.</p>
+      <p>© 2025 xixi.live • ᙅᙀᙖᙓ — All rights reserved.</p>
     </div>
   </div>
 </footer>
