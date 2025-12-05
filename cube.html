@@ -192,7 +192,8 @@
       font-size: 1rem;
       opacity: 0.8;
     }
-    .waitlist-btn {
+.waitlist-btn {
+  display: inline-block;                    /* add this for <a> tags */
   position: relative;
   padding: 1.3rem 4.2rem;
   font-family: 'Inter', sans-serif;
@@ -209,31 +210,27 @@
   box-shadow: 0 10px 40px rgba(0, 255, 136, 0.5);
   transition: all 0.4s ease;
   z-index: 1;
+  text-decoration: none;                    /* add this too (for <a>) */
 }
-
 .waitlist-btn:hover {
   transform: translateY(-8px);
   box-shadow: 0 20px 60px rgba(0, 255, 136, 0.8);
 }
-
 .waitlist-btn .btn-text {
   position: relative;
   z-index: 3;
 }
-
 .waitlist-btn .btn-glow {
   position: absolute;
   inset: 0;
   background: linear-gradient(135deg, transparent, rgba(255,255,255,0.4), transparent);
   transform: translateX(-150%);
   transition: transform 0.7s ease;
+  pointer-events: none;     /* ← THE FIX */
 }
-
 .waitlist-btn:hover .btn-glow {
   transform: translateX(150%);
 }
-
-/* Optional pulsing border effect */
 .waitlist-btn::after {
   content: '';
   position: absolute;
@@ -242,6 +239,7 @@
   background: linear-gradient(45deg, #00ff88, transparent, #00ff88);
   opacity: 0;
   animation: pulse 2s infinite;
+  pointer-events: none;     /* also add this here just to be safe */
 }
 
 @keyframes pulse {
@@ -519,9 +517,9 @@
       <h3>Real Community</h3>
       <p>Chat that moves as fast as you do. Emotes, raids, and pure chaos.</p>
         <div class="card">
+         </div>  
       <h3>FUN GIRLS</h3>
       <p>Chat that moves as fast as you do. Emotes, raids, and pure chaos.</p>
-    </div>
     </div>
   </section>
 
