@@ -581,243 +581,239 @@ const handleNormalTap = debounce(async () => {
 });
 
 // ======================================================
-// TAP GAME 2025 — FINAL BULLETPROOF VERSION (DEC 2025)
-// NO ERRORS • NO MISSED TAPS • WORKS EVERY TIME
+//  MAIN TAP LISTENER — ONE CLEAN VERSION ONLY
 // ======================================================
+// === ULTRA-OPTIMIZED TAP HANDLER ===
+let tapQueue = 0;
+let processingTaps = false;
 
-(() => {
-  // Prevent double-loading (fixes "already declared" error forever)
-  if (window.__TAP_GAME_LOADED) return;
-  window.__TAP_GAME_LOADED = true;
+tapButton?.addEventListener(tapEvent, (e) => {
+  if (!running || tapLocked) return;
 
-  // ────────────── ALL GLOBALS (safe inside closure) ──────────────
-  let taps = 0, earnings = 0, sessionTaps = 0, sessionEarnings = 0;
-  let progress = 0, bonusLevel = 1, tapsForNext = 100;
-  let cashCounter = 0, cashThreshold = 0;
-  let timer = 0, running = false, sessionAlreadySaved = false;
-  let intervalId = null, pendingTaps = 0, rafId = null;
+  tapQueue++;
+  processTapQueue();
+});
 
-  // ─────────────────── RED HOT MODE (now properly exported) ───────────────────
-  window.RedHotMode = {
-    active: false,
-    timeout: null,
-    sound: new Audio('https://raw.githubusercontent.com/golalaland/1010/main/buzzer-13-187755.mp3'),
+async function processTapQueue() {
+  if (processingTaps || tapQueue === 0) return;
+  processingTaps = true;
 
-    init() { this.sound.volume = 0.65; this.reset(); },
-    reset() {
-      this.active = false;
-      clearTimeout(this.timeout);
-      this.timeout = null;
-      tapButton?.classList.remove('red-hot', 'red-punish');
-      tapButton?.querySelector('.inner')?.textContent = 'TAP';
-    },
-    trigger() {
-      if (this.active || this.timeout) return false;
-      this.active = true;
-      tapButton?.classList.add('red-hot');
-      tapButton?.querySelector('.inner')?.textContent = 'HOT';
-      this.sound.currentTime = 0;
-      this.sound.play().catch(() => {});
-      const duration = 5000 + Math.random() * 2000;
-      this.timeout = setTimeout(() => this.reset(), duration);
-      return true;
-    },
-    punish(multiplier = 1) {
-      const penalty = Math.min(59 * multiplier, taps);
-      taps = Math.max(0, taps - penalty);
-      progress = Math.max(0, progress - multiplier * 10);
-      showFloatingPlus?.(tapButton, `-${penalty}`);
-      tapButton?.classList.add('red-punish');
-      setTimeout(() => tapButton?.classList.remove('red-punish'), 400);
-      document.body.style.background = '#330000';
-      setTimeout(() => document.body.style.background = '', 150);
-      if ('vibrate' in navigator) navigator.vibrate([100,50,150,50,100]);
-      updateUI?.();
-      updateBonusBar?.();
-    }
-  };
+  while (tapQueue > 0) {
+    tapQueue--;
 
-  // ─────────────────── ULTRA-FAST TAP ENGINE ───────────────────
-  const TAP_EVENTS = ['touchstart', 'pointerdown', 'mousedown'];
-
-  const rawTapHandler = (e) => {
-    if (!running || RedHotMode.active) return;
-    if (e.type === 'touchstart') e.preventDefault();
-
-    pendingTaps++;
-
-    tapButton?.classList.add('tapped');
-    requestAnimationFrame(() => tapButton?.classList.remove('tapped'));
-
-    if (!rafId) rafId = requestAnimationFrame(processBatch);
-  };
-
-  const processBatch = () => {
-    rafId = null;
-    if (!pendingTaps) return;
-
-    const batch = pendingTaps;
-    pendingTaps = 0;
-
+    // --- LIGHT LOGIC ONLY ---
     if (RedHotMode.active) {
-      RedHotMode.punish(batch);
+      RedHotMode.punish();
+      tapLocked = true;
+      setTimeout(() => tapLocked = false, 300);
+    } else {
+      tapLocked = true;
+      setTimeout(() => tapLocked = false, 50);
+
+      // Run the heavy logic OUTSIDE the event
+      await Promise.resolve().then(handleNormalTap);
+    }
+  }
+
+  processingTaps = false;
+}
+
+// ======================================================
+//  START SESSION — FULL RESET
+// ======================================================
+function startSession() {
+  console.log("%c STARTING NEW ROUND — RESETTING SAVE GUARD", "color:#ff00aa;font-weight:bold");
+  sessionAlreadySaved = false;  // ← THIS IS THE MISSING LINE
+  taps = 0;
+  earnings = 0;
+  timer = SESSION_DURATION;
+  bonusLevel = sessionBonusLevel;  // carry over from last session
+  progress = 0;
+  tapsForNext = 100 + (bonusLevel - 1) * 50;
+  cashCounter = 0;
+  cashThreshold = randomInt(1, 12);
+
+  sessionTaps = 0;
+  sessionEarnings = 0;
+  sessionBonusLevel = bonusLevel;
+
+  running = true;
+  tapLocked = false;
+  tapButton.disabled = false;
+
+  RedHotMode.reset();
+  trainBar && (trainBar.style.width = "100%");
+  updateBonusBar();
+  updateUI();
+
+  if (intervalId) clearInterval(intervalId);
+
+  intervalId = setInterval(() => {
+    if (!running) return;
+    timer--;
+
+    if (timer <= 0) {
+      timer = 0;
+      running = false;
+      clearInterval(intervalId);
+      intervalId = null;
+      showEndGameModal();
+      endSessionRecord();  // ← 1 perfect save
       return;
     }
 
-    taps += batch;
-    sessionTaps += batch;
-    progress += batch;
-    cashCounter += batch;
+    updateUI();
+    trainBar && (trainBar.style.width = (timer / SESSION_DURATION * 100) + "%");
 
-    const earned = batch * (1 + (bonusLevel - 1) * 0.1);
-    earnings += earned;
-    sessionEarnings += earned;
-
-    showFloatingPlus?.(tapButton, `+${batch}`);
-
-    if (cashCounter >= cashThreshold) {
-      cashCounter = 0;
-      cashThreshold = randomInt(5, 15);
-      triggerCashDrop?.();
+    // RED HOT TRAP
+    if (timer % 8 === 0 && timer > 15) {
+      maybeTriggerRedHot();
     }
+  }, 1000);
+}
 
-    while (progress >= tapsForNext) {
-      progress -= tapsForNext;
-      bonusLevel++;
-      tapsForNext = 100 + (bonusLevel - 1) * 50;
-      triggerLevelUp?.();
-    }
+// 5. FIXED: EMERGENCY SAVE ON EXIT
+const emergencySave = () => { if (!sessionAlreadySaved) endSessionRecord(); };
+window.addEventListener('pagehide', emergencySave);
+window.addEventListener('beforeunload', emergencySave);
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') emergencySave();
+});
 
-    updateUI?.();
-    updateBonusBar?.();
-  };
 
-  // Attach events
-  TAP_EVENTS.forEach(ev => tapButton?.addEventListener(ev, rawTapHandler, { passive: false }));
+// ADD THIS FUNCTION (once, anywhere in your JS file)
+function getWeekNumber(date) {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() + 4 - (d.getDay() || 7));
+  const yearStart = new Date(d.getFullYear(), 0, 1);
+  return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+}
 
-  document.addEventListener('keydown', e => {
-    if (!running || RedHotMode.active) return;
-    if ((e.code === 'Space' || e.code === 'Enter') && e.target === document.body) {
-      e.preventDefault();
-      rawTapHandler(e);
-    }
-  });
+// ======================================================
+// END SESSION RECORD — FINAL FIXED & BULLETPROOF VERSION
+// ======================================================
+let sessionAlreadySaved = false; // ← Global guard (reset in startSession())
 
-  // ─────────────────── START SESSION (now global) ───────────────────
-  window.startSession = () => {
-    console.log("%cNEW ROUND STARTED", "color:#ff00aa;font-weight:bold");
+async function endSessionRecord() {
+  if (sessionAlreadySaved || !currentUser?.uid || (sessionTaps + sessionEarnings) === 0) return;
 
-    sessionAlreadySaved = false;
-    taps = earnings = sessionTaps = sessionEarnings = 0;
-    progress = 0;
-    bonusLevel = window.sessionBonusLevel || 1;
-    tapsForNext = 100 + (bonusLevel - 1) * 50;
-    cashCounter = 0;
-    cashThreshold = randomInt(5, 15);
-    timer = SESSION_DURATION || 60;
-    running = true;
+  sessionAlreadySaved = true;
 
-    RedHotMode.reset();
-    if (tapButton) tapButton.disabled = false;
-    trainBar && (trainBar.style.width = "100%");
-    updateBonusBar?.();
-    updateUI?.();
+  const userRef = doc(db, "users", currentUser.uid);
+  const now = new Date();
+  const lagosTime = new Date(now.getTime() + 60 * 60 * 1000); // UTC+1
+  const dailyKey = lagosTime.toISOString().split("T")[0];
+  const weeklyKey = `${lagosTime.getFullYear()}-W${getWeekNumber(lagosTime)}`;
+  const monthlyKey = `${lagosTime.getFullYear()}-${String(lagosTime.getMonth() + 1).padStart(2, "0")}`;
 
-    clearInterval(intervalId);
-    intervalId = setInterval(() => {
-      if (!running) return;
-      timer--;
-      if (timer <= 0) {
-        timer = 0;
-        running = false;
-        clearInterval(intervalId);
-        showEndGameModal?.();
-        endSessionRecord();
-        return;
-      }
-      updateUI?.();
-      trainBar && (trainBar.style.width = `${timer / (SESSION_DURATION || 60) * 100}%`);
-      if (timer % 8 === 0 && timer > 15 && Math.random() < 0.4) {
-        maybeTriggerRedHot?.();
-      }
-    }, 1000);
-  };
+  try {
+    // 1. Update user's main stats (cash, taps, daily/weekly/monthly)
+    await runTransaction(db, async (t) => {
+      const snap = await t.get(userRef);
+      const data = snap.data() || {};
 
-  // ─────────────────── EMERGENCY SAVE ───────────────────
-  const emergencySave = () => { if (!sessionAlreadySaved) endSessionRecord(); };
-  window.addEventListener('pagehide', emergencySave);
-  window.addEventListener('beforeunload', emergencySave);
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'hidden') emergencySave();
-  });
-
-  // ─────────────────── FINAL SAVE ───────────────────
-  const endSessionRecord = async () => {
-    if (sessionAlreadySaved || !currentUser?.uid || (!sessionTaps && !sessionEarnings)) return;
-
-    sessionAlreadySaved = true;
-    const userRef = doc(db, "users", currentUser.uid);
-    const lagos = new Date(Date.now() + 3600000);
-    const dailyKey = lagos.toISOString().split("T")[0];
-    const weeklyKey = `${lagos.getFullYear()}-W${getWeekNumber(lagos)}`;
-    const monthlyKey = `${lagos.getFullYear()}-${String(lagos.getMonth()+1).padStart(2,'0')}`;
-
-    try {
-      await runTransaction(db, async t => {
-        const snap = await t.get(userRef);
-        const data = snap.data() || {};
-        t.update(userRef, {
-          cash: (data.cash || 0) + sessionEarnings,
-          totalTaps: (data.totalTaps || 0) + sessionTaps,
-          lastEarnings: sessionEarnings,
-          updatedAt: serverTimestamp(),
-          tapsDaily: { ...data.tapsDaily, [dailyKey]: (data.tapsDaily?.[dailyKey] || 0) + sessionTaps },
-          tapsWeekly: { ...data.tapsWeekly, [weeklyKey]: (data.tapsWeekly?.[weeklyKey] || 0) + sessionTaps },
-          tapsMonthly: { ...data.tapsMonthly, [monthlyKey]: (data.tapsMonthly?.[monthlyKey] || 0) + sessionTaps },
-        });
+      t.update(userRef, {
+        cash: (data.cash || 0) + sessionEarnings,
+        totalTaps: (data.totalTaps || 0) + sessionTaps,
+        lastEarnings: sessionEarnings,
+        updatedAt: serverTimestamp(),
+        tapsDaily: { ...data.tapsDaily, [dailyKey]: (data.tapsDaily?.[dailyKey] || 0) + sessionTaps },
+        tapsWeekly: { ...data.tapsWeekly, [weeklyKey]: (data.tapsWeekly?.[weeklyKey] || 0) + sessionTaps },
+        tapsMonthly: { ...data.tapsMonthly, [monthlyKey]: (data.tapsMonthly?.[monthlyKey] || 0) + sessionTaps },
       });
+    });
 
-      if (window.CURRENT_ROUND_ID && sessionTaps > 0) {
-        const q = query(collection(db,"bids"), where("uid","==",currentUser.uid), where("roundId","==",window.CURRENT_ROUND_ID), where("status","==","active"));
-        const snap = await getDocs(q);
-        if (!snap.empty) {
-          await addDoc(collection(db,"taps"), {
-            uid: currentUser.uid,
-            username: currentUser.chatId || "Player",
-            displayName: currentUser.chatId || "Player",
-            count: sessionTaps,
-            roundId: window.CURRENT_ROUND_ID,
-            inBid: true,
-            timestamp: serverTimestamp()
-          });
-        }
+    // 2. ONLY save to BID leaderboard if user actually joined today's bid
+    if (window.CURRENT_ROUND_ID && sessionTaps > 0) {
+      const bidCheck = await getDocs(query(
+        collection(db, "bids"),
+        where("uid", "==", currentUser.uid),
+        where("roundId", "==", window.CURRENT_ROUND_ID),
+        where("status", "==", "active")
+      ));
+
+      if (!bidCheck.empty) {
+        await addDoc(collection(db, "taps"), {
+          uid: currentUser.uid,
+          username: currentUser.chatId || "Player",
+          displayName: currentUser.chatId || "Player",
+          count: sessionTaps,           // ← FIXED: was "count" → now "sessionTaps"
+          roundId: window.CURRENT_ROUND_ID,
+          inBid: true,
+          timestamp: serverTimestamp()
+        });
       }
-
-      currentUser.cash += sessionEarnings;
-      currentUser.totalTaps += sessionTaps;
-      cashCountEl && (cashCountEl.textContent = '₦' + formatNumber(currentUser.cash));
-      earningsEl && (earningsEl.textContent = '₦0');
-      miniEarnings && (miniEarnings.textContent = '₦0');
-
-      console.log("%cSAVED — UNSTOPPABLE", "color:#0f9;font-size:20px");
-    } catch (err) {
-      console.error("Save failed — retrying next round", err);
-      sessionAlreadySaved = false;
     }
-  };
 
-  const getWeekNumber = (d) => {
-    d = new Date(d);
-    d.setHours(0,0,0,0);
-    d.setDate(d.getDate() + 4 - (d.getDay()||7));
-    const yearStart = new Date(d.getFullYear(),0,1);
-    return Math.ceil((((d - yearStart) / 86400000) + 1)/7);
-  };
+    // 3. Update local UI instantly
+    currentUser.cash += sessionEarnings;
+    currentUser.totalTaps += sessionTaps;
 
-  // ─────────────────── INIT ───────────────────
-  RedHotMode.init();
-  console.log("%cTAP GAME 2025 LOADED — ZERO MISSED TAPS", "color:#ff00aa;font-weight:bold");
-})();
+    if (cashCountEl) cashCountEl.textContent = '₦' + formatNumber(currentUser.cash);
+    if (earningsEl) earningsEl.textContent = '₦0';
+    if (miniEarnings) miniEarnings.textContent = '₦0';
+
+    console.log("%cROUND SAVED — UNSTOPPABLE!", "color:#0f9;font-size:20px;font-weight:bold");
+
+  } catch (err) {
+    console.error("%cSAVE FAILED — WILL RETRY NEXT ROUND", "color:#f00;background:#300;padding:12px;border-radius:10px", err);
+    sessionAlreadySaved = false; // ← allow retry on next round
+  }
+}
+
+// ======================================================
+//  RED HOT DEVIL MODE — EXACTLY AS YOU HAD IT
+// ======================================================
+const RedHotMode = {
+  active: false,
+  timeout: null,
+  sound: new Audio('https://raw.githubusercontent.com/golalaland/1010/main/buzzer-13-187755.mp3'),
+  
+  init() {
+    this.sound.volume = 0.65;
+    this.reset();
+  },
+
+  reset() {
+    this.active = false;
+    if (this.timeout) clearTimeout(this.timeout);
+    this.timeout = null;
+    tapButton?.classList.remove('red-hot', 'red-punish');
+    tapButton?.querySelector('.inner') && (tapButton.querySelector('.inner').textContent = 'TAP');
+  },
+
+  trigger() {
+    if (this.active || this.timeout) return false;
+    this.active = true;
+    tapButton?.classList.add('red-hot');
+    tapButton?.querySelector('.inner') && (tapButton.querySelector('.inner').textContent = "HOT");
+    try { this.sound.currentTime = 0; this.sound.play().catch(() => {}); } catch(e) {}
+
+    const duration = 5000 + Math.random() * 2000;
+    this.timeout = setTimeout(() => {
+      this.active = false;
+      this.timeout = null;
+      tapButton?.classList.remove('red-hot');
+      tapButton?.querySelector('.inner') && (tapButton.querySelector('.inner').textContent = 'TAP');
+    }, duration);
+    return true;
+  },
+
+  punish() {
+    taps = Math.max(0, taps - 59);
+    progress = Math.max(0, progress - 10);
+    showFloatingPlus(tapButton, "-59");
+    tapButton?.classList.add('red-punish');
+    setTimeout(() => tapButton?.classList.remove('red-punish'), 400);
+    document.body.style.background = '#330000';
+    setTimeout(() => document.body.style.background = '', 150);
+    if ('vibrate' in navigator) navigator.vibrate([100, 50, 150, 50, 100]);
+    updateUI();
+    updateBonusBar();
+  }
+};
+
 
 // ======================================================
 //  UI & GLOW
