@@ -189,6 +189,163 @@
       font-size: 1rem;
       opacity: 0.8;
     }
+    .waitlist-btn {
+  position: relative;
+  padding: 1.3rem 4.2rem;
+  font-family: 'Inter', sans-serif;
+  font-size: 1.35rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: #000;
+  background: linear-gradient(135deg, #00ff88, #00cc70, #00ff99);
+  border: none;
+  border-radius: 60px;
+  cursor: pointer;
+  overflow: hidden;
+  box-shadow: 0 10px 40px rgba(0, 255, 136, 0.5);
+  transition: all 0.4s ease;
+  z-index: 1;
+}
+
+.waitlist-btn:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 20px 60px rgba(0, 255, 136, 0.8);
+}
+
+.waitlist-btn .btn-text {
+  position: relative;
+  z-index: 3;
+}
+
+.waitlist-btn .btn-glow {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, transparent, rgba(255,255,255,0.4), transparent);
+  transform: translateX(-150%);
+  transition: transform 0.7s ease;
+}
+
+.waitlist-btn:hover .btn-glow {
+  transform: translateX(150%);
+}
+
+/* Optional pulsing border effect */
+.waitlist-btn::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 60px;
+  background: linear-gradient(45deg, #00ff88, transparent, #00ff88);
+  opacity: 0;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0; }
+  50% { opacity: 0.6; }
+}
+.neon-frame {
+  position: relative;
+  width: 320px;
+  height: 420px;
+  border-radius: 20px;
+  overflow: hidden;
+  margin: 40px auto;
+  box-shadow: 0 0 30px rgba(0, 255, 136, 0.4);
+  transition: all 0.5s ease;
+  cursor: pointer;
+}
+
+.neon-frame:hover {
+  transform: translateY(-20px) scale(1.03);
+  box-shadow: 0 0 80px rgba(0, 255, 136, 0.8);
+}
+
+.neon-frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.6s ease;
+}
+
+.neon-frame:hover img {
+  transform: scale(1.1);
+}
+
+/* Inner glowing border */
+.frame-border {
+  position: absolute;
+  inset: 8px;
+  border: 2px solid #00ff88;
+  border-radius: 16px;
+  box-shadow: 
+    0 0 20px #00ff88,
+    inset 0 0 20px rgba(0, 255, 136, 0.3);
+  pointer-events: none;
+  animation: borderFlicker 4s infinite alternate;
+}
+
+/* Top-left + bottom-right corner accents */
+.frame-border::before,
+.frame-border::after {
+  content: '';
+  position: absolute;
+  width: 40px;
+  height: 40px;
+  border: 4px solid #00ff88;
+}
+.frame-border::before {
+  top: -4px; left: -4px;
+  border-right: none; border-bottom: none;
+}
+.frame-border::after {
+  bottom: -4px; right: -4px;
+  border-left: none; border-top: none;
+}
+
+/* Subtle overlay + glitch on hover */
+.frame-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 60%, rgba(0, 255, 136, 0.1));
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+.neon-frame:hover .frame-overlay {
+  animation: glitch 0.3s ease-in-out;
+}
+
+/* Moving scanline */
+.frame-scanline {
+  position: absolute;
+  left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, #00ff88, transparent);
+  box-shadow: 0 0 15px #00ff88;
+  top: -2px;
+  animation: scan 6s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes scan {
+  0%   { transform: translateY(-2px); }
+  100% { transform: translateY(430px); }
+}
+
+@keyframes glitch {
+  0%,100% { clip-path: inset(0 0 0 0); }
+  20% { clip-path: inset(20% 0 70% 0); }
+  40% { clip-path: inset(80% 0 10% 0); }
+  60% { clip-path: inset(10% 0 80% 0); }
+  80% { clip-path: inset(60% 0 30% 0); }
+}
+
+@keyframes borderFlicker {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.8; }
+  75% { opacity: 0.95; }
+}
   </style>
 </head>
 <body>
@@ -201,6 +358,13 @@
       <button class="waitlist-btn" onclick="alert('You’re on the list — get ready to go nuclear ⚡')">Join Waitlist</button>
     </div>
   </section>
+
+  <div class="neon-frame">
+  <img src="https://via.placeholder.com/600x800/000/00ff88/?text=YOUR+IMAGE" alt="Dope pic">
+  <div class="frame-overlay"></div>
+  <div class="frame-border"></div>
+  <div class="frame-scanline"></div>
+</div>
 
   <section class="features">
     <div class="card">
@@ -220,6 +384,11 @@
       <p>Neon vibes only. This is where legends are born.</p>
     </div>
   </section>
+
+<button class="waitlist-btn">
+  <span class="btn-text">Join Waitlist</span>
+  <span class="btn-glow"></span>
+</button>
 
   <footer>
     <div class="footer-glow"></div>
