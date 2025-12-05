@@ -29,22 +29,25 @@
       pointer-events: none;
       z-index: 1;
     }
-    .cube {
-      position: absolute;
-      width: 20px;
-      height: 20px;
-      transform-style: preserve-3d;
-      animation: float 20s infinite linear;
-    }
-    .cube div {
-      position: absolute;
-      width: 20px;
-      height: 20px;
-      background: var(--neon);
-      border: 1px solid var(--neon);
-      box-shadow: 0 0 20px var(--glow), inset 0 0 10px rgba(0,255,136,0.4);
-      opacity: 0.8;
-    }
+  .cube {
+  position: absolute;
+  width: 10px;           /* ← 50% smaller (was 20px) */
+  height: 10px;
+  transform-style: preserve-3d;
+  animation: float 22s infinite linear;   /* slightly slower = calmer */
+}
+
+.cube div {
+  width: 10px;
+  height: 10px;
+  background: var(--neon);
+  border: 1px solid var(--neon);
+  /* ↓↓↓ Reduced glow intensity ↓↓↓ */
+  box-shadow: 
+    0 0 8px rgba(0, 255, 136, 0.4),     /* outer glow weaker + less saturated */
+    inset 0 0 4px rgba(0, 255, 136, 0.2); /* inner glow toned down */
+  opacity: 0.6;         /* ← less bright overall */
+}
     .cube .front  { transform: translateZ(10px); }
     .cube .back   { transform: rotateY(180deg) translateZ(10px); }
     .cube .right  { transform: rotateY(90deg) translateZ(10px); }
@@ -472,13 +475,6 @@
  
     </div>
   </section>
-
-  <div class="neon-frame">
-  <img src="https://cdn.shopify.com/s/files/1/0962/6648/6067/files/LIVE_ON_FRIDAYS.png?v=1763616110" alt="Dope pic">
-  <div class="frame-overlay"></div>
-  <div class="frame-border"></div>
-  <div class="frame-scanline"></div>
-</div>
 
   <section class="features">
     <div class="card">
