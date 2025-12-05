@@ -346,6 +346,120 @@
   50% { opacity: 0.8; }
   75% { opacity: 0.95; }
 }
+.neon-footer {
+    position: relative;
+    background: #000;
+    color: #ddd;
+    padding: 100px 20px 60px;
+    overflow: hidden;
+    font-family: 'Inter', sans-serif;
+  }
+
+  /* Top glowing line */
+  .footer-glow-top {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, #00ff88, transparent);
+    box-shadow: 0 0 30px #00ff88;
+  }
+
+  /* Big centered waitlist button */
+  .waitlist-wrapper {
+    text-align: center;
+    margin-bottom: 60px;
+  }
+  .waitlist-btn-footer {
+    position: relative;
+    padding: 1.4rem 4.5rem;
+    font-size: 1.5rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    color: #000;
+    background: linear-gradient(135deg, #00ff88, #00cc70);
+    border: none;
+    border-radius: 60px;
+    cursor: pointer;
+    overflow: hidden;
+    box-shadow: 0 15px 50px rgba(0,255,136,0.6);
+    transition: all 0.4s ease;
+  }
+  .waitlist-btn-footer:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 25px 80px rgba(0,255,136,0.9);
+  }
+  .waitlist-btn-footer .shine {
+    position: absolute;
+    top: 0; left: -100%;
+    width: 50%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+    transition: 0.7s;
+  }
+  .waitlist-btn-footer:hover .shine { left: 100%; }
+
+  /* Grid */
+  .footer-container { max-width: 1300px; margin: 0 auto; }
+  .footer-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 40px;
+    margin-bottom: 50px;
+  }
+  .footer-col h4 {
+    font-size: 1.1rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: #00ff88;
+    margin-bottom: 20px;
+    text-shadow: 0 0 20px rgba(0,255,136,0.7);
+  }
+  .footer-col a {
+    display: block;
+    color: #999;
+    text-decoration: none;
+    margin: 10px 0;
+    transition: all 0.3s;
+    position: relative;
+  }
+  .footer-col a:hover {
+    color: #00ff88;
+    text-shadow: 0 0 15px #00ff88;
+    transform: translateX(8px);
+  }
+  .logo-col .neon-logo {
+    font-size: 3.5rem;
+    font-weight: 900;
+    background: linear-gradient(135deg, #00ff88, #00ffaa);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 0 0 40px rgba(0,255,136,0.6);
+  }
+
+  /* Bottom bar with moving scanline */
+  .footer-bottom {
+    position: relative;
+    text-align: center;
+    padding-top: 30px;
+    border-top: 1px solid #00ff8830;
+    font-size: 0.9rem;
+    color: #666;
+  }
+  .scanline {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: #00ff88;
+    box-shadow: 0 0 20px #00ff88;
+    animation: scanFooter 8s linear infinite;
+  }
+  @keyframes scanFooter {
+    0%   { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+  }
   </style>
 </head>
 <body>
@@ -355,7 +469,7 @@
     <div style="text-align:center">
       <h1 class="logo">乂丨乂丨</h1>
       <p class="tagline">Go Live. Own Your Vibe</p>
-      <button class="waitlist-btn" onclick="alert('You’re on the list — get ready to go nuclear ⚡')">Join Waitlist</button>
+ 
     </div>
   </section>
 
@@ -390,18 +504,52 @@
   <span class="btn-glow"></span>
 </button>
 
-  <footer>
-    <div class="footer-glow"></div>
-    <button class="waitlist-btn" style="margin-bottom: 3rem;" onclick="alert('Locked in — see you on the other side 🟢')">
-      Join Waitlist
+ <footer class="neon-footer">
+  <div class="footer-glow-top"></div>
+  
+  <!-- BIG JOIN WAITLIST BUTTON (centered on mobile, left on large screens) -->
+  <div class="waitlist-wrapper">
+    <button class="waitlist-btn-footer">
+      <span>Join Waitlist →</span>
+      <div class="shine"></div>
     </button>
-    <div class="socials">
-      <a href="#">✕</a>
-      <a href="#">🟢</a>
-      <a href="#">⚡</a>
+  </div>
+
+  <div class="footer-container">
+    <div class="footer-grid">
+      <div class="footer-col logo-col">
+        <h4 class="neon-logo">乂丨乂丨</h4>
+        <p>Go Live. Own Your Vibe</p>
+      </div>
+      <div class="footer-col">
+        <h4>Explore</h4>
+        <a href="#">Games</a>
+        <a href="#">Livestreams</a>
+        <a href="#">Gigs</a>
+        <a href="#">Events</a>
+      </div>
+      <div class="footer-col">
+        <h4>Support</h4>
+        <a href="#">Help Center</a>
+        <a href="#">Contact</a>
+        <a href="#">Privacy Policy</a>
+        <a href="#">Terms of Service</a>
+      </div>
+      <div class="footer-col">
+        <h4>Connect</h4>
+        <a href="#">Twitter / X</a>
+        <a href="#">Instagram</a>
+        <a href="#">Telegram</a>
+        <a href="#">Discord</a>
+      </div>
     </div>
-    <p class="footer-text">© 2025 xixi.live • Built for the untamed, the electric, the unstoppable.</p>
-  </footer>
+
+    <div class="footer-bottom">
+      <div class="scanline"></div>
+      <p>© 2025 xixi.live • Built by 96 Agency — All rights reserved.</p>
+    </div>
+  </div>
+</footer>
 
   <script>
     // Neon floating cubes
