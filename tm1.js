@@ -581,17 +581,28 @@ const handleNormalTap = debounce(async () => {
 });
 
 // ======================================================
-// TAP TAP REVENGE 2025 — FINAL BULLETPROOF EDITION
-// Zero missed taps | Instant feedback | No lockouts | Red Hot still deadly
+// TAP TAP REVENGE 2025 — FINAL FIXED & CLEAN VERSION
+// No redeclaration errors • Zero missed taps • Ready to deploy
 // ======================================================
 
-let taps = 0, earnings = 0, sessionTaps = 0, sessionEarnings = 0;
-let progress = 0, bonusLevel = 1, tapsForNext = 100;
-let cashCounter = 0, cashThreshold = randomInt(5, 15);
-let timer = 0, running = false, sessionAlreadySaved = false;
+// ────── GAME STATE VARIABLES (declare once!) ──────
+let taps = 0;
+let earnings = 0;
+let sessionTaps = 0;
+let sessionEarnings = 0;
+let progress = 0;
+let bonusLevel = 1;
+let tapsForNext = 100;
+let cashCounter = 0;
+let cashThreshold = 0;
+let timer = 0;
+let running = false;
+let sessionAlreadySaved = false;
 let intervalId = null;
+let pendingTaps = 0;
+let rafId = null;
 
-// Red Hot Devil Mode (unchanged logic, just cleaner)
+// ────── RED HOT DEVIL MODE ──────
 const RedHotMode = {
   active: false,
   timeout: null,
@@ -612,7 +623,7 @@ const RedHotMode = {
     tapButton?.querySelector('.inner')?.replaceChildren(document.createTextNode('HOT'));
     this.sound.currentTime = 0;
     this.sound.play().catch(() => {});
-    
+
     const duration = 5000 + Math.random() * 2000;
     this.timeout = setTimeout(() => RedHotMode.reset(), duration);
     return true;
@@ -632,82 +643,70 @@ const RedHotMode = {
   }
 };
 
-// ======================================================
-// NEW 2025 TAP ENGINE — NEVER MISS A TAP AGAIN
-// ======================================================
-let pendingTaps = 0;
-let rafId = null;
-
+// ────── ULTRA-FAST TAP ENGINE (2025) ──────
 const TAP_EVENTS = ['touchstart', 'pointerdown', 'mousedown'];
 
 function rawTapHandler(e) {
   if (!running || RedHotMode.active) return;
-  
-  // Prevent scrolling/zoom on mobile
+
   if (e.type === 'touchstart') e.preventDefault();
 
   pendingTaps++;
 
-  // Instant visual feedback (feels like native app)
+  // Instant visual feedback
   tapButton?.classList.add('tapped');
   requestAnimationFrame(() => tapButton?.classList.remove('tapped'));
 
-  // Batch all taps into next animation frame
-  if (!rafId) rafId = requestAnimationFrame(processAllPendingTaps);
+  if (!rafId) rafId = requestAnimationFrame(processPendingTaps);
 }
 
-function processAllPendingTaps() {
+function processPendingTaps() {
   rafId = null;
   if (pendingTaps === 0) return;
 
-  const batchSize = pendingTaps;
+  const batch = pendingTaps;
   pendingTaps = 0;
 
   if (RedHotMode.active) {
-    // Greedy players get punished HARD
-    RedHotMode.punish(batchSize);
+    RedHotMode.punish(batch);
     return;
   }
 
-  // === NORMAL TAP PROCESSING (instant & accurate) ===
-  taps += batchSize;
-  sessionTaps += batchSize;
-  progress += batchSize;
-  cashCounter += batchSize;
+  // Normal tap processing
+  taps += batch;
+  sessionTaps += batch;
+  progress += batch;
+  cashCounter += batch;
 
-  // Earnings (adjust your own multiplier here)
-  const earned = batchSize * (1 + (bonusLevel - 1) * 0.1);
+  const earned = batch * (1 + (bonusLevel - 1) * 0.1);
   earnings += earned;
   sessionEarnings += earned;
 
-  // Visual reward
-  showFloatingPlus(tapButton, `+${batchSize}`);
+  showFloatingPlus(tapButton, `+${batch}`);
 
-  // Random cash drop
   if (cashCounter >= cashThreshold) {
     cashCounter = 0;
     cashThreshold = randomInt(5, 15);
-    triggerCashDrop();
+    triggerCashDrop?.();
   }
 
-  // Level up logic
   while (progress >= tapsForNext) {
     progress -= tapsForNext;
     bonusLevel++;
     tapsForNext = 100 + (bonusLevel - 1) * 50;
-    triggerLevelUp();
+    triggerLevelUp?.();
   }
 
   updateUI();
   updateBonusBar();
 }
 
-// Attach all possible tap events (once)
+// Attach events (run once!)
 TAP_EVENTS.forEach(ev => 
   tapButton?.addEventListener(ev, rawTapHandler, { passive: false })
 );
 
-// Optional: Space/Enter for desktop testers
+// Keyboard support for desktop
 document.addEventListener('keydown', e => {
   if (!running || RedHotMode.active) return;
   if ((e.code === 'Space' || e.code === 'Enter') && e.target === document.body) {
@@ -716,16 +715,14 @@ document.addEventListener('keydown', e => {
   }
 });
 
-// ======================================================
-// START NEW SESSION — FULL CLEAN RESET
-// ======================================================
+// ────── START NEW SESSION ──────
 function startSession() {
-  console.log("%cNEW ROUND STARTED — EVERYTHING RESET", "color:#ff00aa;font-weight:bold");
+  console.log("%cNEW ROUND STARTED", "color:#ff00aa;font-weight:bold");
 
   sessionAlreadySaved = false;
   taps = earnings = sessionTaps = sessionEarnings = 0;
   progress = 0;
-  bonusLevel = sessionBonusLevel || 1;
+  bonusLevel = window.sessionBonusLevel || 1;
   tapsForNext = 100 + (bonusLevel - 1) * 50;
   cashCounter = 0;
   cashThreshold = randomInt(5, 15);
@@ -747,23 +744,20 @@ function startSession() {
       running = false;
       clearInterval(intervalId);
       intervalId = null;
-      showEndGameModal();
+      showEndGameModal?.();
       endSessionRecord();
       return;
     }
     updateUI();
     trainBar && (trainBar.style.width = `${timer / SESSION_DURATION * 100}%`);
 
-    // Red Hot Trap (every 8 seconds after 15s)
     if (timer % 8 === 0 && timer > 15 && Math.random() < 0.4) {
-      maybeTriggerRedHot(); // your existing function
+      maybeTriggerRedHot?.();
     }
   }, 1000);
 }
 
-// ======================================================
-// EMERGENCY SAVE — TRULY UNSTOPPABLE
-// ======================================================
+// ────── EMERGENCY SAVE ──────
 const emergencySave = () => { if (!sessionAlreadySaved) endSessionRecord(); };
 window.addEventListener('pagehide', emergencySave);
 window.addEventListener('beforeunload', emergencySave);
@@ -771,16 +765,14 @@ document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'hidden') emergencySave();
 });
 
-// ======================================================
-// FINAL END-SESSION SAVE — BULLETPROOF
-// ======================================================
+// ────── FINAL SAVE TO FIREBASE ──────
 async function endSessionRecord() {
   if (sessionAlreadySaved || !currentUser?.uid || (sessionTaps + sessionEarnings) === 0) return;
 
   sessionAlreadySaved = true;
   const userRef = doc(db, "users", currentUser.uid);
   const now = new Date();
-  const lagos = new Date(now.getTime() + 60*60*1000); // UTC+1
+  const lagos = new Date(now.getTime() + 60*60*1000);
   const dailyKey = lagos.toISOString().split("T")[0];
   const weeklyKey = `${lagos.getFullYear()}-W${getWeekNumber(lagos)}`;
   const monthlyKey = `${lagos.getFullYear()}-${String(lagos.getMonth()+1).padStart(2,'0')}`;
@@ -800,14 +792,14 @@ async function endSessionRecord() {
       });
     });
 
-    // Leaderboard entry (only if in active bid)
     if (window.CURRENT_ROUND_ID && sessionTaps > 0) {
-      const bidSnap = await getDocs(query(
+      const q = query(
         collection(db, "bids"),
         where("uid", "==", currentUser.uid),
         where("roundId", "==", window.CURRENT_ROUND_ID),
         where("status", "==", "active")
-      ));
+      );
+      const bidSnap = await getDocs(q);
       if (!bidSnap.empty) {
         await addDoc(collection(db, "taps"), {
           uid: currentUser.uid,
@@ -821,23 +813,21 @@ async function endSessionRecord() {
       }
     }
 
-    // Instant local UI update
+    // Local UI update
     currentUser.cash += sessionEarnings;
     currentUser.totalTaps += sessionTaps;
-    if (cashCountEl) cashCountEl.textContent = '₦' + formatNumber(currentUser.cash);
-    if (earningsEl) earningsEl.textContent = '₦0';
-    if (miniEarnings) miniEarnings.textContent = '₦0';
+    cashCountEl && (cashCountEl.textContent = '₦' + formatNumber(currentUser.cash));
+    earningsEl && (earningsEl.textContent = '₦0');
+    miniEarnings && (miniEarnings.textContent = '₦0');
 
-    console.log("%cROUND SAVED SUCCESSFULLY — UNSTOPPABLE!", "color:#0f9;font-size:20px;font-weight:bold");
+    console.log("%cSAVED SUCCESSFULLY!", "color:#0f9;font-size:20px;font-weight:bold");
   } catch (err) {
-    console.error("%cSAVE FAILED — WILL RETRY NEXT ROUND", "color:#f00;background:#300;padding:12px", err);
-    sessionAlreadySaved = false; // allow retry
+    console.error("SAVE FAILED — will retry next round", err);
+    sessionAlreadySaved = false;
   }
 }
 
-// ======================================================
-// HELPER: Week number (keep this exactly)
-// ======================================================
+// ────── WEEK NUMBER HELPER ──────
 function getWeekNumber(date) {
   const d = new Date(date);
   d.setHours(0,0,0,0);
@@ -846,20 +836,7 @@ function getWeekNumber(date) {
   return Math.ceil((((d - yearStart) / 86400000) + 1)/7);
 }
 
-// ======================================================
-// CSS YOU MUST HAVE (add to your stylesheet)
-// ======================================================
-/*
-#tapButton {
-  touch-action: manipulation;
-  user-select: none;
-  transition: transform 0.06s cubic-bezier(0.2, 0.8, 0.4, 1);
-}
-#tapButton.tapped {
-  transform: scale(0.92);
-}
-*/
-
+// ────── INIT ──────
 RedHotMode.init();
 
 // ======================================================
