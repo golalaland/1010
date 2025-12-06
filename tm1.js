@@ -819,8 +819,13 @@ const RedHotMode = {
     return true;
   },
 
-  punish() {
+ punish() {
+    // subtract from live taps
     taps = Math.max(0, taps - 59);
+
+    // 🔥 FIX: subtract from session taps too (important!)
+    sessionTaps = Math.max(0, sessionTaps - 59);
+
     progress = Math.max(0, progress - 10);
 
     showFloatingPlus(tapButton, "-59");
@@ -835,7 +840,7 @@ const RedHotMode = {
 
     updateUI();
     updateBonusBar();
-  },
+},
 };
 
 // ======================================================
