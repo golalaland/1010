@@ -1958,6 +1958,26 @@ if (!window.bidEngineStarted) {
   startDailyBidEngine();
 }
 
+function updateBidLeaderboardUI(snapshot) {
+  const list = document.getElementById("leaderboardList");
+  if (!list) return;
+
+  list.innerHTML = "";
+
+  snapshot.forEach((doc) => {
+    const data = doc.data();
+    const li = document.createElement("li");
+
+    li.innerHTML = `
+      <span class="username">${data.username || "Anonymous"}</span>
+      <span class="taps">${data.taps}</span>
+    `;
+
+    list.appendChild(li);
+  });
+}
+
+
 // ————————————————————————————————————————————————————————————————
 // IMPORTANT: Set this flag to true right after successful bid join!
 /* Example (inside your finalConfirmBtn success flow):
