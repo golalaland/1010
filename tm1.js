@@ -1800,9 +1800,34 @@ function startDailyBidEngine() {
     }
 
      // === LIVE PRIZE POOL & PLAYER COUNT ===
-        // === LIVE PRIZE POOL & PLAYER COUNT ===
-    if (unsubStats) unsubStats();
-    if (unsubLeaderboard) unsubLeaderboard();
+     // Only attach listeners once per round
+if (!window.BID_LISTENERS_ACTIVE) {
+  window.BID_LISTENERS_ACTIVE = true;
+
+  const bidsQuery = query(
+    collection(db, "bids"),
+    where("roundId", "==", window.CURRENT_ROUND_ID),
+    where("status", "==", "active")
+  );
+
+  unsubStats = onSnapshot(bidsQuery, (snap) => {
+    const count = snap.size;
+    playersEl.textContent = count;
+    prizeEl.textContent = "₦" + calculatePrizePool(count).toLocaleString();
+  });
+
+  // LEADERBOARD LISTENER
+  const leaderboardQuery = query(
+    collection(db, "tapCounts"),
+    where("roundId", "==", window.CURRENT_ROUND_ID),
+    orderBy("taps", "desc"),
+    limit(50)
+  );
+
+  unsubLeaderboard = onSnapshot(leaderboardQuery, (snap) => {
+    updateBidLeaderboardUI(snap);
+  });
+}
 
     // ─── Player count & prize pool (from bids collection) ───
     const bidsQuery = query(
