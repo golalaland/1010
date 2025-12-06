@@ -1766,13 +1766,13 @@ function startDailyBidEngine() {
     return new Date(Date.now() + serverOffset + 3600000); // UTC+1
   }
 
-
   function updateTimerAndStats() {
     const now = getLagosTime();
     const today = now.toISOString().split('T')[0];
     const bidStart = new Date(`${today}T00:33:00+01:00`).getTime();
     const bidEnd = new Date(`${today}T23:59:00+01:00`).getTime();
     const current = now.getTime();
+
     if (current >= bidStart && current < bidEnd + 60000) {
       bidActive = true;
       const secondsLeft = Math.max(0, Math.floor((bidEnd - current) / 1000));
@@ -1782,6 +1782,7 @@ function startDailyBidEngine() {
       timerEl.textContent = `${h}:${m}:${s}`;
       timerEl.style.color = secondsLeft < 600 ? "#ff0066" : "#00ff88";
       timerEl.style.fontWeight = "900";
+
       if (secondsLeft === 0 && !timerEl.dataset.ended) {
         timerEl.dataset.ended = "true";
         declareWinnersAndReset();
@@ -1798,31 +1799,26 @@ function startDailyBidEngine() {
       timerEl.textContent = "Bid ended";
       timerEl.style.color = "#666";
     }
+
      // === LIVE PRIZE POOL & PLAYER COUNT ===
-     // Only attach listeners once per round
-if (!window.BID_LISTENERS_ACTIVE) {
-  window.BID_LISTENERS_ACTIVE = true;
-  const bidsQuery = query(
-    collection(db, "bids"),
-    where("roundId", "==", window.CURRENT_ROUND_ID),
-    where("status", "==", "active")
-  );
-  unsubStats = onSnapshot(bidsQuery, (snap) => {
-    const count = snap.size;
-    playersEl.textContent = count;
-    prizeEl.textContent = "₦" + calculatePrizePool(count).toLocaleString();
-  });
-  // LEADERBOARD LISTENER
-  const leaderboardQuery = query(
-    collection(db, "tapCounts"),
-    where("roundId", "==", window.CURRENT_ROUND_ID),
-    orderBy("taps", "desc"),
-    limit(50)
-  );
-  unsubLeaderboard = onSnapshot(leaderboardQuery, (snap) => {
-    updateBidLeaderboardUI(snap);
-  });
-}
+        // === LIVE PRIZE POOL & PLAYER COUNT ===
+    if (unsubStats) unsubStats();
+    if (unsubLeaderboard) unsubLeaderboard();
+
+    // ─── Player count & prize pool (from bids collection) ───
+    const bidsQuery = query(
+      collection(db, "bids"),
+      where("roundId", "==", window.CURRENT_ROUND_ID),
+      where("status", "==", "active")
+    );
+
+    unsubStats = onSnapshot(bidsQuery, (snap) => {
+      const count = snap.size;
+      const prize = calculatePrizePool(count);
+      playersEl.textContent = count;
+      prizeEl.textContent = "₦" + prize.toLocaleString();
+    });
+
     // ─── BID-ONLY LEADERBOARD (only paid & joined players) ───
     if (bidActive && leaderboardEl) {
       const tapsQuery = query(
@@ -1830,20 +1826,26 @@ if (!window.BID_LISTENERS_ACTIVE) {
         where("roundId", "==", window.CURRENT_ROUND_ID),
         where("inBid", "==", true)
       );
+
       unsubLeaderboard = onSnapshot(tapsQuery, (snap) => {
         const scores = {};
+
         snap.docs.forEach(doc => {
           const d = doc.data();
           if (d.roundId !== window.CURRENT_ROUND_ID || d.inBid !== true) return;
+
           const realName = d.displayName || d.username || "Player";
+
           if (!scores[d.uid]) {
             scores[d.uid] = { name: realName, taps: 0 };
           }
           scores[d.uid].taps += (d.count || 1);
         });
+
         const ranked = Object.values(scores)
           .sort((a, b) => b.taps - a.taps)
-          .slice(0, 15); // change to 5 later if you want Top-5 only
+          .slice(0, 15);   // change to 5 later if you want Top-5 only
+
         if (ranked.length === 0) {
           leaderboardEl.innerHTML = `<div style="text-align:center;color:#666;padding:30px 0;font-size:14px;">
             No taps yet.<br>Join now and dominate!
@@ -1859,16 +1861,17 @@ if (!window.BID_LISTENERS_ACTIVE) {
           `).join('');
         }
       });
+
     } else if (leaderboardEl) {
       leaderboardEl.innerHTML = `<div style="text-align:center;color:#555;padding:30px 0;">
         Bid opens at 00:33
       </div>`;
     }
   }
+
   updateTimerAndStats();
   setInterval(updateTimerAndStats, 1000);
 }
-  
 /* ====================== TAP SAVING – CORRECTLY FEEDS BOTH LEADERBOARDS ====================== */
 /* 
   Rules:
@@ -1926,52 +1929,10 @@ async function declareWinnersAndReset() {
 
 // ————————————————————————————————————————————————————————————————
 // Start the daily bid engine only once
-function updateBidLeaderboardUI(snapshot) {
-  const wrap = document.getElementById("bidLeaderboard");
-  if (!wrap) return;
-
-  // Empty current content
-  wrap.innerHTML = "";
-
-  if (snapshot.empty) {
-    wrap.innerHTML = `
-      <div style="text-align:center;color:#888;padding:30px 0;">
-        No taps yet. Be the first to enter!
-      </div>
-    `;
-    return;
-  }
-
-  let rank = 1;
-
-  snapshot.forEach((doc) => {
-    const d = doc.data();
-    const username = d.username || "Anonymous";
-    const taps = d.taps || 0;
-
-    const row = document.createElement("div");
-    row.style = `
-      display:flex;
-      justify-content:space-between;
-      padding:10px 0;
-      border-bottom:1px solid rgba(255,255,255,0.08);
-      color:#E0B0FF;
-      font-size:14px;
-      font-weight:700;
-    `;
-
-    row.innerHTML = `
-      <span style="color:#B28BFF;">${rank}.</span>
-      <span style="flex:1;margin-left:8px;">${username}</span>
-      <span style="color:#fff;">${taps}</span>
-    `;
-
-    wrap.appendChild(row);
-    rank++;
-  });
+if (!window.bidEngineStarted) {
+  window.bidEngineStarted = true;
+  startDailyBidEngine();
 }
-
-
 
 // ————————————————————————————————————————————————————————————————
 // IMPORTANT: Set this flag to true right after successful bid join!
@@ -1981,6 +1942,7 @@ function updateBidLeaderboardUI(snapshot) {
    window.isUserInCurrentBid = true;   // ← This makes taps count instantly
    ...
 */
+
 
 // ---------- AUDIO UNLOCK (required for mobile) ----------
 let audioUnlocked = false;
