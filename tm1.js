@@ -14,6 +14,7 @@
     serverTimestamp,
     updateDoc,
     getDocs,
+    increment,
     limit,
     getCountFromServer,
     setDoc,
@@ -1765,71 +1766,46 @@ function startDailyBidEngine() {
     return new Date(Date.now() + serverOffset + 3600000); // UTC+1
   }
 
-  function updateTimerAndStats() {
-    const now = getLagosTime();
-    const today = now.toISOString().split('T')[0];
-    const bidStart = new Date(`${today}T00:33:00+01:00`).getTime();
-    const bidEnd = new Date(`${today}T23:59:00+01:00`).getTime();
-    const current = now.getTime();
+function updateTimerAndStats() {
+  const now = getLagosTime();
+  const today = now.toISOString().split('T')[0];
+  const bidStart = new Date(`${today}T00:33:00+01:00`).getTime();
+  const bidEnd = new Date(`${today}T23:59:00+01:00`).getTime();
+  const current = now.getTime();
 
-    if (current >= bidStart && current < bidEnd + 60000) {
-      bidActive = true;
-      const secondsLeft = Math.max(0, Math.floor((bidEnd - current) / 1000));
-      const h = String(Math.floor(secondsLeft / 3600)).padStart(2, '0');
-      const m = String(Math.floor((secondsLeft % 3600) / 60)).padStart(2, '0');
-      const s = String(secondsLeft % 60).padStart(2, '0');
-      timerEl.textContent = `${h}:${m}:${s}`;
-      timerEl.style.color = secondsLeft < 600 ? "#ff0066" : "#00ff88";
-      timerEl.style.fontWeight = "900";
+  // Timer logic
+  if (current >= bidStart && current < bidEnd + 60000) {
+    bidActive = true;
+    const secondsLeft = Math.max(0, Math.floor((bidEnd - current) / 1000));
+    const h = String(Math.floor(secondsLeft / 3600)).padStart(2, '0');
+    const m = String(Math.floor((secondsLeft % 3600) / 60)).padStart(2, '0');
+    const s = String(secondsLeft % 60).padStart(2, '0');
+    timerEl.textContent = `${h}:${m}:${s}`;
+    timerEl.style.color = secondsLeft < 600 ? "#ff0066" : "#00ff88";
+    timerEl.style.fontWeight = "900";
 
-      if (secondsLeft === 0 && !timerEl.dataset.ended) {
-        timerEl.dataset.ended = "true";
-        declareWinnersAndReset();
-      }
-    } else if (current < bidStart) {
-      bidActive = false;
-      const untilStart = Math.floor((bidStart - current) / 1000);
-      const h = String(Math.floor(untilStart / 3600)).padStart(2, '0');
-      const m = String(Math.floor((untilStart % 3600) / 60)).padStart(2, '0');
-      timerEl.textContent = `Opens in ${h}:${m}`;
-      timerEl.style.color = "#888";
-    } else {
-      bidActive = false;
-      timerEl.textContent = "Bid ended";
-      timerEl.style.color = "#666";
+    if (secondsLeft === 0 && !timerEl.dataset.ended) {
+      timerEl.dataset.ended = "true";
+      declareWinnersAndReset();
     }
+  } else if (current < bidStart) {
+    bidActive = false;
+    const untilStart = Math.floor((bidStart - current) / 1000);
+    const h = String(Math.floor(untilStart / 3600)).padStart(2, '0');
+    const m = String(Math.floor((untilStart % 3600) / 60)).padStart(2, '0');
+    timerEl.textContent = `Opens in ${h}:${m}`;
+    timerEl.style.color = "#888";
+  } else {
+    bidActive = false;
+    timerEl.textContent = "Bid ended";
+    timerEl.style.color = "#666";
+  }
 
-     // === LIVE PRIZE POOL & PLAYER COUNT ===
-     // Only attach listeners once per round
-if (!window.BID_LISTENERS_ACTIVE) {
-  window.BID_LISTENERS_ACTIVE = true;
+  // Attach Firestore listeners ONLY ONCE per round
+  if (!window.BID_LISTENERS_ACTIVE && window.CURRENT_ROUND_ID) {
+    window.BID_LISTENERS_ACTIVE = true;
 
-  const bidsQuery = query(
-    collection(db, "bids"),
-    where("roundId", "==", window.CURRENT_ROUND_ID),
-    where("status", "==", "active")
-  );
-
-  unsubStats = onSnapshot(bidsQuery, (snap) => {
-    const count = snap.size;
-    playersEl.textContent = count;
-    prizeEl.textContent = "₦" + calculatePrizePool(count).toLocaleString();
-  });
-
-  // LEADERBOARD LISTENER
-  const leaderboardQuery = query(
-    collection(db, "tapCounts"),
-    where("roundId", "==", window.CURRENT_ROUND_ID),
-    orderBy("taps", "desc"),
-    limit(50)
-  );
-
-  unsubLeaderboard = onSnapshot(leaderboardQuery, (snap) => {
-    updateBidLeaderboardUI(snap);
-  });
-}
-
-    // ─── Player count & prize pool (from bids collection) ───
+    // Live player count & prize pool
     const bidsQuery = query(
       collection(db, "bids"),
       where("roundId", "==", window.CURRENT_ROUND_ID),
@@ -1837,65 +1813,40 @@ if (!window.BID_LISTENERS_ACTIVE) {
     );
 
     unsubStats = onSnapshot(bidsQuery, (snap) => {
-      const count = snap.size;
-      const prize = calculatePrizePool(count);
-      playersEl.textContent = count;
-      prizeEl.textContent = "₦" + prize.toLocaleString();
+      const playerCount = snap.size;
+      playersEl.textContent = playerCount;
+      prizeEl.textContent = "₦" + calculatePrizePool(playerCount).toLocaleString();
     });
 
-    // ─── BID-ONLY LEADERBOARD (only paid & joined players) ───
-    if (bidActive && leaderboardEl) {
-      const tapsQuery = query(
-        collection(db, "taps"),
-        where("roundId", "==", window.CURRENT_ROUND_ID),
-        where("inBid", "==", true)
-      );
+    // Real-time Bid Leaderboard — from aggregated tapCounts (fast & accurate)
+    const leaderboardQuery = query(
+      collection(db, "tapCounts"),
+      where("roundId", "==", window.CURRENT_ROUND_ID),
+      orderBy("taps", "desc"),
+      limit(50)
+    );
 
-      unsubLeaderboard = onSnapshot(tapsQuery, (snap) => {
-        const scores = {};
+    unsubLeaderboard = onSnapshot(leaderboardQuery, (snap) => {
+      updateBidLeaderboardUI(snap);
+    });
 
-        snap.docs.forEach(doc => {
-          const d = doc.data();
-          if (d.roundId !== window.CURRENT_ROUND_ID || d.inBid !== true) return;
-
-          const realName = d.displayName || d.username || "Player";
-
-          if (!scores[d.uid]) {
-            scores[d.uid] = { name: realName, taps: 0 };
-          }
-          scores[d.uid].taps += (d.count || 1);
-        });
-
-        const ranked = Object.values(scores)
-          .sort((a, b) => b.taps - a.taps)
-          .slice(0, 15);   // change to 5 later if you want Top-5 only
-
-        if (ranked.length === 0) {
-          leaderboardEl.innerHTML = `<div style="text-align:center;color:#666;padding:30px 0;font-size:14px;">
-            No taps yet.<br>Join now and dominate!
-          </div>`;
-        } else {
-          leaderboardEl.innerHTML = ranked.map((p, i) => `
-            <div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid #333;">
-              <span style="color:${i===0?'#FFD700':i===1?'#C0C0C0':i===2?'#CD7F32':'#00FFA3'};font-weight:bold;">
-                #${i+1} ${p.name.substring(0,13)}
-              </span>
-              <span style="color:#00FFA3;font-weight:900;">${p.taps.toLocaleString()}</span>
-            </div>
-          `).join('');
-        }
-      });
-
-    } else if (leaderboardEl) {
-      leaderboardEl.innerHTML = `<div style="text-align:center;color:#555;padding:30px 0;">
-        Bid opens at 00:33
-      </div>`;
-    }
+    console.log("%cBid Royale listeners attached for round: " + window.CURRENT_ROUND_ID, "color:#0f0");
   }
 
-  updateTimerAndStats();
-  setInterval(updateTimerAndStats, 1000);
+  // Update leaderboard placeholder when bid is not active
+  if (!bidActive && leaderboardEl) {
+    leaderboardEl.innerHTML = `
+      <div style="text-align:center;color:#555;padding:40px 0;font-size:15px;">
+        Bid Royale opens at 00:33 daily<br>
+        <small>Join with ${CONFIG.BID_COST} STRZ to compete!</small>
+      </div>`;
+  }
 }
+
+// Start the engine
+updateTimerAndStats();
+setInterval(updateTimerAndStats, 1000);
+  
 /* ====================== TAP SAVING – CORRECTLY FEEDS BOTH LEADERBOARDS ====================== */
 /* 
   Rules:
