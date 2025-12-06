@@ -620,7 +620,8 @@ function startSession() {
   taps = 0;
   earnings = 0;
   timer = SESSION_DURATION;
-  bonusLevel = sessionBonusLevel;
+ bonusLevel = 1;
+sessionBonusLevel = 1;
   progress = 0;
   tapsForNext = 100 + (bonusLevel - 1) * 50;
 
