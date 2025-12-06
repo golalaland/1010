@@ -1766,7 +1766,7 @@ function startDailyBidEngine() {
     return new Date(Date.now() + serverOffset + 3600000); // UTC+1
   }
 
-rewrite here:
+
   function updateTimerAndStats() {
     const now = getLagosTime();
     const today = now.toISOString().split('T')[0];
