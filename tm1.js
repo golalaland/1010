@@ -1953,29 +1953,51 @@ async function declareWinnersAndReset() {
 
 // ————————————————————————————————————————————————————————————————
 // Start the daily bid engine only once
-if (!window.bidEngineStarted) {
-  window.bidEngineStarted = true;
-  startDailyBidEngine();
-}
-
 function updateBidLeaderboardUI(snapshot) {
-  const list = document.getElementById("leaderboardList");
-  if (!list) return;
+  const wrap = document.getElementById("bidLeaderboard");
+  if (!wrap) return;
 
-  list.innerHTML = "";
+  // Empty current content
+  wrap.innerHTML = "";
+
+  if (snapshot.empty) {
+    wrap.innerHTML = `
+      <div style="text-align:center;color:#888;padding:30px 0;">
+        No taps yet. Be the first to enter!
+      </div>
+    `;
+    return;
+  }
+
+  let rank = 1;
 
   snapshot.forEach((doc) => {
-    const data = doc.data();
-    const li = document.createElement("li");
+    const d = doc.data();
+    const username = d.username || "Anonymous";
+    const taps = d.taps || 0;
 
-    li.innerHTML = `
-      <span class="username">${data.username || "Anonymous"}</span>
-      <span class="taps">${data.taps}</span>
+    const row = document.createElement("div");
+    row.style = `
+      display:flex;
+      justify-content:space-between;
+      padding:10px 0;
+      border-bottom:1px solid rgba(255,255,255,0.08);
+      color:#E0B0FF;
+      font-size:14px;
+      font-weight:700;
     `;
 
-    list.appendChild(li);
+    row.innerHTML = `
+      <span style="color:#B28BFF;">${rank}.</span>
+      <span style="flex:1;margin-left:8px;">${username}</span>
+      <span style="color:#fff;">${taps}</span>
+    `;
+
+    wrap.appendChild(row);
+    rank++;
   });
 }
+
 
 
 // ————————————————————————————————————————————————————————————————
