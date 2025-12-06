@@ -1711,6 +1711,7 @@ try {
   }
 }
 });
+
 /* ===============================
    🔐 VIP Login (Whitelist Check)
 ================================= */
@@ -1841,6 +1842,7 @@ document.getElementById("hostLogoutBtn")?.addEventListener("click", async (e) =>
     showStarPopup("Logout failed — try again!");
   }
 });
+
 /* ===============================
    💫 Auto Star Earning System
 ================================= */
