@@ -802,8 +802,6 @@ function triggerBannerEffect() {
 // =============================
 // RENDER MESSAGES — CLEAN, FAST, ELITE
 // =============================
-let scrollPending = false;
-
 function renderMessagesFromArray(messages, forceTop = false) {
   if (!refs.messagesEl) return;
 
