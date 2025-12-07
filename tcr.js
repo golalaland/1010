@@ -762,74 +762,132 @@ function showTapModal(targetEl, msgData) {
 function renderMessagesFromArray(messages) {
   if (!refs.messagesEl) return;
 
+  const container = refs.messagesEl;
+
   messages.forEach(item => {
     const id = item.id || item.tempId || item.data?.id;
     if (!id || document.getElementById(id)) return;
 
     const m = item.data ?? item;
 
-    // BLOCK ALL BANNERS & SYSTEM MESSAGES — SILENTLY AND FOREVER
+    // BLOCK ALL DEAD BANNER GARBAGE — FOREVER
     if (
       m.isBanner ||
       m.type === "banner" ||
       m.type === "gift_banner" ||
       m.systemBanner ||
       m.chatId === "SYSTEM" ||
-      m.uid === "system"
+      /system/i.test(m.uid || "")
     ) {
-      return; // no render, no error, no glow
+      return;
     }
 
     const wrapper = document.createElement("div");
     wrapper.className = "msg";
     wrapper.id = id;
 
-    // TAPABLE USERNAME
+    // === BUZZ MESSAGE DETECTED → UNLEASH VISUAL DESTRUCTION ===
+    if (m.type === "buzz" && m.buzzColor) {
+      wrapper.classList.add("buzz-message");
+      wrapper.style.cssText = `
+        background: linear-gradient(90deg, #0000, ${m.buzzColor}33, #0000);
+        border: 4px solid ${m.buzzColor};
+        border-radius: 18px;
+        padding: 12px 16px;
+        margin: 16px 8px;
+        box-shadow: 
+          0 0 30px ${m.buzzColor}aa,
+          0 0 60px ${m.buzzColor}66,
+          inset 0 0 40px ${m.buzzColor}22;
+        animation: buzzEntrance 0.8s ease-out, buzzPulse 4s infinite, buzzGlow 3s infinite;
+        transform: scale(1);
+        position: relative;
+        overflow: hidden;
+      `;
+
+      // Epic glowing particles background (optional but insane)
+      const particles = document.createElement("div");
+      particles.style.cssText = `
+        position: absolute; inset: 0; pointer-events: none;
+        background: radial-gradient(circle at 30% 50%, ${m.buzzColor}44, transparent 70%),
+                    radial-gradient(circle at 70% 70%, ${m.buzzColor}55, transparent 60%);
+        animation: buzzParticles 6s infinite linear;
+        opacity: 0.6;
+      `;
+      wrapper.appendChild(particles);
+
+      // Auto-calm down after 15 seconds
+      setTimeout(() => {
+        wrapper.style.animation = "none";
+        wrapper.style.boxShadow = "0 4px 15px rgba(0,0,0,0.4)";
+        wrapper.style.border = "2px solid #444";
+        wrapper.style.background = "rgba(255,255,255,0.03)";
+        particles.remove();
+      }, 15000);
+    }
+
+    // TAPABLE USERNAME (WITH BUZZ COLOR IF BUZZ MESSAGE)
     const metaEl = document.createElement("span");
     metaEl.className = "meta";
-    metaEl.style.color = refs.userColors?.[m.uid] || "#fff";
 
-    const tapableName = document.createElement("span");
-    tapableName.className = "chat-username";
-    tapableName.textContent = m.chatId || "Guest";
+    const nameSpan = document.createElement("span");
+    nameSpan.className = "chat-username";
+    nameSpan.textContent = m.chatId || "Guest";
 
     const realUid = (m.uid || m.email?.replace(/[.@]/g, '_') || m.chatId || "unknown").replace(/[.@/\\]/g, '_');
-    tapableName.dataset.userId = realUid;
-    tapableName.style.cssText = "cursor:pointer;font-weight:700;padding:0 4px;border-radius:4px;user-select:none;";
+    nameSpan.dataset.userId = realUid;
+    nameSpan.style.cssText = `
+      cursor:pointer; font-weight:700; padding:0 6px; border-radius:6px;
+      user-select:none; transition:background .2s;
+      ${m.type === "buzz" ? `color:${m.buzzColor} !important; text-shadow:0 0 15px ${m.buzzColor}; font-size:1.1em;` : ""}
+    `;
 
-    tapableName.addEventListener("pointerdown", () => tapableName.style.background = "rgba(255,204,0,0.4)");
-    tapableName.addEventListener("pointerup", () => setTimeout(() => tapableName.style.background = "", 200));
+    nameSpan.addEventListener("pointerdown", () => nameSpan.style.background = "rgba(255,204,0,0.4)");
+    nameSpan.addEventListener("pointerup", () => setTimeout(() => nameSpan.style.background = "", 200));
 
-    metaEl.append(tapableName, document.createTextNode(": "));
+    metaEl.append(nameSpan, document.createTextNode(": "));
     wrapper.appendChild(metaEl);
 
     // REPLY PREVIEW
     if (m.replyTo) {
-      const replyPreview = document.createElement("div");
-      replyPreview.className = "reply-preview";
-      replyPreview.style.cssText = "background:rgba(255,255,255,0.06);border-left:3px solid #b3b3b3;padding:6px 10px;margin:6px 0 4px;border-radius:0 6px 6px 0;font-size:13px;color:#aaa;cursor:pointer;line-height:1.4;";
-      const replyText = (m.replyToContent || "Original message").replace(/\n/g, " ").trim();
-      const shortText = replyText.length > 80 ? replyText.substring(0,80) + "..." : replyText;
-      replyPreview.innerHTML = `<strong style="color:#999;">Reply ${m.replyToChatId || "someone"}:</strong> <span style="color:#aaa;">${shortText}</span>`;
-      replyPreview.onclick = () => {
-        const target = document.getElementById(m.replyTo);
-        if (target) {
-          target.scrollIntoView({ behavior: "smooth", block: "center" });
-          target.style.background = "rgba(180,180,180,0.15)";
-          setTimeout(() => target.style.background = "", 2000);
+      const preview = document.createElement("div");
+      preview.className = "reply-preview";
+      preview.style.cssText = "background:rgba(255,255,255,0.06);border-left:3px solid #b3b3b3;padding:6px 10px;margin:8px 0 6px;border-radius:0 8px 8px 0;font-size:13px;color:#aaa;cursor:pointer;line-height:1.4;";
+      const text = (m.replyToContent || "Message").replace(/\n/g, " ").trim();
+      const short = text.length > 80 ? text.slice(0,80) + "..." : text;
+      preview.innerHTML = `<strong style="color:#999;">Reply ${m.replyToChatId || "someone"}:</strong> <span style="color:#aaa;">${short}</span>`;
+      preview.onclick = () => {
+        const el = document.getElementById(m.replyTo);
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth", block: "center" });
+          el.style.background = "rgba(255,204,0,0.25)";
+          setTimeout(() => el.style.background = "", 2000);
         }
       };
-      wrapper.appendChild(replyPreview);
+      wrapper.appendChild(preview);
     }
 
     // CONTENT
-    const contentEl = document.createElement("span");
-    contentEl.className = "content";
-    contentEl.textContent = " " + (m.content || "");
-    wrapper.appendChild(contentEl);
+    const content = document.createElement("span");
+    content.className = "content";
+    content.textContent = " " + (m.content || "");
+    
+    // Extra flair for buzz messages
+    if (m.type === "buzz") {
+      content.style.cssText = `
+        font-weight: 800;
+        font-size: 1.15em;
+        background: linear-gradient(90deg, white, ${m.buzzColor}, white);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        text-shadow: 0 0 20px ${m.buzzColor}88;
+      `;
+    }
+    wrapper.appendChild(content);
 
-    // TAP FOR REPLY/REPORT MENU
-    wrapper.addEventListener("click", e => {
+    // TAP MESSAGE → REPLY / REPORT
+    wrapper.onclick = (e) => {
       e.stopPropagation();
       showTapModal(wrapper, {
         id,
@@ -840,20 +898,21 @@ function renderMessagesFromArray(messages) {
         replyToContent: m.replyToContent,
         replyToChatId: m.replyToChatId
       });
-    });
+    };
 
-    refs.messagesEl.appendChild(wrapper);
+    container.appendChild(wrapper);
   });
 
   // AUTO-SCROLL
   if (!scrollPending) {
     scrollPending = true;
     requestAnimationFrame(() => {
-      refs.messagesEl.scrollTop = refs.messagesEl.scrollHeight;
+      container.scrollTop = container.scrollHeight;
       scrollPending = false;
     });
   }
 }
+
 /* ---------- 🔔 Messages Listener (Final Optimized Version) ---------- */
 function attachMessagesListener() {
   const q = query(collection(db, CHAT_COLLECTION), orderBy("timestamp", "asc"));
@@ -2020,58 +2079,122 @@ refs.sendBtn?.addEventListener("click", async () => {
   }
 });
   
-// BUZZ MESSAGE (EPIC GLOW EFFECT)
+
+// =============================
+// BUZZ MESSAGE — GOD TIER 2025+ (THIS WILL BREAK THE INTERNET)
+// =============================
 refs.buzzBtn?.addEventListener("click", async () => {
   if (!currentUser?.uid) return showStarPopup("Sign in to BUZZ.");
+  
   const text = refs.messageInputEl?.value.trim();
-  if (!text) return showStarPopup("Type a message to BUZZ");
+  if (!text) return showStarPopup("Write something to make the chat SHAKE");
 
   if ((currentUser.stars || 0) < BUZZ_COST) {
-    return showStarPopup(`Need ${BUZZ_COST} stars to BUZZ!`, { type: "error" });
+    return showStarPopup(`BUZZ costs ${BUZZ_COST.toLocaleString()} stars!`, { type: "error" });
   }
 
   try {
-    const buzzColor = randomColor();
+    const buzzColor = randomVibrantColor(); // ← even better than randomColor()
+    const newMsgRef = doc(collection(db, CHAT_COLLECTION));
 
-    // THIS IS THE ONLY CORRECT WAY TO ADD A DOC INSIDE A TRANSACTION
-    const newMessageRef = doc(collection(db, CHAT_COLLECTION));  // ← generate ref first
-
+    // ATOMIC: deduct stars + send buzz message in one transaction
     await runTransaction(db, async (transaction) => {
-      const userRef = doc(db, "users", currentUser.uid);
-
-      // Deduct stars
-      transaction.update(userRef, {
+      transaction.update(doc(db, "users", currentUser.uid), {
         stars: increment(-BUZZ_COST)
       });
 
-      // Send buzz message
-      transaction.set(newMessageRef, {
+      transaction.set(newMsgRef, {
         content: text,
         uid: currentUser.uid,
-        chatId: currentUser.chatId || "BUZZER",
+        chatId: currentUser.chatId,
         usernameColor: currentUser.usernameColor || "#ff69b4",
         timestamp: serverTimestamp(),
         highlight: true,
         buzzColor: buzzColor,
-        type: "buzz"
+        type: "buzz",
+        buzzLevel: "epic", // for future tiers: "legendary", "godlike"
+        screenShake: true,
+        sound: "buzz_explosion"
       });
     });
 
-    // SUCCESS UI
+    // === INSTANT LOCAL FEEDBACK (before Firestore echo) ===
     currentUser.stars -= BUZZ_COST;
     refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
     refs.messageInputEl.value = "";
     cancelReply();
-    scrollToBottom(refs.messagesEl);
 
-    showStarPopup("BUZZ SENT — CHAT IS QUAKING", { type: "success" });
-    console.log("BUZZ sent perfectly!", buzzColor);
+    // === UNLEASH ABSOLUTE CHAOS ===
+    triggerBuzzApocalypse(buzzColor, text, currentUser.chatId);
+
+    showStarPopup("BUZZ DETONATED — CHAT IS ON FIRE", { type: "success", duration: 5000 });
 
   } catch (err) {
     console.error("BUZZ failed:", err);
-    showStarPopup("BUZZ failed — try again", { type: "error" });
+    showStarPopup("BUZZ failed — stars refunded", { type: "error" });
   }
 });
+
+// =============================
+// THE APOCALYPSE — WHEN BUZZ HITS
+// =============================
+function triggerBuzzApocalypse(color, text, name) {
+  // 1. FULL SCREEN FLASH
+  const flash = document.createElement("div");
+  flash.style.cssText = `
+    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+    background: ${color}; opacity: 0; pointer-events: none;
+    z-index: 99999; animation: flash 1.2s ease-out;
+  `;
+  document.body.appendChild(flash);
+
+  // 2. SCREEN SHAKE
+  document.body.classList.add("screen-shake");
+  setTimeout(() => document.body.classList.remove("screen-shake"), 1200);
+
+  // 3. CONFECTI + STARS EXPLOSION
+  if (window.launchConfetti || launchConfetti)?.({
+    particleCount: 300,
+    spread: 120,
+    origin: { y: 0.6 },
+    colors: [color, "#fff", "#ff0", "#0ff"]
+  });
+
+  // 4. SOUND (if you have it)
+  playSound?.("buzz_explosion");
+
+  // 5. EPIC TEXT BLAST
+  const blast = document.createElement("div");
+  blast.textContent = `${name} DROPPED A BUZZ!`;
+  blast.style.cssText = `
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    font-size: 4.5rem; font-weight: 900; color: white;
+    text-shadow: 0 0 40px ${color}, 0 0 80px ${color};
+    pointer-events: none; z-index: 99999;
+    animation: buzzBlast 2s ease-out forwards;
+    letter-spacing: 8px;
+    white-space: nowrap;
+  `;
+  document.body.appendChild(blast);
+
+  // 6. GLOWING TEXT IN CHAT (will be rendered by onSnapshot)
+  console.log("%cBUZZ DETONATED", `color:${color};font-size:40px;font-weight:bold;text-shadow:0 0 20px ${color}`);
+
+  // Cleanup
+  setTimeout(() => {
+    flash.remove();
+    blast.remove();
+  }, 3000);
+}
+
+// BETTER RANDOM COLOR — VIBRANT ONLY
+function randomVibrantColor() {
+  const colors = [
+    "#ff006e", "#fb5607", "#ffbe0b", "#ff006e", "#8338ec",
+    "#3a86ff", "#06ffa5", "#ff4365", "#00f5ff", "#ff9500"
+  ];
+  return colors[Math.floor(Math.random() * colors.length)];
+}
   /* ----------------------------
      👋 Rotating Hello Text
   ----------------------------- */
