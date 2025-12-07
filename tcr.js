@@ -2081,59 +2081,68 @@ refs.sendBtn?.addEventListener("click", async () => {
   
 
 // =============================
-// BUZZ MESSAGE — GOD TIER 2025+ (THIS WILL BREAK THE INTERNET)
+// BUZZ MESSAGE — GOD TIER, WORKS ON EVERY DEVICE (NO ?. ALLOWED)
 // =============================
-refs.buzzBtn?.addEventListener("click", async () => {
-  if (!currentUser?.uid) return showStarPopup("Sign in to BUZZ.");
-  
-  const text = refs.messageInputEl?.value.trim();
-  if (!text) return showStarPopup("Write something to make the chat SHAKE");
+if (refs.buzzBtn) {
+  refs.buzzBtn.addEventListener("click", async () => {
+    if (!currentUser || !currentUser.uid) {
+      showStarPopup("Sign in to BUZZ.");
+      return;
+    }
+    
+    const text = refs.messageInputEl ? refs.messageInputEl.value.trim() : "";
+    if (!text) {
+      showStarPopup("Write something to make the chat SHAKE");
+      return;
+    }
+    
+    if ((currentUser.stars || 0) < BUZZ_COST) {
+      showStarPopup(`BUZZ costs ${BUZZ_COST.toLocaleString()} stars!`, { type: "error" });
+      return;
+    }
+    
+    try {
+      const buzzColor = randomVibrantColor();
+      const newMsgRef = doc(collection(db, CHAT_COLLECTION));
 
-  if ((currentUser.stars || 0) < BUZZ_COST) {
-    return showStarPopup(`BUZZ costs ${BUZZ_COST.toLocaleString()} stars!`, { type: "error" });
-  }
+      // ATOMIC: deduct stars + send buzz message
+      await runTransaction(db, async (transaction) => {
+        transaction.update(doc(db, "users", currentUser.uid), {
+          stars: increment(-BUZZ_COST)
+        });
 
-  try {
-    const buzzColor = randomVibrantColor(); // ← even better than randomColor()
-    const newMsgRef = doc(collection(db, CHAT_COLLECTION));
-
-    // ATOMIC: deduct stars + send buzz message in one transaction
-    await runTransaction(db, async (transaction) => {
-      transaction.update(doc(db, "users", currentUser.uid), {
-        stars: increment(-BUZZ_COST)
+        transaction.set(newMsgRef, {
+          content: text,
+          uid: currentUser.uid,
+          chatId: currentUser.chatId,
+          usernameColor: currentUser.usernameColor || "#ff69b4",
+          timestamp: serverTimestamp(),
+          highlight: true,
+          buzzColor: buzzColor,
+          type: "buzz",
+          buzzLevel: "epic",
+          screenShake: true,
+          sound: "buzz_explosion"
+        });
       });
 
-      transaction.set(newMsgRef, {
-        content: text,
-        uid: currentUser.uid,
-        chatId: currentUser.chatId,
-        usernameColor: currentUser.usernameColor || "#ff69b4",
-        timestamp: serverTimestamp(),
-        highlight: true,
-        buzzColor: buzzColor,
-        type: "buzz",
-        buzzLevel: "epic", // for future tiers: "legendary", "godlike"
-        screenShake: true,
-        sound: "buzz_explosion"
-      });
-    });
+      // INSTANT LOCAL FEEDBACK
+      currentUser.stars -= BUZZ_COST;
+      refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
+      refs.messageInputEl.value = "";
+      cancelReply();
 
-    // === INSTANT LOCAL FEEDBACK (before Firestore echo) ===
-    currentUser.stars -= BUZZ_COST;
-    refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
-    refs.messageInputEl.value = "";
-    cancelReply();
+      // UNLEASH THE APOCALYPSE
+      triggerBuzzApocalypse(buzzColor, text, currentUser.chatId);
 
-    // === UNLEASH ABSOLUTE CHAOS ===
-    triggerBuzzApocalypse(buzzColor, text, currentUser.chatId);
+      showStarPopup("BUZZ DETONATED — CHAT IS ON FIRE", { type: "success", duration: 5000 });
 
-    showStarPopup("BUZZ DETONATED — CHAT IS ON FIRE", { type: "success", duration: 5000 });
-
-  } catch (err) {
-    console.error("BUZZ failed:", err);
-    showStarPopup("BUZZ failed — stars refunded", { type: "error" });
-  }
-});
+    } catch (err) {
+      console.error("BUZZ failed:", err);
+      showStarPopup("BUZZ failed — stars refunded", { type: "error" });
+    }
+  });
+}
 
 // =============================
 // THE APOCALYPSE — WHEN BUZZ HITS
@@ -2142,9 +2151,9 @@ function triggerBuzzApocalypse(color, text, name) {
   // 1. FULL SCREEN FLASH
   const flash = document.createElement("div");
   flash.style.cssText = `
-    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-    background: ${color}; opacity: 0; pointer-events: none;
-    z-index: 99999; animation: flash 1.2s ease-out;
+    position:fixed;top:0;left:0;width:100vw;height:100vh;
+    background:${color};opacity:0;pointer-events:none;
+    z-index:99999;animation:flash 1.2s ease-out;
   `;
   document.body.appendChild(flash);
 
@@ -2152,42 +2161,45 @@ function triggerBuzzApocalypse(color, text, name) {
   document.body.classList.add("screen-shake");
   setTimeout(() => document.body.classList.remove("screen-shake"), 1200);
 
-  // 3. CONFECTI + STARS EXPLOSION
-  if (window.launchConfetti || launchConfetti)?.({
-    particleCount: 300,
-    spread: 120,
-    origin: { y: 0.6 },
-    colors: [color, "#fff", "#ff0", "#0ff"]
-  });
+  // 3. CONFETTI
+  if (typeof launchConfetti === "function") {
+    launchConfetti({
+      particleCount: 300,
+      spread: 120,
+      origin: { y: 0.6 },
+      colors: [color, "#fff", "#ff0", "#0ff"]
+    });
+  }
 
-  // 4. SOUND (if you have it)
-  playSound?.("buzz_explosion");
+  // 4. SOUND (safe check)
+  if (typeof playSound === "function") {
+    playSound("buzz_explosion");
+  }
 
   // 5. EPIC TEXT BLAST
   const blast = document.createElement("div");
-  blast.textContent = `${name} DROPPED A BUZZ!`;
+  blast.textContent = name + " DROPPED A BUZZ!";
   blast.style.cssText = `
-    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-    font-size: 4.5rem; font-weight: 900; color: white;
-    text-shadow: 0 0 40px ${color}, 0 0 80px ${color};
-    pointer-events: none; z-index: 99999;
-    animation: buzzBlast 2s ease-out forwards;
-    letter-spacing: 8px;
-    white-space: nowrap;
+    position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+    font-size:4.5rem;font-weight:900;color:white;
+    text-shadow:0 0 40px ${color},0 0 80px ${color};
+    pointer-events:none;z-index:99999;
+    animation:buzzBlast 2s ease-out forwards;
+    letter-spacing:8px;white-space:nowrap;
   `;
   document.body.appendChild(blast);
 
-  // 6. GLOWING TEXT IN CHAT (will be rendered by onSnapshot)
+  // 6. CONSOLE FIRE
   console.log("%cBUZZ DETONATED", `color:${color};font-size:40px;font-weight:bold;text-shadow:0 0 20px ${color}`);
 
-  // Cleanup
+  // CLEANUP
   setTimeout(() => {
-    flash.remove();
-    blast.remove();
+    if (flash && flash.parentNode) flash.remove();
+    if (blast && blast.parentNode) blast.remove();
   }, 3000);
 }
 
-// BETTER RANDOM COLOR — VIBRANT ONLY
+// VIBRANT COLORS ONLY
 function randomVibrantColor() {
   const colors = [
     "#ff006e", "#fb5607", "#ffbe0b", "#ff006e", "#8338ec",
