@@ -800,7 +800,46 @@ function triggerBannerEffect() {
 }
 
 // =============================
-// RENDER MESSAGES — ULTRA CLEAN 2025+ FINAL
+// TIME FORMATTER — BULLETPROOF 2025 EDITION
+// =============================
+function formatTime(ts) {
+  if (!ts) return "";
+  
+  let date;
+  if (ts.toDate) {
+    // Firestore Timestamp
+    date = ts.toDate();
+  } else if (ts.seconds) {
+    // Firestore Timestamp object (offline mode)
+    date = new Date(ts.seconds * 1000);
+  } else if (typeof ts === "number") {
+    date = new Date(ts);
+  } else {
+    return "";
+  }
+
+  const now = Date.now();
+  const diff = now - date.getTime();
+  const minutes = Math.floor(diff / 60000);
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
+
+  if (diff < 60000) return "now";
+  if (minutes < 60) return `${minutes}m`;
+  if (hours < 24) return `${hours}h`;
+  if (days < 7) return `${days}d`;
+
+  // Older than a week → show date
+  return date.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+}
+
+// =============================
+// RENDER MESSAGES — FINAL WORKING VERSION (DEC 2025)
 // =============================
 function renderMessagesFromArray(messages, forceTop = false) {
   if (!refs.messagesEl) return;
@@ -814,7 +853,7 @@ function renderMessagesFromArray(messages, forceTop = false) {
 
     const m = item.data ?? item;
 
-    // PERMA-KILL ALL BANNERS
+    // BLOCK ALL BANNERS — FOREVER
     if (
       m.isBanner ||
       m.type?.includes("banner") ||
@@ -856,11 +895,11 @@ function renderMessagesFromArray(messages, forceTop = false) {
     content.textContent = " " + (m.content || "");
     wrapper.appendChild(content);
 
-    // TIMESTAMP
+    // TIMESTAMP — NOW SAFE FOREVER
     if (m.timestamp) {
       const time = document.createElement("span");
       time.className = "time";
-      time.textContent = formatTime(m.timestamp);
+      time.textContent = formatTime(m.timestamp); // ← NOW DEFINED & SAFE
       wrapper.appendChild(time);
     }
 
@@ -873,7 +912,7 @@ function renderMessagesFromArray(messages, forceTop = false) {
       const text = (m.replyToContent || "Message").replace(/\n/g, " ").trim();
       const short = text.length > 80 ? text.slice(0,80) + "..." : text;
       
-      preview.innerHTML = `<strong style="color:#ffcc00;">↳ ${m.replyToChatId || "someone"}:</strong> <span style="color:#aaa;margin-left:4px;">${short}</span>`;
+      preview.innerHTML = `<strong style="color:#ffcc00;">Reply ${m.replyToChatId || "someone"}:</strong> <span style="color:#aaa;margin-left:4px;">${short}</span>`;
       
       preview.onclick = () => {
         const el = document.getElementById(m.replyTo);
@@ -886,16 +925,12 @@ function renderMessagesFromArray(messages, forceTop = false) {
       wrapper.appendChild(preview);
     }
 
-    // CLICK MESSAGE → REPLY / REPORT / COPY
+    // CLICK MESSAGE → MENU
     wrapper.onclick = (e) => {
       e.stopPropagation();
       showTapModal(wrapper, {
-        id,
-        chatId: m.chatId,
-        uid,
-        content: m.content,
-        replyTo: m.replyTo,
-        replyToContent: m.replyToContent,
+        id, chatId: m.chatId, uid, content: m.content,
+        replyTo: m.replyTo, replyToContent: m.replyToContent,
         replyToChatId: m.replyToChatId
       });
     };
@@ -903,14 +938,13 @@ function renderMessagesFromArray(messages, forceTop = false) {
     fragment.appendChild(wrapper);
   });
 
-  // Insert all at once
   if (forceTop && fragment.children.length) {
     container.prepend(fragment);
   } else {
     container.appendChild(fragment);
   }
 
-  // AUTO-SCROLL — USING YOUR GLOBAL scrollPending (CLEAN & JANK-FREE)
+  // AUTO-SCROLL USING YOUR GLOBAL scrollPending
   if (!forceTop && !scrollPending) {
     scrollPending = true;
     requestAnimationFrame(() => {
