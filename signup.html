@@ -16,7 +16,10 @@
     --text-dim: #888;
   }
   * { margin:0; padding:0; box-sizing:border-box; }
-  html, body { height:100%; overflow:hidden; }
+  html, body { 
+    height: 100%; 
+    overflow-x: hidden;
+  }
   body {
     background: #000 url('https://images.unsplash.com/photo-1517677208171-0bc6725a3e60?q=85&w=2400') center/cover no-repeat fixed;
     font-family: 'Inter', sans-serif;
@@ -24,8 +27,9 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    min-height: 100vh;
+    padding: 20px 16px;
     position: relative;
-    padding: 2rem 1rem;
   }
   body::before {
     content: '';
@@ -35,16 +39,17 @@
     pointer-events: none;
   }
 
-  /* MAIN CARD – BLACK GLASS MASTERPIECE */
+  /* MAIN CARD – Now perfectly responsive */
   .vip-card {
     position: relative;
     width: 100%;
     max-width: 420px;
     background: var(--glass);
     backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
     border: 1px solid var(--glass-border);
     border-radius: 28px;
-    padding: 48px 32px 56px;
+    padding: 48px 36px;
     box-shadow: 
       0 20px 60px rgba(0,0,0,0.8),
       0 0 80px rgba(212,175,55,0.08),
@@ -66,19 +71,20 @@
     width: 60px; height: 60px;
     border: 2px solid var(--gold);
     pointer-events: none;
+    opacity: 0.8;
   }
   .corner-tl { top: 16px; left: 16px; border-right: none; border-bottom: none; }
   .corner-br { bottom: 16px; right: 16px; border-left: none; border-top: none; }
 
-  /* Logo + Title */
+  /* Title */
   .logo-title {
     text-align: center;
-    margin-bottom: 32px;
+    margin-bottom: 36px;
   }
   .logo-title h1 {
-    font-size: 4.8rem;
+    font-size: clamp(3.5rem, 10vw, 5.5rem);
     font-weight: 900;
-    letter-spacing: -4px;
+    letter-spacing: -2px;
     background: linear-gradient(135deg, #fff, var(--gold), #fff);
     -webkit-background-clip: text;
     background-clip: text;
@@ -86,17 +92,17 @@
     text-shadow: 0 4px 20px rgba(0,0,0,0.6);
   }
   .logo-title p {
-    font-size: 1.1rem;
+    font-size: 0.95rem;
     letter-spacing: 6px;
     color: var(--text-dim);
     margin-top: 8px;
     font-weight: 500;
   }
 
-  /* Input fields – pure luxury */
+  /* Floating labels */
   .input-group {
     position: relative;
-    margin: 28px 0;
+    margin: 26px 0;
   }
   .input-group input {
     width: 100%;
@@ -128,16 +134,16 @@
     top: -10px;
     left: 16px;
     font-size: 0.8rem;
-    background: var(--bg);
+    background: #000;
     padding: 0 8px;
     color: var(--gold);
   }
 
-  /* Gender buttons – sleek */
+  /* Gender buttons */
   .gender-row {
     display: flex;
     justify-content: center;
-    gap: 24px;
+    gap: 28px;
     margin: 32px 0;
   }
   .gender-btn {
@@ -158,18 +164,18 @@
     transform: scale(1.1);
   }
 
-  /* VIP Toggle – expensive switch */
+  /* VIP Toggle – NOW WORKS PERFECTLY */
   .vip-toggle-wrapper {
     text-align: center;
-    margin: 40px 0;
+    margin: 40px 0 32px;
   }
   .vip-label {
-    font-size: 1.4rem;
+    font-size: 1.3rem;
     letter-spacing: 4px;
     color: var(--text-dim);
     margin-bottom: 12px;
   }
-  .vip-switch {
+  #vipToggle {
     width: 120px; height: 56px;
     background: #111;
     border-radius: 50px;
@@ -177,8 +183,9 @@
     margin: 0 auto;
     border: 2px solid var(--gold-dim);
     cursor: pointer;
+    transition: all 0.4s;
   }
-  .vip-switch::after {
+  #vipToggle::after {
     content: '';
     position: absolute;
     width: 48px; height: 48px;
@@ -188,15 +195,15 @@
     transition: all 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55);
     box-shadow: 0 8px 20px rgba(0,0,0,0.6);
   }
-  .vip-switch.on::after {
+  #vipToggle.on::after {
     transform: translateX(64px);
   }
 
-  /* Submit button – THE jewel */
+  /* Submit button */
   #submitBtn {
     width: 100%;
     padding: 20px;
-    margin-top: 20px;
+    margin-top: 16px;
     background: linear-gradient(135deg, var(--gold), #fff, var(--gold));
     color: #000;
     font-size: 1.3rem;
@@ -226,33 +233,40 @@
     transform: translateX(150%);
   }
 
-  /* FOMO popup – now elite */
+  /* FOMO */
   #fomoPopup {
     position: fixed;
-    top: 40px; left: 50%;
+    top: 30px; left: 50%;
     transform: translateX(-50%);
-    background: rgba(0,0,0,0.9);
+    background: rgba(0,0,0,0.92);
     color: var(--gold);
-    padding: 16px 32px;
+    padding: 14px 32px;
     border-radius: 50px;
     font-weight: 700;
-    font-size: 1.1rem;
+    font-size: 1rem;
     letter-spacing: 1px;
     border: 1px solid var(--glass-border);
     box-shadow: 0 20px 40px rgba(0,0,0,0.7);
     opacity: 0;
     z-index: 9999;
     white-space: nowrap;
+    transition: all 0.6s ease;
   }
-  #fomoPopup.show { opacity: 1; }
+  #fomoPopup.show { 
+    opacity: 1; 
+    transform: translateX(-50%) translateY(8px);
+  }
 
   footer {
     position: absolute;
     bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
     text-align: center;
     font-size: 0.8rem;
     color: var(--text-dim);
     letter-spacing: 1px;
+    width: 90%;
   }
 </style>
 </head>
@@ -296,13 +310,13 @@
       <button type="button" class="gender-btn active" data-gender="M">M</button>
     </div>
 
-    <div class="input-group" style="margin:32px 0;">
-      <input type="date" id="dob" required style="text-align:center;letter-spacing:1px;">
+    <div style="text-align:center; margin:32px 0;">
+      <input type="date" id="dob" required style="padding:18px; width:80%; max-width:300px; border-radius:16px; background:rgba(20,20,20,0.5); border:1px solid rgba(212,175,55,0.2); color:white; text-align:center;">
     </div>
 
     <div class="vip-toggle-wrapper">
       <div class="vip-label">VIP STATUS</div>
-      <div class="vip-switch on" id="vipToggle"></div>
+      <div id="vipToggle" class="on"></div>
     </div>
 
     <button type="submit" id="submitBtn">ENTER THE CIRCLE</button>
@@ -315,28 +329,25 @@
 </footer>
 
 <script>
-  // Floating label logic
-  document.querySelectorAll('.input-group input').forEach(input => {
-    input.addEventListener('blur', () => {
-      if(input.value) input.classList.add('filled');
-      else input.classList.remove('filled');
-    });
-  });
+// Toggle works perfectly now (your JS can still override this)
+document.getElementById('vipToggle').addEventListener('click', function() {
+  this.classList.toggle('on');
+});
 
-  // Gender toggle
-  document.querySelectorAll('.gender-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.gender-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-    });
+// Gender selection
+document.querySelectorAll('.gender-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.gender-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
   });
+});
 
-  // Fake FOMO
-  setInterval(() => {
-    const popup = document.getElementById('fomoPopup');
-    popup.classList.add('show');
-    setTimeout(() => popup.classList.remove('show'), 3000);
-  }, 14000);
+// Fake FOMO
+setInterval(() => {
+  const p = document.getElementById('fomoPopup');
+  p.classList.add('show');
+  setTimeout(() => p.classList.remove('show'), 4000);
+}, 15000);
 </script>
 </body>
 </html>
