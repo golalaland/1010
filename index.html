@@ -838,6 +838,38 @@
         scrollTrigger: { trigger: '.features', start: 'top 70%' }
       });
     });
+// Trigger odometer only when scrolled into view
+const moneyCounter = document.getElementById('moneyCounter');
+let hasCounted = false;
+
+const startCounter = () => {
+  if (hasCounted) return;
+  hasCounted = true;
+
+  // Smooth roll from 0 → 10000 in ~2.8 seconds
+  const odometer = new Odometer({
+    el: moneyCounter,
+    value: 0,
+    format: '(,ddd)',
+    duration: 2800,
+    theme: 'minimal'
+  });
+
+  // Start at 10,000
+  odometer.update(10000);
+};
+
+// Intersection Observer — triggers once
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      startCounter();
+      observer.unobserve(entry.target);
+    }
+  });
+}, { threshold: 0.7 });
+
+observer.observe(document.querySelector('.rewards-section'));
   </script>
 </body>
 </html>
