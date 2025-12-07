@@ -544,41 +544,9 @@ async function showGiftModal(targetUid, targetData) {
         });
       });
 
-            // === SUCCESS — GIFT BANNER THAT ALWAYS WORKS (THE ONE TRUE WAY) ===
-      const glowColor = "#ffcc00"; // or randomColor() if you want variety
-
-      const bannerMessage = {
-        content: `${currentUser.chatId} just gifted ${amt} ⭐ to ${targetData.chatId}!`,
-        chatId: "★ SYSTEM ★",
-        uid: "system",
-        timestamp: serverTimestamp(),
-        isBanner: true,
-        highlight: true,
-        buzzColor: glowColor,
-        _confettiPlayed: false,     // ← CRITICAL: your renderer uses this
-        type: "gift_banner"
-      };
-
-      try {
-        const bannerRef = await addDoc(collection(db, "messages_room5"), bannerMessage);
-
-        // THIS IS THE HOLY LINE — THE ONE THAT HAS ALWAYS WORKED
-        renderMessagesFromArray([{
-          id: bannerRef.id,
-          data: bannerMessage        // ← plain object, NOT a function
-        }], true);
-
-        // Optional: extra glow if your renderer doesn't handle it perfectly
-        setTimeout(() => {
-          const el = document.getElementById(bannerRef.id);
-          if (el && typeof triggerBannerEffect === "function") {
-            triggerBannerEffect(el);
-          }
-        }, 120);
-
-        // Celebration
-        showGiftAlert(`Gifted ${amt} stars to ${targetData.chatId}!`);
-        closeModal();
+  // SUCCESS — NO BANNERS, ONLY LOCAL CONFIRMATION
+showGiftAlert(`Gifted ${amt} stars to ${targetData.chatId}!`);
+closeModal();
 
       } catch (err) {
         console.error("Banner creation failed:", err);
