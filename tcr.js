@@ -762,15 +762,13 @@ function showTapModal(targetEl, msgData) {
 function renderMessagesFromArray(messages) {
   if (!refs.messagesEl) return;
 
-  const container = refs.messagesEl;
-
   messages.forEach(item => {
     const id = item.id || item.tempId || item.data?.id;
     if (!id || document.getElementById(id)) return;
 
     const m = item.data ?? item;
 
-    // BLOCK ALL DEAD BANNER GARBAGE — FOREVER
+    // BLOCK DEAD BANNERS
     if (
       m.isBanner ||
       m.type === "banner" ||
@@ -778,55 +776,13 @@ function renderMessagesFromArray(messages) {
       m.systemBanner ||
       m.chatId === "SYSTEM" ||
       /system/i.test(m.uid || "")
-    ) {
-      return;
-    }
+    ) return;
 
     const wrapper = document.createElement("div");
     wrapper.className = "msg";
     wrapper.id = id;
 
-    // === BUZZ MESSAGE DETECTED → UNLEASH VISUAL DESTRUCTION ===
-    if (m.type === "buzz" && m.buzzColor) {
-      wrapper.classList.add("buzz-message");
-      wrapper.style.cssText = `
-        background: linear-gradient(90deg, #0000, ${m.buzzColor}33, #0000);
-        border: 4px solid ${m.buzzColor};
-        border-radius: 18px;
-        padding: 12px 16px;
-        margin: 16px 8px;
-        box-shadow: 
-          0 0 30px ${m.buzzColor}aa,
-          0 0 60px ${m.buzzColor}66,
-          inset 0 0 40px ${m.buzzColor}22;
-        animation: buzzEntrance 0.8s ease-out, buzzPulse 4s infinite, buzzGlow 3s infinite;
-        transform: scale(1);
-        position: relative;
-        overflow: hidden;
-      `;
-
-      // Epic glowing particles background (optional but insane)
-      const particles = document.createElement("div");
-      particles.style.cssText = `
-        position: absolute; inset: 0; pointer-events: none;
-        background: radial-gradient(circle at 30% 50%, ${m.buzzColor}44, transparent 70%),
-                    radial-gradient(circle at 70% 70%, ${m.buzzColor}55, transparent 60%);
-        animation: buzzParticles 6s infinite linear;
-        opacity: 0.6;
-      `;
-      wrapper.appendChild(particles);
-
-      // Auto-calm down after 15 seconds
-      setTimeout(() => {
-        wrapper.style.animation = "none";
-        wrapper.style.boxShadow = "0 4px 15px rgba(0,0,0,0.4)";
-        wrapper.style.border = "2px solid #444";
-        wrapper.style.background = "rgba(255,255,255,0.03)";
-        particles.remove();
-      }, 15000);
-    }
-
-    // TAPABLE USERNAME (WITH BUZZ COLOR IF BUZZ MESSAGE)
+    // ==================== USERNAME — ALWAYS USES YOUR ORIGINAL COLOR SYSTEM ====================
     const metaEl = document.createElement("span");
     metaEl.className = "meta";
 
@@ -836,10 +792,15 @@ function renderMessagesFromArray(messages) {
 
     const realUid = (m.uid || m.email?.replace(/[.@]/g, '_') || m.chatId || "unknown").replace(/[.@/\\]/g, '_');
     nameSpan.dataset.userId = realUid;
+
+    // THIS IS WHAT BRINGS BACK YOUR ORIGINAL COLORS — NEVER TOUCHED BY BUZZ
     nameSpan.style.cssText = `
-      cursor:pointer; font-weight:700; padding:0 6px; border-radius:6px;
-      user-select:none; transition:background .2s;
-      ${m.type === "buzz" ? `color:${m.buzzColor} !important; text-shadow:0 0 15px ${m.buzzColor}; font-size:1.1em;` : ""}
+      cursor:pointer;
+      font-weight:700;
+      padding:0 4px;
+      border-radius:4px;
+      user-select:none;
+      color: ${refs.userColors?.[m.uid] || "#ffffff"} !important;
     `;
 
     nameSpan.addEventListener("pointerdown", () => nameSpan.style.background = "rgba(255,204,0,0.4)");
@@ -848,66 +809,96 @@ function renderMessagesFromArray(messages) {
     metaEl.append(nameSpan, document.createTextNode(": "));
     wrapper.appendChild(metaEl);
 
-    // REPLY PREVIEW
+    // ==================== REPLY PREVIEW (UNCHANGED) ====================
     if (m.replyTo) {
       const preview = document.createElement("div");
       preview.className = "reply-preview";
-      preview.style.cssText = "background:rgba(255,255,255,0.06);border-left:3px solid #b3b3b3;padding:6px 10px;margin:8px 0 6px;border-radius:0 8px 8px 0;font-size:13px;color:#aaa;cursor:pointer;line-height:1.4;";
-      const text = (m.replyToContent || "Message").replace(/\n/g, " ").trim();
-      const short = text.length > 80 ? text.slice(0,80) + "..." : text;
-      preview.innerHTML = `<strong style="color:#999;">Reply ${m.replyToChatId || "someone"}:</strong> <span style="color:#aaa;">${short}</span>`;
+      preview.style.cssText = "background:rgba(255,255,255,0.06);border-left:3px solid #b3b3b3;padding:6px 10px;margin:6px 0 4px;border-radius:0 6px 6px 0;font-size:13px;color:#aaa;cursor:pointer;line-height:1.4;";
+      const replyText = (m.replyToContent || "Original message").replace(/\n/g, " ").trim();
+      const shortText = replyText.length > 80 ? replyText.substring(0,80) + "..." : replyText;
+      preview.innerHTML = `<strong style="color:#999;">Reply ${m.replyToChatId || "someone"}:</strong> <span style="color:#aaa;">${shortText}</span>`;
       preview.onclick = () => {
-        const el = document.getElementById(m.replyTo);
-        if (el) {
-          el.scrollIntoView({ behavior: "smooth", block: "center" });
-          el.style.background = "rgba(255,204,0,0.25)";
-          setTimeout(() => el.style.background = "", 2000);
+        const target = document.getElementById(m.replyTo);
+        if (target) {
+          target.scrollIntoView({ behavior: "smooth", block: "center" });
+          target.style.background = "rgba(180,180,180,0.15)";
+          setTimeout(() => target.style.background = "", 2000);
         }
       };
       wrapper.appendChild(preview);
     }
 
-    // CONTENT
+    // ==================== MESSAGE CONTENT — ONLY THIS GETS BUZZ EFFECT ====================
     const content = document.createElement("span");
     content.className = "content";
     content.textContent = " " + (m.content || "");
-    
-    // Extra flair for buzz messages
-    if (m.type === "buzz") {
+
+    // BUZZ DETECTED → GO NUCLEAR ON CONTENT ONLY
+    if (m.type === "buzz" && m.buzzColor) {
+      wrapper.classList.add("buzz-message"); // for future CSS targeting if needed
+
       content.style.cssText = `
-        font-weight: 800;
-        font-size: 1.15em;
-        background: linear-gradient(90deg, white, ${m.buzzColor}, white);
-        -webkit-background-clip: text;
-        background-clip: text;
-        color: transparent;
-        text-shadow: 0 0 20px ${m.buzzColor}88;
+        display: inline-block;
+        font-weight: 900;
+        font-size: 1.2em;
+        padding: 8px 16px;
+        border-radius: 16px;
+        background: linear-gradient(90deg, #0000, ${m.buzzColor}44, #0000);
+        color: ${m.buzzColor} !important;
+        text-shadow: 
+          0 0 10px ${m.buzzColor},
+          0 0 20px ${m.buzzColor},
+          0 0 40px ${m.buzzColor};
+        animation: buzzTextPulse 3s infinite, buzzFloat 6s infinite;
+        position: relative;
+        z-index: 2;
       `;
+
+      // Optional: add floating particles inside content only
+      const particles = document.createElement("div");
+      particles.style.cssText = `
+        position: absolute;
+        inset: -20px;
+        pointer-events: none;
+        background: 
+          radial-gradient(circle at 20% 50%, ${m.buzzColor}66, transparent 70%),
+          radial-gradient(circle at 80% 80%, ${m.buzzColor}77, transparent 60%);
+        animation: buzzParticles 8s infinite linear;
+        opacity: 0.5;
+        z-index: 1;
+      `;
+      content.style.position = "relative";
+      content.appendChild(particles);
+
+      // Auto-calm after 15 seconds
+      setTimeout(() => {
+        content.style.animation = "none";
+        content.style.textShadow = "0 2px 4px rgba(0,0,0,0.5)";
+        content.style.background = "transparent";
+        particles.remove();
+      }, 15000);
     }
+
     wrapper.appendChild(content);
 
-    // TAP MESSAGE → REPLY / REPORT
+    // TAP FOR MENU
     wrapper.onclick = (e) => {
       e.stopPropagation();
       showTapModal(wrapper, {
-        id,
-        chatId: m.chatId,
-        uid: realUid,
-        content: m.content,
-        replyTo: m.replyTo,
-        replyToContent: m.replyToContent,
+        id, chatId: m.chatId, uid: realUid, content: m.content,
+        replyTo: m.replyTo, replyToContent: m.replyToContent,
         replyToChatId: m.replyToChatId
       });
     };
 
-    container.appendChild(wrapper);
+    refs.messagesEl.appendChild(wrapper);
   });
 
   // AUTO-SCROLL
   if (!scrollPending) {
     scrollPending = true;
     requestAnimationFrame(() => {
-      container.scrollTop = container.scrollHeight;
+      refs.messagesEl.scrollTop = refs.messagesEl.scrollHeight;
       scrollPending = false;
     });
   }
