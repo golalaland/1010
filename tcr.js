@@ -753,72 +753,65 @@ function showTapModal(targetEl, msgData) {
   setTimeout(() => tapModalEl?.remove(), 3000);
 }
 
-
 // =============================
-// EXTRACT COLORS FROM GRADIENT — USED FOR CONFETTI
+// EXTRACT COLORS FROM GRADIENT
 // =============================
 function extractColorsFromGradient(gradient) {
   var matches = gradient.match(/#[0-9a-fA-F]{6}/g);
-  if (matches && matches.length > 0) {
-    return matches;
-  }
-  // Fallback colors if parsing fails
-  return ["#ff9a9e", "#fecfef", "#a8edea", "#fed6e3"];
+  return matches && matches.length > 0 
+    ? matches 
+    : ["#ff9a9e", "#fecfef", "#a8edea", "#fed6e3"];
 }
 
 // =============================
-// CREATE CONFETTI INSIDE STICKER — DEFINED ONCE, OUTSIDE LOOP
+// FALLING CONFETTI INSIDE STICKER
 // =============================
-function createConfettiInside(container, colors) {
-  for (var i = 0; i < 18; i++) {
-    var piece = document.createElement("div");
-    var size = 6 + Math.random() * 10;
-    var delay = Math.random() * 3;
-    var duration = 4 + Math.random() * 4;
-    var left = Math.random() * 100;
+function createFallingConfetti(container, colors) {
+  for (var i = 0; i < 20; i++) {
+    var p = document.createElement("div");
+    var size = 6 + Math.random() * 12;
     var color = colors[Math.floor(Math.random() * colors.length)];
 
-    piece.style.cssText = `
+    p.style.cssText = `
       position: absolute;
-      left: ${left}%;
-      top: -20px;
       width: ${size}px;
-      height: ${size * 1.8}px;
+      height: ${size * 1.6}px;
       background: ${color};
       border-radius: 50%;
-      opacity: 0.8;
+      left: ${Math.random() * 100}%;
+      top: -40px;
+      opacity: 0.9;
       pointer-events: none;
-      animation: confettiFall ${duration}s linear infinite;
-      animation-delay: ${delay}s;
+      animation: fall ${4 + Math.random() * 6}s linear infinite;
+      animation-delay: ${Math.random() * 4}s;
       transform: rotate(${Math.random() * 360}deg);
     `;
-    container.appendChild(piece);
+    container.appendChild(p);
   }
 }
 
 // =============================
-// RENDER MESSAGES — FINAL FIXED VERSION (2025)
-// =============================
-// =============================
-// RENDER MESSAGES — FINAL BUZZ MASTERPIECE (2025)
+// RENDER MESSAGES — FINAL, FLAWLESS BUZZ EDITION (2025)
 // =============================
 function renderMessagesFromArray(messages) {
   if (!refs.messagesEl) return;
 
   messages.forEach(function(item) {
-    var id = item.id || item.tempId || item.data?.id;
+    var id = item.id || item.tempId || (item.data && item.data.id);
     if (!id || document.getElementById(id)) return;
 
-    var m = item.data ?? item;
+    var m = item.data || item;
 
-    // BLOCK BANNERS
-    if (m.isBanner || m.type === "banner" || m.type === "gift_banner" || m.systemBanner || /system/i.test(m.uid || "")) return;
+    // BLOCK ALL BANNERS & SYSTEM GARBAGE
+    if (m.isBanner || m.type === "banner" || m.type === "gift_banner" || m.systemBanner || /system/i.test(m.uid || "")) {
+      return;
+    }
 
     var wrapper = document.createElement("div");
     wrapper.className = "msg";
     wrapper.id = id;
 
-    // USERNAME — KEEPS YOUR ORIGINAL COLORS
+    // USERNAME — YOUR ORIGINAL COLORS ALWAYS WIN
     var metaEl = document.createElement("span");
     metaEl.className = "meta";
 
@@ -826,90 +819,77 @@ function renderMessagesFromArray(messages) {
     nameSpan.className = "chat-username";
     nameSpan.textContent = m.chatId || "Guest";
 
-    var realUid = (m.uid || (m.email ? m.email.replace(/[.@]/g, '_') : m.chatId) || "unknown";
-    realUid = realUid.replace(/[.@/\\]/g, '_');
+    var realUid = (m.uid || (m.email ? m.email.replace(/[.@]/g, '_') : m.chatId) || "unknown").replace(/[.@/\\]/g, '_');
     nameSpan.dataset.userId = realUid;
 
-    nameSpan.style.cssText = `
-      cursor:pointer; font-weight:700; padding:0 6px; border-radius:6px; user-select:none;
-      color: ${refs.userColors?.[m.uid] || "#fff"} !important;
-    `;
+    nameSpan.style.cssText = "cursor:pointer;font-weight:700;padding:0 6px;border-radius:6px;user-select:none;color:" + (refs.userColors?.[m.uid] || "#fff") + " !important;";
 
     nameSpan.addEventListener("pointerdown", () => nameSpan.style.background = "rgba(255,204,0,0.4)");
     nameSpan.addEventListener("pointerup", () => setTimeout(() => nameSpan.style.background = "", 200));
 
-    metaEl.append(nameSpan, document.createTextNode(": "));
+    metaEl.append(nameSpan, document.createTextNode(": ")));
     wrapper.appendChild(metaEl);
 
-    // REPLY PREVIEW (unchanged)
+    // REPLY PREVIEW
     if (m.replyTo) {
       var preview = document.createElement("div");
       preview.className = "reply-preview";
       preview.style.cssText = "background:rgba(255,255,255,0.06);border-left:3px solid #ccc;padding:6px 10px;margin:8px 0;border-radius:0 8px 8px 0;font-size:13px;color:#aaa;cursor:pointer;";
       var replyText = (m.replyToContent || "Message").replace(/\n/g, " ").trim();
       var short = replyText.length > 80 ? replyText.slice(0,80) + "..." : replyText;
-      preview.innerHTML = `<strong style="color:#ffcc00;">Reply ${m.replyToChatId || "someone"}:</strong> <span style="color:#aaa;">${short}</span>`;
-      preview.onclick = () => {
+      preview.innerHTML = "<strong style='color:#ffcc00;'>Reply " + (m.replyToChatId || "someone") + ":</strong> <span style='color:#aaa;'>" + short + "</span>";
+      preview.onclick = function() {
         var el = document.getElementById(m.replyTo);
         if (el) el.scrollIntoView({behavior:"smooth", block:"center"});
       };
       wrapper.appendChild(preview);
     }
 
-    // CONTENT — NORMAL OR GOD-TIER BUZZ
+    // CONTENT
     var content = document.createElement("span");
     content.className = "content";
     content.textContent = " " + (m.content || "");
 
-    // BUZZ MODE ACTIVATED — THIS IS THE ONE
+    // BUZZ = GOD MODE
     if (m.type === "buzz" && m.stickerGradient) {
       wrapper.className += " buzz-sticker";
       wrapper.style.cssText = `
-        display: inline-block;
-        max-width: 88%;
-        margin: 16px 10px;
-        padding: 20px 28px;
-        border-radius: 32px;
-        background: ${m.stickerGradient};
-        box-shadow: 0 12px 50px rgba(0,0,0,0.3), inset 0 2px 0 rgba(255,255,255,0.4);
-        position: relative;
-        overflow: hidden;
-        border: 4px solid rgba(255,255,255,0.3);
-        animation: stickerPop 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        backdrop-filter: blur(6px);
+        display:inline-block; max-width:88%; margin:16px 10px; padding:20px 28px;
+        border-radius:32px; background:${m.stickerGradient};
+        box-shadow:0 12px 50px rgba(0,0,0,0.3), inset 0 2px 0 rgba(255,255,255,0.4);
+        position:relative; overflow:hidden; border:4px solid rgba(255,255,255,0.3);
+        animation:stickerPop 0.8s cubic-bezier(0.175,0.885,0.32,1.275);
+        backdrop-filter:blur(6px);
       `;
 
-      // TEXT INSIDE BUZZ — BIG, BOLD, AND SEXY
+      // TEXT — BIG, BOLD, WHITE, IMPOSSIBLE TO MISS
       content.style.cssText = `
-        display: block;
-        font-size: 1.45em !important;
-        font-weight: 900 !important;
-        line-height: 1.4;
-        color: white !important;
-        text-shadow: 
-          0 2px 8px rgba(0,0,0,0.6),
-          0 0 30px rgba(255,255,255,0.4);
-        letter-spacing: 0.5px;
-        margin-top: 8px;
-        padding: 4px 0;
+        display:block; font-size:1.5em !important; font-weight:900 !important;
+        line-height:1.4; color:white !important;
+        text-shadow:0 2px 10px rgba(0,0,0,0.7), 0 0 30px rgba(255,255,255,0.5);
+        letter-spacing:0.8px; margin-top:10px;
       `;
 
-      // CONFETTI INSIDE THE STICKER (slow falling pieces
+      // CONFETTI INSIDE STICKER
       var confettiBox = document.createElement("div");
       confettiBox.style.cssText = "position:absolute;inset:0;pointer-events:none;overflow:hidden;opacity:0.8;";
       createFallingConfetti(confettiBox, extractColorsFromGradient(m.stickerGradient));
       wrapper.appendChild(confettiBox);
 
-      // FULL-SCREEN CONFETTI BURST (everyone sees this)
-      setTimeout(() => launchConfetti?.({
-        particleCount: 180,
-        spread: 100,
-        origin: { y: 0.6 },
-        colors: extractColorsFromGradient(m.stickerGradient)
-      }), 300);
+      // FULL-SCREEN CONFETTI (everyone sees it)
+      setTimeout(function() {
+        if (typeof launchConfetti === "function") {
+          launchConfetti({
+            particleCount: 200,
+            spread: 100,
+            origin: { y: 0.6 },
+            colors: extractColorsFromGradient(m.stickerGradient)
+          });
+        }
+      }, 300);
 
-      // Auto-calm after 18 seconds
-      setTimeout(() => {
+      // Calm down after 18s
+      setTimeout(function() {
         wrapper.style.cssText = "background:rgba(255,255,255,0.06);box-shadow:0 4px 12px rgba(0,0,0,0.2);border:none;border-radius:16px;";
         content.style.cssText = "font-size:1em;font-weight:600;color:inherit;text-shadow:none;";
         confettiBox.remove();
@@ -918,44 +898,30 @@ function renderMessagesFromArray(messages) {
 
     wrapper.appendChild(content);
 
-    // TAP FOR MENU
-    wrapper.onclick = (e) => {
+    // TAP MENU
+    wrapper.onclick = function(e) {
       e.stopPropagation();
-      showTapModal(wrapper, { id, chatId: m.chatId, uid: realUid, content: m.content, replyTo: m.replyTo });
+      showTapModal(wrapper, {
+        id: id,
+        chatId: m.chatId,
+        uid: realUid,
+        content: m.content,
+        replyTo: m.replyTo,
+        replyToContent: m.replyToContent,
+        replyToChatId: m.replyToChatId
+      });
     };
 
     refs.messagesEl.appendChild(wrapper);
   });
 
-  // AUTO-SCROLL
+  // AUTO SCROLL
   if (!scrollPending) {
     scrollPending = true;
-    requestAnimationFrame(() => {
+    requestAnimationFrame(function() {
       refs.messagesEl.scrollTop = refs.messagesEl.scrollHeight;
       scrollPending = false;
     });
-  }
-}
-
-// CONFETTI INSIDE STICKER
-function createFallingConfetti(container, colors) {
-  for (let i = 0; i < 20; i++) {
-    let p = document.createElement("div");
-    let size = 6 + Math.random() * 12;
-    p.style.cssText = `
-      position:absolute;
-      width:${size}px; height:${size*1.6}px;
-      background:${colors[Math.floor(Math.random()*colors.length)]};
-      border-radius:50%;
-      left:${Math.random()*100}%;
-      top:-30px;
-      opacity:0.9;
-      pointer-events:none;
-      animation: fall ${4 + Math.random()*5}s linear infinite;
-      animation-delay:${Math.random()*3}s;
-      transform:rotate(${Math.random()*360}deg);
-    `;
-    container.appendChild(p);
   }
 }
 /* ---------- 🔔 Messages Listener (Final Optimized Version) ---------- */
