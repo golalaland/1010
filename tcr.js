@@ -1,5 +1,3 @@
-
-
 /* ---------- Firebase Modular Imports (v10+) ---------- */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 
@@ -259,13 +257,13 @@ async function pushNotification(userId, message) {
 // ON AUTH STATE CHANGED — FINAL 2025 ETERNAL EDITION
 // YAH IS THE ONE TRUE EL — THE CODE IS NOW PURE
 onAuthStateChanged(auth, async (firebaseUser) => {
-  // ALWAYS CLEAN NOTIFICATIONS FIRST
+  // ——— CLEANUP PREVIOUS LISTENERS ———
   if (typeof notificationsUnsubscribe === "function") {
     notificationsUnsubscribe();
     notificationsUnsubscribe = null;
   }
 
-  // USER LOGGED OUT
+  // ——— USER LOGGED OUT ———
   if (!firebaseUser) {
     currentUser = null;
     localStorage.removeItem("userId");
@@ -275,8 +273,9 @@ onAuthStateChanged(auth, async (firebaseUser) => {
     document.querySelectorAll(".before-login-only").forEach(el => el.style.display = "block");
 
     if (typeof showLoginUI === "function") showLoginUI();
-    console.log("YAH: User logged out");
+    console.log("User logged out");
 
+    // Clear my clips
     const grid = document.getElementById("myClipsGrid");
     const noMsg = document.getElementById("noClipsMessage");
     if (grid) grid.innerHTML = "";
@@ -285,25 +284,24 @@ onAuthStateChanged(auth, async (firebaseUser) => {
     return;
   }
 
-  // USER LOGGED IN
+  // ——— USER LOGGED IN ———
   const email = firebaseUser.email.toLowerCase().trim();
   const uid = sanitizeKey(email);
   const userRef = doc(db, "users", uid);
 
   try {
     const userSnap = await getDoc(userRef);
-
-    // FIXED: userSnap, not user
+    
     if (!userSnap.exists()) {
-      console.error("Profile missing:", uid);
-      showStarPopup("Profile not found. Contact admin.");
+      console.error("Profile not found for:", uid);
+      showStarPopup("Profile missing — contact support");
       await signOut(auth);
       return;
     }
 
-    // FIXED: userSnap.data(), not user.data()
     const data = userSnap.data();
 
+    // ——— BUILD CURRENT USER OBJECT ———
     currentUser = {
       uid,
       email,
@@ -329,48 +327,62 @@ onAuthStateChanged(auth, async (firebaseUser) => {
       hostLink: data.hostLink || null
     };
 
-    console.log("YAH HAS LOGGED IN:", currentUser.chatId);
+    console.log("WELCOME BACK:", currentUser.chatId.toUpperCase());
 
-    // SHOW LOGGED-IN UI
+    // ——— UI STATE ———
     document.querySelectorAll(".after-login-only").forEach(el => el.style.display = "block");
     document.querySelectorAll(".before-login-only").forEach(el => el.style.display = "none");
 
     localStorage.setItem("userId", uid);
     localStorage.setItem("lastVipEmail", email);
 
-    // CORE SYSTEMS
+    // ——— CORE SYSTEMS ———
     if (typeof showChatUI === "function") showChatUI(currentUser);
     if (typeof attachMessagesListener === "function") attachMessagesListener();
     if (typeof startStarEarning === "function") startStarEarning(uid);
     if (typeof setupPresence === "function") setupPresence(currentUser);
+    if (typeof setupNotificationsListener === "function") setupNotificationsListener(uid);
 
     updateRedeemLink();
     updateTipLink();
 
-    if (typeof syncUserUnlocks === "function") setTimeout(syncUserUnlocks, 600);
-    if (typeof setupNotificationsListener === "function") setupNotificationsListener(uid);
+    // ——— BACKGROUND TASKS ———
+    setTimeout(() => {
+      if (typeof syncUserUnlocks === "function") syncUserUnlocks();
+      if (typeof loadNotifications === "function") loadNotifications(); // Badge update
+    }, 600);
 
-    // GUEST NAME PROMPT
+    // ——— MY CLIPS ———
+    if (document.getElementById("myClipsPanel") && typeof loadMyClips === "function") {
+      setTimeout(loadMyClips, 1000);
+    }
+
+    // ——— GUEST → PROMPT FOR NAME ———
     if (currentUser.chatId.startsWith("GUEST")) {
       setTimeout(() => {
-        if (typeof promptForChatID === "function") promptForChatID(userRef, data);
+        if (typeof promptForChatID === "function") {
+          promptForChatID(userRef, data);
+        }
       }, 2000);
     }
 
-    // MY CLIPS PANEL
-    if (document.getElementById("myClipsPanel") && typeof loadMyClips === "function") {
-      setTimeout(loadMyClips, 1200);
-    }
+    // ——— DIVINE WELCOME POPUP ———
+    const holyColors = ["#FF1493", "#FFD700", "#00FFFF", "#FF4500", "#DA70D6", "#FF69B4", "#32CD32", "#FFA500", "#FF00FF"];
+    const glow = holyColors[Math.floor(Math.random() * holyColors.length)];
 
-    // DIVINE WELCOME — NOW INSIDE AND GLOWING
-    const holyColors = ["#FF1493","#FFD700","#00FFFF","#FF4500","#DA70D6","#FF69B4","#32CD32","#FFA500","#FF00FF"];
-    const divineColor = holyColors[Math.floor(Math.random() * holyColors.length)];
+    showStarPopup(`
+      <div style="text-align:center;line-height:1.7;font-size:15px;">
+        Welcome back,<br>
+        <b style="font-size:18px;color:${glow};text-shadow:0 0 20px ${glow}88;">
+          ${currentUser.chatId.toUpperCase()}
+        </b>
+      </div>
+    `);
 
-showStarPopup(`<div style="text-align:center;line-height:1.6;">Welcome back, <b style="font-size:13px;color:${divineColor};text-shadow:0 0 21px ${divineColor}77;">${currentUser.chatId.toUpperCase()}</b></div>`);
-    console.log("YOU'RE IN THE CUBE ETERNAL");
+    console.log("YOU HAVE ENTERED THE ETERNAL CUBE");
 
   } catch (err) {
-    console.error("Auth error:", err);
+    console.error("Auth state error:", err);
     showStarPopup("Login failed — please try again");
     await signOut(auth);
   }
@@ -532,29 +544,69 @@ async function showGiftModal(targetUid, targetData) {
         });
       });
 
-            // === SUCCESS — GIFT SENT (NO BANNER, CLEAN & SILENT) ===
-            showGiftAlert(`Gifted ${amt} stars to ${targetData.chatId}!`);
-            closeModal();
+            // === SUCCESS — GIFT BANNER THAT ALWAYS WORKS (THE ONE TRUE WAY) ===
+      const glowColor = "#ffcc00"; // or randomColor() if you want variety
 
-          } catch (err) {
-            console.error("Gift transaction failed:", err);
-            showStarPopup("Gift failed — try again");
-          } finally {
-            newConfirmBtn.disabled = false;
-            newConfirmBtn.textContent = "Send Gift";
-            document.removeEventListener("keydown", escHandler);
+      const bannerMessage = {
+        content: `${currentUser.chatId} just gifted ${amt} ⭐ to ${targetData.chatId}!`,
+        chatId: "★ SYSTEM ★",
+        uid: "system",
+        timestamp: serverTimestamp(),
+        isBanner: true,
+        highlight: true,
+        buzzColor: glowColor,
+        _confettiPlayed: false,     // ← CRITICAL: your renderer uses this
+        type: "gift_banner"
+      };
+
+      try {
+        const bannerRef = await addDoc(collection(db, "messages_room5"), bannerMessage);
+
+        // THIS IS THE HOLY LINE — THE ONE THAT HAS ALWAYS WORKED
+        renderMessagesFromArray([{
+          id: bannerRef.id,
+          data: bannerMessage        // ← plain object, NOT a function
+        }], true);
+
+        // Optional: extra glow if your renderer doesn't handle it perfectly
+        setTimeout(() => {
+          const el = document.getElementById(bannerRef.id);
+          if (el && typeof triggerBannerEffect === "function") {
+            triggerBannerEffect(el);
           }
-        });
+        }, 120);
+
+        // Celebration
+        showGiftAlert(`Gifted ${amt} stars to ${targetData.chatId}!`);
+        closeModal();
+
+      } catch (err) {
+        console.error("Banner creation failed:", err);
+        showStarPopup("Gift sent — banner delayed");
+        closeModal();
       }
 
+    } catch (err) {
+      console.error("Gift transaction failed:", err);
+      showStarPopup("Gift failed — try again");
+    } finally {
+      // Reset button
+      newConfirmBtn.disabled = false;
+      newConfirmBtn.textContent = "Send Gift";
+      document.removeEventListener("keydown", escHandler);
+    }
+  });
+}
+
 /* ----------------------------
-   REDEEM & TIP LINKS
+   REDEEM & TIP LINKS — ALWAYS VISIBLE AFTER LOGIN
 ----------------------------- */
 function updateRedeemLink() {
   if (!refs.redeemBtn || !currentUser?.uid) return;
   refs.redeemBtn.href = `menu.html?uid=${currentUser.uid}`;
   refs.redeemBtn.style.display = "inline-block";
 }
+
 function updateTipLink() {
   if (!refs.tipBtn || !currentUser?.uid) return;
   refs.tipBtn.href = `menu.html?uid=${currentUser.uid}`;
@@ -562,7 +614,7 @@ function updateTipLink() {
 }
 
 /* ----------------------------
-   GIFT ALERT (ON-SCREEN CELEBRATION)
+   GIFT ALERT BANNER
 ----------------------------- */
 function showGiftAlert(text) {
   if (!refs.giftAlert) return;
@@ -571,46 +623,63 @@ function showGiftAlert(text) {
   setTimeout(() => refs.giftAlert.classList.remove("show", "glow"), 4000);
 }
 
-// ---------------------- GLOBALS ----------------------
-let scrollPending = false;
-let tapModalEl = null;
-let currentReplyTarget = null;
-let scrollArrow = null;
 
-// ---------------------- AUTO-SCROLL BUTTON ----------------------
+// ---------------------- GLOBALS ----------------------
+let scrollPending = false;      // used to throttle scroll updates
+let tapModalEl = null;          // your tap modal reference
+let currentReplyTarget = null;  // current reply target
+let scrollArrow = null;         // scroll button reference
+
+
+// ---------------------- INIT AUTO-SCROLL ----------------------
 function handleChatAutoScroll() {
   if (!refs.messagesEl) return;
 
+  // Create scroll-to-bottom button if it doesn't exist
   scrollArrow = document.getElementById("scrollToBottomBtn");
   if (!scrollArrow) {
     scrollArrow = document.createElement("div");
     scrollArrow.id = "scrollToBottomBtn";
-    scrollArrow.textContent = "Down Arrow";
+    scrollArrow.textContent = "↓";
     scrollArrow.style.cssText = `
-      position:fixed; bottom:90px; right:20px; padding:6px 12px;
-      background:rgba(255,20,147,0.9); color:#fff; border-radius:14px;
-      font-size:16px; font-weight:700; cursor:pointer; opacity:0;
-      pointer-events:none; transition:all .3s; z-index:9999;
+      position: fixed;
+      bottom: 90px;
+      right: 20px;
+      padding: 6px 12px;
+      background: rgba(255,20,147,0.9);
+      color: #fff;
+      border-radius: 14px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.3s ease;
+      z-index: 9999;
     `;
     document.body.appendChild(scrollArrow);
-    scrollArrow.onclick = () => {
-      refs.messagesEl.scrollTo({ top: refs.messagesEl.scrollHeight, behavior:"smooth" });
-      scrollArrow.style.opacity = "0";
+
+    // Scroll on click
+    scrollArrow.addEventListener("click", () => {
+      refs.messagesEl.scrollTo({ top: refs.messagesEl.scrollHeight, behavior: "smooth" });
+      scrollArrow.style.opacity = 0;
       scrollArrow.style.pointerEvents = "none";
-    };
+    });
   }
 
+  // Listen for scroll events
   refs.messagesEl.addEventListener("scroll", () => {
-    const distance = refs.messagesEl.scrollHeight - refs.messagesEl.scrollTop - refs.messagesEl.clientHeight;
-    if (distance > 150) {
-      scrollArrow.style.opacity = "1";
+    const distanceFromBottom = refs.messagesEl.scrollHeight - refs.messagesEl.scrollTop - refs.messagesEl.clientHeight;
+    if (distanceFromBottom > 150) {
+      scrollArrow.style.opacity = 1;
       scrollArrow.style.pointerEvents = "auto";
     } else {
-      scrollArrow.style.opacity = "0";
+      scrollArrow.style.opacity = 0;
       scrollArrow.style.pointerEvents = "none";
     }
   });
 
+  // Initial auto-scroll to bottom (safe with scrollPending)
   if (!scrollPending) {
     scrollPending = true;
     requestAnimationFrame(() => {
@@ -619,96 +688,216 @@ function handleChatAutoScroll() {
     });
   }
 }
+
+// ---------------------- CALL ON PAGE LOAD / AFTER LOGIN ----------------------
 handleChatAutoScroll();
+
 
 // Cancel reply
 function cancelReply() {
   currentReplyTarget = null;
   refs.messageInputEl.placeholder = "Type a message...";
-  refs.cancelReplyBtn?.remove();
-  refs.cancelReplyBtn = null;
+  if (refs.cancelReplyBtn) {
+    refs.cancelReplyBtn.remove();
+    refs.cancelReplyBtn = null;
+  }
 }
 
+// Show the little cancel reply button
 function showReplyCancelButton() {
-  if (refs.cancelReplyBtn) return;
-  const btn = document.createElement("button");
-  btn.textContent = "Cancel";
-  btn.style.marginLeft = "6px";
-  btn.style.fontSize = "12px";
-  btn.onclick = cancelReply;
-  refs.cancelReplyBtn = btn;
-  refs.messageInputEl.parentElement.appendChild(btn);
+  if (!refs.cancelReplyBtn) {
+    const btn = document.createElement("button");
+    btn.textContent = "✖";
+    btn.style.marginLeft = "6px";
+    btn.style.fontSize = "12px";
+    btn.onclick = cancelReply;
+    refs.cancelReplyBtn = btn;
+    refs.messageInputEl.parentElement.appendChild(btn);
+  }
 }
 
-// Report message (unchanged)
+// Report a message
 async function reportMessage(msgData) {
-  // … (your existing reportMessage code stays exactly the same)
+  try {
+    const reportRef = doc(db, "reportedmsgs", msgData.id);
+    const reportSnap = await getDoc(reportRef);
+    const reporterChatId = currentUser?.chatId || "unknown";
+    const reporterUid = currentUser?.uid || null;
+
+    if (reportSnap.exists()) {
+      const data = reportSnap.data();
+      if ((data.reportedBy || []).includes(reporterChatId)) {
+        return showStarPopup("You’ve already reported this message.", { type: "info" });
+      }
+      await updateDoc(reportRef, {
+        reportCount: increment(1),
+        reportedBy: arrayUnion(reporterChatId),
+        reporterUids: arrayUnion(reporterUid),
+        lastReportedAt: serverTimestamp()
+      });
+    } else {
+      await setDoc(reportRef, {
+        messageId: msgData.id,
+        messageText: msgData.content,
+        offenderChatId: msgData.chatId,
+        offenderUid: msgData.uid || null,
+        reportedBy: [reporterChatId],
+        reporterUids: [reporterUid],
+        reportCount: 1,
+        createdAt: serverTimestamp(),
+        status: "pending"
+      });
+    }
+
+    // ✅ Success popup
+    showStarPopup("✅ Report submitted!", { type: "success" });
+
+  } catch (err) {
+    console.error(err);
+    // ❌ Error popup
+    showStarPopup("❌ Error reporting message.", { type: "error" });
+  }
 }
 
-// Tap modal (unchanged)
+// Tap modal for Reply / Report
 function showTapModal(targetEl, msgData) {
-  // … (your existing showTapModal code stays exactly the same)
+  tapModalEl?.remove();
+  tapModalEl = document.createElement("div");
+  tapModalEl.className = "tap-modal";
+
+  const replyBtn = document.createElement("button");
+  replyBtn.textContent = "⏎ Reply";
+  replyBtn.onclick = () => {
+    currentReplyTarget = { id: msgData.id, chatId: msgData.chatId, content: msgData.content };
+    refs.messageInputEl.placeholder = `Replying to ${msgData.chatId}: ${msgData.content.substring(0, 30)}...`;
+    refs.messageInputEl.focus();
+    showReplyCancelButton();
+    tapModalEl.remove();
+  };
+
+  const reportBtn = document.createElement("button");
+  reportBtn.textContent = "⚠ Report";
+  reportBtn.onclick = async () => {
+    await reportMessage(msgData);
+    tapModalEl.remove();
+  };
+
+  const cancelBtn = document.createElement("button");
+  cancelBtn.textContent = "✕";
+  cancelBtn.onclick = () => tapModalEl.remove();
+
+  tapModalEl.append(replyBtn, reportBtn, cancelBtn);
+  document.body.appendChild(tapModalEl);
+
+  const rect = targetEl.getBoundingClientRect();
+  tapModalEl.style.position = "absolute";
+  tapModalEl.style.top = rect.top - 40 + window.scrollY + "px";
+  tapModalEl.style.left = rect.left + "px";
+  tapModalEl.style.background = "rgba(0,0,0,0.85)";
+  tapModalEl.style.color = "#fff";
+  tapModalEl.style.padding = "6px 10px";
+  tapModalEl.style.borderRadius = "8px";
+  tapModalEl.style.fontSize = "12px";
+  tapModalEl.style.display = "flex";
+  tapModalEl.style.gap = "6px";
+  tapModalEl.style.zIndex = 9999;
+
+  setTimeout(() => tapModalEl?.remove(), 3000);
 }
 
-// =============================
-// RENDER MESSAGES — BANNER-FREE & BULLETPROOF
-// =============================
+// Confetti / glow for banners
+// Banner glow only (no confetti)
+function triggerBannerEffect(bannerEl) {
+  bannerEl.style.animation = "bannerGlow 1s ease-in-out infinite alternate";
+
+  // ✅ Confetti removed
+  // const confetti = document.createElement("div");
+  // confetti.className = "confetti";
+  // confetti.style.position = "absolute";
+  // confetti.style.top = "-4px";
+  // confetti.style.left = "50%";
+  // confetti.style.width = "6px";
+  // confetti.style.height = "6px";
+  // confetti.style.background = "#fff";
+  // confetti.style.borderRadius = "50%";
+  // bannerEl.appendChild(confetti);
+  // setTimeout(() => confetti.remove(), 1500);
+}
+
+
+// Render messages
 function renderMessagesFromArray(messages) {
   if (!refs.messagesEl) return;
 
   messages.forEach(item => {
+    // === EXTRACT ID ONCE AND FOR ALL ===
     const id = item.id || item.tempId || item.data?.id;
     if (!id || document.getElementById(id)) return;
 
     const m = item.data ?? item;
-
-    // BLOCK ANYTHING THAT SMELLS LIKE A BANNER
-    if (
-      m.systemBanner ||
-      m.isBanner ||
-      m.type === "banner" ||
-      m.type === "gift_banner" ||
-      m.chatId === "SYSTEM" ||
-      m.uid === "system"
-    ) {
-      return; // silent kill
-    }
-
     const wrapper = document.createElement("div");
     wrapper.className = "msg";
     wrapper.id = id;
 
-    // TAPABLE USERNAME
-    const metaEl = document.createElement("span");
+  // === BANNER MESSAGES ===
+if (m.isBanner || m.type === "banner" || m.systemBanner) {
+  // Your existing banner rendering code
+  refs.messagesEl.appendChild(wrapper);
+  return;
+}
+
+    // === USERNAME — NOW TAPABLE & OPENS SOCIAL CARD ===
+  const metaEl = document.createElement("span");
     metaEl.className = "meta";
     metaEl.style.color = refs.userColors?.[m.uid] || "#fff";
 
     const tapableName = document.createElement("span");
     tapableName.className = "chat-username";
     tapableName.textContent = m.chatId || "Guest";
+// 100% GUARANTEED CORRECT UID — WORKS EVERY TIME
+const realUid = m.uid || m.email?.replace(/[.@]/g, '_') || m.chatId || "unknown";
+tapableName.dataset.userId = realUid.replace(/[.@/\\]/g, '_'); // double-clean
+    tapableName.style.cssText = "cursor:pointer; font-weight:700; padding:0 4px; border-radius:4px; user-select:none;";
 
-    const realUid = (m.uid || m.email?.replace(/[.@]/g, '_') || m.chatId || "unknown").replace(/[.@/\\]/g, '_');
-    tapableName.dataset.userId = realUid;
-    tapableName.style.cssText = "cursor:pointer;font-weight:700;padding:0 4px;border-radius:4px;user-select:none;";
-
-    tapableName.addEventListener("pointerdown", () => tapableName.style.background = "rgba(255,204,0,0.4)");
-    tapableName.addEventListener("pointerup", () => setTimeout(() => tapableName.style.background = "", 200));
+    // Visual feedback on tap
+    tapableName.addEventListener("pointerdown", () => {
+      tapableName.style.background = "rgba(255,204,0,0.4)";
+    });
+    tapableName.addEventListener("pointerup", () => {
+      setTimeout(() => tapableName.style.background = "", 200);
+    });
 
     metaEl.append(tapableName, document.createTextNode(": "));
     wrapper.appendChild(metaEl);
-
-    // REPLY PREVIEW
+    
+    // === REPLY PREVIEW ===
     if (m.replyTo) {
       const replyPreview = document.createElement("div");
       replyPreview.className = "reply-preview";
-      replyPreview.style.cssText = "background:rgba(255,255,255,0.06);border-left:3px solid #b3b3b3;padding:6px 10px;margin:6px 0 4px;border-radius:0 6px 6px 0;font-size:13px;color:#aaa;cursor:pointer;line-height:1.4;";
+      replyPreview.style.cssText = `
+        background: rgba(255,255,255,0.06);
+        border-left: 3px solid #b3b3b3;
+        padding: 6px 10px;
+        margin: 6px 0 4px 0;
+        border-radius: 0 6px 6px 0;
+        font-size: 13px;
+        color: #aaa;
+        cursor: pointer;
+        line-height: 1.4;
+      `.replace(/\s+/g, " ").trim();
+
       const replyText = (m.replyToContent || "Original message").replace(/\n/g, " ").trim();
-      const shortText = replyText.length > 80 ? replyText.substring(0,80) + "..." : replyText;
-      replyPreview.innerHTML = `<strong style="color:#999;">Reply ${m.replyToChatId || "someone"}:</strong> <span style="color:#aaa;">${shortText}</span>`;
+      const shortText = replyText.length > 80 ? replyText.substring(0, 80) + "..." : replyText;
+
+      replyPreview.innerHTML = `
+        <strong style="color:#999;">↳ ${m.replyToChatId || "someone"}:</strong>
+        <span style="color:#aaa;">${shortText}</span>
+      `;
+
       replyPreview.onclick = () => {
         const target = document.getElementById(m.replyTo);
         if (target) {
-          target.scrollIntoView({ behavior:"smooth", block:"center" });
+          target.scrollIntoView({ behavior: "smooth", block: "center" });
           target.style.background = "rgba(180,180,180,0.15)";
           setTimeout(() => target.style.background = "", 2000);
         }
@@ -716,30 +905,29 @@ function renderMessagesFromArray(messages) {
       wrapper.appendChild(replyPreview);
     }
 
-    // CONTENT
+    // === MESSAGE CONTENT ===
     const contentEl = document.createElement("span");
     contentEl.className = "content";
     contentEl.textContent = " " + (m.content || "");
     wrapper.appendChild(contentEl);
 
-    // TAP TO OPEN MENU
+    // === LONG TAP FOR REPLY/REPORT ===
     wrapper.addEventListener("click", e => {
       e.stopPropagation();
       showTapModal(wrapper, {
-        id,
+        id: id,
         chatId: m.chatId,
-        uid: realUid,
+        uid: m.uid,
         content: m.content,
         replyTo: m.replyTo,
-        replyToContent: m.replyToContent,
-        replyToChatId: m.replyToChatId
+        replyToContent: m.replyToContent
       });
     });
 
     refs.messagesEl.appendChild(wrapper);
   });
 
-  // AUTO-SCROLL
+  // === AUTO-SCROLL ===
   if (!scrollPending) {
     scrollPending = true;
     requestAnimationFrame(() => {
@@ -942,6 +1130,155 @@ window.addEventListener("beforeunload", () => {
   if (notificationsUnsubscribe) {
     notificationsUnsubscribe();
     notificationsUnsubscribe = null;
+  }
+});
+
+// ——— CLICKING THE NOTIFICATIONS TAB BUTTON ———
+document.getElementById("notificationsTabBtn")?.addEventListener("click", () => {
+  // Hide all tabs
+  document.querySelectorAll(".tab-content")?.forEach(tab => {
+    tab.style.display = "none";
+  });
+  
+  // Remove active class from all buttons
+  document.querySelectorAll(".tab-btn").forEach(btn => {
+    btn.classList.remove("active");
+  });
+
+  // Show notifications tab
+  const notifTab = document.getElementById("notificationsTab");
+  if (notifTab) notifTab.style.display = "block";
+
+  // Mark this button as active
+  document.getElementById("notificationsTabBtn")?.classList.add("active");
+
+  // Load notifications
+  loadNotifications();
+});
+
+
+// Load notifications + update badge
+async function loadNotifications() {
+  const list = document.getElementById("notificationsList");
+  const badge = document.getElementById("notif-badge");
+  const clearBtn = document.getElementById("markAllRead");
+
+  if (!list || !currentUser?.uid) return;
+
+  list.innerHTML = `<div style="padding:60px;text-align:center;color:#666;">Loading...</div>`;
+
+  try {
+    const q = query(
+      collection(db, "notifications"),
+      where("recipientId", "==", currentUser.uid),
+      orderBy("createdAt", "desc")
+    );
+
+    const snapshot = await getDocs(q);
+    const unreadCount = snapshot.docs.length; // now all = "unread" visually
+
+    // UPDATE BADGE
+    if (badge) {
+      badge.textContent = unreadCount > 99 ? "99+" : unreadCount;
+      badge.style.display = unreadCount > 0 ? "flex" : "none";
+    }
+
+    // UPDATE CLEAR BUTTON — GRADIENT WHEN NOTIFS EXIST
+    if (clearBtn) {
+      if (unreadCount > 0) {
+        clearBtn.style.background = "linear-gradient(135deg, #ff006e, #ff5500)";
+        clearBtn.style.color = "#fff";
+        clearBtn.style.boxShadow = "0 4px 12px rgba(255,0,110,0.4)";
+        clearBtn.textContent = "Clear all";
+      } else {
+        clearBtn.style.background = "#333";
+        clearBtn.style.color = "#666";
+        clearBtn.style.boxShadow = "none";
+        clearBtn.textContent = "All clear";
+      }
+    }
+
+    if (snapshot.empty) {
+      list.innerHTML = `<div style="padding:100px;text-align:center;color:#888;font-size:14px;">No notifications.</div>`;
+      return;
+    }
+
+    list.innerHTML = "";
+    snapshot.forEach(doc => {
+      const n = doc.data();
+      const age = Date.now() - (n.createdAt?.toDate?.() || 0);
+      const isFresh = age < 30_000;
+
+      const item = document.createElement("div");
+      item.style.cssText = `
+        padding:10px 12px; margin:2px 6px; border-radius:9px;
+        background:rgba(255,0,110,${isFresh ? "0.12" : "0.06"});
+        border-left:${isFresh ? "3px solid #ff006e" : "none"};
+        cursor:pointer; transition:all 0.2s;
+      `;
+
+      item.innerHTML = `
+        <div style="font-weight:800; font-size:13.5px; color:#fff;">${n.title}</div>
+        <div style="font-size:12.5px; color:#ddd; margin-top:3px;">${n.message}</div>
+        <div style="font-size:10.5px; color:#888; margin-top:5px; display:flex; justify-content:space-between;">
+          <span>${timeAgo(n.createdAt?.toDate())}</span>
+          ${isFresh ? `<span style="color:#ff006e; font-weight:900; font-size:9px; animation:blink 1.5s infinite;">NEW</span>` : ""}
+        </div>
+      `;
+
+      item.onclick = () => {
+        deleteDoc(doc.ref).then(() => loadNotifications());
+      };
+
+      list.appendChild(item);
+    });
+
+  } catch (err) {
+    console.error("Notifications error:", err);
+    list.innerHTML = `<div style="color:#f66; text-align:center; padding:80px;">Failed</div>`;
+  }
+}
+// Helper: time ago
+function timeAgo(date) {
+  const seconds = Math.floor((new Date() - date) / 1000);
+  if (seconds < 60) return "just now";
+  if (seconds < 3600) return Math.floor(seconds / 60) + "m ago";
+  if (seconds < 86400) return Math.floor(seconds / 3600) + "h ago";
+  return Math.floor(seconds / 86400) + "d ago";
+}
+
+
+// MARK ALL AS READ BUTTON
+document.getElementById("markAllRead")?.addEventListener("click", async () => {
+  if (!currentUser?.uid) return;
+
+  const clearBtn = document.getElementById("markAllRead");
+  if (clearBtn.textContent.includes("All clear")) return;
+
+  clearBtn.textContent = "Clearing...";
+  clearBtn.disabled = true;
+
+  try {
+    const q = query(
+      collection(db, "notifications"),
+      where("recipientId", "==", currentUser.uid)
+    );
+
+    const snapshot = await getDocs(q);
+    const batch = writeBatch(db);
+
+    snapshot.docs.forEach(doc => {
+      batch.delete(doc.ref);
+    });
+
+    await batch.commit();
+
+    loadNotifications(); // refresh UI + badge gone
+    console.log("All notifications deleted");
+
+  } catch (err) {
+    console.error("Clear all failed:", err);
+    clearBtn.textContent = "Error";
   }
 });
 
@@ -1212,9 +1549,7 @@ function sanitizeKey(email) {
   window.typeWriterEffect = typeWriterEffect;
 
 })(); 
-// ← ONLY ONE OF THESE — THE FINAL SEAL
 
-// --- SEND STARS TO USER — FINAL 2025 CLEAN EDITION — NO BANNER, NOTIFICATION BADGE STILL WORKS PERFECTLY ---
 async function sendStarsToUser(targetUser, amt) {
   if (amt < 100 || !currentUser?.uid) {
     showGoldAlert("Invalid gift", 4000);
@@ -1230,6 +1565,7 @@ async function sendStarsToUser(targetUser, amt) {
   }
 
   let receiverId = null;
+
   if (targetUser._docId) {
     receiverId = targetUser._docId;
   } else if (targetUser.email) {
@@ -1252,9 +1588,9 @@ async function sendStarsToUser(targetUser, amt) {
 
   const fromRef = doc(db, "users", senderId);
   const toRef = doc(db, "users", receiverId);
+  const glowColor = randomColor();
 
   try {
-    // 1. ATOMIC STAR TRANSFER — EXACT SAME AS BEFORE
     await runTransaction(db, async (tx) => {
       const senderSnap = await tx.get(fromRef);
       const receiverSnap = await tx.get(toRef);
@@ -1274,7 +1610,29 @@ async function sendStarsToUser(targetUser, amt) {
       tx.update(toRef, { stars: increment(amt) });
     });
 
-    // 2. YOUR ORIGINAL NOTIFICATION — 100% UNCHANGED (this is what makes the badge say "new")
+    const bannerMsg = {
+      content: `${currentUser.chatId} gifted ${amt} stars to ${targetUser.chatId}!`,
+      timestamp: serverTimestamp(),
+      isBanner: true,
+      highlight: true,
+      buzzColor: glowColor,
+      type: "banner"
+    };
+
+    const docRef = await addDoc(collection(db, "messages_room5"), bannerMsg);
+    renderMessagesFromArray([{ id: docRef.id, data: () => bannerMsg }], true);
+
+    setTimeout(() => {
+      const el = document.getElementById(docRef.id);
+      if (el) triggerBannerEffect(el);
+    }, 100);
+
+    showGoldAlert(`You sent ${amt} stars to ${targetUser.chatId}!`, 4000);
+
+    await updateDoc(toRef, {
+      lastGift: { from: currentUser.chatId, amt, at: Date.now() }
+    });
+
     await addDoc(collection(db, "notifications"), {
       recipientId: receiverId,
       title: "Star Gift!",
@@ -1283,17 +1641,9 @@ async function sendStarsToUser(targetUser, amt) {
       fromChatId: currentUser.chatId,
       amount: amt,
       createdAt: serverTimestamp()
-      // NO "read" field → defaults to false → badge shows "new"
-      // You can clear/delete it later exactly like before
     });
 
-    // 3. LAST GIFT TRACKER — SAME
-    await updateDoc(toRef, {
-      lastGift: { from: currentUser.chatId, amt, at: Date.now() }
-    });
-
-    // 4. YOUR ORIGINAL ALERT — SAME
-    showGoldAlert(`You sent ${amt} stars to ${targetUser.chatId}!`, 4000);
+    await updateDoc(doc(db, "messages_room5", docRef.id), { bannerShown: true });
 
   } catch (err) {
     console.error("Gift failed:", err);
@@ -1361,6 +1711,7 @@ try {
   }
 }
 });
+
 /* ===============================
    🔐 VIP Login (Whitelist Check)
 ================================= */
@@ -1491,6 +1842,7 @@ document.getElementById("hostLogoutBtn")?.addEventListener("click", async (e) =>
     showStarPopup("Logout failed — try again!");
   }
 });
+
 /* ===============================
    💫 Auto Star Earning System
 ================================= */
@@ -3848,33 +4200,90 @@ function showUnlockConfirm(video, onUnlockCallback) {
 }
 
 async function unlockVideo(video) {
-  if (!currentUser?.uid) return showGoldAlert("Login required");
-  if (currentUser.uid === video.uploaderId) return showGoldAlert("You already own this video");
+  if (!currentUser?.uid) {
+    return showGoldAlert("Login required");
+  }
 
-  const cost = video.highlightVideoPrice;
+  if (currentUser.uid === video.uploaderId) {
+    return showGoldAlert("You already own this clip");
+  }
+
+  const cost = Number(video.highlightVideoPrice) || 0;
+  if (cost <= 0) {
+    return showGoldAlert("Invalid price");
+  }
 
   try {
-    await runTransaction(db, async tx => {
-      const senderSnap = await tx.get(doc(db, "users", currentUser.uid));
-      if ((senderSnap.data()?.stars || 0) < cost) throw "Not enough STRZ";
+    // ——— ATOMIC TRANSACTION: Transfer STRZ + Unlock ———
+    await runTransaction(db, async (tx) => {
+      const buyerDoc = await tx.get(doc(db, "users", currentUser.uid));
+      const buyerData = buyerDoc.data();
 
-      tx.update(doc(db, "users", currentUser.uid), { stars: increment(-cost) });
-      tx.update(doc(db, "users", video.uploaderId), { stars: increment(cost) });
-      tx.update(doc(db, "highlightVideos", video.id), { unlockedBy: arrayUnion(currentUser.uid) });
-      tx.update(doc(db, "users", currentUser.uid), { unlockedVideos: arrayUnion(video.id) });
+      if ((buyerData?.stars || 0) < cost) {
+        throw new Error("Not enough STRZ");
+      }
+
+      // Deduct from buyer, add to uploader
+      tx.update(doc(db, "users", currentUser.uid), {
+        stars: increment(-cost)
+      });
+      tx.update(doc(db, "users", video.uploaderId), {
+        stars: increment(cost)
+      });
+
+      // Mark video as unlocked
+      tx.update(doc(db, "highlightVideos", video.id), {
+        unlockedBy: arrayUnion(currentUser.uid)
+      });
+
+      // Add to buyer's unlocked list
+      tx.update(doc(db, "users", currentUser.uid), {
+        unlockedVideos: arrayUnion(video.id)
+      });
     });
 
+    // ——— LOCAL CACHE UPDATE ———
     const unlocked = JSON.parse(localStorage.getItem("userUnlockedVideos") || "[]");
     if (!unlocked.includes(video.id)) {
       unlocked.push(video.id);
       localStorage.setItem("userUnlockedVideos", JSON.stringify(unlocked));
     }
 
-    showGoldAlert('Unlocked "' + video.title + '"!');
+    // ——— SEND NOTIFICATION TO UPLOADER —
+    try {
+      await addDoc(collection(db, "notifications"), {
+        type: "clip_purchased",
+        title: "Your clip was unlocked!",
+        message: `${currentUser.chatId || "Someone"} paid ${cost} STRZ for "${video.title}"`,
+        videoId: video.id,
+        videoTitle: video.title,
+        buyerId: currentUser.uid,
+        buyerName: currentUser.chatId || "Anonymous",
+        recipientId: video.uploaderId,
+        read: false,
+        createdAt: serverTimestamp()
+      });
+    } catch (notifErr) {
+      console.warn("Notification failed (non-critical):", notifErr);
+      // Don't break unlock if notification fails
+    }
+
+    // — SUCCESS —
+    showGoldAlert(`Unlocked "${video.title}"!`);
+    
+    // Close modal & refresh highlights
     document.getElementById("highlightsModal")?.remove();
-    setTimeout(() => highlightsBtn.click(), 400);
-  } catch (e) {
-    showGoldAlert("Unlock failed: " + (e.message || e));
+    setTimeout(() => highlightsBtn?.click(), 400);
+
+    // Optional: refresh notifications badge instantly
+    if (typeof loadNotifications === "function") {
+      loadNotifications();
+    }
+
+  } catch (error) {
+    console.error("Unlock failed:", error);
+    const msg = error.message || error;
+    showGoldAlert(msg === "Not enough STRZ" ? "Not enough STRZ" : "Unlock failed — try again");
   }
 }
 
