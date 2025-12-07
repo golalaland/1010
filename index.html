@@ -493,6 +493,105 @@
 .logo-link {
   text-decoration: none;
 }
+/* ≣ PREMIUM CYBER FRAME – no green neon, pure dope ≣ */
+.premium-frame {
+  position: relative;
+  width: 340px;
+  margin: 50px auto;
+  filter: drop-shadow(0 20px 40px rgba(0,0,0,0.8));
+  transition: all 0.6s cubic-bezier(0.23,1,0.32,1);
+}
+.premium-frame:hover {
+  transform: translateY(-16px);
+  filter: drop-shadow(0 30px 60px rgba(0,0,0,0.9));
+}
+
+.frame-inner {
+  position: relative;
+  border-radius: 20px;
+  overflow: hidden;
+  background: #000;
+  aspect-ratio: 3 / 4;
+  border: 1px solid rgba(255,255,255,0.08);
+  box-shadow: 
+    0 0 0 1px rgba(255,255,255,0.05),
+    0 10px 30px rgba(0,0,0,0.6),
+    inset 0 0 40px rgba(0,0,0,0.4);
+}
+
+.premium-frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.8s ease;
+}
+.premium-frame:hover img {
+  transform: scale(1.08);
+}
+
+/* Subtle gradient overlay */
+.frame-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, 
+    transparent 0%, 
+    rgba(0,0,0,0.15) 40%, 
+    rgba(0,0,0,0.7) 100%
+  );
+  pointer-events: none;
+}
+
+/* Sharp corner accents – white/gold micro-lines */
+.frame-accent-tl, .frame-accent-br {
+  position: absolute;
+  width: 60px;
+  height: 60px;
+  border: 2px solid rgba(255,215,0,0.6); /* subtle gold */
+}
+.frame-accent-tl {
+  top: 12px; left: 12px;
+  border-right: none;
+  border-bottom: none;
+}
+.frame-accent-br {
+  bottom: 12px; right: 12px;
+  border-left: none;
+  border-top: none;
+}
+
+/* Slow moving scanline – barely visible, classy */
+.frame-scan {
+  position: absolute;
+  left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+  top: 0;
+  animation: premiumScan 9s linear infinite;
+  pointer-events: none;
+}
+@keyframes premiumScan {
+  0%   { transform: translateY(-1px); opacity: 0; }
+  10%  { opacity: 1; }
+  90%  { opacity: 1; }
+  100% { transform: translateY(100%); opacity: 0; }
+}
+
+/* Caption */
+.frame-caption {
+  margin-top: 16px;
+  text-align: center;
+  font-weight: 700;
+  font-size: 0.95rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #aaa;
+  text-shadow: 0 0 10px rgba(0,0,0,0.8);
+  transition: color 0.4s;
+}
+.premium-frame:hover .frame-caption {
+  color: #fff;
+  letter-spacing: 3px;
+}
   </style>
 </head>
 <body>
@@ -505,6 +604,19 @@
  
     </div>
   </section>
+
+
+  <!-- DOPE PHOTO FRAME - Premium Cyber-Minimal -->
+<div class="premium-frame">
+  <div class="frame-inner">
+    <img src="https://via.placeholder.com/800x1000/0f0f0f/ffffff?text=YOUR+IMAGE" alt="xixi vibe">
+    <div class="frame-overlay"></div>
+    <div class="frame-accent-tl"></div>
+    <div class="frame-accent-br"></div>
+    <div class="frame-scan"></div>
+  </div>
+  <p class="frame-caption">LIVE NOW · 12.4K watching</p>
+</div>
 
   <section class="features">
     <div class="card">
