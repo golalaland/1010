@@ -793,16 +793,17 @@ function showTapModal(targetEl, msgData) {
 }
 
 // =============================
-// NO MORE BANNERS — EVER (2025+ FINAL CLEAN)
+// BANNERS ARE DEAD — OFFICIALLY (2025+)
 // =============================
 function triggerBannerEffect() {
-  // Intentionally empty — banners are dead and buried
-  // Keep only if some ancient code still calls it (harmless)
+  // Left empty on purpose. Nothing will ever glow again.
 }
 
 // =============================
-// RENDER MESSAGES — PURE, FAST, BEAUTIFUL
+// RENDER MESSAGES — CLEAN, FAST, ELITE
 // =============================
+let scrollPending = false;
+
 function renderMessagesFromArray(messages, forceTop = false) {
   if (!refs.messagesEl) return;
 
@@ -811,73 +812,68 @@ function renderMessagesFromArray(messages, forceTop = false) {
 
   messages.forEach(item => {
     const id = item.id || item.tempId || item.data?.id;
-    if (!id || document.getElementById(id)) return;
+    if (!id || document.getElementById(id)) return; // Duplicate protection
 
     const m = item.data ?? item;
 
-    // BLOCK ALL LEGACY BANNER TRASH — FOREVER
+    // PERMA-BLOCK ALL BANNER TRASH
     if (
       m.isBanner ||
-      m.type === "banner" ||
-      m.type === "gift_banner" ||
-      m.systemBanner ||
+      m.type?.includes("banner") ||
       m.chatId === "★ SYSTEM ★" ||
       m.uid === "system" ||
       m.uid === "system_gift"
     ) {
-      return; // Silent kill — no logs, no mercy
+      return; // Silent execution — banners never existed
     }
 
     const wrapper = document.createElement("div");
     wrapper.className = "msg";
     wrapper.id = id;
 
-    // USERNAME — TAP TO OPEN PROFILE (GOLD STANDARD 2025)
+    // TAPABLE USERNAME — OPENS PROFILE
     const metaEl = document.createElement("span");
     metaEl.className = "meta";
 
     const tapableName = document.createElement("span");
     tapableName.className = "chat-username";
-    tapableName.textContent = m.chatId || "Guest";
+    tapableName.textContent = m.chatId || "Guest;
 
-    // ROCK-SOLID UID EXTRACTION — WORKS EVERY TIME
-    const realUid = m.uid || 
-                    m.email?.replace(/[.@]/g, '_') || 
-                    m.chatId || 
+    // 100% RELIABLE UID (works even with email-only users)
+    const realUid = m.uid ||
+                    m.email?.replace(/[.@]/g, '_') ||
+                    m.chatId ||
                     "unknown";
     tapableName.dataset.userId = realUid.replace(/[.@/\\]/g, '_');
 
     tapableName.style.cssText = `
-      cursor: pointer;
-      font-weight: 700;
-      padding: 0 6px;
-      border-radius: 6px;
-      user-select: none;
-      transition: background 0.2s;
+      cursor:pointer;
+      font-weight:700;
+      padding:0 6px;
+      border-radius:6px;
+      user-select:none;
+      transition:background .2s;
     `;
 
-    // Visual tap feedback
-    tapableName.addEventListener("pointerdown", () => {
-      tapableName.style.background = "rgba(255,204,0,0.4)";
-    });
-    tapableName.addEventListener("pointerup", () => {
-      tapableName.style.background = "";
-    });
-    tapableName.addEventListener("pointerleave", () => {
-      tapableName.style.background = "";
-    });
+    // Tap feedback
+    tapableName.addEventListener("pointerdown", () => tapableName.style.background = "rgba(255,204,0,0.4)");
+    tapableName.addEventListener("pointerup", () => tapableName.style.background = "");
+    tapableName.addEventListener("pointerleave", () => tapableName.style.background = "");
 
-    // Click = open social card / profile
-    tapableName.onclick = () => openUserCard(tapableName.dataset.userId);
+    // Open profile on click
+    tapableName.onclick = (e) => {
+      e.stopPropagation();
+      openUserCard(tapableName.dataset.userId);
+    };
 
     metaEl.append(tapableName, document.createTextNode(": "));
     wrapper.appendChild(metaEl);
 
     // MESSAGE CONTENT
-    const content = document.createElement("span");
-    content.className = "content";
-    content.textContent = m.content || "";
-    wrapper.appendChild(content);
+    const contentEl = document.createElement("span");
+    contentEl.className = "content";
+    contentEl.textContent = " " + (m.content || "");
+    wrapper.appendChild(contentEl);
 
     // TIMESTAMP
     if (m.timestamp) {
@@ -887,28 +883,28 @@ function renderMessagesFromArray(messages, forceTop = false) {
       wrapper.appendChild(time);
     }
 
-    // REPLY PREVIEW — GORGEOUS & FUNCTIONAL
+    // REPLY PREVIEW — BEAUTIFUL & CLICKABLE
     if (m.replyTo) {
       const replyPreview = document.createElement("div");
       replyPreview.className = "reply-preview";
       replyPreview.style.cssText = `
-        background: rgba(255,255,255,0.06);
-        border-left: 3px solid #ffcc00;
-        padding: 8px 12px;
-        margin: 6px 0 8px 0;
-        border-radius: 0 8px 8px 0;
-        font-size: 13.5px;
-        color: #ccc;
-        cursor: pointer;
-        line-height: 1.4;
+        background:rgba(255,255,255,0.06);
+        border-left:3px solid #ffcc00;
+        padding:8px 12px;
+        margin:6px 0 8px;
+        border-radius:0 8px 8px 0;
+        font-size:13.5px;
+        color:#ccc;
+        cursor:pointer;
+        line-height:1.4;
       `;
 
       const replyText = (m.replyToContent || "Message").replace(/\n/g, " ").trim();
-      const shortText = replyText.length > 80 ? replyText.substring(0, 80) + "..." : replyText;
+      const short = replyText.length > 80 ? replyText.slice(0, 80) + "..." : replyText;
 
       replyPreview.innerHTML = `
         <strong style="color:#ffcc00;">↳ ${m.replyToChatId || "someone"}:</strong>
-        <span style="color:#aaa; margin-left:4px;">${shortText}</span>
+        <span style="color:#aaa;margin-left:4px;">${short}</span>
       `;
 
       replyPreview.onclick = () => {
@@ -923,43 +919,35 @@ function renderMessagesFromArray(messages, forceTop = false) {
       wrapper.appendChild(replyPreview);
     }
 
+    // LONG TAP / CLICK → REPLY • REPORT • COPY MENU
+    wrapper.addEventListener("click", (e) => {
+      e.stopPropagation();
+      showTapModal(wrapper, {
+        id,
+        chatId: m.chatId,
+        uid: realUid.replace(/[.@/\\]/g, '_'),
+        content: m.content,
+        replyTo: m.replyTo,
+        replyToContent: m.replyToContent,
+        replyToChatId: m.replyToChatId
+      });
+    });
+
     fragment.appendChild(wrapper);
   });
 
-  // Insert all at once
+  // INSERT ALL AT ONCE (best perf)
   if (forceTop && fragment.children.length > 0) {
     container.prepend(fragment);
   } else {
     container.appendChild(fragment);
   }
 
-    // === MESSAGE CONTENT ===
-    const contentEl = document.createElement("span");
-    contentEl.className = "content";
-    contentEl.textContent = " " + (m.content || "");
-    wrapper.appendChild(contentEl);
-
-    // === LONG TAP FOR REPLY/REPORT ===
-    wrapper.addEventListener("click", e => {
-      e.stopPropagation();
-      showTapModal(wrapper, {
-        id: id,
-        chatId: m.chatId,
-        uid: m.uid,
-        content: m.content,
-        replyTo: m.replyTo,
-        replyToContent: m.replyToContent
-      });
-    });
-
-    refs.messagesEl.appendChild(wrapper);
-  });
-
-  // === AUTO-SCROLL ===
-  if (!scrollPending) {
+  // SMOOTH AUTO-SCROLL (no jank)
+  if (!forceTop && !scrollPending) {
     scrollPending = true;
     requestAnimationFrame(() => {
-      refs.messagesEl.scrollTop = refs.messagesEl.scrollHeight;
+      container.scrollTop = container.scrollHeight;
       scrollPending = false;
     });
   }
