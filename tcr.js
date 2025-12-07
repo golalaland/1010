@@ -1222,6 +1222,7 @@ async function sendStarsToUser(targetUser, amt) {
   }
 
   const sanitize = (str) => str?.toLowerCase().replace(/[.@/\\]/g, '_');
+
   const senderId = sanitize(currentUser.email);
   if (!senderId) {
     showGoldAlert("Your profile error", 4000);
@@ -1243,6 +1244,7 @@ async function sendStarsToUser(targetUser, amt) {
     showGoldAlert("User not found", 4000);
     return;
   }
+
   if (senderId === receiverId) {
     showGoldAlert("Can't gift yourself", 4000);
     return;
@@ -1252,7 +1254,7 @@ async function sendStarsToUser(targetUser, amt) {
   const toRef = doc(db, "users", receiverId);
 
   try {
-    // 1. ATOMIC TRANSFER — 100% SAME AS BEFORE
+    // 1. ATOMIC STAR TRANSFER — EXACT SAME AS BEFORE
     await runTransaction(db, async (tx) => {
       const senderSnap = await tx.get(fromRef);
       const receiverSnap = await tx.get(toRef);
@@ -1272,7 +1274,7 @@ async function sendStarsToUser(targetUser, amt) {
       tx.update(toRef, { stars: increment(amt) });
     });
 
-    // 2. YOUR EXACT ORIGINAL NOTIFICATION — 100% UNTOUCHED (this is what triggers your badge + custom popup)
+    // 2. YOUR ORIGINAL NOTIFICATION — 100% UNCHANGED (this is what makes the badge say "new")
     await addDoc(collection(db, "notifications"), {
       recipientId: receiverId,
       title: "Star Gift!",
@@ -1281,18 +1283,17 @@ async function sendStarsToUser(targetUser, amt) {
       fromChatId: currentUser.chatId,
       amount: amt,
       createdAt: serverTimestamp()
+      // NO "read" field → defaults to false → badge shows "new"
+      // You can clear/delete it later exactly like before
     });
 
-    // 3. LAST GIFT TRACKER — SAME AS BEFORE
+    // 3. LAST GIFT TRACKER — SAME
     await updateDoc(toRef, {
       lastGift: { from: currentUser.chatId, amt, at: Date.now() }
     });
 
-    // 4. YOUR ORIGINAL ON-SCREEN ALERT — STILL THERE
+    // 4. YOUR ORIGINAL ALERT — SAME
     showGoldAlert(`You sent ${amt} stars to ${targetUser.chatId}!`, 4000);
-
-    // OPTIONAL: confetti if you want it
-    // launchConfetti?.();
 
   } catch (err) {
     console.error("Gift failed:", err);
