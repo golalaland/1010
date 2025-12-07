@@ -729,7 +729,7 @@ function showTapModal(targetEl, msgData) {
   };
 
   const cancelBtn = document.createElement("button");
-  cancelBtn.textContent = "Cancel";
+  cancelBtn.textContent = "x";
   cancelBtn.onclick = () => tapModalEl.remove();
 
   tapModalEl.append(replyBtn, reportBtn, cancelBtn);
@@ -759,16 +759,61 @@ function showTapModal(targetEl, msgData) {
 // =============================
 // RENDER MESSAGES — 100% BANNER-FREE, FLAWLESS 2025 VERSION
 // =============================
+// =============================
+// EXTRACT COLORS FROM GRADIENT — USED FOR CONFETTI
+// =============================
+function extractColorsFromGradient(gradient) {
+  var matches = gradient.match(/#[0-9a-fA-F]{6}/g);
+  if (matches && matches.length > 0) {
+    return matches;
+  }
+  // Fallback colors if parsing fails
+  return ["#ff9a9e", "#fecfef", "#a8edea", "#fed6e3"];
+}
+
+// =============================
+// CREATE CONFETTI INSIDE STICKER — DEFINED ONCE, OUTSIDE LOOP
+// =============================
+function createConfettiInside(container, colors) {
+  for (var i = 0; i < 18; i++) {
+    var piece = document.createElement("div");
+    var size = 6 + Math.random() * 10;
+    var delay = Math.random() * 3;
+    var duration = 4 + Math.random() * 4;
+    var left = Math.random() * 100;
+    var color = colors[Math.floor(Math.random() * colors.length)];
+
+    piece.style.cssText = `
+      position: absolute;
+      left: ${left}%;
+      top: -20px;
+      width: ${size}px;
+      height: ${size * 1.8}px;
+      background: ${color};
+      border-radius: 50%;
+      opacity: 0.8;
+      pointer-events: none;
+      animation: confettiFall ${duration}s linear infinite;
+      animation-delay: ${delay}s;
+      transform: rotate(${Math.random() * 360}deg);
+    `;
+    container.appendChild(piece);
+  }
+}
+
+// =============================
+// RENDER MESSAGES — FINAL FIXED VERSION (2025)
+// =============================
 function renderMessagesFromArray(messages) {
   if (!refs.messagesEl) return;
 
-  messages.forEach(item => {
-    const id = item.id || item.tempId || item.data?.id;
+  messages.forEach(function(item) {
+    var id = item.id || item.tempId || item.data?.id;
     if (!id || document.getElementById(id)) return;
 
-    const m = item.data ?? item;
+    var m = item.data ?? item;
 
-    // BLOCK DEAD BANNERS
+    // BLOCK ALL BANNERS
     if (
       m.isBanner ||
       m.type === "banner" ||
@@ -778,116 +823,111 @@ function renderMessagesFromArray(messages) {
       /system/i.test(m.uid || "")
     ) return;
 
-    const wrapper = document.createElement("div");
+    var wrapper = document.createElement("div");
     wrapper.className = "msg";
     wrapper.id = id;
 
-    // ==================== USERNAME — ALWAYS USES YOUR ORIGINAL COLOR SYSTEM ====================
-    const metaEl = document.createElement("span");
+    // USERNAME — YOUR ORIGINAL COLORS ALWAYS WIN
+    var metaEl = document.createElement("span");
     metaEl.className = "meta";
 
-    const nameSpan = document.createElement("span");
+    var nameSpan = document.createElement("span");
     nameSpan.className = "chat-username";
     nameSpan.textContent = m.chatId || "Guest";
 
-    const realUid = (m.uid || m.email?.replace(/[.@]/g, '_') || m.chatId || "unknown").replace(/[.@/\\]/g, '_');
+    var realUid = (m.uid || (m.email ? m.email.replace(/[.@]/g, '_') : m.chatId) || "unknown").replace(/[.@/\\]/g, '_');
     nameSpan.dataset.userId = realUid;
 
-    // THIS IS WHAT BRINGS BACK YOUR ORIGINAL COLORS — NEVER TOUCHED BY BUZZ
     nameSpan.style.cssText = `
       cursor:pointer;
       font-weight:700;
       padding:0 4px;
       border-radius:4px;
       user-select:none;
-      color: ${refs.userColors?.[m.uid] || "#ffffff"} !important;
+      color: ${refs.userColors && refs.userColors[m.uid] ? refs.userColors[m.uid] : "#ffffff"} !important;
     `;
 
-    nameSpan.addEventListener("pointerdown", () => nameSpan.style.background = "rgba(255,204,0,0.4)");
-    nameSpan.addEventListener("pointerup", () => setTimeout(() => nameSpan.style.background = "", 200));
+    nameSpan.addEventListener("pointerdown", function() { nameSpan.style.background = "rgba(255,204,0,0.4)"; });
+    nameSpan.addEventListener("pointerup", function() { setTimeout(function() { nameSpan.style.background = ""; }, 200); });
 
     metaEl.append(nameSpan, document.createTextNode(": "));
     wrapper.appendChild(metaEl);
 
-    // ==================== REPLY PREVIEW (UNCHANGED) ====================
+    // REPLY PREVIEW
     if (m.replyTo) {
-      const preview = document.createElement("div");
+      var preview = document.createElement("div");
       preview.className = "reply-preview";
       preview.style.cssText = "background:rgba(255,255,255,0.06);border-left:3px solid #b3b3b3;padding:6px 10px;margin:6px 0 4px;border-radius:0 6px 6px 0;font-size:13px;color:#aaa;cursor:pointer;line-height:1.4;";
-      const replyText = (m.replyToContent || "Original message").replace(/\n/g, " ").trim();
-      const shortText = replyText.length > 80 ? replyText.substring(0,80) + "..." : replyText;
+      var replyText = (m.replyToContent || "Original message").replace(/\n/g, " ").trim();
+      var shortText = replyText.length > 80 ? replyText.substring(0,80) + "..." : replyText;
       preview.innerHTML = `<strong style="color:#999;">Reply ${m.replyToChatId || "someone"}:</strong> <span style="color:#aaa;">${shortText}</span>`;
-      preview.onclick = () => {
-        const target = document.getElementById(m.replyTo);
+      preview.onclick = function() {
+        var target = document.getElementById(m.replyTo);
         if (target) {
           target.scrollIntoView({ behavior: "smooth", block: "center" });
           target.style.background = "rgba(180,180,180,0.15)";
-          setTimeout(() => target.style.background = "", 2000);
+          setTimeout(function() { target.style.background = ""; }, 2000);
         }
       };
       wrapper.appendChild(preview);
     }
 
-    // ==================== MESSAGE CONTENT — ONLY THIS GETS BUZZ EFFECT ====================
-    const content = document.createElement("span");
+    // CONTENT SPAN — ALWAYS CREATED
+    var content = document.createElement("span");
     content.className = "content";
     content.textContent = " " + (m.content || "");
 
-  // ==================== BUZZ = SUPER STICKER MODE ====================
-if (m.type === "buzz" && m.stickerGradient) {
-  wrapper.classList.add("super-sticker");
-  wrapper.style.cssText = `
-    display: inline-block;
-    max-width: 80%;
-    margin: 12px 8px;
-    padding: 16px 20px;
-    border-radius: 24px;  /* Rounded sticker shape */
-    background: ${m.stickerGradient};  /* Your random classy gradient */
-    box-shadow: 
-      0 8px 32px rgba(0,0,0,0.2),
-      inset 0 1px 0 rgba(255,255,255,0.3);  /* Subtle inner glow */
-    position: relative;
-    overflow: hidden;
-    border: 2px solid rgba(255,255,255,0.2);  /* Soft border */
-    animation: stickerPop 0.6s ease-out;
-  `;
+    // SUPER STICKER BUZZ — ONLY WHEN NEEDED
+    if (m.type === "buzz" && m.stickerGradient) {
+      wrapper.className += " super-sticker";
+      wrapper.style.cssText = `
+        display: inline-block;
+        max-width: 85%;
+        margin: 14px 10px;
+        padding: 18px 24px;
+        border-radius: 28px;
+        background: ${m.stickerGradient};
+        box-shadow: 0 10px 40px rgba(0,0,0,0.25), inset 0 2px 0 rgba(255,255,255,0.3);
+        position: relative;
+        overflow: hidden;
+        border: 3px solid rgba(255,255,255,0.25);
+        animation: stickerPop 0.7s ease-out;
+        backdrop-filter: blur(4px);
+      `;
 
-  // CONFETTI INSIDE BACKDROP (falling particles trapped in sticker)
-  var confettiContainer = document.createElement("div");
-  confettiContainer.className = "sticker-confetti";
-  confettiContainer.style.cssText = "position:absolute;inset:0;pointer-events:none;overflow:hidden;";
-  createConfettiInside(confettiContainer, extractColorsFromGradient(m.stickerGradient));
-  wrapper.appendChild(confettiContainer);
+      // CONFETTI INSIDE
+      var confettiContainer = document.createElement("div");
+      confettiContainer.style.cssText = "position:absolute;inset:0;pointer-events:none;overflow:hidden;opacity:0.7;";
+      createConfettiInside(confettiContainer, extractColorsFromGradient(m.stickerGradient));
+      wrapper.appendChild(confettiContainer);
 
-  // Auto-fade sticker after 20s (keeps message, softens effect)
-  setTimeout(function() {
-    wrapper.style.background = "rgba(255,255,255,0.05)";
-    wrapper.style.boxShadow = "0 4px 12px rgba(0,0,0,0.1)";
-    wrapper.style.borderRadius = "12px";
-    confettiContainer.remove();
-  }, 20000);
-}
+      // Make text pop on hover
+      wrapper.style.transition = "transform 0.2s";
+      wrapper.onmouseenter = () => wrapper.style.transform = "scale(1.03) translateY(-4px)";
+      wrapper.onmouseleave = () => wrapper.style.transform = "scale(1)";
 
-// HELPER: Create falling confetti INSIDE the sticker
-function createConfettiInside(container, colors) {
-  for (var i = 0; i < 15; i++) {  // 15 particles
-    var piece = document.createElement("div");
-    piece.style.cssText = `
-      position:absolute; left:${Math.random()*100}%; width:${4+Math.random()*8}px; height:${8+Math.random()*12}px;
-      background:${colors[Math.floor(Math.random()*colors.length)]}; border-radius:50%; opacity:0.8;
-      animation: confettiFall ${3+Math.random()*4}s linear infinite;
-      animation-delay: ${Math.random()*2}s;
-    `;
-    piece.style.transform = "rotate(" + (Math.random()*360) + "deg)";
-    container.appendChild(piece);
-  }
-}
+      // Fade after 20s
+      setTimeout(function() {
+        wrapper.style.background = "rgba(255,255,255,0.06)";
+        wrapper.style.boxShadow = "0 4px 12px rgba(0,0,0,0.15)";
+        wrapper.style.border = "none";
+        confettiContainer.remove();
+      }, 20000);
+    }
+
+    // ALWAYS APPEND CONTENT — THIS WAS THE MAIN BUG
+    wrapper.appendChild(content);
+
     // TAP FOR MENU
-    wrapper.onclick = (e) => {
+    wrapper.onclick = function(e) {
       e.stopPropagation();
       showTapModal(wrapper, {
-        id, chatId: m.chatId, uid: realUid, content: m.content,
-        replyTo: m.replyTo, replyToContent: m.replyToContent,
+        id: id,
+        chatId: m.chatId,
+        uid: realUid,
+        content: m.content,
+        replyTo: m.replyTo,
+        replyToContent: m.replyToContent,
         replyToChatId: m.replyToChatId
       });
     };
@@ -898,7 +938,7 @@ function createConfettiInside(container, colors) {
   // AUTO-SCROLL
   if (!scrollPending) {
     scrollPending = true;
-    requestAnimationFrame(() => {
+    requestAnimationFrame(function() {
       refs.messagesEl.scrollTop = refs.messagesEl.scrollHeight;
       scrollPending = false;
     });
