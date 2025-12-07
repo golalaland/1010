@@ -833,54 +833,55 @@ function renderMessagesFromArray(messages) {
     content.className = "content";
     content.textContent = " " + (m.content || "");
 
-    // BUZZ DETECTED → GO NUCLEAR ON CONTENT ONLY
-    if (m.type === "buzz" && m.buzzColor) {
-      wrapper.classList.add("buzz-message"); // for future CSS targeting if needed
+  // ==================== BUZZ = SUPER STICKER MODE ====================
+if (m.type === "buzz" && m.stickerGradient) {
+  wrapper.classList.add("super-sticker");
+  wrapper.style.cssText = `
+    display: inline-block;
+    max-width: 80%;
+    margin: 12px 8px;
+    padding: 16px 20px;
+    border-radius: 24px;  /* Rounded sticker shape */
+    background: ${m.stickerGradient};  /* Your random classy gradient */
+    box-shadow: 
+      0 8px 32px rgba(0,0,0,0.2),
+      inset 0 1px 0 rgba(255,255,255,0.3);  /* Subtle inner glow */
+    position: relative;
+    overflow: hidden;
+    border: 2px solid rgba(255,255,255,0.2);  /* Soft border */
+    animation: stickerPop 0.6s ease-out;
+  `;
 
-      content.style.cssText = `
-        display: inline-block;
-        font-weight: 900;
-        font-size: 1.2em;
-        padding: 8px 16px;
-        border-radius: 16px;
-        background: linear-gradient(90deg, #0000, ${m.buzzColor}44, #0000);
-        color: ${m.buzzColor} !important;
-        text-shadow: 
-          0 0 10px ${m.buzzColor},
-          0 0 20px ${m.buzzColor},
-          0 0 40px ${m.buzzColor};
-        animation: buzzTextPulse 3s infinite, buzzFloat 6s infinite;
-        position: relative;
-        z-index: 2;
-      `;
+  // CONFETTI INSIDE BACKDROP (falling particles trapped in sticker)
+  var confettiContainer = document.createElement("div");
+  confettiContainer.className = "sticker-confetti";
+  confettiContainer.style.cssText = "position:absolute;inset:0;pointer-events:none;overflow:hidden;";
+  createConfettiInside(confettiContainer, extractColorsFromGradient(m.stickerGradient));
+  wrapper.appendChild(confettiContainer);
 
-      // Optional: add floating particles inside content only
-      const particles = document.createElement("div");
-      particles.style.cssText = `
-        position: absolute;
-        inset: -20px;
-        pointer-events: none;
-        background: 
-          radial-gradient(circle at 20% 50%, ${m.buzzColor}66, transparent 70%),
-          radial-gradient(circle at 80% 80%, ${m.buzzColor}77, transparent 60%);
-        animation: buzzParticles 8s infinite linear;
-        opacity: 0.5;
-        z-index: 1;
-      `;
-      content.style.position = "relative";
-      content.appendChild(particles);
+  // Auto-fade sticker after 20s (keeps message, softens effect)
+  setTimeout(function() {
+    wrapper.style.background = "rgba(255,255,255,0.05)";
+    wrapper.style.boxShadow = "0 4px 12px rgba(0,0,0,0.1)";
+    wrapper.style.borderRadius = "12px";
+    confettiContainer.remove();
+  }, 20000);
+}
 
-      // Auto-calm after 15 seconds
-      setTimeout(() => {
-        content.style.animation = "none";
-        content.style.textShadow = "0 2px 4px rgba(0,0,0,0.5)";
-        content.style.background = "transparent";
-        particles.remove();
-      }, 15000);
-    }
-
-    wrapper.appendChild(content);
-
+// HELPER: Create falling confetti INSIDE the sticker
+function createConfettiInside(container, colors) {
+  for (var i = 0; i < 15; i++) {  // 15 particles
+    var piece = document.createElement("div");
+    piece.style.cssText = `
+      position:absolute; left:${Math.random()*100}%; width:${4+Math.random()*8}px; height:${8+Math.random()*12}px;
+      background:${colors[Math.floor(Math.random()*colors.length)]}; border-radius:50%; opacity:0.8;
+      animation: confettiFall ${3+Math.random()*4}s linear infinite;
+      animation-delay: ${Math.random()*2}s;
+    `;
+    piece.style.transform = "rotate(" + (Math.random()*360) + "deg)";
+    container.appendChild(piece);
+  }
+}
     // TAP FOR MENU
     wrapper.onclick = (e) => {
       e.stopPropagation();
@@ -2074,30 +2075,38 @@ refs.sendBtn?.addEventListener("click", async () => {
 // =============================
 // BUZZ MESSAGE — GOD TIER, WORKS ON EVERY DEVICE (NO ?. ALLOWED)
 // =============================
+// =============================
+// BUZZ MESSAGE — SUPER STICKER STYLE, CLASSY NON-NEON GRADIENTS
+// =============================
 if (refs.buzzBtn) {
-  refs.buzzBtn.addEventListener("click", async () => {
+  refs.buzzBtn.addEventListener("click", async function() {
     if (!currentUser || !currentUser.uid) {
       showStarPopup("Sign in to BUZZ.");
       return;
     }
-    
-    const text = refs.messageInputEl ? refs.messageInputEl.value.trim() : "";
+
+    var text = "";
+    if (refs.messageInputEl && refs.messageInputEl.value) {
+      text = refs.messageInputEl.value.trim();
+    }
     if (!text) {
       showStarPopup("Write something to make the chat SHAKE");
       return;
     }
-    
-    if ((currentUser.stars || 0) < BUZZ_COST) {
-      showStarPopup(`BUZZ costs ${BUZZ_COST.toLocaleString()} stars!`, { type: "error" });
+
+    var userStars = currentUser.stars || 0;
+    if (userStars < BUZZ_COST) {
+      showStarPopup("BUZZ costs " + BUZZ_COST.toLocaleString() + " stars!", { type: "error" });
       return;
     }
-    
-    try {
-      const buzzColor = randomVibrantColor();
-      const newMsgRef = doc(collection(db, CHAT_COLLECTION));
 
-      // ATOMIC: deduct stars + send buzz message
-      await runTransaction(db, async (transaction) => {
+    try {
+      // RANDOM CLASSY GRADIENT (non-neon: warm/cool/soft vibes)
+      var gradient = randomStickerGradient();
+      var newMsgRef = doc(collection(db, CHAT_COLLECTION));
+
+      // ATOMIC: deduct stars + send sticker buzz
+      await runTransaction(db, async function(transaction) {
         transaction.update(doc(db, "users", currentUser.uid), {
           stars: increment(-BUZZ_COST)
         });
@@ -2109,7 +2118,7 @@ if (refs.buzzBtn) {
           usernameColor: currentUser.usernameColor || "#ff69b4",
           timestamp: serverTimestamp(),
           highlight: true,
-          buzzColor: buzzColor,
+          stickerGradient: gradient,  // ← For backdrop
           type: "buzz",
           buzzLevel: "epic",
           screenShake: true,
@@ -2119,14 +2128,18 @@ if (refs.buzzBtn) {
 
       // INSTANT LOCAL FEEDBACK
       currentUser.stars -= BUZZ_COST;
-      refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
-      refs.messageInputEl.value = "";
+      if (refs.starCountEl) {
+        refs.starCountEl.textContent = formatNumberWithCommas(currentUser.stars);
+      }
+      if (refs.messageInputEl) {
+        refs.messageInputEl.value = "";
+      }
       cancelReply();
 
-      // UNLEASH THE APOCALYPSE
-      triggerBuzzApocalypse(buzzColor, text, currentUser.chatId);
+      // UNLEASH (milder apocalypse — focuses on sticker fun)
+      triggerStickerBuzz(gradient, text, currentUser.chatId);
 
-      showStarPopup("BUZZ DETONATED — CHAT IS ON FIRE", { type: "success", duration: 5000 });
+      showStarPopup("STICKER BUZZ DROPPED — CONFETTI INSIDE!", { type: "success", duration: 5000 });
 
     } catch (err) {
       console.error("BUZZ failed:", err);
@@ -2136,67 +2149,78 @@ if (refs.buzzBtn) {
 }
 
 // =============================
-// THE APOCALYPSE — WHEN BUZZ HITS
+// MILDER APOCALYPSE — STICKER-FOCUSED (Flash + Confetti + Shake)
 // =============================
-function triggerBuzzApocalypse(color, text, name) {
-  // 1. FULL SCREEN FLASH
-  const flash = document.createElement("div");
-  flash.style.cssText = `
-    position:fixed;top:0;left:0;width:100vw;height:100vh;
-    background:${color};opacity:0;pointer-events:none;
-    z-index:99999;animation:flash 1.2s ease-out;
-  `;
+function triggerStickerBuzz(gradient, text, name) {
+  // 1. SUBTLE FULL SCREEN FLASH (using gradient)
+  var flash = document.createElement("div");
+  flash.style.cssText = "position:fixed;top:0;left:0;width:100vw;height:100vh;background:" + gradient + ";opacity:0.7;pointer-events:none;z-index:99999;animation:stickerFlash 1s ease-out;";
   document.body.appendChild(flash);
 
-  // 2. SCREEN SHAKE
+  // 2. GENTLE SCREEN SHAKE
   document.body.classList.add("screen-shake");
-  setTimeout(() => document.body.classList.remove("screen-shake"), 1200);
+  setTimeout(function() {
+    document.body.classList.remove("screen-shake");
+  }, 800);
 
-  // 3. CONFETTI
+  // 3. CONFETTI BURST (from sticker colors)
   if (typeof launchConfetti === "function") {
     launchConfetti({
-      particleCount: 300,
-      spread: 120,
-      origin: { y: 0.6 },
-      colors: [color, "#fff", "#ff0", "#0ff"]
+      particleCount: 200,
+      spread: 90,
+      origin: { y: 0.7 },
+      colors: extractColorsFromGradient(gradient)  // Pulls from gradient
     });
   }
 
-  // 4. SOUND (safe check)
+  // 4. SOUND
   if (typeof playSound === "function") {
     playSound("buzz_explosion");
   }
 
-  // 5. EPIC TEXT BLAST
-  const blast = document.createElement("div");
-  blast.textContent = name + " DROPPED A BUZZ!";
-  blast.style.cssText = `
-    position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
-    font-size:4.5rem;font-weight:900;color:white;
-    text-shadow:0 0 40px ${color},0 0 80px ${color};
-    pointer-events:none;z-index:99999;
-    animation:buzzBlast 2s ease-out forwards;
-    letter-spacing:8px;white-space:nowrap;
-  `;
-  document.body.appendChild(blast);
+  // 5. STICKER ANNOUNCE (smaller text)
+  var announce = document.createElement("div");
+  announce.textContent = name + " SENT A STICKER BUZZ!";
+  announce.style.cssText = "position:fixed;top:20%;left:50%;transform:translate(-50%,-50%);font-size:2.5rem;font-weight:700;color:#fff;text-shadow:0 0 20px rgba(0,0,0,0.5);pointer-events:none;z-index:99999;animation:stickerAnnounce 2s ease-out forwards;letter-spacing:4px;";
+  document.body.appendChild(announce);
 
-  // 6. CONSOLE FIRE
-  console.log("%cBUZZ DETONATED", `color:${color};font-size:40px;font-weight:bold;text-shadow:0 0 20px ${color}`);
-
-  // CLEANUP
-  setTimeout(() => {
+  // Cleanup
+  setTimeout(function() {
     if (flash && flash.parentNode) flash.remove();
-    if (blast && blast.parentNode) blast.remove();
-  }, 3000);
+    if (announce && announce.parentNode) announce.remove();
+  }, 2500);
 }
 
-// VIBRANT COLORS ONLY
-function randomVibrantColor() {
-  const colors = [
-    "#ff006e", "#fb5607", "#ffbe0b", "#ff006e", "#8338ec",
-    "#3a86ff", "#06ffa5", "#ff4365", "#00f5ff", "#ff9500"
+// =============================
+// RANDOM STICKER GRADIENTS — CLASSY, NON-NEON (YouTube-Style)
+// =============================
+function randomStickerGradient() {
+  var gradients = [
+    // Warm sunset (orange-pink, soft)
+    "linear-gradient(135deg, #ff9a9e 0%, #fecfef 50%, #fecfef 100%)",
+    // Cool ocean (blue-teal, calming)
+    "linear-gradient(135deg, #a8edea 0%, #fed6e3 50%, #a8edea 100%)",
+    // Vibrant purple (elegant, not neon)
+    "linear-gradient(135deg, #d299c2 0%, #fef9d7 50%, #d299c2 100%)",
+    // Fresh green (nature-inspired)
+    "linear-gradient(135deg, #89f7fe 0%, #66a6ff 50%, #89f7fe 100%)",
+    // Golden hour (warm yellow-orange)
+    "linear-gradient(135deg, #f093fb 0%, #f5576c 50%, #f093fb 100%)",
+    // Soft lavender (pastel purple-blue)
+    "linear-gradient(135deg, #fa709a 0%, #fee140 50%, #fa709a 100%)",
+    // Earthy terracotta (red-brown fade)
+    "linear-gradient(135deg, #ffecd2 0%, #fcb69f 50%, #ffecd2 100%)",
+    // Minty fresh (green-cyan)
+    "linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 50%, #a1c4fd 100%)"
   ];
-  return colors[Math.floor(Math.random() * colors.length)];
+  return gradients[Math.floor(Math.random() * gradients.length)];
+}
+
+// HELPER: Extract 3-4 colors from gradient for confetti
+function extractColorsFromGradient(gradient) {
+  // Simple regex to pull hex colors (e.g., #ff9a9e, #fecfef)
+  var colors = gradient.match(/#[0-9a-f]{6}/gi) || ["#ff9a9e", "#fecfef", "#fff"];
+  return colors.slice(0, 4).concat("#fff");  // Add white for confetti pop
 }
   /* ----------------------------
      👋 Rotating Hello Text
