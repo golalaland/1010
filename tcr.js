@@ -462,21 +462,21 @@ function setupUsersListener() { onSnapshot(collection(db, "users"), snap => { re
 
 /* ----------------------------
    GIFT MODAL — FINAL ETERNAL VERSION (2025+)
-   Works perfectly with sanitized IDs • Zero bugs • Instant & reliable
+   • No banner messages anymore
+   • Only transaction + notification + user feedback
+   • Clean, fast, bulletproof
 ----------------------------- */
 async function showGiftModal(targetUid, targetData) {
   if (!currentUser) {
     showStarPopup("You must be logged in");
     return;
   }
-
   if (!targetUid || !targetData?.chatId) {
     console.warn("Invalid gift target");
     return;
   }
 
   const { giftModal, giftModalTitle, giftAmountInput, giftConfirmBtn, giftModalClose } = refs;
-
   if (!giftModal || !giftModalTitle || !giftAmountInput || !giftConfirmBtn || !giftModalClose) {
     console.warn("Gift modal DOM elements missing");
     return;
@@ -493,12 +493,10 @@ async function showGiftModal(targetUid, targetData) {
   const closeModal = () => {
     giftModal.style.display = "none";
   };
-
   giftModalClose.onclick = closeModal;
   giftModal.onclick = (e) => {
     if (e.target === giftModal) closeModal();
   };
-  // Allow ESC key to close
   const escHandler = (e) => {
     if (e.key === "Escape") closeModal();
   };
@@ -508,15 +506,15 @@ async function showGiftModal(targetUid, targetData) {
   const newConfirmBtn = giftConfirmBtn.cloneNode(true);
   giftConfirmBtn.replaceWith(newConfirmBtn);
 
-  // === GIFT LOGIC ===
+  // === GIFT LOGIC (NO BANNER, ONLY TRANSACTION + NOTIFICATION) ===
   newConfirmBtn.addEventListener("click", async () => {
-    const amt = parseInt(giftAmountInput.value.trim(), 10);
+    const rawAmt = giftAmountInput.value.trim();
+    const amt = parseInt(rawAmt, 10);
 
     if (isNaN(amt) || amt < 100) {
       showStarPopup("Minimum 100 stars");
       return;
     }
-
     if ((currentUser.stars || 0) < amt) {
       showStarPopup("Not enough stars");
       return;
@@ -526,71 +524,60 @@ async function showGiftModal(targetUid, targetData) {
     newConfirmBtn.textContent = "Sending...";
 
     try {
-      const fromRef = doc(db, "users", currentUser.uid);        // sender (sanitized ID)
-      const toRef = doc(db, "users", targetUid);                // receiver (sanitized ID)
+      const fromRef = doc(db, "users", currentUser.uid);
+      const toRef = doc(db, "users", targetUid);
 
+      // === ATOMIC TRANSACTION: Transfer stars ===
       await runTransaction(db, async (transaction) => {
         const fromSnap = await transaction.get(fromRef);
         if (!fromSnap.exists()) throw "Sender not found";
-        if ((fromSnap.data().stars || 0) < amt) throw "Not enough stars";
+        if ((fromSnap.data().stars || 0) < amt) throw "Insufficient stars";
 
         transaction.update(fromRef, {
           stars: increment(-amt),
-          starsGifted: increment(amt)
+          starsGifted: increment(amt),
+          lastGiftAt: serverTimestamp()
         });
-
         transaction.update(toRef, {
-          stars: increment(amt)
+          stars: increment(amt),
+          starsReceived: increment(amt)
         });
       });
 
-            // === SUCCESS — GIFT BANNER THAT ALWAYS WORKS (THE ONE TRUE WAY) ===
-      const glowColor = "#ffcc00"; // or randomColor() if you want variety
+      // === SEND NOTIFICATION TO RECIPIENT (appears in bell + inbox) ===
+      await addDoc(collection(db, "notifications"), {
+        recipientId: targetUid,
+        title: "Star Gift!",
+        message: `${currentUser.chatId} gifted you ${amt.toLocaleString()} ⭐!`,
+        type: "starGift",
+        fromChatId: currentUser.chatId,
+        fromUid: currentUser.uid,
+        amount: amt,
+        read: false,
+        createdAt: serverTimestamp()
+      });
 
-      const bannerMessage = {
-        content: `${currentUser.chatId} just gifted ${amt} ⭐ to ${targetData.chatId}!`,
-        chatId: "★ SYSTEM ★",
-        uid: "system",
-        timestamp: serverTimestamp(),
-        isBanner: true,
-        highlight: true,
-        buzzColor: glowColor,
-        _confettiPlayed: false,     // ← CRITICAL: your renderer uses this
-        type: "gift_banner"
-      };
+      // === OPTIONAL: Update last gift tracker (for profiles/badges) ===
+      await updateDoc(toRef, {
+        lastGift: {
+          from: currentUser.chatId,
+          fromUid: currentUser.uid,
+          amt,
+          at: serverTimestamp()
+        }
+      });
 
-      try {
-        const bannerRef = await addDoc(collection(db, "messages_room5"), bannerMessage);
+      // === USER FEEDBACK (on-screen celebration) ===
+      showGiftAlert(`You gifted ${amt.toLocaleString()} ⭐ to ${targetData.chatId}!`);
+      launchConfetti?.(); // if you have global confetti
 
-        // THIS IS THE HOLY LINE — THE ONE THAT HAS ALWAYS WORKED
-        renderMessagesFromArray([{
-          id: bannerRef.id,
-          data: bannerMessage        // ← plain object, NOT a function
-        }], true);
-
-        // Optional: extra glow if your renderer doesn't handle it perfectly
-        setTimeout(() => {
-          const el = document.getElementById(bannerRef.id);
-          if (el && typeof triggerBannerEffect === "function") {
-            triggerBannerEffect(el);
-          }
-        }, 120);
-
-        // Celebration
-        showGiftAlert(`Gifted ${amt} stars to ${targetData.chatId}!`);
-        closeModal();
-
-      } catch (err) {
-        console.error("Banner creation failed:", err);
-        showStarPopup("Gift sent — banner delayed");
-        closeModal();
-      }
+      closeModal();
 
     } catch (err) {
-      console.error("Gift transaction failed:", err);
+      console.error("Gift failed:", err);
       showStarPopup("Gift failed — try again");
     } finally {
-      // Reset button
+      // Reset button state
       newConfirmBtn.disabled = false;
       newConfirmBtn.textContent = "Send Gift";
       document.removeEventListener("keydown", escHandler);
@@ -805,45 +792,88 @@ function showTapModal(targetEl, msgData) {
   setTimeout(() => tapModalEl?.remove(), 3000);
 }
 
-// Confetti / glow for banners
-// Banner glow only (no confetti)
+// =============================
+// CONFECTI / GLOW FOR BANNERS → COMPLETELY REMOVED (2025+ CLEAN)
+// =============================
 function triggerBannerEffect(bannerEl) {
-  bannerEl.style.animation = "bannerGlow 1s ease-in-out infinite alternate";
-
-  // ✅ Confetti removed
-  // const confetti = document.createElement("div");
-  // confetti.className = "confetti";
-  // confetti.style.position = "absolute";
-  // confetti.style.top = "-4px";
-  // confetti.style.left = "50%";
-  // confetti.style.width = "6px";
-  // confetti.style.height = "6px";
-  // confetti.style.background = "#fff";
-  // confetti.style.borderRadius = "50%";
-  // bannerEl.appendChild(confetti);
-  // setTimeout(() => confetti.remove(), 1500);
+  // This function is now intentionally EMPTY or removed
+  // We no longer use banner glows or confetti here
+  // All celebration is handled via notifications, buzz messages, or showGiftAlert()
+  // Keep the function only if other legacy code calls it (harmless no-op)
+  return;
+  // Alternatively: just delete the entire function if nothing calls it anymore
 }
 
-
-// Render messages
-function renderMessagesFromArray(messages) {
+// =============================
+// RENDER MESSAGES — CLEAN, NO BANNERS, NO EXCEPTIONS
+// =============================
+function renderMessagesFromArray(messages, forceTop = false) {
   if (!refs.messagesEl) return;
 
-  messages.forEach(item => {
-    // === EXTRACT ID ONCE AND FOR ALL ===
-    const id = item.id || item.tempId || item.data?.id;
-    if (!id || document.getElementById(id)) return;
+  // If forcing to top (e.g. important system msg in future), we insert at beginning
+  const container = refs.messagesEl;
+  const fragment = document.createDocumentFragment();
 
-    const m = item.data ?? item;
+  messages.forEach(item => {
+    // === EXTRACT ID SAFELY ===
+    const id = item.id || item.tempId || item.data?.id;
+    if (!id || document.getElementById(id)) return; // Duplicate protection
+
+    const m = item.data ?? item; // Normalize message data
+
+    // === BLOCK ALL OLD BANNER TYPES (DEFENSIVE) ===
+    if (
+      m.isBanner ||
+      m.type === "banner" ||
+      m.type === "gift_banner" ||
+      m.systemBanner ||
+      m.chatId === "★ SYSTEM ★" ||
+      m.uid === "system" ||
+      m.uid === "system_gift"
+    ) {
+      console.log("Blocked legacy banner message:", id);
+      return; // SILENTLY IGNORE — we don't render banners anymore
+    }
+
+    // === NORMAL MESSAGE RENDERING (your existing clean flow) ===
     const wrapper = document.createElement("div");
     wrapper.className = "msg";
     wrapper.id = id;
 
-  // === BANNER MESSAGES ===
-if (m.isBanner || m.type === "banner" || m.systemBanner) {
-  // Your existing banner rendering code
-  refs.messagesEl.appendChild(wrapper);
-  return;
+    // Your existing message rendering logic here
+    const username = document.createElement("span");
+    username.className = "username";
+    username.textContent = m.chatId || "Unknown";
+
+    const content = document.createElement("span");
+    content.className = "content";
+    content.textContent = m.content || "";
+
+    wrapper.appendChild(username);
+    wrapper.appendChild(content);
+
+    // Optional: badges, timestamps, etc.
+    if (m.timestamp) {
+      const time = document.createElement("span");
+      time.className = "time";
+      time.textContent = formatTime(m.timestamp);
+      wrapper.appendChild(time);
+    }
+
+    fragment.appendChild(wrapper);
+  });
+
+  // Insert all at once (best performance)
+  if (forceTop && fragment.children.length > 0) {
+    container.prepend(fragment);
+  } else {
+    container.appendChild(fragment);
+  }
+
+  // Auto-scroll to bottom for new messages
+  if (!forceTop) {
+    container.scrollTop = container.scrollHeight;
+  }
 }
 
     // === USERNAME — NOW TAPABLE & OPENS SOCIAL CARD ===
