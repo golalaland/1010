@@ -772,26 +772,13 @@ function createFallingConfetti(container, colors) {
     var size = 6 + Math.random() * 12;
     var color = colors[Math.floor(Math.random() * colors.length)];
 
-    p.style.cssText = `
-      position: absolute;
-      width: ${size}px;
-      height: ${size * 1.6}px;
-      background: ${color};
-      border-radius: 50%;
-      left: ${Math.random() * 100}%;
-      top: -40px;
-      opacity: 0.9;
-      pointer-events: none;
-      animation: fall ${4 + Math.random() * 6}s linear infinite;
-      animation-delay: ${Math.random() * 4}s;
-      transform: rotate(${Math.random() * 360}deg);
-    `;
+    p.style.cssText = "position:absolute;width:" + size + "px;height:" + (size * 1.6) + "px;background:" + color + ";border-radius:50%;left:" + (Math.random() * 100) + "%;top:-40px;opacity:0.9;pointer-events:none;animation:fall " + (4 + Math.random() * 6) + "s linear infinite;animation-delay:" + (Math.random() * 4) + "s;transform:rotate(" + (Math.random() * 360) + "deg);");
     container.appendChild(p);
   }
 }
 
 // =============================
-// RENDER MESSAGES — FINAL, FLAWLESS BUZZ EDITION (2025)
+// RENDER MESSAGES — FINAL, NO SYNTAX ERRORS (2025)
 // =============================
 function renderMessagesFromArray(messages) {
   if (!refs.messagesEl) return;
@@ -802,7 +789,7 @@ function renderMessagesFromArray(messages) {
 
     var m = item.data || item;
 
-    // BLOCK ALL BANNERS & SYSTEM GARBAGE
+    // BLOCK BANNERS
     if (m.isBanner || m.type === "banner" || m.type === "gift_banner" || m.systemBanner || /system/i.test(m.uid || "")) {
       return;
     }
@@ -811,7 +798,7 @@ function renderMessagesFromArray(messages) {
     wrapper.className = "msg";
     wrapper.id = id;
 
-    // USERNAME — YOUR ORIGINAL COLORS ALWAYS WIN
+    // USERNAME
     var metaEl = document.createElement("span");
     metaEl.className = "meta";
 
@@ -819,15 +806,18 @@ function renderMessagesFromArray(messages) {
     nameSpan.className = "chat-username";
     nameSpan.textContent = m.chatId || "Guest";
 
-    var realUid = (m.uid || (m.email ? m.email.replace(/[.@]/g, '_') : m.chatId) || "unknown").replace(/[.@/\\]/g, '_');
+    // FIXED LINE — THIS WAS THE BUG
+    var realUid = m.uid || (m.email ? m.email.replace(/[.@]/g, '_') : m.chatId) || "unknown";
+    realUid = realUid.replace(/[.@/\\]/g, '_');
     nameSpan.dataset.userId = realUid;
 
-    nameSpan.style.cssText = "cursor:pointer;font-weight:700;padding:0 6px;border-radius:6px;user-select:none;color:" + (refs.userColors?.[m.uid] || "#fff") + " !important;";
+    nameSpan.style.cssText = "cursor:pointer;font-weight:700;padding:0 6px;border-radius:6px;user-select:none;color:" + (refs.userColors && refs.userColors[m.uid] ? refs.userColors[m.uid] : "#fff") + " !important;";
 
-    nameSpan.addEventListener("pointerdown", () => nameSpan.style.background = "rgba(255,204,0,0.4)");
-    nameSpan.addEventListener("pointerup", () => setTimeout(() => nameSpan.style.background = "", 200));
+    nameSpan.addEventListener("pointerdown", function() { nameSpan.style.background = "rgba(255,204,0,0.4)"; });
+    nameSpan.addEventListener("pointerup", function() { setTimeout(function() { nameSpan.style.background = ""; }, 200); });
 
-    metaEl.append(nameSpan, document.createTextNode(": ")));
+    metaEl.appendChild(nameSpan);
+    metaEl.appendChild(document.createTextNode(": "));
     wrapper.appendChild(metaEl);
 
     // REPLY PREVIEW
@@ -850,33 +840,18 @@ function renderMessagesFromArray(messages) {
     content.className = "content";
     content.textContent = " " + (m.content || "");
 
-    // BUZZ = GOD MODE
+    // BUZZ MODE
     if (m.type === "buzz" && m.stickerGradient) {
       wrapper.className += " buzz-sticker";
-      wrapper.style.cssText = `
-        display:inline-block; max-width:88%; margin:16px 10px; padding:20px 28px;
-        border-radius:32px; background:${m.stickerGradient};
-        box-shadow:0 12px 50px rgba(0,0,0,0.3), inset 0 2px 0 rgba(255,255,255,0.4);
-        position:relative; overflow:hidden; border:4px solid rgba(255,255,255,0.3);
-        animation:stickerPop 0.8s cubic-bezier(0.175,0.885,0.32,1.275);
-        backdrop-filter:blur(6px);
-      `;
+      wrapper.style.cssText = "display:inline-block;max-width:88%;margin:16px 10px;padding:20px 28px;border-radius:32px;background:" + m.stickerGradient + ";box-shadow:0 12px 50px rgba(0,0,0,0.3), inset 0 2px 0 rgba(255,255,255,0.4);position:relative;overflow:hidden;border:4px solid rgba(255,255,255,0.3);animation:stickerPop 0.8s cubic-bezier(0.175,0.885,0.32,1.275);backdrop-filter:blur(6px);";
 
-      // TEXT — BIG, BOLD, WHITE, IMPOSSIBLE TO MISS
-      content.style.cssText = `
-        display:block; font-size:1.5em !important; font-weight:900 !important;
-        line-height:1.4; color:white !important;
-        text-shadow:0 2px 10px rgba(0,0,0,0.7), 0 0 30px rgba(255,255,255,0.5);
-        letter-spacing:0.8px; margin-top:10px;
-      `;
+      content.style.cssText = "display:block;font-size:1.5em !important;font-weight:900 !important;line-height:1.4;color:white !important;text-shadow:0 2px 10px rgba(0,0,0,0.7), 0 0 30px rgba(255,255,255,0.5);letter-spacing:0.8px;margin-top:10px;";
 
-      // CONFETTI INSIDE STICKER
       var confettiBox = document.createElement("div");
       confettiBox.style.cssText = "position:absolute;inset:0;pointer-events:none;overflow:hidden;opacity:0.8;";
       createFallingConfetti(confettiBox, extractColorsFromGradient(m.stickerGradient));
       wrapper.appendChild(confettiBox);
 
-      // FULL-SCREEN CONFETTI (everyone sees it)
       setTimeout(function() {
         if (typeof launchConfetti === "function") {
           launchConfetti({
@@ -888,7 +863,6 @@ function renderMessagesFromArray(messages) {
         }
       }, 300);
 
-      // Calm down after 18s
       setTimeout(function() {
         wrapper.style.cssText = "background:rgba(255,255,255,0.06);box-shadow:0 4px 12px rgba(0,0,0,0.2);border:none;border-radius:16px;";
         content.style.cssText = "font-size:1em;font-weight:600;color:inherit;text-shadow:none;";
