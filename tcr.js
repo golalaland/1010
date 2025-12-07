@@ -754,51 +754,74 @@ function showTapModal(targetEl, msgData) {
 }
 
 // =============================
-// EXTRACT COLORS FROM GRADIENT
+// EXTRACT COLORS FROM GRADIENT — USED FOR CONFETTI
 // =============================
 function extractColorsFromGradient(gradient) {
   var matches = gradient.match(/#[0-9a-fA-F]{6}/g);
-  return matches && matches.length > 0 
-    ? matches 
-    : ["#ff9a9e", "#fecfef", "#a8edea", "#fed6e3"];
+  if (matches && matches.length > 0) {
+    return matches;
+  }
+  // Fallback colors if parsing fails
+  return ["#ff9a9e", "#fecfef", "#a8edea", "#fed6e3"];
 }
 
 // =============================
-// FALLING CONFETTI INSIDE STICKER
+// CREATE CONFETTI INSIDE STICKER — DEFINED ONCE, OUTSIDE LOOP
 // =============================
-function createFallingConfetti(container, colors) {
-  for (var i = 0; i < 20; i++) {
-    var p = document.createElement("div");
-    var size = 6 + Math.random() * 12;
+function createConfettiInside(container, colors) {
+  for (var i = 0; i < 18; i++) {
+    var piece = document.createElement("div");
+    var size = 6 + Math.random() * 10;
+    var delay = Math.random() * 3;
+    var duration = 4 + Math.random() * 4;
+    var left = Math.random() * 100;
     var color = colors[Math.floor(Math.random() * colors.length)];
 
-    p.style.cssText = "position:absolute;width:" + size + "px;height:" + (size * 1.6) + "px;background:" + color + ";border-radius:50%;left:" + (Math.random() * 100) + "%;top:-40px;opacity:0.9;pointer-events:none;animation:fall " + (4 + Math.random() * 6) + "s linear infinite;animation-delay:" + (Math.random() * 4) + "s;transform:rotate(" + (Math.random() * 360) + "deg);");
-    container.appendChild(p);
+    piece.style.cssText = `
+      position: absolute;
+      left: ${left}%;
+      top: -20px;
+      width: ${size}px;
+      height: ${size * 1.8}px;
+      background: ${color};
+      border-radius: 50%;
+      opacity: 0.8;
+      pointer-events: none;
+      animation: confettiFall ${duration}s linear infinite;
+      animation-delay: ${delay}s;
+      transform: rotate(${Math.random() * 360}deg);
+    `;
+    container.appendChild(piece);
   }
 }
 
 // =============================
-// RENDER MESSAGES — FINAL, NO SYNTAX ERRORS (2025)
+// RENDER MESSAGES — FINAL FIXED VERSION (2025)
 // =============================
 function renderMessagesFromArray(messages) {
   if (!refs.messagesEl) return;
 
   messages.forEach(function(item) {
-    var id = item.id || item.tempId || (item.data && item.data.id);
+    var id = item.id || item.tempId || item.data?.id;
     if (!id || document.getElementById(id)) return;
 
-    var m = item.data || item;
+    var m = item.data ?? item;
 
-    // BLOCK BANNERS
-    if (m.isBanner || m.type === "banner" || m.type === "gift_banner" || m.systemBanner || /system/i.test(m.uid || "")) {
-      return;
-    }
+    // BLOCK ALL BANNERS
+    if (
+      m.isBanner ||
+      m.type === "banner" ||
+      m.type === "gift_banner" ||
+      m.systemBanner ||
+      m.chatId === "SYSTEM" ||
+      /system/i.test(m.uid || "")
+    ) return;
 
     var wrapper = document.createElement("div");
     wrapper.className = "msg";
     wrapper.id = id;
 
-    // USERNAME
+    // USERNAME — YOUR ORIGINAL COLORS ALWAYS WIN
     var metaEl = document.createElement("span");
     metaEl.className = "meta";
 
@@ -806,73 +829,90 @@ function renderMessagesFromArray(messages) {
     nameSpan.className = "chat-username";
     nameSpan.textContent = m.chatId || "Guest";
 
-    // FIXED LINE — THIS WAS THE BUG
-    var realUid = m.uid || (m.email ? m.email.replace(/[.@]/g, '_') : m.chatId) || "unknown";
-    realUid = realUid.replace(/[.@/\\]/g, '_');
+    var realUid = (m.uid || (m.email ? m.email.replace(/[.@]/g, '_') : m.chatId) || "unknown").replace(/[.@/\\]/g, '_');
     nameSpan.dataset.userId = realUid;
 
-    nameSpan.style.cssText = "cursor:pointer;font-weight:700;padding:0 6px;border-radius:6px;user-select:none;color:" + (refs.userColors && refs.userColors[m.uid] ? refs.userColors[m.uid] : "#fff") + " !important;";
+    nameSpan.style.cssText = `
+      cursor:pointer;
+      font-weight:700;
+      padding:0 4px;
+      border-radius:4px;
+      user-select:none;
+      color: ${refs.userColors && refs.userColors[m.uid] ? refs.userColors[m.uid] : "#ffffff"} !important;
+    `;
 
     nameSpan.addEventListener("pointerdown", function() { nameSpan.style.background = "rgba(255,204,0,0.4)"; });
     nameSpan.addEventListener("pointerup", function() { setTimeout(function() { nameSpan.style.background = ""; }, 200); });
 
-    metaEl.appendChild(nameSpan);
-    metaEl.appendChild(document.createTextNode(": "));
+    metaEl.append(nameSpan, document.createTextNode(": "));
     wrapper.appendChild(metaEl);
 
     // REPLY PREVIEW
     if (m.replyTo) {
       var preview = document.createElement("div");
       preview.className = "reply-preview";
-      preview.style.cssText = "background:rgba(255,255,255,0.06);border-left:3px solid #ccc;padding:6px 10px;margin:8px 0;border-radius:0 8px 8px 0;font-size:13px;color:#aaa;cursor:pointer;";
-      var replyText = (m.replyToContent || "Message").replace(/\n/g, " ").trim();
-      var short = replyText.length > 80 ? replyText.slice(0,80) + "..." : replyText;
-      preview.innerHTML = "<strong style='color:#ffcc00;'>Reply " + (m.replyToChatId || "someone") + ":</strong> <span style='color:#aaa;'>" + short + "</span>";
+      preview.style.cssText = "background:rgba(255,255,255,0.06);border-left:3px solid #b3b3b3;padding:6px 10px;margin:6px 0 4px;border-radius:0 6px 6px 0;font-size:13px;color:#aaa;cursor:pointer;line-height:1.4;";
+      var replyText = (m.replyToContent || "Original message").replace(/\n/g, " ").trim();
+      var shortText = replyText.length > 80 ? replyText.substring(0,80) + "..." : replyText;
+      preview.innerHTML = `<strong style="color:#999;">Reply ${m.replyToChatId || "someone"}:</strong> <span style="color:#aaa;">${shortText}</span>`;
       preview.onclick = function() {
-        var el = document.getElementById(m.replyTo);
-        if (el) el.scrollIntoView({behavior:"smooth", block:"center"});
+        var target = document.getElementById(m.replyTo);
+        if (target) {
+          target.scrollIntoView({ behavior: "smooth", block: "center" });
+          target.style.background = "rgba(180,180,180,0.15)";
+          setTimeout(function() { target.style.background = ""; }, 2000);
+        }
       };
       wrapper.appendChild(preview);
     }
 
-    // CONTENT
+    // CONTENT SPAN — ALWAYS CREATED
     var content = document.createElement("span");
     content.className = "content";
     content.textContent = " " + (m.content || "");
 
-    // BUZZ MODE
+    // SUPER STICKER BUZZ — ONLY WHEN NEEDED
     if (m.type === "buzz" && m.stickerGradient) {
-      wrapper.className += " buzz-sticker";
-      wrapper.style.cssText = "display:inline-block;max-width:88%;margin:16px 10px;padding:20px 28px;border-radius:32px;background:" + m.stickerGradient + ";box-shadow:0 12px 50px rgba(0,0,0,0.3), inset 0 2px 0 rgba(255,255,255,0.4);position:relative;overflow:hidden;border:4px solid rgba(255,255,255,0.3);animation:stickerPop 0.8s cubic-bezier(0.175,0.885,0.32,1.275);backdrop-filter:blur(6px);";
+      wrapper.className += " super-sticker";
+      wrapper.style.cssText = `
+        display: inline-block;
+        max-width: 85%;
+        margin: 14px 10px;
+        padding: 18px 24px;
+        border-radius: 28px;
+        background: ${m.stickerGradient};
+        box-shadow: 0 10px 40px rgba(0,0,0,0.25), inset 0 2px 0 rgba(255,255,255,0.3);
+        position: relative;
+        overflow: hidden;
+        border: 3px solid rgba(255,255,255,0.25);
+        animation: stickerPop 0.7s ease-out;
+        backdrop-filter: blur(4px);
+      `;
 
-      content.style.cssText = "display:block;font-size:1.5em !important;font-weight:900 !important;line-height:1.4;color:white !important;text-shadow:0 2px 10px rgba(0,0,0,0.7), 0 0 30px rgba(255,255,255,0.5);letter-spacing:0.8px;margin-top:10px;";
+      // CONFETTI INSIDE
+      var confettiContainer = document.createElement("div");
+      confettiContainer.style.cssText = "position:absolute;inset:0;pointer-events:none;overflow:hidden;opacity:0.7;";
+      createConfettiInside(confettiContainer, extractColorsFromGradient(m.stickerGradient));
+      wrapper.appendChild(confettiContainer);
 
-      var confettiBox = document.createElement("div");
-      confettiBox.style.cssText = "position:absolute;inset:0;pointer-events:none;overflow:hidden;opacity:0.8;";
-      createFallingConfetti(confettiBox, extractColorsFromGradient(m.stickerGradient));
-      wrapper.appendChild(confettiBox);
+      // Make text pop on hover
+      wrapper.style.transition = "transform 0.2s";
+      wrapper.onmouseenter = () => wrapper.style.transform = "scale(1.03) translateY(-4px)";
+      wrapper.onmouseleave = () => wrapper.style.transform = "scale(1)";
 
+      // Fade after 20s
       setTimeout(function() {
-        if (typeof launchConfetti === "function") {
-          launchConfetti({
-            particleCount: 200,
-            spread: 100,
-            origin: { y: 0.6 },
-            colors: extractColorsFromGradient(m.stickerGradient)
-          });
-        }
-      }, 300);
-
-      setTimeout(function() {
-        wrapper.style.cssText = "background:rgba(255,255,255,0.06);box-shadow:0 4px 12px rgba(0,0,0,0.2);border:none;border-radius:16px;";
-        content.style.cssText = "font-size:1em;font-weight:600;color:inherit;text-shadow:none;";
-        confettiBox.remove();
-      }, 18000);
+        wrapper.style.background = "rgba(255,255,255,0.06)";
+        wrapper.style.boxShadow = "0 4px 12px rgba(0,0,0,0.15)";
+        wrapper.style.border = "none";
+        confettiContainer.remove();
+      }, 20000);
     }
 
+    // ALWAYS APPEND CONTENT — THIS WAS THE MAIN BUG
     wrapper.appendChild(content);
 
-    // TAP MENU
+    // TAP FOR MENU
     wrapper.onclick = function(e) {
       e.stopPropagation();
       showTapModal(wrapper, {
@@ -889,7 +929,7 @@ function renderMessagesFromArray(messages) {
     refs.messagesEl.appendChild(wrapper);
   });
 
-  // AUTO SCROLL
+  // AUTO-SCROLL
   if (!scrollPending) {
     scrollPending = true;
     requestAnimationFrame(function() {
