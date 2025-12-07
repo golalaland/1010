@@ -612,6 +612,7 @@ function showGiftAlert(text) {
 
 
 // ---------------------- GLOBALS ----------------------
+let scrollPending = false;      // used to throttle scroll updates
 let tapModalEl = null;          // your tap modal reference
 let currentReplyTarget = null;  // current reply target
 let scrollArrow = null;         // scroll button reference
@@ -797,11 +798,6 @@ function showTapModal(targetEl, msgData) {
 function triggerBannerEffect() {
   // Intentionally empty — nothing will ever glow again
 }
-
-// =============================
-// AUTO-SCROLL CONTROLLER (declared ONCE, globally)
-// =============================
-let scrollPending = false; // ← Only declared ONCE in the entire file!
 
 // =============================
 // RENDER MESSAGES — FINAL ELITE VERSION
