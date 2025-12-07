@@ -820,29 +820,40 @@ const RedHotMode = {
     return true;
   },
 
- punish() {
-    // subtract from live taps
-    taps = Math.max(0, taps - 59);
+punish() {
+  // subtract from live taps
+  taps = Math.max(0, taps - 59);
+  sessionTaps = Math.max(0, sessionTaps - 59);
+  progress = Math.max(0, progress - 10);
 
-    // 🔥 FIX: subtract from session taps too (important!)
-    sessionTaps = Math.max(0, sessionTaps - 59);
+  showFloatingPlus(tapButton, "-59");
+  tapButton?.classList.add("red-punish");
+  setTimeout(() => tapButton?.classList.remove("red-punish"), 400);
 
-    progress = Math.max(0, progress - 10);
+  // ONLY FLASH A DARK RED OVERLAY — DO NOT KILL BACKGROUND IMAGE!
+  document.body.style.background = "rgba(51, 0, 0, 0.85)";
+  document.body.style.backgroundBlendMode = "multiply"; // optional: makes it look evil
+  setTimeout(() => {
+    document.body.style.background = "";
+    document.body.style.backgroundBlendMode = "";
+  }, 180);
 
-    showFloatingPlus(tapButton, "-59");
-
-    tapButton?.classList.add("red-punish");
-    setTimeout(() => tapButton?.classList.remove("red-punish"), 400);
-
-    document.body.style.background = "#330000";
-    setTimeout(() => (document.body.style.background = ""), 150);
-
-    navigator.vibrate?.([100, 50, 150, 50, 100]);
-
-    updateUI();
-    updateBonusBar();
+  navigator.vibrate?.([100, 50, 150, 50, 100]);
+  updateUI();
+  updateBonusBar();
 },
 };
+
+const redHotStyle = document.createElement("style");
+redHotStyle.textContent = `
+  body {
+    background-size: cover !important;
+    background-position: center !important;
+    background-repeat: no-repeat !important;
+    transition: background 0.3s ease !important;
+  }
+`;
+document.head.appendChild(redHotStyle);
 
 // ======================================================
 //  UI, GLOW, INITIALIZE
@@ -2268,13 +2279,18 @@ const GAME_BGS   = [
 ];
 
 function setBg() {
-  document.body.style.backgroundImage = 
-    document.body.classList.contains('game-mode')
-      ? `url('${GAME_BGS[Math.floor(Math.random()*GAME_BGS.length)]}')`
-      : `url('${START_BG}')`;
+  const isGame = document.body.classList.contains('game-mode');
+  document.body.style.backgroundImage = isGame
+    ? `url('${GAME_BGS[Math.floor(Math.random() * GAME_BGS.length)]}')`
+    : `url('${START_BG}')`;
+  // Force re-apply in case it was overridden
+  document.body.style.backgroundSize = "cover";
+  document.body.style.backgroundPosition = "center";
+  document.body.style.backgroundRepeat = "no-repeat";
 }
 
-setBg(); // on load
-
+// Run on load + whenever class changes
+setBg();
+new MutationObserver(setBg).observe(document.body, { attributes: true, attributeFilter: ['class'] });
 // Re-apply whenever class changes
 new MutationObserver(setBg).observe(document.body, {attributes:true, attributeFilter:['class']});
