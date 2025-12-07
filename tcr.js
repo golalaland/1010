@@ -525,45 +525,32 @@ async function showGiftModal(targetUid, targetData) {
     newConfirmBtn.disabled = true;
     newConfirmBtn.textContent = "Sending...";
 
-    try {
-      const fromRef = doc(db, "users", currentUser.uid);        // sender (sanitized ID)
-      const toRef = doc(db, "users", targetUid);                // receiver (sanitized ID)
+  try {
+  const fromRef = doc(db, "users", currentUser.uid);
+  const toRef = doc(db, "users", targetUid);
 
-      await runTransaction(db, async (transaction) => {
-        const fromSnap = await transaction.get(fromRef);
-        if (!fromSnap.exists()) throw "Sender not found";
-        if ((fromSnap.data().stars || 0) < amt) throw "Not enough stars";
+  await runTransaction(db, async (transaction) => {
+    const fromSnap = await transaction.get(fromRef);
+    if (!fromSnap.exists()) throw "Sender not found";
+    if ((fromSnap.data().stars || 0) < amt) throw "Not enough stars";
 
-        transaction.update(fromRef, {
-          stars: increment(-amt),
-          starsGifted: increment(amt)
-        });
+    transaction.update(fromRef, {
+      stars: increment(-amt),
+      starsGifted: increment(amt)
+    });
 
-        transaction.update(toRef, {
-          stars: increment(amt)
-        });
-      });
-
-  // SUCCESS — NO BANNERS, ONLY LOCAL CONFIRMATION
-showGiftAlert(`Gifted ${amt} stars to ${targetData.chatId}!`);
-closeModal();
-
-      } catch (err) {
-        console.error("Banner creation failed:", err);
-        showStarPopup("Gift sent — banner delayed");
-        closeModal();
-      }
-
-    } catch (err) {
-      console.error("Gift transaction failed:", err);
-      showStarPopup("Gift failed — try again");
-    } finally {
-      // Reset button
-      newConfirmBtn.disabled = false;
-      newConfirmBtn.textContent = "Send Gift";
-      document.removeEventListener("keydown", escHandler);
-    }
+    transaction.update(toRef, {
+      stars: increment(amt)
+    });
   });
+
+  // === SUCCESS — NO BANNERS, ONLY LOCAL CONFIRMATION ===
+  showGiftAlert(`Gifted ${amt} stars to ${targetData.chatId}!`);
+  closeModal();
+
+} catch (err) {
+  console.error("Gift transaction failed:", err);
+  showStarPopup("Gift failed — try again");
 }
 
 /* ----------------------------
