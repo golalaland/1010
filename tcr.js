@@ -1214,105 +1214,89 @@ function sanitizeKey(email) {
 })(); 
 // ← ONLY ONE OF THESE — THE FINAL SEAL
 
-// --- SEND STARS FUNCTION — FINAL, FLAWLESS, 2025 EDITION ---
+// --- SEND STARS FUNCTION — FINAL, FLAWLESS, BANNER-FREE 2025 EDITION ---
 async function sendStarsToUser(targetUser, amt) {
   if (amt < 100 || !currentUser?.uid) {
     showGoldAlert("Invalid gift", 4000);
     return;
   }
 
-  const getId = u => u._docId || (u.email ? u.email.replace(/[.@/\\]/g, '_') : null);
-  const senderId = currentUser.uid || currentUser.email?.replace(/[.@/\\]/g, '_');
-  const receiverId = getId(targetUser);
+  const sanitize = (str) => str?.toLowerCase().replace(/[.@/\\]/g, '_');
+  const senderId = currentUser.uid || sanitize(currentUser.email);
+  const receiverId = targetUser._docId || targetUser.uid || sanitize(targetUser.email || targetUser.chatId);
 
-  if (!receiverId || senderId === receiverId) {
+  if (!receiverId) {
+    showGoldAlert("User not found", 4000);
+    return;
+  }
+  if (senderId === receiverId) {
     showGoldAlert("Can't gift yourself", 4000);
     return;
   }
 
   const fromRef = doc(db, "users", senderId);
   const toRef = doc(db, "users", receiverId);
-  const glowColor = randomColor();
 
   try {
-    // 1. Update balances (safe transaction)
+    // 1. ATOMIC STAR TRANSFER — SAFE & INSTANT
     await runTransaction(db, async (tx) => {
-      const s = await tx.get(fromRef);
-      if (!s.exists()) throw "Profile missing";
-      if ((s.data().stars || 0) < amt) throw "Not enough stars";
+      const senderSnap = await tx.get(fromRef);
+      if (!senderSnap.exists()) throw "Your profile is missing";
+      if ((senderSnap.data()?.stars || 0) < amt) throw "Not enough stars";
 
-      const r = await tx.get(toRef);
-      if (!r.exists()) {
-        tx.set(toRef, { chatId: targetUser.chatId || "VIP", stars: 0 }, { merge: true });
+      const receiverSnap = await tx.get(toRef);
+      if (!receiverSnap.exists()) {
+        tx.set(toRef, {
+          chatId: targetUser.chatId || "User",
+          stars: 0,
+          starsReceived: 0
+        }, { merge: true });
       }
 
-      tx.update(fromRef, { stars: increment(-amt), starsGifted: increment(amt) });
-      tx.update(toRef, { stars: increment(amt) });
+      tx.update(fromRef, {
+        stars: increment(-amt),
+        starsGifted: increment(amt),
+        lastGiftAt: serverTimestamp()
+      });
+      tx.update(toRef, {
+        stars: increment(amt),
+        starsReceived: increment(amt)
+      });
     });
 
-       const bannerMsg = {
-      content: `${currentUser.chatId} gifted ${amt} stars to ${targetUser.chatId}!`,
-      timestamp: serverTimestamp(),
-      systemBanner: true,
-      highlight: true,
-      buzzColor: glowColor,
-      type: "banner"
-    };
-
-        const docRef = await addDoc(collection(db, "messages_room5"), bannerMsg);
-
-    renderMessagesFromArray([{
-      id: docRef.id,
-      data: () => bannerMsg
-    }], true);
-
-    // HOLY LINE — BRINGS GLOW TO LIFE
-    setTimeout(() => {
-      const el = document.getElementById(docRef.id);
-      if (el) triggerBannerEffect(el);
-    }, 100);
-    
-    // 4. Glow animation
-    setTimeout(() => {
-      const msgEl = document.getElementById(docRef.id);
-      if (!msgEl) return;
-      const contentEl = msgEl.querySelector(".content") || msgEl;
-      contentEl.style.setProperty("--pulse-color", glowColor);
-      contentEl.classList.add("baller-highlight");
-      setTimeout(() => {
-        contentEl.classList.remove("baller-highlight");
-        contentEl.style.boxShadow = "none";
-      }, 21000);
-    }, 80);
-
-    // 5. Success popup
-    showGoldAlert(`✅ You sent ${amt} ⭐ to ${targetUser.chatId}!`, 4000);
-
-    // 6. Receiver sync
+    // 2. UPDATE LAST GIFT (for profile badge)
     await updateDoc(toRef, {
       lastGift: {
         from: currentUser.chatId,
+        fromUid: currentUser.uid,
         amt,
-        at: Date.now(),
-      },
+        at: serverTimestamp()
+      }
     });
 
-    // 6.5 Notification
+    // 3. SEND NOTIFICATION (appears in bell/inbox)
     await addDoc(collection(db, "notifications"), {
       userId: receiverId,
-      message: `💫 ${currentUser.chatId} gifted you ${amt} ⭐!`,
-      read: false,
-      timestamp: serverTimestamp(),
+      title: "Star Gift!",
+      message: `${currentUser.chatId} gifted you ${amt.toLocaleString()} stars!`,
       type: "starGift",
       fromUserId: currentUser.uid,
+      fromChatId: currentUser.chatId,
+      amount: amt,
+      read: false,
+      timestamp: serverTimestamp()
     });
 
-    // 7. Mark banner as shown
-    await updateDoc(doc(db, "messages_room5", docRef.id), { bannerShown: true });
+    // 4. BEAUTIFUL ON-SCREEN CELEBRATION — NO CHAT SPAM
+    showGoldAlert(`You gifted ${amt.toLocaleString()} stars to ${targetUser.chatId}!`, 5000);
+
+    // Optional: confetti blast (if you have it)
+    if (typeof launchConfetti === "function") launchConfetti();
 
   } catch (err) {
-    console.error("❌ sendStarsToUser failed:", err);
-    showGoldAlert(`⚠️ Error: ${err.message || "Gift failed"}`, 4000);
+    console.error("sendStarsToUser failed:", err);
+    const msg = err.message?.includes("Not enough") ? "Not enough stars" : "Gift failed";
+    showGoldAlert(msg, 5000);
   }
 }
 /* ===============================
