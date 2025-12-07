@@ -592,89 +592,6 @@
   color: #fff;
   letter-spacing: 3px;
 }
-/* REWARDS COUNTER – DARK LUXURY EDITION */
-.rewards-section {
-  padding: 140px 10%;
-  text-align: center;
-  position: relative;
-  background: linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.9) 100%);
-  overflow: hidden;
-}
-.rewards-section::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 2px;
-  background: linear-gradient(90deg, transparent, var(--gold), transparent);
-  box-shadow: 0 0 30px var(--gold);
-  opacity: 0.6;
-}
-
-.rewards-title {
-  font-family: 'Inter', sans-serif;
-  font-size: clamp(5rem, 15vw, 9rem);
-  font-weight: 900;
-  letter-spacing: -4px;
-  margin: 0;
-  line-height: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  position: relative;
-}
-
-/* Dollar sign – subtle gold */
-.rewards-title .dollar {
-  color: var(--gold);
-  font-size: 0.7em;
-  transform: translateY(-20px);
-  opacity: 0.9;
-}
-
-/* The actual number */
-.odometer {
-  font-weight: 900;
-  color: white;
-  text-shadow: 
-    0 0 40px rgba(212,175,55,0.4),
-    0 10px 30px rgba(0,0,0,0.8);
-}
-
-/* K+ suffix */
-.rewards-title .plus {
-  font-size: 0.5em;
-  color: var(--gold);
-  font-weight: 700;
-  letter-spacing: 2px;
-  transform: translateY(-30px);
-  opacity: 0.9;
-}
-
-.rewards-subtitle {
-  margin-top: 20px;
-  font-size: 1.4rem;
-  font-weight: 500;
-  color: #aaa;
-  letter-spacing: 6px;
-  text-transform: uppercase;
-  opacity: 0.9;
-}
-
-/* Gold micro-accents on sides */
-.rewards-section::after {
-  content: '';
-  position: absolute;
-  bottom: 20%;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 200px;
-  height: 60px;
-  border: 2px solid var(--gold);
-  border-left: none;
-  border-right: none;
-  opacity: 0.15;
-}
 /* SCROLL-ODOMETER – FILTHY RICH VIBES */
 .rewards-section {
   padding: 120px 10%;
@@ -846,18 +763,6 @@
     </div>
   </section>
 
-
-  <!-- $10K REWARDS COUNTER – SCROLL-TRIGGERED DOPAMINE HIT -->
-<section class="rewards-section" id="rewards">
-  <div class="rewards-container">
-    <h2 class="rewards-title">
-      <span class="dollar-sign">$</span>
-      <span class="odometer-display" id="moneyOdometer">0</span>
-      <span class="k-plus">K+</span>
-    </h2>
-    <p class="rewards-desc">in rewards this month</p>
-  </div>
-</section>
 
 <a href="https://cube.xixi.live/signup.html" 
    target="_blank" 
