@@ -612,7 +612,6 @@ function showGiftAlert(text) {
 
 
 // ---------------------- GLOBALS ----------------------
-let scrollPending = false;      // used to throttle scroll updates
 let tapModalEl = null;          // your tap modal reference
 let currentReplyTarget = null;  // current reply target
 let scrollArrow = null;         // scroll button reference
