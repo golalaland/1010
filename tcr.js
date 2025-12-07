@@ -753,12 +753,7 @@ function showTapModal(targetEl, msgData) {
   setTimeout(() => tapModalEl?.remove(), 3000);
 }
 
-// BANNER GLOW FUNCTION — REMOVED FOREVER (NO MORE BANNERS)
-// triggerBannerEffect() is gone. It will never run again.
 
-// =============================
-// RENDER MESSAGES — 100% BANNER-FREE, FLAWLESS 2025 VERSION
-// =============================
 // =============================
 // EXTRACT COLORS FROM GRADIENT — USED FOR CONFETTI
 // =============================
@@ -804,6 +799,9 @@ function createConfettiInside(container, colors) {
 // =============================
 // RENDER MESSAGES — FINAL FIXED VERSION (2025)
 // =============================
+// =============================
+// RENDER MESSAGES — FINAL BUZZ MASTERPIECE (2025)
+// =============================
 function renderMessagesFromArray(messages) {
   if (!refs.messagesEl) return;
 
@@ -813,21 +811,14 @@ function renderMessagesFromArray(messages) {
 
     var m = item.data ?? item;
 
-    // BLOCK ALL BANNERS
-    if (
-      m.isBanner ||
-      m.type === "banner" ||
-      m.type === "gift_banner" ||
-      m.systemBanner ||
-      m.chatId === "SYSTEM" ||
-      /system/i.test(m.uid || "")
-    ) return;
+    // BLOCK BANNERS
+    if (m.isBanner || m.type === "banner" || m.type === "gift_banner" || m.systemBanner || /system/i.test(m.uid || "")) return;
 
     var wrapper = document.createElement("div");
     wrapper.className = "msg";
     wrapper.id = id;
 
-    // USERNAME — YOUR ORIGINAL COLORS ALWAYS WIN
+    // USERNAME — KEEPS YOUR ORIGINAL COLORS
     var metaEl = document.createElement("span");
     metaEl.className = "meta";
 
@@ -835,101 +826,102 @@ function renderMessagesFromArray(messages) {
     nameSpan.className = "chat-username";
     nameSpan.textContent = m.chatId || "Guest";
 
-    var realUid = (m.uid || (m.email ? m.email.replace(/[.@]/g, '_') : m.chatId) || "unknown").replace(/[.@/\\]/g, '_');
+    var realUid = (m.uid || (m.email ? m.email.replace(/[.@]/g, '_') : m.chatId) || "unknown";
+    realUid = realUid.replace(/[.@/\\]/g, '_');
     nameSpan.dataset.userId = realUid;
 
     nameSpan.style.cssText = `
-      cursor:pointer;
-      font-weight:700;
-      padding:0 4px;
-      border-radius:4px;
-      user-select:none;
-      color: ${refs.userColors && refs.userColors[m.uid] ? refs.userColors[m.uid] : "#ffffff"} !important;
+      cursor:pointer; font-weight:700; padding:0 6px; border-radius:6px; user-select:none;
+      color: ${refs.userColors?.[m.uid] || "#fff"} !important;
     `;
 
-    nameSpan.addEventListener("pointerdown", function() { nameSpan.style.background = "rgba(255,204,0,0.4)"; });
-    nameSpan.addEventListener("pointerup", function() { setTimeout(function() { nameSpan.style.background = ""; }, 200); });
+    nameSpan.addEventListener("pointerdown", () => nameSpan.style.background = "rgba(255,204,0,0.4)");
+    nameSpan.addEventListener("pointerup", () => setTimeout(() => nameSpan.style.background = "", 200));
 
     metaEl.append(nameSpan, document.createTextNode(": "));
     wrapper.appendChild(metaEl);
 
-    // REPLY PREVIEW
+    // REPLY PREVIEW (unchanged)
     if (m.replyTo) {
       var preview = document.createElement("div");
       preview.className = "reply-preview";
-      preview.style.cssText = "background:rgba(255,255,255,0.06);border-left:3px solid #b3b3b3;padding:6px 10px;margin:6px 0 4px;border-radius:0 6px 6px 0;font-size:13px;color:#aaa;cursor:pointer;line-height:1.4;";
-      var replyText = (m.replyToContent || "Original message").replace(/\n/g, " ").trim();
-      var shortText = replyText.length > 80 ? replyText.substring(0,80) + "..." : replyText;
-      preview.innerHTML = `<strong style="color:#999;">Reply ${m.replyToChatId || "someone"}:</strong> <span style="color:#aaa;">${shortText}</span>`;
-      preview.onclick = function() {
-        var target = document.getElementById(m.replyTo);
-        if (target) {
-          target.scrollIntoView({ behavior: "smooth", block: "center" });
-          target.style.background = "rgba(180,180,180,0.15)";
-          setTimeout(function() { target.style.background = ""; }, 2000);
-        }
+      preview.style.cssText = "background:rgba(255,255,255,0.06);border-left:3px solid #ccc;padding:6px 10px;margin:8px 0;border-radius:0 8px 8px 0;font-size:13px;color:#aaa;cursor:pointer;";
+      var replyText = (m.replyToContent || "Message").replace(/\n/g, " ").trim();
+      var short = replyText.length > 80 ? replyText.slice(0,80) + "..." : replyText;
+      preview.innerHTML = `<strong style="color:#ffcc00;">Reply ${m.replyToChatId || "someone"}:</strong> <span style="color:#aaa;">${short}</span>`;
+      preview.onclick = () => {
+        var el = document.getElementById(m.replyTo);
+        if (el) el.scrollIntoView({behavior:"smooth", block:"center"});
       };
       wrapper.appendChild(preview);
     }
 
-    // CONTENT SPAN — ALWAYS CREATED
+    // CONTENT — NORMAL OR GOD-TIER BUZZ
     var content = document.createElement("span");
     content.className = "content";
     content.textContent = " " + (m.content || "");
 
-    // SUPER STICKER BUZZ — ONLY WHEN NEEDED
+    // BUZZ MODE ACTIVATED — THIS IS THE ONE
     if (m.type === "buzz" && m.stickerGradient) {
-      wrapper.className += " super-sticker";
+      wrapper.className += " buzz-sticker";
       wrapper.style.cssText = `
         display: inline-block;
-        max-width: 85%;
-        margin: 14px 10px;
-        padding: 18px 24px;
-        border-radius: 28px;
+        max-width: 88%;
+        margin: 16px 10px;
+        padding: 20px 28px;
+        border-radius: 32px;
         background: ${m.stickerGradient};
-        box-shadow: 0 10px 40px rgba(0,0,0,0.25), inset 0 2px 0 rgba(255,255,255,0.3);
+        box-shadow: 0 12px 50px rgba(0,0,0,0.3), inset 0 2px 0 rgba(255,255,255,0.4);
         position: relative;
         overflow: hidden;
-        border: 3px solid rgba(255,255,255,0.25);
-        animation: stickerPop 0.7s ease-out;
-        backdrop-filter: blur(4px);
+        border: 4px solid rgba(255,255,255,0.3);
+        animation: stickerPop 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        backdrop-filter: blur(6px);
       `;
 
-      // CONFETTI INSIDE
-      var confettiContainer = document.createElement("div");
-      confettiContainer.style.cssText = "position:absolute;inset:0;pointer-events:none;overflow:hidden;opacity:0.7;";
-      createConfettiInside(confettiContainer, extractColorsFromGradient(m.stickerGradient));
-      wrapper.appendChild(confettiContainer);
+      // TEXT INSIDE BUZZ — BIG, BOLD, AND SEXY
+      content.style.cssText = `
+        display: block;
+        font-size: 1.45em !important;
+        font-weight: 900 !important;
+        line-height: 1.4;
+        color: white !important;
+        text-shadow: 
+          0 2px 8px rgba(0,0,0,0.6),
+          0 0 30px rgba(255,255,255,0.4);
+        letter-spacing: 0.5px;
+        margin-top: 8px;
+        padding: 4px 0;
+      `;
 
-      // Make text pop on hover
-      wrapper.style.transition = "transform 0.2s";
-      wrapper.onmouseenter = () => wrapper.style.transform = "scale(1.03) translateY(-4px)";
-      wrapper.onmouseleave = () => wrapper.style.transform = "scale(1)";
+      // CONFETTI INSIDE THE STICKER (slow falling pieces
+      var confettiBox = document.createElement("div");
+      confettiBox.style.cssText = "position:absolute;inset:0;pointer-events:none;overflow:hidden;opacity:0.8;";
+      createFallingConfetti(confettiBox, extractColorsFromGradient(m.stickerGradient));
+      wrapper.appendChild(confettiBox);
 
-      // Fade after 20s
-      setTimeout(function() {
-        wrapper.style.background = "rgba(255,255,255,0.06)";
-        wrapper.style.boxShadow = "0 4px 12px rgba(0,0,0,0.15)";
-        wrapper.style.border = "none";
-        confettiContainer.remove();
-      }, 20000);
+      // FULL-SCREEN CONFETTI BURST (everyone sees this)
+      setTimeout(() => launchConfetti?.({
+        particleCount: 180,
+        spread: 100,
+        origin: { y: 0.6 },
+        colors: extractColorsFromGradient(m.stickerGradient)
+      }), 300);
+
+      // Auto-calm after 18 seconds
+      setTimeout(() => {
+        wrapper.style.cssText = "background:rgba(255,255,255,0.06);box-shadow:0 4px 12px rgba(0,0,0,0.2);border:none;border-radius:16px;";
+        content.style.cssText = "font-size:1em;font-weight:600;color:inherit;text-shadow:none;";
+        confettiBox.remove();
+      }, 18000);
     }
 
-    // ALWAYS APPEND CONTENT — THIS WAS THE MAIN BUG
     wrapper.appendChild(content);
 
     // TAP FOR MENU
-    wrapper.onclick = function(e) {
+    wrapper.onclick = (e) => {
       e.stopPropagation();
-      showTapModal(wrapper, {
-        id: id,
-        chatId: m.chatId,
-        uid: realUid,
-        content: m.content,
-        replyTo: m.replyTo,
-        replyToContent: m.replyToContent,
-        replyToChatId: m.replyToChatId
-      });
+      showTapModal(wrapper, { id, chatId: m.chatId, uid: realUid, content: m.content, replyTo: m.replyTo });
     };
 
     refs.messagesEl.appendChild(wrapper);
@@ -938,13 +930,34 @@ function renderMessagesFromArray(messages) {
   // AUTO-SCROLL
   if (!scrollPending) {
     scrollPending = true;
-    requestAnimationFrame(function() {
+    requestAnimationFrame(() => {
       refs.messagesEl.scrollTop = refs.messagesEl.scrollHeight;
       scrollPending = false;
     });
   }
 }
 
+// CONFETTI INSIDE STICKER
+function createFallingConfetti(container, colors) {
+  for (let i = 0; i < 20; i++) {
+    let p = document.createElement("div");
+    let size = 6 + Math.random() * 12;
+    p.style.cssText = `
+      position:absolute;
+      width:${size}px; height:${size*1.6}px;
+      background:${colors[Math.floor(Math.random()*colors.length)]};
+      border-radius:50%;
+      left:${Math.random()*100}%;
+      top:-30px;
+      opacity:0.9;
+      pointer-events:none;
+      animation: fall ${4 + Math.random()*5}s linear infinite;
+      animation-delay:${Math.random()*3}s;
+      transform:rotate(${Math.random()*360}deg);
+    `;
+    container.appendChild(p);
+  }
+}
 /* ---------- 🔔 Messages Listener (Final Optimized Version) ---------- */
 function attachMessagesListener() {
   const q = query(collection(db, CHAT_COLLECTION), orderBy("timestamp", "asc"));
