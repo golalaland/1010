@@ -1225,12 +1225,8 @@ async function sendStarsToUser(targetUser, amt) {
   const senderId = currentUser.uid || sanitize(currentUser.email);
   const receiverId = targetUser._docId || targetUser.uid || sanitize(targetUser.email || targetUser.chatId);
 
-  if (!receiverId) {
-    showGoldAlert("User not found", 4000);
-    return;
-  }
-  if (senderId === receiverId) {
-    showGoldAlert("Can't gift yourself", 4000);
+  if (!receiverId || senderId === receiverId) {
+    showGoldAlert(senderId === receiverId ? "Can't gift yourself" : "User not found", 4000);
     return;
   }
 
@@ -1238,65 +1234,52 @@ async function sendStarsToUser(targetUser, amt) {
   const toRef = doc(db, "users", receiverId);
 
   try {
-    // 1. ATOMIC STAR TRANSFER — SAFE & INSTANT
+    // 1. ATOMIC STAR TRANSFER
     await runTransaction(db, async (tx) => {
       const senderSnap = await tx.get(fromRef);
-      if (!senderSnap.exists()) throw "Your profile is missing";
+      if (!senderSnap.exists()) throw "Profile missing";
       if ((senderSnap.data()?.stars || 0) < amt) throw "Not enough stars";
 
       const receiverSnap = await tx.get(toRef);
       if (!receiverSnap.exists()) {
-        tx.set(toRef, {
-          chatId: targetUser.chatId || "User",
-          stars: 0,
-          starsReceived: 0
-        }, { merge: true });
+        tx.set(toRef, { chatId: targetUser.chatId || "User", stars: 0 }, { merge: true });
       }
 
       tx.update(fromRef, {
         stars: increment(-amt),
-        starsGifted: increment(amt),
-        lastGiftAt: serverTimestamp()
+        starsGifted: increment(amt)
       });
       tx.update(toRef, {
-        stars: increment(amt),
-        starsReceived: increment(amt)
+        stars: increment(amt)
       });
     });
 
-    // 2. UPDATE LAST GIFT (for profile badge)
+    // 2. YOUR EXACT ORIGINAL NOTIFICATION — UNTOUCHED, PERFECT
+    await addDoc(collection(db, "notifications"), {
+      recipientId: receiverId,
+      title: "Star Gift!",
+      message: `${currentUser.chatId} gifted you ${amt} stars!`,
+      type: "starGift",
+      fromChatId: currentUser.chatId,
+      amount: amt,
+      createdAt: serverTimestamp()
+    });
+
+    // 3. LAST GIFT TRACKER
     await updateDoc(toRef, {
       lastGift: {
         from: currentUser.chatId,
-        fromUid: currentUser.uid,
         amt,
-        at: serverTimestamp()
+        at: Date.now()
       }
     });
 
-    // 3. SEND NOTIFICATION (appears in bell/inbox)
-    await addDoc(collection(db, "notifications"), {
-      userId: receiverId,
-      title: "Star Gift!",
-      message: `${currentUser.chatId} gifted you ${amt.toLocaleString()} stars!`,
-      type: "starGift",
-      fromUserId: currentUser.uid,
-      fromChatId: currentUser.chatId,
-      amount: amt,
-      read: false,
-      timestamp: serverTimestamp()
-    });
-
-    // 4. BEAUTIFUL ON-SCREEN CELEBRATION — NO CHAT SPAM
-    showGoldAlert(`You gifted ${amt.toLocaleString()} stars to ${targetUser.chatId}!`, 5000);
-
-    // Optional: confetti blast (if you have it)
-    if (typeof launchConfetti === "function") launchConfetti();
+    // 4. CLEAN CELEBRATION — NO BANNER SPAM
+    showGoldAlert(`You gifted ${amt} stars to ${targetUser.chatId}!`, 4000);
 
   } catch (err) {
-    console.error("sendStarsToUser failed:", err);
-    const msg = err.message?.includes("Not enough") ? "Not enough stars" : "Gift failed";
-    showGoldAlert(msg, 5000);
+    console.error("Gift failed:", err);
+    showGoldAlert("Gift failed — try again", 4000);
   }
 }
 /* ===============================
