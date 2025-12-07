@@ -802,6 +802,8 @@ function triggerBannerEffect() {
 // =============================
 // RENDER MESSAGES — CLEAN, FAST, ELITE
 // =============================
+let scrollPending = false;
+
 function renderMessagesFromArray(messages, forceTop = false) {
   if (!refs.messagesEl) return;
 
@@ -941,15 +943,6 @@ function renderMessagesFromArray(messages, forceTop = false) {
     container.appendChild(fragment);
   }
 
-  // SMOOTH AUTO-SCROLL (no jank)
-  if (!forceTop && !scrollPending) {
-    scrollPending = true;
-    requestAnimationFrame(() => {
-      container.scrollTop = container.scrollHeight;
-      scrollPending = false;
-    });
-  }
-}
 /* ---------- 🔔 Messages Listener (Final Optimized Version) ---------- */
 function attachMessagesListener() {
   const q = query(collection(db, CHAT_COLLECTION), orderBy("timestamp", "asc"));
