@@ -1,357 +1,338 @@
+let's change our signup html design to match it, something truly cool, go crazy:
+ 
+ 
+ 
+ 
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>$STRZ • VIP ACCESS</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;500;700;900&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width, initial-scale=0.85, maximum-scale=0.85, user-scalable=no">
+<title>TAPTAP VIP</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
 <style>
   :root {
-    --gold: #d4af37;
-    --gold-dim: #b8973a;
-    --bg: #000000;
-    --glass: rgba(10,10,10,0.68);
-    --glass-border: rgba(212,175,55,0.15);
-    --text: #e8e8e8;
-    --text-dim: #888;
+    --gold: #ffea00;
+    --pink: #ff0080;
+    --text: #ffffff;
+    --input-bg: rgba(15,15,35,0.55);
+    --input-border: rgba(255,234,0,0.35);
   }
   * { margin:0; padding:0; box-sizing:border-box; }
-  html, body { 
-    height: 100%; 
-    overflow-x: hidden;
-  }
   body {
-    background: #000 url('https://images.unsplash.com/photo-1517677208171-0bc6725a3e60?q=85&w=2400') center/cover no-repeat fixed;
+    min-height: 100vh;
+    background: url('https://cdn.shopify.com/s/files/1/0962/6648/6067/files/IMG_6015.jpg?v=1763341244') center/cover no-repeat fixed;
     font-family: 'Inter', sans-serif;
     color: var(--text);
     display: flex;
+    flex-direction: column;
     align-items: center;
-    justify-content: center;
-    min-height: 100vh;
-    padding: 20px 16px;
-    position: relative;
+    padding: 2rem 1rem;
+    background-attachment: fixed;
   }
-  body::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: radial-gradient(circle at 50% 30%, rgba(212,175,55,0.08) 0%, transparent 60%);
-    pointer-events: none;
-  }
-
-  /* MAIN CARD – Now perfectly responsive */
-  .vip-card {
-    position: relative;
-    width: 100%;
-    max-width: 420px;
-    background: var(--glass);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid var(--glass-border);
-    border-radius: 28px;
-    padding: 48px 36px;
-    box-shadow: 
-      0 20px 60px rgba(0,0,0,0.8),
-      0 0 80px rgba(212,175,55,0.08),
-      inset 0 1px 0 rgba(255,255,255,0.05);
-    overflow: hidden;
-  }
-  .vip-card::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    border: 1px solid rgba(212,175,55,0.25);
-    border-radius: 28px;
-    pointer-events: none;
-  }
-
-  /* Corner gold accents */
-  .corner-tl, .corner-br {
-    position: absolute;
-    width: 60px; height: 60px;
-    border: 2px solid var(--gold);
-    pointer-events: none;
-    opacity: 0.8;
-  }
-  .corner-tl { top: 16px; left: 16px; border-right: none; border-bottom: none; }
-  .corner-br { bottom: 16px; right: 16px; border-left: none; border-top: none; }
-
-  /* Title */
-  .logo-title {
-    text-align: center;
-    margin-bottom: 36px;
-  }
-  .logo-title h1 {
-    font-size: clamp(3.5rem, 10vw, 5.5rem);
+   h2 {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 4.8rem;
     font-weight: 900;
-    letter-spacing: -2px;
-    background: linear-gradient(135deg, #fff, var(--gold), #fff);
+    background: linear-gradient(90deg, #ffea00, #ff0080, #00f0ff, #ffea00);
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
-    text-shadow: 0 4px 20px rgba(0,0,0,0.6);
+    text-shadow: 0 0 40px rgba(255,234,0,0.6);
+    letter-spacing: 10px;
+    margin-bottom: 0.5rem;
+    animation: pulse 4s infinite;
+    text-transform: uppercase;
   }
-  .logo-title p {
-    font-size: 0.95rem;
-    letter-spacing: 6px;
-    color: var(--text-dim);
-    margin-top: 8px;
+  @keyframes pulse {
+    0%,100% { opacity: 0.95; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.04); }
+  }
+  .description {
+    font-size: 1.05rem;
+    text-align: center;
+    max-width: 90%;
+    line-height: 1.5;
+    margin: 0 auto 2rem;
+    color: rgba(255,255,255,0.9);
     font-weight: 500;
   }
-
-  /* Floating labels */
-  .input-group {
-    position: relative;
-    margin: 26px 0;
+  .form-group {
+    margin: 0.85rem 0;
   }
-  .input-group input {
-    width: 100%;
-    padding: 18px 20px;
-    background: rgba(20,20,20,0.5);
-    border: 1px solid rgba(212,175,55,0.2);
-    border-radius: 16px;
+  .form-group input {
+    width: 310px;
+    max-width: 90vw;
+    padding: 0.95rem 1.2rem;
+    border-radius: 30px;
+    border: 1px solid var(--input-border);
+    background: var(--input-bg);
+    backdrop-filter: blur(10px);
     color: white;
-    font-size: 1rem;
-    transition: all 0.4s ease;
+    font-size: 0.95rem;
+    text-align: center;
+    transition: all 0.3s;
   }
-  .input-group input:focus {
+  .form-group input:focus {
     outline: none;
     border-color: var(--gold);
-    box-shadow: 0 0 30px rgba(212,175,55,0.25);
-    background: rgba(30,30,30,0.7);
+    box-shadow: 0 0 15px rgba(255,234,0,0.4);
   }
-  .input-group label {
-    position: absolute;
-    left: 20px; top: 18px;
-    color: var(--text-dim);
-    font-size: 1rem;
-    pointer-events: none;
-    transition: all 0.3s ease;
-    letter-spacing: 1px;
+  .gender-label, .dob-label {
+    text-align: center;
+    font-size: 0.9rem;
+    margin: 1.2rem 0 0.6rem;
+    color: rgba(255,255,255,0.9);
+    font-weight: 600;
   }
-  .input-group input:focus ~ label,
-  .input-group input:not(:placeholder-shown) ~ label {
-    top: -10px;
-    left: 16px;
-    font-size: 0.8rem;
-    background: #000;
-    padding: 0 8px;
-    color: var(--gold);
-  }
-
-  /* Gender buttons */
-  .gender-row {
+Replace yeah?
+.gender-select {
     display: flex;
     justify-content: center;
-    gap: 28px;
-    margin: 32px 0;
+    gap: 22px;
+    margin: 0.5rem 0 1.5rem;
   }
-  .gender-btn {
-    width: 72px; height: 72px;
+  .gender-select button {
+    width: 56px;
+    height: 56px;
     border-radius: 50%;
-    background: rgba(30,30,30,0.6);
-    border: 2px solid rgba(212,175,55,0.3);
-    color: var(--text);
-    font-size: 1.8rem;
-    font-weight: 600;
-    transition: all 0.4s ease;
+    border: 2px solid var(--input-border);
+    background: var(--input-bg);
+    color: white;
+    font-size: 1.4rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s;
   }
-  .gender-btn.active {
-    background: var(--gold);
-    color: #000;
+  .gender-select button:hover {
     border-color: var(--gold);
-    box-shadow: 0 0 40px rgba(212,175,55,0.6);
     transform: scale(1.1);
   }
-
-  /* VIP Toggle – NOW WORKS PERFECTLY */
-  .vip-toggle-wrapper {
+  .gender-select button.selected {
+    background: var(--gold);
+    color: black;
+    box-shadow: 0 0 20px rgba(255,234,0,0.6);
+    border-color: var(--gold);
+  }
+  #dob {
+    width: 200px;
+    padding: 0.9rem;
+    border-radius: 30px;
+    border: 1px solid var(--input-border);
+    background: var(--input-bg);
+    backdrop-filter: blur(10px);
+    color: white;
     text-align: center;
-    margin: 40px 0 32px;
+    font-size: 0.95rem;
   }
-  .vip-label {
-    font-size: 1.3rem;
-    letter-spacing: 4px;
-    color: var(--text-dim);
-    margin-bottom: 12px;
+  #vipLabel {
+    text-align: center;
+    font-weight: 600;
+    font-size: 1rem;
+    margin: 1.3rem 0 0.4rem;
+    color: #ccc;
   }
-  #vipToggle {
-    width: 120px; height: 56px;
-    background: #111;
+  #vipLabel.on { color: var(--gold); text-shadow: 0 0 10px var(--gold); }
+  .vip-toggle {
+    width: 84px; height: 40px;
+    background: #333;
     border-radius: 50px;
     position: relative;
     margin: 0 auto;
-    border: 2px solid var(--gold-dim);
     cursor: pointer;
-    transition: all 0.4s;
+    border: 2px solid var(--input-border);
   }
-  #vipToggle::after {
-    content: '';
-    position: absolute;
-    width: 48px; height: 48px;
-    background: linear-gradient(135deg, var(--gold), #fff);
+  .vip-circle {
+    width: 36px; height: 36px;
+    background: #666;
     border-radius: 50%;
-    top: 4px; left: 4px;
-    transition: all 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55);
-    box-shadow: 0 8px 20px rgba(0,0,0,0.6);
+    position: absolute;
+    left: 2px; top: 2px;
+    transition: 0.4s;
   }
-  #vipToggle.on::after {
-    transform: translateX(64px);
+  .vip-toggle.on .vip-circle {
+    left: 44px;
+    background: var(--gold);
+    box-shadow: 0 0 15px var(--gold);
   }
-
-  /* Submit button */
+  #vipMessage {
+    text-align: center;
+    color: var(--gold);
+    font-size: 0.88rem;
+    opacity: 0;
+    margin-top: 0.6rem;
+    font-weight: 600;
+  }
   #submitBtn {
-    width: 100%;
-    padding: 20px;
-    margin-top: 16px;
-    background: linear-gradient(135deg, var(--gold), #fff, var(--gold));
-    color: #000;
-    font-size: 1.3rem;
-    font-weight: 900;
-    letter-spacing: 3px;
+    margin: 2rem auto 1.5rem;
+    padding: 0.9rem 2.4rem;
+    width: auto;
     border: none;
-    border-radius: 20px;
+    border-radius: 50px;
+    background: linear-gradient(135deg, var(--gold), #ffd000);
+    color: black;
+    font-weight: bold;
+    font-size: 1.05rem;
     cursor: pointer;
-    position: relative;
-    overflow: hidden;
-    box-shadow: 0 15px 40px rgba(212,175,55,0.4);
-    transition: all 0.5s ease;
+    box-shadow: 0 8px 25px rgba(255,234,0,0.4);
+    transition: all 0.3s;
   }
   #submitBtn:hover {
-    transform: translateY(-6px);
-    box-shadow: 0 25px 60px rgba(212,175,55,0.6);
+    transform: translateY(-3px);
+    box-shadow: 0 12px 30px rgba(255,234,0,0.5);
   }
-  #submitBtn::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
-    transform: translateX(-150%);
-    transition: transform 0.8s;
-  }
-  #submitBtn:hover::before {
-    transform: translateX(150%);
-  }
-
-  /* FOMO */
-  #fomoPopup {
-    position: fixed;
-    top: 30px; left: 50%;
-    transform: translateX(-50%);
-    background: rgba(0,0,0,0.92);
-    color: var(--gold);
-    padding: 14px 32px;
-    border-radius: 50px;
-    font-weight: 700;
-    font-size: 1rem;
-    letter-spacing: 1px;
-    border: 1px solid var(--glass-border);
-    box-shadow: 0 20px 40px rgba(0,0,0,0.7);
-    opacity: 0;
-    z-index: 9999;
-    white-space: nowrap;
-    transition: all 0.6s ease;
-  }
-  #fomoPopup.show { 
-    opacity: 1; 
-    transform: translateX(-50%) translateY(8px);
-  }
-
+#fomoPopup {
+  position: fixed;
+  top: 90px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #111;
+  color: #fff;
+  padding: 1rem 2rem; /* ← was 0.6rem 1.2rem → now much bigger */
+  border-radius: 50px; /* ← pill shape, looks premium */
+  font-size: 1.15rem; /* ← was 0.85rem → now bold & readable */
+  font-weight: 600;
+  opacity: 0;
+  transition: opacity 0.5s, transform 0.6s;
+  pointer-events: none;
+  z-index: 10000;
+  white-space: nowrap;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.6),
+              0 0 30px rgba(255,234,0,0.3); /* ← subtle gold glow */
+  border: 1px solid rgba(255,234,0,0.3);
+  min-width: 320px; /* ← forces it to be wide enough on small phones */
+  text-align: center;
+}
+#fomoPopup.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(-8px);
+}
+  .message { text-align: center; min-height: 20px; margin: 0.5rem 0; font-size: 0.9rem; }
   footer {
-    position: absolute;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
+    margin-top: 3rem;
     text-align: center;
-    font-size: 0.8rem;
-    color: var(--text-dim);
-    letter-spacing: 1px;
-    width: 90%;
+    font-size: 0.78rem;
+    color: rgba(255,255,255,0.7);
+    line-height: 1.6;
+    padding: 1rem 0;
   }
+  footer a { color: #ccc; text-decoration: none; }
+  footer a:hover { color: var(--gold); }
+  .password-requirements {
+  margin-top: 12px;
+  font-size: 13.5px;
+  color: #aaa;
+  transition: all 0.3s ease;
+  opacity: 0;
+  transform: translateY(-8px);
+  pointer-events: none;
+}
+.password-requirements.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+.req-header {
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+.req-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 5px 0;
+  transition: color 0.3s ease;
+}
+.req-item.met {
+  color: #4ade80 !important;
+  font-weight: 500;
+}
+.req-item .checkmark {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #555;
+  border-radius: 50%;
+  position: relative;
+  flex-shrink: 0;
+  transition: all 0.3s ease;
+}
+.req-item.met .checkmark {
+  background: #4ade80;
+  border-color: #4ade80;
+  box-shadow: 0 0 12px rgba(74, 222, 128, 0.5);
+}
+.req-item.met .checkmark::after {
+  content: '✓';
+  position: absolute;
+  color: #000;
+  font-weight: bold;
+  font-size: 11px;
+  top: 49%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+/* Glow effect when all are met */
+.password-requirements.all-met .req-header {
+  color: #4ade80;
+  text-shadow: 0 0 10px rgba(74, 222, 128, 0.6);
+}
 </style>
 </head>
 <body>
-
-<div id="fomoPopup">VIP spot secured • Tokyo</div>
-
-<div class="vip-card">
-  <div class="corner-tl"></div>
-  <div class="corner-br"></div>
-
-  <div class="logo-title">
-    <h1>$STRZ</h1>
-    <p>V I P   A C C E S S</p>
-  </div>
-
-  <form id="signupForm">
-    <div class="input-group">
-      <input type="text" id="name" placeholder=" " required>
-      <label>Full Name</label>
-    </div>
-    <div class="input-group">
-      <input type="text" id="chatId" placeholder=" " required>
-      <label>Chat Handle</label>
-    </div>
-    <div class="input-group">
-      <input type="tel" id="phone" placeholder=" " required>
-      <label>Phone</label>
-    </div>
-    <div class="input-group">
-      <input type="email" id="email" placeholder=" " required>
-      <label>Email</label>
-    </div>
-    <div class="input-group">
-      <input type="password" id="password" placeholder=" " required>
-      <label>Password</label>
-    </div>
-
-    <div class="gender-row">
-      <button type="button" class="gender-btn" data-gender="F">F</button>
-      <button type="button" class="gender-btn active" data-gender="M">M</button>
-    </div>
-
-    <div style="text-align:center; margin:32px 0;">
-      <input type="date" id="dob" required style="padding:18px; width:80%; max-width:300px; border-radius:16px; background:rgba(20,20,20,0.5); border:1px solid rgba(212,175,55,0.2); color:white; text-align:center;">
-    </div>
-
-    <div class="vip-toggle-wrapper">
-      <div class="vip-label">VIP STATUS</div>
-      <div id="vipToggle" class="on"></div>
-    </div>
-
-    <button type="submit" id="submitBtn">ENTER THE CIRCLE</button>
-  </form>
+<div id="fomoPopup">Someone just joined VIP!</div>
+<h2>$STRZ</h2>
+<div class="description">
+  Exclusive access to the hottest nights, private chats, premium hosts & VIP tables.<br>
+  Join the inner circle — where the real ones move.
 </div>
-
-<footer>
-  © 2025 $STRZ • All access reserved<br>
-  3-1-1 Nihonbashi, Chuo-ku, Tokyo
+<div class="form-group"><input id="name" type="text" placeholder="Full Name"></div>
+<div class="form-group"><input id="chatId" type="text" placeholder="Choose Chat Name"></div>
+<div class="form-group"><input id="phone" type="text" placeholder="Phone Number"></div>
+<div class="form-group"><input id="email" type="email" placeholder="Email Address"></div>
+<div class="form-group"><input id="password" type="password" placeholder="Create Password (min 6 chars)"></div>
+<div id="passwordRequirements" class="password-requirements">
+  <div class="req-header">Password requirements met!</div>
+  <div class="req-item" data-rule="length">
+    <span class="checkmark"></span> 8 characters
+  </div>
+  <div class="req-item" data-rule="number">
+    <span class="checkmark"></span> 1 number
+  </div>
+  <div class="req-item" data-rule="special">
+    <span class="checkmark"></span> 1 special character e.g., $, !, @, %, &
+  </div>
+  <div class="req-item" data-rule="whitespace">
+    <span class="checkmark"></span> No leading or trailing whitespace
+  </div>
+</div>
+<div class="gender-label">Select Your Gender</div>
+<div class="gender-select">
+  <button id="femaleBtn">F</button>
+  <button id="maleBtn">M</button>
+</div>
+<div class="dob-label">Select Your Birth Date</div>
+<input id="dob" type="date" max="">
+<div id="vipLabel">VIP</div>
+<div class="vip-toggle" id="vipToggle"><div class="vip-circle"></div></div>
+<div id="vipMessage">You're in VIP zone, way to go!</div>
+<button id="submitBtn">
+  <span class="btn-text">Sign Up</span>
+  <span class="spinner" id="spinner"></span>
+</button>
+<div class="message" id="message"></div>
+<footer id="footer">
+  <div>©5786 ገብር ነፍስህ (Own Your Vibe)</div>
+  <div>自分の雰囲気を自分のものにしよう • 자신의 분위기를 내 것으로 만들자</div>
+  <div>3-1-1 Nihonbashi, Chuo-ku, Tokyo, Japan</div>
+  <div style="margin-top:8px;">
+    <a href="privacy.html">Privacy Policy</a> •
+    <a href="terms.html">Terms of Service</a>
+  </div>
 </footer>
-
-<script>
-// Toggle works perfectly now (your JS can still override this)
-document.getElementById('vipToggle').addEventListener('click', function() {
-  this.classList.toggle('on');
-});
-
-// Gender selection
-document.querySelectorAll('.gender-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.gender-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-  });
-});
-
-// Fake FOMO
-setInterval(() => {
-  const p = document.getElementById('fomoPopup');
-  p.classList.add('show');
-  setTimeout(() => p.classList.remove('show'), 4000);
-}, 15000);
-</script>
 </body>
 </html>
-
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, doc, setDoc, getDoc, updateDoc, query, collection, where, getDocs, arrayUnion, orderBy, limit, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
