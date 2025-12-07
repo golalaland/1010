@@ -793,14 +793,14 @@ function showTapModal(targetEl, msgData) {
 }
 
 // =============================
-// BANNERS ARE OFFICIALLY DEAD (2025+)
+// BANNERS ARE DEAD FOREVER
 // =============================
 function triggerBannerEffect() {
   // Intentionally empty — nothing will ever glow again
 }
 
 // =============================
-// RENDER MESSAGES — FINAL ELITE VERSION
+// RENDER MESSAGES — ULTRA CLEAN 2025+ FINAL
 // =============================
 function renderMessagesFromArray(messages, forceTop = false) {
   if (!refs.messagesEl) return;
@@ -814,21 +814,19 @@ function renderMessagesFromArray(messages, forceTop = false) {
 
     const m = item.data ?? item;
 
-    // KILL ALL BANNER TRASH FOREVER
+    // PERMA-KILL ALL BANNERS
     if (
       m.isBanner ||
       m.type?.includes("banner") ||
       m.chatId === "★ SYSTEM ★" ||
-      /system/.test(m.uid || "")
-    ) {
-      return;
-    }
+      /system/i.test(m.uid || "")
+    ) return;
 
     const wrapper = document.createElement("div");
     wrapper.className = "msg";
     wrapper.id = id;
 
-    // TAPABLE USERNAME → OPENS PROFILE
+    // TAPABLE USERNAME
     const metaEl = document.createElement("span");
     metaEl.className = "meta";
 
@@ -838,9 +836,8 @@ function renderMessagesFromArray(messages, forceTop = false) {
 
     const uid = (m.uid || m.email?.replace(/[.@]/g, '_') || m.chatId || "unknown").replace(/[.@/\\]/g, '_');
     nameSpan.dataset.userId = uid;
-
     nameSpan.style.cssText = "cursor:pointer;font-weight:700;padding:0 6px;border-radius:6px;user-select:none;transition:background .2s;";
-    
+
     nameSpan.addEventListener("pointerdown", () => nameSpan.style.background = "rgba(255,204,0,0.4)");
     nameSpan.addEventListener("pointerup", () => nameSpan.style.background = "");
     nameSpan.addEventListener("pointerleave", () => nameSpan.style.background = "");
@@ -873,10 +870,10 @@ function renderMessagesFromArray(messages, forceTop = false) {
       preview.className = "reply-preview";
       preview.style.cssText = "background:rgba(255,255,255,0.06);border-left:3px solid #ffcc00;padding:8px 12px;margin:6px 0 8px;border-radius:0 8px 8px 0;font-size:13.5px;color:#ccc;cursor:pointer;line-height:1.4;";
       
-      const text = ((m.replyToContent || "Message").replace(/\n/g, " ").trim());
+      const text = (m.replyToContent || "Message").replace(/\n/g, " ").trim();
       const short = text.length > 80 ? text.slice(0,80) + "..." : text;
       
-      preview.innerHTML = `<strong style="color:#ffcc00;">↳ ${m.replyToChatId || "someone"}:</strong><span style="color:#aaa;margin-left:4px;">${short}</span>`;
+      preview.innerHTML = `<strong style="color:#ffcc00;">↳ ${m.replyToChatId || "someone"}:</strong> <span style="color:#aaa;margin-left:4px;">${short}</span>`;
       
       preview.onclick = () => {
         const el = document.getElementById(m.replyTo);
@@ -889,23 +886,31 @@ function renderMessagesFromArray(messages, forceTop = false) {
       wrapper.appendChild(preview);
     }
 
-    // CLICK MESSAGE → REPLY / REPORT MENU
+    // CLICK MESSAGE → REPLY / REPORT / COPY
     wrapper.onclick = (e) => {
       e.stopPropagation();
-      showTapModal(wrapper, { id, chatId: m.chatId, uid, content: m.content, replyTo: m.replyTo, replyToContent: m.replyToContent, replyToChatId: m.replyToChatId });
+      showTapModal(wrapper, {
+        id,
+        chatId: m.chatId,
+        uid,
+        content: m.content,
+        replyTo: m.replyTo,
+        replyToContent: m.replyToContent,
+        replyToChatId: m.replyToChatId
+      });
     };
 
     fragment.appendChild(wrapper);
   });
 
-  // Insert all messages at once
+  // Insert all at once
   if (forceTop && fragment.children.length) {
     container.prepend(fragment);
   } else {
     container.appendChild(fragment);
   }
 
-  // Smooth auto-scroll (no jank, no duplicate declarations)
+  // AUTO-SCROLL — USING YOUR GLOBAL scrollPending (CLEAN & JANK-FREE)
   if (!forceTop && !scrollPending) {
     scrollPending = true;
     requestAnimationFrame(() => {
@@ -914,7 +919,6 @@ function renderMessagesFromArray(messages, forceTop = false) {
     });
   }
 }
-
 /* ---------- 🔔 Messages Listener (Final Optimized Version) ---------- */
 function attachMessagesListener() {
   const q = query(collection(db, CHAT_COLLECTION), orderBy("timestamp", "asc"));
