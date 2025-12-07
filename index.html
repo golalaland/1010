@@ -3,15 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>xixi.live • Live Fast. Stream Wild.</title>
+  <title>xixi.live • GO LIVE. OWN YOUR VIBE.</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;500;700;900&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
   <style>
     :root {
-      --pink: #ff00a5;
-      --hot: #ff2ec1;
-      --deep: #1a0022;
+      --neon: #00ff88;
+      --neon-dark: #00cc70;
+      --deep: #000a05;
+      --glow: rgba(0, 255, 136, 0.6);
     }
     * { margin:0; padding:0; box-sizing:border-box; }
     body {
@@ -20,83 +21,106 @@
       font-family: 'Inter', sans-serif;
       overflow-x: hidden;
     }
-    /* Floating Particles Background */
+
+    /* Floating Neon Cubes */
     #particles {
       position: fixed;
       inset: 0;
       pointer-events: none;
       z-index: 1;
     }
-    .particle {
-      position: absolute;
-      width: 4px;
-      height: 4px;
-      background: var(--pink);
-      border-radius: 50%;
-      box-shadow: 0 0 20px var(--hot);
-      animation: float 20s infinite linear;
-    }
+  .cube {
+  position: absolute;
+  width: 10px;           /* ← 50% smaller (was 20px) */
+  height: 10px;
+  transform-style: preserve-3d;
+  animation: float 22s infinite linear;   /* slightly slower = calmer */
+}
+
+.cube div {
+  width: 10px;
+  height: 10px;
+  background: var(--neon);
+  border: 1px solid var(--neon);
+  /* ↓↓↓ Reduced glow intensity ↓↓↓ */
+  box-shadow: 
+    0 0 8px rgba(0, 255, 136, 0.4),     /* outer glow weaker + less saturated */
+    inset 0 0 4px rgba(0, 255, 136, 0.2); /* inner glow toned down */
+  opacity: 0.6;         /* ← less bright overall */
+}
+    .cube .front  { transform: translateZ(10px); }
+    .cube .back   { transform: rotateY(180deg) translateZ(10px); }
+    .cube .right  { transform: rotateY(90deg) translateZ(10px); }
+    .cube .left   { transform: rotateY(-90deg) translateZ(10px); }
+    .cube .top    { transform: rotateX(90deg) translateZ(10px); }
+    .cube .bottom { transform: rotateX(-90deg) translateZ(10px); }
+
     @keyframes float {
-      0%   { transform: translateY(100vh) translateX(0); opacity: 0; }
-      10%  { opacity: 1; }
-      90%  { opacity: 1; }
-      100% { transform: translateY(-100px) translateX(100px); opacity: 0; }
+      0%   { transform: translateY(100vh) rotateX(0deg) rotateY(0deg); opacity: 0; }
+      10%  { opacity: 0.9; }
+      90%  { opacity: 0.9; }
+      100% { transform: translateY(-150px) translateX(120px) rotateX(360deg) rotateY(360deg); opacity: 0; }
     }
 
     /* Hero */
     .hero {
-      height: 100vh;
+      min-height: 100vh;
       display: flex;
       align-items: center;
       justify-content: center;
       position: relative;
       z-index: 2;
-      background: radial-gradient(circle at 30% 70%, rgba(255,0,165,0.25) 0%, transparent 60%),
-                  radial-gradient(circle at 80% 20%, rgba(255,46,193,0.2) 0%, transparent 50%);
+      background: radial-gradient(circle at 30% 70%, rgba(0,255,136,0.25) 0%, transparent 60%),
+                  radial-gradient(circle at 80% 20%, rgba(0,255,136,0.15) 0%, transparent 50%);
     }
     .logo {
       font-size: clamp(4rem, 12vw, 10rem);
       font-weight: 900;
-      background: linear-gradient(135deg, #ff00a5, #ff2ec1, #ff69e0);
+      background: linear-gradient(135deg, #00ff88, #00cc70, #00ffaa);
       -webkit-background-clip: text;
       background-clip: text;
       -webkit-text-fill-color: transparent;
       letter-spacing: -0.02em;
-      text-shadow: 0 0 80px rgba(255,0,165,0.6);
+      text-shadow: 0 0 80px rgba(0,255,136,0.6);
     }
     .tagline {
-      font-size: 1.3rem;
+      font-size: 1.4rem;
       margin-top: 1rem;
       opacity: 0.9;
-      background: linear-gradient(90deg, #ff69e0, #ff00a5);
+      background: linear-gradient(90deg, #00ffaa, #00ff88);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
     }
-    .cta {
+    .cta, .waitlist-btn {
       margin-top: 3rem;
-      padding: 1.2rem 3.5rem;
+      padding: 1.3rem 4rem;
       font-size: 1.4rem;
       font-weight: 700;
-      background: linear-gradient(135deg, var(--pink), var(--hot));
-      color: white;
+      background: linear-gradient(135deg, #00ff88, #00cc70);
+      color: #000;
       border: none;
       border-radius: 60px;
       cursor: pointer;
-      box-shadow: 0 10px 40px rgba(255,0,165,0.5);
-      transition: all 0.3s ease;
+      box-shadow: 0 10px 40px rgba(0,255,136,0.5);
+      transition: all 0.4s ease;
       position: relative;
       overflow: hidden;
+      text-transform: uppercase;
+      letter-spacing: 1px;
     }
-    .cta::before {
+    .cta:hover, .waitlist-btn:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 20px 60px rgba(0,255,136,0.8);
+    }
+    .cta::before, .waitlist-btn::before {
       content: '';
       position: absolute;
       inset: 0;
-      background: linear-gradient(135deg, transparent, rgba(255,255,255,0.3), transparent);
+      background: linear-gradient(135deg, transparent, rgba(255,255,255,0.4), transparent);
       transform: translateX(-100%);
       transition: transform 0.6s;
     }
-    .cta:hover::before { transform: translateX(100%); }
-    .cta:hover { transform: translateY(-8px); box-shadow: 0 20px 60px rgba(255,0,165,0.7); }
+    .cta:hover::before, .waitlist-btn:hover::before { transform: translateX(100%); }
 
     /* Features */
     .features {
@@ -108,9 +132,9 @@
       z-index: 2;
     }
     .card {
-      background: rgba(20,0,30,0.4);
+      background: rgba(0,30,15,0.4);
       backdrop-filter: blur(20px);
-      border: 1px solid rgba(255,0,165,0.2);
+      border: 1px solid rgba(0,255,136,0.3);
       border-radius: 24px;
       padding: 2.5rem;
       text-align: center;
@@ -118,99 +142,488 @@
     }
     .card:hover {
       transform: translateY(-20px);
-      border-color: var(--pink);
-      box-shadow: 0 20px 60px rgba(255,0,165,0.25);
+      border-color: var(--neon);
+      box-shadow: 0 20px 60px rgba(0,255,136,0.3);
     }
     .card h3 {
-      font-size: 1.8rem;
+      font-size: 1.6rem;
       margin: 1.5rem 0;
-      background: linear-gradient(135deg, #ff69e0, #ff00a5);
+      background: linear-gradient(135deg, #00ffaa, #00ff88);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
     }
 
-    /* Footer */
+    /* Dope Footer */
     footer {
+      position: relative;
+      padding: 120px 10% 80px;
+      background: linear-gradient(to top, #001a0d, transparent);
       text-align: center;
-      padding: 80px 20px;
-      background: linear-gradient(to top, #0a0010, transparent);
+      overflow: hidden;
+    }
+    footer::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--neon), transparent);
+      box-shadow: 0 0 20px var(--neon);
+    }
+    .footer-glow {
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 50% 0%, rgba(0,255,136,0.15), transparent 70%);
+      pointer-events: none;
     }
     .socials a {
-      color: #ff69e0;
-      font-size: 2rem;
-      margin: 0 1rem;
-      transition: all 0.3s;
+      color: var(--neon);
+      font-size: 2.5rem;
+      margin: 0 1.5rem;
+      transition: all 0.4s;
+      text-shadow: 0 0 20px var(--glow);
     }
-    .socials a:hover { color: white; transform: scale(1.3); }
+    .socials a:hover { 
+      color: white; 
+      transform: translateY(-10px) scale(1.4); 
+      text-shadow: 0 0 40px var(--glow);
+    }
+    .footer-text {
+      margin-top: 3rem;
+      font-size: 1rem;
+      opacity: 0.8;
+    }
+.waitlist-btn {
+  display: inline-block;                    /* add this for <a> tags */
+  position: relative;
+  padding: 1.3rem 4.2rem;
+  font-family: 'Inter', sans-serif;
+  font-size: 1.33rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: #000;
+  background: linear-gradient(135deg, #00ff88, #00cc70, #00ff99);
+  border: none;
+  border-radius: 60px;
+  cursor: pointer;
+  overflow: hidden;
+  box-shadow: 0 10px 40px rgba(0, 255, 136, 0.5);
+  transition: all 0.4s ease;
+  z-index: 1;
+  text-decoration: none;                    /* add this too (for <a>) */
+}
+.waitlist-btn:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 20px 60px rgba(0, 255, 136, 0.8);
+}
+.waitlist-btn .btn-text {
+  position: relative;
+  z-index: 3;
+}
+.waitlist-btn .btn-glow {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, transparent, rgba(255,255,255,0.4), transparent);
+  transform: translateX(-150%);
+  transition: transform 0.7s ease;
+  pointer-events: none;     /* ← THE FIX */
+}
+.waitlist-btn:hover .btn-glow {
+  transform: translateX(150%);
+}
+.waitlist-btn::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 60px;
+  background: linear-gradient(45deg, #00ff88, transparent, #00ff88);
+  opacity: 0;
+  animation: pulse 2s infinite;
+  pointer-events: none;     /* also add this here just to be safe */
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0; }
+  50% { opacity: 0.6; }
+}
+.neon-frame {
+  position: relative;
+  width: 320px;
+  height: 420px;
+  border-radius: 20px;
+  overflow: hidden;
+  margin: 40px auto;
+  box-shadow: 0 0 30px rgba(0, 255, 136, 0.4);
+  transition: all 0.5s ease;
+  cursor: pointer;
+}
+
+.neon-frame:hover {
+  transform: translateY(-20px) scale(1.03);
+  box-shadow: 0 0 80px rgba(0, 255, 136, 0.8);
+}
+
+.neon-frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.6s ease;
+}
+
+.neon-frame:hover img {
+  transform: scale(1.1);
+}
+
+/* Inner glowing border */
+.frame-border {
+  position: absolute;
+  inset: 8px;
+  border: 2px solid #00ff88;
+  border-radius: 16px;
+  box-shadow: 
+    0 0 20px #00ff88,
+    inset 0 0 20px rgba(0, 255, 136, 0.3);
+  pointer-events: none;
+  animation: borderFlicker 4s infinite alternate;
+}
+
+/* Top-left + bottom-right corner accents */
+.frame-border::before,
+.frame-border::after {
+  content: '';
+  position: absolute;
+  width: 40px;
+  height: 40px;
+  border: 4px solid #00ff88;
+}
+.frame-border::before {
+  top: -4px; left: -4px;
+  border-right: none; border-bottom: none;
+}
+.frame-border::after {
+  bottom: -4px; right: -4px;
+  border-left: none; border-top: none;
+}
+
+/* Subtle overlay + glitch on hover */
+.frame-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 60%, rgba(0, 255, 136, 0.1));
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+.neon-frame:hover .frame-overlay {
+  animation: glitch 0.3s ease-in-out;
+}
+
+/* Moving scanline */
+.frame-scanline {
+  position: absolute;
+  left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, #00ff88, transparent);
+  box-shadow: 0 0 15px #00ff88;
+  top: -2px;
+  animation: scan 6s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes scan {
+  0%   { transform: translateY(-2px); }
+  100% { transform: translateY(430px); }
+}
+
+@keyframes glitch {
+  0%,100% { clip-path: inset(0 0 0 0); }
+  20% { clip-path: inset(20% 0 70% 0); }
+  40% { clip-path: inset(80% 0 10% 0); }
+  60% { clip-path: inset(10% 0 80% 0); }
+  80% { clip-path: inset(60% 0 30% 0); }
+}
+
+@keyframes borderFlicker {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.8; }
+  75% { opacity: 0.95; }
+}
+.neon-footer {
+    position: relative;
+    background: #000;
+    color: #ddd;
+    padding: 100px 20px 60px;
+    overflow: hidden;
+    font-family: 'Inter', sans-serif;
+  }
+
+  /* Top glowing line */
+  .footer-glow-top {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, #00ff88, transparent);
+    box-shadow: 0 0 30px #00ff88;
+  }
+
+ /* Smaller, centered footer button – 50% of original size */
+.waitlist-wrapper {
+  text-align: center;
+  margin-bottom: 36px;   /* slightly increased for breathing room */
+}
+
+.waitlist-btn-footer {
+  display: inline-block;                  /* required for <a> */
+  position: relative;
+  padding: 12px 36px;                     /* ≈50% of original 1.4rem × 4.5rem */
+  font-size: 20px;                        /* 50% of original 1.5rem ≈ 24px → 20px is perfect */
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 2.5px;                  /* slightly reduced to match scale */
+  color: #000;
+  background: linear-gradient(135deg, #00ff88, #00cc70);
+  border: none;
+  border-radius: 50px;                    /* reduced from 60px → still pill-shaped */
+  cursor: pointer;
+  overflow: hidden;
+  box-shadow: 0 8px 28px rgba(0,255,136,0.5);   /* 50–60% intensity */
+  transition: all 0.4s ease;
+  text-decoration: none;                  /* for <a> tag */
+}
+
+.waitlist-btn-footer:hover {
+  transform: translateY(-7px);
+  box-shadow: 0 16px 50px rgba(0,255,136,0.85);
+}
+
+/* Shine effect – fixed to allow clicks */
+.waitlist-btn-footer .shine {
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+  transition: left 0.7s ease;
+  pointer-events: none;                   /* THIS MAKES THE BUTTON CLICKABLE */
+}
+
+.waitlist-btn-footer:hover .shine {
+  left: 100%;
+}
+  /* Grid */
+  .footer-container { max-width: 1300px; margin: 0 auto; }
+  .footer-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 40px;
+    margin-bottom: 50px;
+  }
+  .footer-col h4 {
+    font-size: 1.1rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: #00ff88;
+    margin-bottom: 20px;
+    text-shadow: 0 0 20px rgba(0,255,136,0.7);
+  }
+  .footer-col a {
+    display: block;
+    color: #999;
+    text-decoration: none;
+    margin: 10px 0;
+    transition: all 0.3s;
+    position: relative;
+  }
+  .footer-col a:hover {
+    color: #00ff88;
+    text-shadow: 0 0 15px #00ff88;
+    transform: translateX(8px);
+  }
+  .logo-col .neon-logo {
+    font-size: 3.5rem;
+    font-weight: 900;
+    background: linear-gradient(135deg, #00ff88, #00ffaa);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 0 0 40px rgba(0,255,136,0.6);
+  }
+
+  /* Bottom bar with moving scanline */
+  .footer-bottom {
+    position: relative;
+    text-align: center;
+    padding-top: 30px;
+    border-top: 1px solid #00ff8830;
+    font-size: 0.9rem;
+    color: #666;
+  }
+  .scanline {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: #00ff88;
+    box-shadow: 0 0 20px #00ff88;
+    animation: scanFooter 8s linear infinite;
+  }
+  @keyframes scanFooter {
+    0%   { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+  }
+  .column-title {
+  display: block;
+  font-size: 1.1rem !important;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: #00ff88 !important;
+  margin-bottom: 20px !important;
+  text-shadow: 0 0 20px rgba(0,255,136,0.7);
+  text-decoration: none !important;
+  transition: all 0.3s ease;
+}
+
+.column-title:hover {
+  color: white !important;
+  text-shadow: 0 0 30px #00ff88;
+  transform: translateX(6px);
+}
+
+.logo-link {
+  text-decoration: none;
+}
   </style>
 </head>
 <body>
-
   <div id="particles"></div>
 
   <section class="hero">
     <div style="text-align:center">
       <h1 class="logo">乂丨乂丨</h1>
       <p class="tagline">Go Live. Own Your Vibe</p>
-      <button class="cta" onclick="alert('Launching soon — get ready to go live 🔥')">Go Live Now</button>
+ 
     </div>
   </section>
 
   <section class="features">
     <div class="card">
-      <h3>Unique Chatrooms</h3>
-      <p>Zero lag, 4K, and that signature xixi glow. Go live in one tap.</p>
+      <h3>UNMATCHED VIBES</h3>
+      <p>Zero lag, 4K, and that signature xixi neon glow. Go live in one tap.</p>
     </div>
     <div class="card">
-      <h3>Real Rewards</h3>
+      <h3>HOT GIRLS</h3>
       <p>Earn $STRZ, unlock contents, and climb the xixi throne.</p>
     </div>
     <div class="card">
-      <h3>Real Community</h3>
+      <h3>CUBE QUESTS</h3>
       <p>Chat that moves as fast as you do. Emotes, raids, and pure chaos.</p>
     </div>
-    <div class="card">
-      <h3>Wild Community</h3>
+     <div class="card">
+      <h3>MOVIE NIGHTS</h3>
+      <p>Chat that moves as fast as you do. Emotes, raids, and pure chaos.</p>
+    </div>
+      <div class="card">
+      <h3>REWARDS & GAMES</h3>
+      <p>Chat that moves as fast as you do. Emotes, raids, and pure chaos.</p>
+    </div>
+      <div class="card">
+      <h3>SECRET PARTIES</h3>
+      <p>Chat that moves as fast as you do. Emotes, raids, and pure chaos.</p>
+    </div>
+      <div class="card">
+      <h3>MASTERCLASS</h3>
       <p>Chat that moves as fast as you do. Emotes, raids, and pure chaos.</p>
     </div>
   </section>
 
-  <footer>
-    <div class="socials">
-      <a href="#">✕</a>
-      <a href="#">🎀</a>
-      <a href="#">💦</a>
-    </div>
-    <p>© 2025 xixi.live • Made for the bold, the wild, and the unapologetic.</p>
-  </footer>
+<a href="https://cube.xixi.live/signup.html" 
+   target="_blank" 
+   class="waitlist-btn hero-join-btn">
+  <span class="btn-text">Join</span>
+  <span class="btn-glow"></span>
+</a>
 
+<footer class="neon-footer">
+  <div class="footer-glow-top"></div>
+
+  <!-- SINGLE, GLORIOUS, CLICKABLE JOIN BUTTON IN FOOTER -->
+  <div class="waitlist-wrapper">
+    <a href="https://cube.xixi.live/signup.html" 
+       target="_blank" 
+       class="waitlist-btn-footer">
+      <span>Join</span>
+      <div class="shine"></div>
+    </a>
+  </div>
+
+  <div class="footer-container">
+    <div class="footer-grid">
+      <div class="footer-col logo-col">
+        <a href="https://xixi.live" class="logo-link">
+          <h4 class="neon-logo">ᙅᙀᙖᙓ</h4>
+        </a>
+        <p>YO GF MAY BE HERE!</p>
+      </div>
+      <div class="footer-col">
+        <a href="/explore" class="column-title">Explore</a>
+        <a href="/games">Games</a>
+        <a href="/streams">Livestreams</a>
+        <a href="/gigs">Gigs</a>
+        <a href="/events">Events</a>
+      </div>
+      <div class="footer-col">
+        <a href="/support" class="column-title">Support</a>
+        <a href="/help">Help Center</a>
+        <a href="mailto:hello@xixi.live">Contact</a>
+        <a href="/privacy">Privacy Policy</a>
+        <a href="/terms">Terms of Service</a>
+      </div>
+      <div class="footer-col">
+        <a href="#" class="column-title">Connect</a>
+        <a href="https://twitter.com/yourhandle" target="_blank" rel="noopener">Twitter / X</a>
+        <a href="https://instagram.com/yourhandle" target="_blank" rel="noopener">Instagram</a>
+        <a href="https://t.me/yourchannel" target="_blank" rel="noopener">Telegram</a>
+        <a href="https://discord.gg/yourinvite" target="_blank" rel="noopener">XiXi</a>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <div class="scanline"></div>
+      <p>© 2025 xixi.live • ᙅᙀᙖᙓ — All rights reserved.</p>
+    </div>
+  </div>
+</footer>
+  
   <script>
-    // Floating pink particles
+    // Neon floating cubes
     const particlesContainer = document.getElementById('particles');
-    for(let i = 0; i < 80; i++) {
-      const p = document.createElement('div');
-      p.classList.add('particle');
-      p.style.left = Math.random() * 100 + 'vw';
-      p.style.animationDelay = Math.random() * 20 + 's';
-      p.style.animationDuration = 15 + Math.random() * 20 + 's';
-      particlesContainer.appendChild(p);
+    for(let i = 0; i < 60; i++) {
+      const cube = document.createElement('div');
+      cube.classList.add('cube');
+      
+      const faces = ['front','back','right','left','top','bottom'];
+      faces.forEach(face => {
+        const div = document.createElement('div');
+        div.classList.add(face);
+        cube.appendChild(div);
+      });
+
+      cube.style.left = Math.random() * 100 + 'vw';
+      cube.style.animationDelay = Math.random() * 20 + 's';
+      cube.style.animationDuration = 18 + Math.random() * 25 + 's';
+      
+      particlesContainer.appendChild(cube);
     }
 
-    // GSAP Scroll Animations
+    // GSAP Animations
     gsap.from('.logo', { y: 100, opacity: 0, duration: 1.5, ease: 'power4.out' });
     gsap.from('.tagline', { y: 60, opacity: 0, duration: 1.2, delay: 0.5, ease: 'power3.out' });
-    gsap.from('.cta', { scale: 0.8, opacity: 0, duration: 1, delay: 1, ease: 'back.out(1.7)' });
-
+    gsap.from('.waitlist-btn', { scale: 0.8, opacity: 0, duration: 1, delay: 1, ease: 'back.out(1.7)' });
     gsap.utils.toArray('.card').forEach((card, i) => {
       gsap.from(card, {
-        y: 200,
-        opacity: 0,
-        duration: 1,
-        delay: i * 0.2,
-        scrollTrigger: {
-          trigger: '.features',
-          start: 'top 70%',
-        }
+        y: 200, opacity: 0, duration: 1, delay: i * 0.2,
+        scrollTrigger: { trigger: '.features', start: 'top 70%' }
       });
     });
   </script>
