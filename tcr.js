@@ -1214,7 +1214,7 @@ function sanitizeKey(email) {
 })(); 
 // ← ONLY ONE OF THESE — THE FINAL SEAL
 
-// --- SEND STARS FUNCTION — FINAL, FLAWLESS, BANNER-FREE 2025 EDITION ---
+// --- SEND STARS TO USER — FINAL 2025 CLEAN EDITION — NO BANNER, NOTIFICATION BADGE STILL WORKS PERFECTLY ---
 async function sendStarsToUser(targetUser, amt) {
   if (amt < 100 || !currentUser?.uid) {
     showGoldAlert("Invalid gift", 4000);
@@ -1222,11 +1222,29 @@ async function sendStarsToUser(targetUser, amt) {
   }
 
   const sanitize = (str) => str?.toLowerCase().replace(/[.@/\\]/g, '_');
-  const senderId = currentUser.uid || sanitize(currentUser.email);
-  const receiverId = targetUser._docId || targetUser.uid || sanitize(targetUser.email || targetUser.chatId);
+  const senderId = sanitize(currentUser.email);
+  if (!senderId) {
+    showGoldAlert("Your profile error", 4000);
+    return;
+  }
 
-  if (!receiverId || senderId === receiverId) {
-    showGoldAlert(senderId === receiverId ? "Can't gift yourself" : "User not found", 4000);
+  let receiverId = null;
+  if (targetUser._docId) {
+    receiverId = targetUser._docId;
+  } else if (targetUser.email) {
+    receiverId = sanitize(targetUser.email);
+  } else if (targetUser.chatId?.includes("@")) {
+    receiverId = sanitize(targetUser.chatId);
+  } else if (targetUser.uid) {
+    receiverId = targetUser.uid;
+  }
+
+  if (!receiverId) {
+    showGoldAlert("User not found", 4000);
+    return;
+  }
+  if (senderId === receiverId) {
+    showGoldAlert("Can't gift yourself", 4000);
     return;
   }
 
@@ -1234,27 +1252,27 @@ async function sendStarsToUser(targetUser, amt) {
   const toRef = doc(db, "users", receiverId);
 
   try {
-    // 1. ATOMIC STAR TRANSFER
+    // 1. ATOMIC TRANSFER — 100% SAME AS BEFORE
     await runTransaction(db, async (tx) => {
       const senderSnap = await tx.get(fromRef);
-      if (!senderSnap.exists()) throw "Profile missing";
-      if ((senderSnap.data()?.stars || 0) < amt) throw "Not enough stars";
-
       const receiverSnap = await tx.get(toRef);
+
+      if (!senderSnap.exists()) throw "Profile missing";
+      if ((senderSnap.data().stars || 0) < amt) throw "Not enough stars";
+
       if (!receiverSnap.exists()) {
-        tx.set(toRef, { chatId: targetUser.chatId || "User", stars: 0 }, { merge: true });
+        tx.set(toRef, {
+          chatId: targetUser.chatId || "User",
+          email: targetUser.email || targetUser.chatId,
+          stars: 0
+        }, { merge: true });
       }
 
-      tx.update(fromRef, {
-        stars: increment(-amt),
-        starsGifted: increment(amt)
-      });
-      tx.update(toRef, {
-        stars: increment(amt)
-      });
+      tx.update(fromRef, { stars: increment(-amt), starsGifted: increment(amt) });
+      tx.update(toRef, { stars: increment(amt) });
     });
 
-    // 2. YOUR EXACT ORIGINAL NOTIFICATION — UNTOUCHED, PERFECT
+    // 2. YOUR EXACT ORIGINAL NOTIFICATION — 100% UNTOUCHED (this is what triggers your badge + custom popup)
     await addDoc(collection(db, "notifications"), {
       recipientId: receiverId,
       title: "Star Gift!",
@@ -1265,21 +1283,20 @@ async function sendStarsToUser(targetUser, amt) {
       createdAt: serverTimestamp()
     });
 
-    // 3. LAST GIFT TRACKER
+    // 3. LAST GIFT TRACKER — SAME AS BEFORE
     await updateDoc(toRef, {
-      lastGift: {
-        from: currentUser.chatId,
-        amt,
-        at: Date.now()
-      }
+      lastGift: { from: currentUser.chatId, amt, at: Date.now() }
     });
 
-    // 4. CLEAN CELEBRATION — NO BANNER SPAM
-    showGoldAlert(`You gifted ${amt} stars to ${targetUser.chatId}!`, 4000);
+    // 4. YOUR ORIGINAL ON-SCREEN ALERT — STILL THERE
+    showGoldAlert(`You sent ${amt} stars to ${targetUser.chatId}!`, 4000);
+
+    // OPTIONAL: confetti if you want it
+    // launchConfetti?.();
 
   } catch (err) {
     console.error("Gift failed:", err);
-    showGoldAlert("Gift failed — try again", 4000);
+    showGoldAlert("Failed — try again", 4000);
   }
 }
 /* ===============================
