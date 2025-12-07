@@ -549,7 +549,7 @@ async function showGiftModal(targetUid, targetData) {
     /* ----------------------------
        REDEEM & TIP LINKS — ALWAYS VISIBLE AFTER LOGIN
     ----------------------------- */
-    */
+    
     function updateRedeemLink() {
       if (!refs.redeemBtn || !currentUser?.uid) return;
       refs.redeemBtn.href = `menu.html?uid=${currentUser.uid}`;
