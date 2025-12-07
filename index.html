@@ -592,9 +592,9 @@
   color: #fff;
   letter-spacing: 3px;
 }
-/* REWARDS – STATIC BUT INSANELY PREMIUM */
+/* MOBILE-OPTIMIZED GOLD REWARDS – NO OVERLAP, NO K */
 .rewards-section {
-  padding: 140px 10% 160px;
+  padding: 120px 5% 140px;
   text-align: center;
   position: relative;
   overflow: hidden;
@@ -609,125 +609,117 @@
 
 .money-text {
   font-family: 'Inter', sans-serif;
-  font-size: clamp(6.5rem, 18vw, 11rem);
+  font-size: clamp(5.8rem, 16vw, 10rem);   /* perfect scaling */
   font-weight: 900;
-  letter-spacing: -6px;
-  line-height: 0.85;
+  letter-spacing: -0.04em;
+  line-height: 0.92;
   margin: 0;
   display: flex;
   align-items: baseline;
   justify-content: center;
-  gap: 4px;
-  position: relative;
-  text-shadow: 
-    0 10px 30px rgba(0,0,0,0.9),
-    0 0 60px rgba(212,175,55,0.3);
+  gap: 8px;                    /* generous gap so + never touches */
+  text-shadow: 0 10px 40px rgba(0,0,0,0.9);
 }
 
-/* Dollar sign */
+/* Dollar */
 .dollar {
   color: #d4af37;
-  font-size: 0.6em;
+  font-size: 0.62em;
   opacity: 0.95;
-  transform: translateY(-10px);
+  transform: translateY(-8px);
 }
 
-/* Main number – liquid gold gradient */
+/* Main number – molten gold */
 .amount {
-  background: linear-gradient(
-    90deg,
+  background: linear-gradient(90deg,
     #ffffff 0%,
-    #f5e5a0 20%,
+    #f5e5a0 15%,
     #d4af37 40%,
     #ffe895 50%,
     #d4af37 60%,
-    #f0d080 80%,
+    #f0d080 85%,
     #ffffff 100%
   );
   background-size: 200% 100%;
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
-  animation: goldFlow 8s ease-in-out infinite;
+  animation: goldFlow 9s ease-in-out infinite;
   font-variant-numeric: tabular-nums;
 }
 
-/* K+ */
-.kplus {
+/* Just the + – clean and elevated */
+.plus {
   color: #d4af37;
-  font-size: 0.45em;
+  font-size: 0.55em;
   font-weight: 700;
-  letter-spacing: 4px;
-  text-transform: uppercase;
-  opacity: 0.9;
-  transform: translateY(-30px);
+  letter-spacing: 2px;
+  opacity: 0.95;
+  transform: translateY(-24px);
 }
 
-/* Subtle breathing subtitle */
+/* Subtitle */
 .rewards-subtitle {
-  margin-top: 28px;
-  font-size: 1.5rem;
+  margin-top: 20px;
+  font-size: 1.25rem;
   font-weight: 500;
-  letter-spacing: 8px;
+  letter-spacing: 6px;
   text-transform: uppercase;
-  color: #aaaaaa;
+  color: #aaa;
   opacity: 0.9;
   animation: breathe 6s ease-in-out infinite;
 }
 
-/* GOLD SHIMMER OVERLAY – moves slowly across the number */
+/* Shimmer sweep */
 .gold-shimmer {
   position: absolute;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background: linear-gradient(
-    110deg,
-    transparent 30%,
-    rgba(255,255,255,0.08) 50%,
-    transparent 70%
+  top: -60%;
+  left: -60%;
+  width: 220%;
+  height: 220%;
+  background: linear-gradient(115deg,
+    transparent 35%,
+    rgba(255,255,255,0.1) 50%,
+    transparent 65%
   );
   pointer-events: none;
-  animation: shimmer 7s linear infinite;
-  z-index: 1;
+  animation: shimmer 8s linear infinite;
   mix-blend-mode: overlay;
 }
 
-/* Tiny gold glint spark that drifts */
+/* Tiny drifting glint */
 .gold-glint {
   position: absolute;
-  top: 20%;
-  left: 10%;
-  width: 6px;
-  height: 60px;
+  top: 30%;
+  left: 0;
+  width: 4px;
+  height: 80px;
   background: linear-gradient(to bottom, transparent, #d4af37, transparent);
   border-radius: 50%;
   opacity: 0;
-  pointer-events: none;
-  animation: glint 5s ease-in-out infinite;
-  filter: blur(3px);
+  filter: blur(2px);
+  animation: glint 6s ease-in-out infinite;
 }
 
-/* ANIMATIONS */
+/* Keyframes */
 @keyframes goldFlow {
   0%, 100% { background-position: 0% 50%; }
   50% { background-position: 100% 50%; }
 }
 
 @keyframes shimmer {
-  0% { transform: translateX(-100%) translateY(-50%) rotate(20deg); }
-  100% { transform: translateX(100%) translateY(-50%) rotate(20deg); }
+  0% { transform: translateX(-80%) translateY(-50%) rotate(20deg); }
+  100% { transform: translateX(80%) translateY(-50%) rotate(20deg); }
 }
 
 @keyframes glint {
   0%, 100% { opacity: 0; transform: translateX(0) scaleY(0.3); }
-  20% { opacity: 1; transform: translateX(300px) scaleY(1); }
+  25% { opacity: 0.8; transform: translateX(200px) scaleY(1); }
 }
 
 @keyframes breathe {
-  0%, 100% { opacity: 0.7; letter-spacing: 8px; }
-  50% { opacity: 1; letter-spacing: 10px; }
+  0%, 100% { opacity: 0.75; letter-spacing: 6px; }
+  50% { opacity: 1; letter-spacing: 8px; }
 }
   </style>
 </head>
@@ -790,22 +782,21 @@
     </div>
   </section>
 
-<!-- $10,000K+ REWARDS – STATIC BUT FEELS ALIVE (NO JS) -->
+<!-- $10,000+ REWARDS – MOBILE-PERFECT, STATIC, FILTHY RICH -->
 <section class="rewards-section">
   <div class="rewards-container">
     <h2 class="money-text">
       <span class="dollar">$</span>
-      <span class="amount">10</span>
-      <span class="kplus">K+</span>
+      <span class="amount">10,000</span>
+      <span class="plus">+</span>
     </h2>
     <p class="rewards-subtitle">in rewards this month</p>
 
-    <!-- Animated gold shimmer overlay -->
+    <!-- Shimmer & glint overlays -->
     <div class="gold-shimmer"></div>
     <div class="gold-glint"></div>
   </div>
 </section>
-
 
 <a href="https://cube.xixi.live/signup.html" 
    target="_blank" 
