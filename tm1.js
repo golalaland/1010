@@ -830,13 +830,11 @@ punish() {
   tapButton?.classList.add("red-punish");
   setTimeout(() => tapButton?.classList.remove("red-punish"), 400);
 
-  // ONLY FLASH A DARK RED OVERLAY — DO NOT KILL BACKGROUND IMAGE!
-  document.body.style.background = "rgba(51, 0, 0, 0.85)";
-  document.body.style.backgroundBlendMode = "multiply"; // optional: makes it look evil
-  setTimeout(() => {
-    document.body.style.background = "";
-    document.body.style.backgroundBlendMode = "";
-  }, 180);
+ // RED FLASH — DOES NOT DESTROY backgroundImage
+document.body.style.backgroundColor = "rgba(51, 0, 0, 0.92)";
+setTimeout(() => {
+  document.body.style.backgroundColor = "";
+}, 180);
 
   navigator.vibrate?.([100, 50, 150, 50, 100]);
   updateUI();
