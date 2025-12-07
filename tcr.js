@@ -793,35 +793,29 @@ function showTapModal(targetEl, msgData) {
 }
 
 // =============================
-// CONFECTI / GLOW FOR BANNERS → COMPLETELY REMOVED (2025+ CLEAN)
+// NO MORE BANNERS — EVER (2025+ FINAL CLEAN)
 // =============================
-function triggerBannerEffect(bannerEl) {
-  // This function is now intentionally EMPTY or removed
-  // We no longer use banner glows or confetti here
-  // All celebration is handled via notifications, buzz messages, or showGiftAlert()
-  // Keep the function only if other legacy code calls it (harmless no-op)
-  return;
-  // Alternatively: just delete the entire function if nothing calls it anymore
+function triggerBannerEffect() {
+  // Intentionally empty — banners are dead and buried
+  // Keep only if some ancient code still calls it (harmless)
 }
 
 // =============================
-// RENDER MESSAGES — CLEAN, NO BANNERS, NO EXCEPTIONS
+// RENDER MESSAGES — PURE, FAST, BEAUTIFUL
 // =============================
 function renderMessagesFromArray(messages, forceTop = false) {
   if (!refs.messagesEl) return;
 
-  // If forcing to top (e.g. important system msg in future), we insert at beginning
   const container = refs.messagesEl;
   const fragment = document.createDocumentFragment();
 
   messages.forEach(item => {
-    // === EXTRACT ID SAFELY ===
     const id = item.id || item.tempId || item.data?.id;
-    if (!id || document.getElementById(id)) return; // Duplicate protection
+    if (!id || document.getElementById(id)) return;
 
-    const m = item.data ?? item; // Normalize message data
+    const m = item.data ?? item;
 
-    // === BLOCK ALL OLD BANNER TYPES (DEFENSIVE) ===
+    // BLOCK ALL LEGACY BANNER TRASH — FOREVER
     if (
       m.isBanner ||
       m.type === "banner" ||
@@ -831,28 +825,61 @@ function renderMessagesFromArray(messages, forceTop = false) {
       m.uid === "system" ||
       m.uid === "system_gift"
     ) {
-      console.log("Blocked legacy banner message:", id);
-      return; // SILENTLY IGNORE — we don't render banners anymore
+      return; // Silent kill — no logs, no mercy
     }
 
-    // === NORMAL MESSAGE RENDERING (your existing clean flow) ===
     const wrapper = document.createElement("div");
     wrapper.className = "msg";
     wrapper.id = id;
 
-    // Your existing message rendering logic here
-    const username = document.createElement("span");
-    username.className = "username";
-    username.textContent = m.chatId || "Unknown";
+    // USERNAME — TAP TO OPEN PROFILE (GOLD STANDARD 2025)
+    const metaEl = document.createElement("span");
+    metaEl.className = "meta";
 
+    const tapableName = document.createElement("span");
+    tapableName.className = "chat-username";
+    tapableName.textContent = m.chatId || "Guest";
+
+    // ROCK-SOLID UID EXTRACTION — WORKS EVERY TIME
+    const realUid = m.uid || 
+                    m.email?.replace(/[.@]/g, '_') || 
+                    m.chatId || 
+                    "unknown";
+    tapableName.dataset.userId = realUid.replace(/[.@/\\]/g, '_');
+
+    tapableName.style.cssText = `
+      cursor: pointer;
+      font-weight: 700;
+      padding: 0 6px;
+      border-radius: 6px;
+      user-select: none;
+      transition: background 0.2s;
+    `;
+
+    // Visual tap feedback
+    tapableName.addEventListener("pointerdown", () => {
+      tapableName.style.background = "rgba(255,204,0,0.4)";
+    });
+    tapableName.addEventListener("pointerup", () => {
+      tapableName.style.background = "";
+    });
+    tapableName.addEventListener("pointerleave", () => {
+      tapableName.style.background = "";
+    });
+
+    // Click = open social card / profile
+    tapableName.onclick = () => openUserCard(tapableName.dataset.userId);
+
+    metaEl.append(tapableName, document.createTextNode(": "));
+    wrapper.appendChild(metaEl);
+
+    // MESSAGE CONTENT
     const content = document.createElement("span");
     content.className = "content";
     content.textContent = m.content || "";
-
-    wrapper.appendChild(username);
     wrapper.appendChild(content);
 
-    // Optional: badges, timestamps, etc.
+    // TIMESTAMP
     if (m.timestamp) {
       const time = document.createElement("span");
       time.className = "time";
@@ -860,80 +887,51 @@ function renderMessagesFromArray(messages, forceTop = false) {
       wrapper.appendChild(time);
     }
 
-    fragment.appendChild(wrapper);
-  });
-
-  // Insert all at once (best performance)
-  if (forceTop && fragment.children.length > 0) {
-    container.prepend(fragment);
-  } else {
-    container.appendChild(fragment);
-  }
-
-  // Auto-scroll to bottom for new messages
-  if (!forceTop) {
-    container.scrollTop = container.scrollHeight;
-  }
-}
-
-    // === USERNAME — NOW TAPABLE & OPENS SOCIAL CARD ===
-  const metaEl = document.createElement("span");
-    metaEl.className = "meta";
-    metaEl.style.color = refs.userColors?.[m.uid] || "#fff";
-
-    const tapableName = document.createElement("span");
-    tapableName.className = "chat-username";
-    tapableName.textContent = m.chatId || "Guest";
-// 100% GUARANTEED CORRECT UID — WORKS EVERY TIME
-const realUid = m.uid || m.email?.replace(/[.@]/g, '_') || m.chatId || "unknown";
-tapableName.dataset.userId = realUid.replace(/[.@/\\]/g, '_'); // double-clean
-    tapableName.style.cssText = "cursor:pointer; font-weight:700; padding:0 4px; border-radius:4px; user-select:none;";
-
-    // Visual feedback on tap
-    tapableName.addEventListener("pointerdown", () => {
-      tapableName.style.background = "rgba(255,204,0,0.4)";
-    });
-    tapableName.addEventListener("pointerup", () => {
-      setTimeout(() => tapableName.style.background = "", 200);
-    });
-
-    metaEl.append(tapableName, document.createTextNode(": "));
-    wrapper.appendChild(metaEl);
-    
-    // === REPLY PREVIEW ===
+    // REPLY PREVIEW — GORGEOUS & FUNCTIONAL
     if (m.replyTo) {
       const replyPreview = document.createElement("div");
       replyPreview.className = "reply-preview";
       replyPreview.style.cssText = `
         background: rgba(255,255,255,0.06);
-        border-left: 3px solid #b3b3b3;
-        padding: 6px 10px;
-        margin: 6px 0 4px 0;
-        border-radius: 0 6px 6px 0;
-        font-size: 13px;
-        color: #aaa;
+        border-left: 3px solid #ffcc00;
+        padding: 8px 12px;
+        margin: 6px 0 8px 0;
+        border-radius: 0 8px 8px 0;
+        font-size: 13.5px;
+        color: #ccc;
         cursor: pointer;
         line-height: 1.4;
-      `.replace(/\s+/g, " ").trim();
+      `;
 
-      const replyText = (m.replyToContent || "Original message").replace(/\n/g, " ").trim();
+      const replyText = (m.replyToContent || "Message").replace(/\n/g, " ").trim();
       const shortText = replyText.length > 80 ? replyText.substring(0, 80) + "..." : replyText;
 
       replyPreview.innerHTML = `
-        <strong style="color:#999;">↳ ${m.replyToChatId || "someone"}:</strong>
-        <span style="color:#aaa;">${shortText}</span>
+        <strong style="color:#ffcc00;">↳ ${m.replyToChatId || "someone"}:</strong>
+        <span style="color:#aaa; margin-left:4px;">${shortText}</span>
       `;
 
       replyPreview.onclick = () => {
         const target = document.getElementById(m.replyTo);
         if (target) {
           target.scrollIntoView({ behavior: "smooth", block: "center" });
-          target.style.background = "rgba(180,180,180,0.15)";
+          target.style.background = "rgba(255,204,0,0.2)";
           setTimeout(() => target.style.background = "", 2000);
         }
       };
+
       wrapper.appendChild(replyPreview);
     }
+
+    fragment.appendChild(wrapper);
+  });
+
+  // Insert all at once
+  if (forceTop && fragment.children.length > 0) {
+    container.prepend(fragment);
+  } else {
+    container.appendChild(fragment);
+  }
 
     // === MESSAGE CONTENT ===
     const contentEl = document.createElement("span");
