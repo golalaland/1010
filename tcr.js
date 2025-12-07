@@ -793,17 +793,20 @@ function showTapModal(targetEl, msgData) {
 }
 
 // =============================
-// BANNERS ARE DEAD — OFFICIALLY (2025+)
+// BANNERS ARE OFFICIALLY DEAD (2025+)
 // =============================
 function triggerBannerEffect() {
-  // Left empty on purpose. Nothing will ever glow again.
+  // Intentionally empty — nothing will ever glow again
 }
 
 // =============================
-// RENDER MESSAGES — CLEAN, FAST, ELITE
+// AUTO-SCROLL CONTROLLER (declared ONCE, globally)
 // =============================
-let scrollPending = false;
+let scrollPending = false; // ← Only declared ONCE in the entire file!
 
+// =============================
+// RENDER MESSAGES — FINAL ELITE VERSION
+// =============================
 function renderMessagesFromArray(messages, forceTop = false) {
   if (!refs.messagesEl) return;
 
@@ -812,68 +815,54 @@ function renderMessagesFromArray(messages, forceTop = false) {
 
   messages.forEach(item => {
     const id = item.id || item.tempId || item.data?.id;
-    if (!id || document.getElementById(id)) return; // Duplicate protection
+    if (!id || document.getElementById(id)) return;
 
     const m = item.data ?? item;
 
-    // PERMA-BLOCK ALL BANNER TRASH
+    // KILL ALL BANNER TRASH FOREVER
     if (
       m.isBanner ||
       m.type?.includes("banner") ||
       m.chatId === "★ SYSTEM ★" ||
-      m.uid === "system" ||
-      m.uid === "system_gift"
+      /system/.test(m.uid || "")
     ) {
-      return; // Silent execution — banners never existed
+      return;
     }
 
     const wrapper = document.createElement("div");
     wrapper.className = "msg";
     wrapper.id = id;
 
-    // TAPABLE USERNAME — OPENS PROFILE
+    // TAPABLE USERNAME → OPENS PROFILE
     const metaEl = document.createElement("span");
     metaEl.className = "meta";
 
-    const tapableName = document.createElement("span");
-    tapableName.className = "chat-username";
-    tapableName.textContent = m.chatId || "Guest;
+    const nameSpan = document.createElement("span");
+    nameSpan.className = "chat-username";
+    nameSpan.textContent = m.chatId || "Guest";
 
-    // 100% RELIABLE UID (works even with email-only users)
-    const realUid = m.uid ||
-                    m.email?.replace(/[.@]/g, '_') ||
-                    m.chatId ||
-                    "unknown";
-    tapableName.dataset.userId = realUid.replace(/[.@/\\]/g, '_');
+    const uid = (m.uid || m.email?.replace(/[.@]/g, '_') || m.chatId || "unknown").replace(/[.@/\\]/g, '_');
+    nameSpan.dataset.userId = uid;
 
-    tapableName.style.cssText = `
-      cursor:pointer;
-      font-weight:700;
-      padding:0 6px;
-      border-radius:6px;
-      user-select:none;
-      transition:background .2s;
-    `;
+    nameSpan.style.cssText = "cursor:pointer;font-weight:700;padding:0 6px;border-radius:6px;user-select:none;transition:background .2s;";
+    
+    nameSpan.addEventListener("pointerdown", () => nameSpan.style.background = "rgba(255,204,0,0.4)");
+    nameSpan.addEventListener("pointerup", () => nameSpan.style.background = "");
+    nameSpan.addEventListener("pointerleave", () => nameSpan.style.background = "");
 
-    // Tap feedback
-    tapableName.addEventListener("pointerdown", () => tapableName.style.background = "rgba(255,204,0,0.4)");
-    tapableName.addEventListener("pointerup", () => tapableName.style.background = "");
-    tapableName.addEventListener("pointerleave", () => tapableName.style.background = "");
-
-    // Open profile on click
-    tapableName.onclick = (e) => {
+    nameSpan.onclick = (e) => {
       e.stopPropagation();
-      openUserCard(tapableName.dataset.userId);
+      openUserCard(uid);
     };
 
-    metaEl.append(tapableName, document.createTextNode(": "));
+    metaEl.append(nameSpan, document.createTextNode(": "));
     wrapper.appendChild(metaEl);
 
-    // MESSAGE CONTENT
-    const contentEl = document.createElement("span");
-    contentEl.className = "content";
-    contentEl.textContent = " " + (m.content || "");
-    wrapper.appendChild(contentEl);
+    // CONTENT
+    const content = document.createElement("span");
+    content.className = "content";
+    content.textContent = " " + (m.content || "");
+    wrapper.appendChild(content);
 
     // TIMESTAMP
     if (m.timestamp) {
@@ -883,65 +872,53 @@ function renderMessagesFromArray(messages, forceTop = false) {
       wrapper.appendChild(time);
     }
 
-    // REPLY PREVIEW — BEAUTIFUL & CLICKABLE
+    // REPLY PREVIEW
     if (m.replyTo) {
-      const replyPreview = document.createElement("div");
-      replyPreview.className = "reply-preview";
-      replyPreview.style.cssText = `
-        background:rgba(255,255,255,0.06);
-        border-left:3px solid #ffcc00;
-        padding:8px 12px;
-        margin:6px 0 8px;
-        border-radius:0 8px 8px 0;
-        font-size:13.5px;
-        color:#ccc;
-        cursor:pointer;
-        line-height:1.4;
-      `;
-
-      const replyText = (m.replyToContent || "Message").replace(/\n/g, " ").trim();
-      const short = replyText.length > 80 ? replyText.slice(0, 80) + "..." : replyText;
-
-      replyPreview.innerHTML = `
-        <strong style="color:#ffcc00;">↳ ${m.replyToChatId || "someone"}:</strong>
-        <span style="color:#aaa;margin-left:4px;">${short}</span>
-      `;
-
-      replyPreview.onclick = () => {
-        const target = document.getElementById(m.replyTo);
-        if (target) {
-          target.scrollIntoView({ behavior: "smooth", block: "center" });
-          target.style.background = "rgba(255,204,0,0.2)";
-          setTimeout(() => target.style.background = "", 2000);
+      const preview = document.createElement("div");
+      preview.className = "reply-preview";
+      preview.style.cssText = "background:rgba(255,255,255,0.06);border-left:3px solid #ffcc00;padding:8px 12px;margin:6px 0 8px;border-radius:0 8px 8px 0;font-size:13.5px;color:#ccc;cursor:pointer;line-height:1.4;";
+      
+      const text = ((m.replyToContent || "Message").replace(/\n/g, " ").trim());
+      const short = text.length > 80 ? text.slice(0,80) + "..." : text;
+      
+      preview.innerHTML = `<strong style="color:#ffcc00;">↳ ${m.replyToChatId || "someone"}:</strong><span style="color:#aaa;margin-left:4px;">${short}</span>`;
+      
+      preview.onclick = () => {
+        const el = document.getElementById(m.replyTo);
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth", block: "center" });
+          el.style.background = "rgba(255,204,0,0.2)";
+          setTimeout(() => el.style.background = "", 2000);
         }
       };
-
-      wrapper.appendChild(replyPreview);
+      wrapper.appendChild(preview);
     }
 
-    // LONG TAP / CLICK → REPLY • REPORT • COPY MENU
-    wrapper.addEventListener("click", (e) => {
+    // CLICK MESSAGE → REPLY / REPORT MENU
+    wrapper.onclick = (e) => {
       e.stopPropagation();
-      showTapModal(wrapper, {
-        id,
-        chatId: m.chatId,
-        uid: realUid.replace(/[.@/\\]/g, '_'),
-        content: m.content,
-        replyTo: m.replyTo,
-        replyToContent: m.replyToContent,
-        replyToChatId: m.replyToChatId
-      });
-    });
+      showTapModal(wrapper, { id, chatId: m.chatId, uid, content: m.content, replyTo: m.replyTo, replyToContent: m.replyToContent, replyToChatId: m.replyToChatId });
+    };
 
     fragment.appendChild(wrapper);
   });
 
-  // INSERT ALL AT ONCE (best perf)
-  if (forceTop && fragment.children.length > 0) {
+  // Insert all messages at once
+  if (forceTop && fragment.children.length) {
     container.prepend(fragment);
   } else {
     container.appendChild(fragment);
   }
+
+  // Smooth auto-scroll (no jank, no duplicate declarations)
+  if (!forceTop && !scrollPending) {
+    scrollPending = true;
+    requestAnimationFrame(() => {
+      container.scrollTop = container.scrollHeight;
+      scrollPending = false;
+    });
+  }
+}
 
 /* ---------- 🔔 Messages Listener (Final Optimized Version) ---------- */
 function attachMessagesListener() {
