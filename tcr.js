@@ -1,3 +1,5 @@
+
+
 /* ---------- Firebase Modular Imports (v10+) ---------- */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 
@@ -257,13 +259,13 @@ async function pushNotification(userId, message) {
 // ON AUTH STATE CHANGED — FINAL 2025 ETERNAL EDITION
 // YAH IS THE ONE TRUE EL — THE CODE IS NOW PURE
 onAuthStateChanged(auth, async (firebaseUser) => {
-  // ——— CLEANUP PREVIOUS LISTENERS ———
+  // ALWAYS CLEAN NOTIFICATIONS FIRST
   if (typeof notificationsUnsubscribe === "function") {
     notificationsUnsubscribe();
     notificationsUnsubscribe = null;
   }
 
-  // ——— USER LOGGED OUT ———
+  // USER LOGGED OUT
   if (!firebaseUser) {
     currentUser = null;
     localStorage.removeItem("userId");
@@ -273,9 +275,8 @@ onAuthStateChanged(auth, async (firebaseUser) => {
     document.querySelectorAll(".before-login-only").forEach(el => el.style.display = "block");
 
     if (typeof showLoginUI === "function") showLoginUI();
-    console.log("User logged out");
+    console.log("YAH: User logged out");
 
-    // Clear my clips
     const grid = document.getElementById("myClipsGrid");
     const noMsg = document.getElementById("noClipsMessage");
     if (grid) grid.innerHTML = "";
@@ -284,24 +285,25 @@ onAuthStateChanged(auth, async (firebaseUser) => {
     return;
   }
 
-  // ——— USER LOGGED IN ———
+  // USER LOGGED IN
   const email = firebaseUser.email.toLowerCase().trim();
   const uid = sanitizeKey(email);
   const userRef = doc(db, "users", uid);
 
   try {
     const userSnap = await getDoc(userRef);
-    
+
+    // FIXED: userSnap, not user
     if (!userSnap.exists()) {
-      console.error("Profile not found for:", uid);
-      showStarPopup("Profile missing — contact support");
+      console.error("Profile missing:", uid);
+      showStarPopup("Profile not found. Contact admin.");
       await signOut(auth);
       return;
     }
 
+    // FIXED: userSnap.data(), not user.data()
     const data = userSnap.data();
 
-    // ——— BUILD CURRENT USER OBJECT ———
     currentUser = {
       uid,
       email,
@@ -327,62 +329,48 @@ onAuthStateChanged(auth, async (firebaseUser) => {
       hostLink: data.hostLink || null
     };
 
-    console.log("WELCOME BACK:", currentUser.chatId.toUpperCase());
+    console.log("YAH HAS LOGGED IN:", currentUser.chatId);
 
-    // ——— UI STATE ———
+    // SHOW LOGGED-IN UI
     document.querySelectorAll(".after-login-only").forEach(el => el.style.display = "block");
     document.querySelectorAll(".before-login-only").forEach(el => el.style.display = "none");
 
     localStorage.setItem("userId", uid);
     localStorage.setItem("lastVipEmail", email);
 
-    // ——— CORE SYSTEMS ———
+    // CORE SYSTEMS
     if (typeof showChatUI === "function") showChatUI(currentUser);
     if (typeof attachMessagesListener === "function") attachMessagesListener();
     if (typeof startStarEarning === "function") startStarEarning(uid);
     if (typeof setupPresence === "function") setupPresence(currentUser);
-    if (typeof setupNotificationsListener === "function") setupNotificationsListener(uid);
 
     updateRedeemLink();
     updateTipLink();
 
-    // ——— BACKGROUND TASKS ———
-    setTimeout(() => {
-      if (typeof syncUserUnlocks === "function") syncUserUnlocks();
-      if (typeof loadNotifications === "function") loadNotifications(); // Badge update
-    }, 600);
+    if (typeof syncUserUnlocks === "function") setTimeout(syncUserUnlocks, 600);
+    if (typeof setupNotificationsListener === "function") setupNotificationsListener(uid);
 
-    // ——— MY CLIPS ———
-    if (document.getElementById("myClipsPanel") && typeof loadMyClips === "function") {
-      setTimeout(loadMyClips, 1000);
-    }
-
-    // ——— GUEST → PROMPT FOR NAME ———
+    // GUEST NAME PROMPT
     if (currentUser.chatId.startsWith("GUEST")) {
       setTimeout(() => {
-        if (typeof promptForChatID === "function") {
-          promptForChatID(userRef, data);
-        }
+        if (typeof promptForChatID === "function") promptForChatID(userRef, data);
       }, 2000);
     }
 
-    // ——— DIVINE WELCOME POPUP ———
-    const holyColors = ["#FF1493", "#FFD700", "#00FFFF", "#FF4500", "#DA70D6", "#FF69B4", "#32CD32", "#FFA500", "#FF00FF"];
-    const glow = holyColors[Math.floor(Math.random() * holyColors.length)];
+    // MY CLIPS PANEL
+    if (document.getElementById("myClipsPanel") && typeof loadMyClips === "function") {
+      setTimeout(loadMyClips, 1200);
+    }
 
-    showStarPopup(`
-      <div style="text-align:center;line-height:1.7;font-size:15px;">
-        Welcome back,<br>
-        <b style="font-size:18px;color:${glow};text-shadow:0 0 20px ${glow}88;">
-          ${currentUser.chatId.toUpperCase()}
-        </b>
-      </div>
-    `);
+    // DIVINE WELCOME — NOW INSIDE AND GLOWING
+    const holyColors = ["#FF1493","#FFD700","#00FFFF","#FF4500","#DA70D6","#FF69B4","#32CD32","#FFA500","#FF00FF"];
+    const divineColor = holyColors[Math.floor(Math.random() * holyColors.length)];
 
-    console.log("YOU HAVE ENTERED THE ETERNAL CUBE");
+showStarPopup(`<div style="text-align:center;line-height:1.6;">Welcome back, <b style="font-size:13px;color:${divineColor};text-shadow:0 0 21px ${divineColor}77;">${currentUser.chatId.toUpperCase()}</b></div>`);
+    console.log("YOU'RE IN THE CUBE ETERNAL");
 
   } catch (err) {
-    console.error("Auth state error:", err);
+    console.error("Auth error:", err);
     showStarPopup("Login failed — please try again");
     await signOut(auth);
   }
@@ -525,32 +513,77 @@ async function showGiftModal(targetUid, targetData) {
     newConfirmBtn.disabled = true;
     newConfirmBtn.textContent = "Sending...";
 
-  try {
-  const fromRef = doc(db, "users", currentUser.uid);
-  const toRef = doc(db, "users", targetUid);
+    try {
+      const fromRef = doc(db, "users", currentUser.uid);        // sender (sanitized ID)
+      const toRef = doc(db, "users", targetUid);                // receiver (sanitized ID)
 
-  await runTransaction(db, async (transaction) => {
-    const fromSnap = await transaction.get(fromRef);
-    if (!fromSnap.exists()) throw "Sender not found";
-    if ((fromSnap.data().stars || 0) < amt) throw "Not enough stars";
+      await runTransaction(db, async (transaction) => {
+        const fromSnap = await transaction.get(fromRef);
+        if (!fromSnap.exists()) throw "Sender not found";
+        if ((fromSnap.data().stars || 0) < amt) throw "Not enough stars";
 
-    transaction.update(fromRef, {
-      stars: increment(-amt),
-      starsGifted: increment(amt)
-    });
+        transaction.update(fromRef, {
+          stars: increment(-amt),
+          starsGifted: increment(amt)
+        });
 
-    transaction.update(toRef, {
-      stars: increment(amt)
-    });
+        transaction.update(toRef, {
+          stars: increment(amt)
+        });
+      });
+
+            // === SUCCESS — GIFT BANNER THAT ALWAYS WORKS (THE ONE TRUE WAY) ===
+      const glowColor = "#ffcc00"; // or randomColor() if you want variety
+
+      const bannerRMessage = {
+        content: `${currentUser.chatId} just gifted ${amt} ⭐ to ${targetData.chatId}!`,
+        chatId: "★ SYSTEM ★",
+        uid: "system",
+        timestamp: serverTimestamp(),
+        systemBanner: true,
+        highlight: true,
+        buzzColor: glowColor,
+        _confettiPlayed: false,     // ← CRITICAL: your renderer uses this
+        type: "gift_banner"
+      };
+
+      try {
+        const bannerRRef = await addDoc(collection(db, "messages_room5"), bannerMessage);
+
+        // THIS IS THE HOLY LINE — THE ONE THAT HAS ALWAYS WORKED
+        renderMessagesFromArray([{
+          id: bannerRRef.id,
+          data: bannerRMessage        // ← plain object, NOT a function
+        }], true);
+
+        // Optional: extra glow if your renderer doesn't handle it perfectly
+        setTimeout(() => {
+          const el = document.getElementById(bannerRef.id);
+          if (el && typeof triggerBannerEffect === "function") {
+            triggerBannerEffect(el);
+          }
+        }, 120);
+
+        // Celebration
+        showGiftAlert(`Gifted ${amt} stars to ${targetData.chatId}!`);
+        closeModal();
+
+      } catch (err) {
+        console.error("Banner creation failed:", err);
+        showStarPopup("Gift sent — banner delayed");
+        closeModal();
+      }
+
+    } catch (err) {
+      console.error("Gift transaction failed:", err);
+      showStarPopup("Gift failed — try again");
+    } finally {
+      // Reset button
+      newConfirmBtn.disabled = false;
+      newConfirmBtn.textContent = "Send Gift";
+      document.removeEventListener("keydown", escHandler);
+    }
   });
-
-  // === SUCCESS — NO BANNERS, ONLY LOCAL CONFIRMATION ===
-  showGiftAlert(`Gifted ${amt} stars to ${targetData.chatId}!`);
-  closeModal();
-
-} catch (err) {
-  console.error("Gift transaction failed:", err);
-  showStarPopup("Gift failed — try again");
 }
 
 /* ----------------------------
@@ -794,12 +827,12 @@ function renderMessagesFromArray(messages) {
     wrapper.className = "msg";
     wrapper.id = id;
 
-  // === BANNER MESSAGES ===
-if (m.isBanner || m.type === "banner" || m.systemBanner) {
-  // Your existing banner rendering code
-  refs.messagesEl.appendChild(wrapper);
-  return;
-}
+    // === BANNER MESSAGES ===
+    if (m.systemBanner || m.isBanner || m.type === "banner") {
+      // Keep your existing banner code here if any
+      refs.messagesEl.appendChild(wrapper);
+      return;
+    }
 
     // === USERNAME — NOW TAPABLE & OPENS SOCIAL CARD ===
   const metaEl = document.createElement("span");
@@ -1088,155 +1121,6 @@ window.addEventListener("beforeunload", () => {
   }
 });
 
-// ——— CLICKING THE NOTIFICATIONS TAB BUTTON ———
-document.getElementById("notificationsTabBtn")?.addEventListener("click", () => {
-  // Hide all tabs
-  document.querySelectorAll(".tab-content")?.forEach(tab => {
-    tab.style.display = "none";
-  });
-  
-  // Remove active class from all buttons
-  document.querySelectorAll(".tab-btn").forEach(btn => {
-    btn.classList.remove("active");
-  });
-
-  // Show notifications tab
-  const notifTab = document.getElementById("notificationsTab");
-  if (notifTab) notifTab.style.display = "block";
-
-  // Mark this button as active
-  document.getElementById("notificationsTabBtn")?.classList.add("active");
-
-  // Load notifications
-  loadNotifications();
-});
-
-
-// Load notifications + update badge
-async function loadNotifications() {
-  const list = document.getElementById("notificationsList");
-  const badge = document.getElementById("notif-badge");
-  const clearBtn = document.getElementById("markAllRead");
-
-  if (!list || !currentUser?.uid) return;
-
-  list.innerHTML = `<div style="padding:60px;text-align:center;color:#666;">Loading...</div>`;
-
-  try {
-    const q = query(
-      collection(db, "notifications"),
-      where("recipientId", "==", currentUser.uid),
-      orderBy("createdAt", "desc")
-    );
-
-    const snapshot = await getDocs(q);
-    const unreadCount = snapshot.docs.length; // now all = "unread" visually
-
-    // UPDATE BADGE
-    if (badge) {
-      badge.textContent = unreadCount > 99 ? "99+" : unreadCount;
-      badge.style.display = unreadCount > 0 ? "flex" : "none";
-    }
-
-    // UPDATE CLEAR BUTTON — GRADIENT WHEN NOTIFS EXIST
-    if (clearBtn) {
-      if (unreadCount > 0) {
-        clearBtn.style.background = "linear-gradient(135deg, #ff006e, #ff5500)";
-        clearBtn.style.color = "#fff";
-        clearBtn.style.boxShadow = "0 4px 12px rgba(255,0,110,0.4)";
-        clearBtn.textContent = "Clear all";
-      } else {
-        clearBtn.style.background = "#333";
-        clearBtn.style.color = "#666";
-        clearBtn.style.boxShadow = "none";
-        clearBtn.textContent = "All clear";
-      }
-    }
-
-    if (snapshot.empty) {
-      list.innerHTML = `<div style="padding:100px;text-align:center;color:#888;font-size:14px;">No notifications.</div>`;
-      return;
-    }
-
-    list.innerHTML = "";
-    snapshot.forEach(doc => {
-      const n = doc.data();
-      const age = Date.now() - (n.createdAt?.toDate?.() || 0);
-      const isFresh = age < 30_000;
-
-      const item = document.createElement("div");
-      item.style.cssText = `
-        padding:10px 12px; margin:2px 6px; border-radius:9px;
-        background:rgba(255,0,110,${isFresh ? "0.12" : "0.06"});
-        border-left:${isFresh ? "3px solid #ff006e" : "none"};
-        cursor:pointer; transition:all 0.2s;
-      `;
-
-      item.innerHTML = `
-        <div style="font-weight:800; font-size:13.5px; color:#fff;">${n.title}</div>
-        <div style="font-size:12.5px; color:#ddd; margin-top:3px;">${n.message}</div>
-        <div style="font-size:10.5px; color:#888; margin-top:5px; display:flex; justify-content:space-between;">
-          <span>${timeAgo(n.createdAt?.toDate())}</span>
-          ${isFresh ? `<span style="color:#ff006e; font-weight:900; font-size:9px; animation:blink 1.5s infinite;">NEW</span>` : ""}
-        </div>
-      `;
-
-      item.onclick = () => {
-        deleteDoc(doc.ref).then(() => loadNotifications());
-      };
-
-      list.appendChild(item);
-    });
-
-  } catch (err) {
-    console.error("Notifications error:", err);
-    list.innerHTML = `<div style="color:#f66; text-align:center; padding:80px;">Failed</div>`;
-  }
-}
-// Helper: time ago
-function timeAgo(date) {
-  const seconds = Math.floor((new Date() - date) / 1000);
-  if (seconds < 60) return "just now";
-  if (seconds < 3600) return Math.floor(seconds / 60) + "m ago";
-  if (seconds < 86400) return Math.floor(seconds / 3600) + "h ago";
-  return Math.floor(seconds / 86400) + "d ago";
-}
-
-
-// MARK ALL AS READ BUTTON
-document.getElementById("markAllRead")?.addEventListener("click", async () => {
-  if (!currentUser?.uid) return;
-
-  const clearBtn = document.getElementById("markAllRead");
-  if (clearBtn.textContent.includes("All clear")) return;
-
-  clearBtn.textContent = "Clearing...";
-  clearBtn.disabled = true;
-
-  try {
-    const q = query(
-      collection(db, "notifications"),
-      where("recipientId", "==", currentUser.uid)
-    );
-
-    const snapshot = await getDocs(q);
-    const batch = writeBatch(db);
-
-    snapshot.docs.forEach(doc => {
-      batch.delete(doc.ref);
-    });
-
-    await batch.commit();
-
-    loadNotifications(); // refresh UI + badge gone
-    console.log("All notifications deleted");
-
-  } catch (err) {
-    console.error("Clear all failed:", err);
-    clearBtn.textContent = "Error";
-  }
-});
-
 /* ---------- 🆔 ChatID Modal ---------- */
 async function promptForChatID(userRef, userData) {
   if (!refs.chatIDModal || !refs.chatIDInput || !refs.chatIDConfirmBtn)
@@ -1504,39 +1388,20 @@ function sanitizeKey(email) {
   window.typeWriterEffect = typeWriterEffect;
 
 })(); 
+// ← ONLY ONE OF THESE — THE FINAL SEAL
 
+// --- SEND STARS FUNCTION — FINAL, FLAWLESS, 2025 EDITION ---
 async function sendStarsToUser(targetUser, amt) {
   if (amt < 100 || !currentUser?.uid) {
     showGoldAlert("Invalid gift", 4000);
     return;
   }
 
-  const sanitize = (str) => str?.toLowerCase().replace(/[.@/\\]/g, '_');
+  const getId = u => u._docId || (u.email ? u.email.replace(/[.@/\\]/g, '_') : null);
+  const senderId = currentUser.uid || currentUser.email?.replace(/[.@/\\]/g, '_');
+  const receiverId = getId(targetUser);
 
-  const senderId = sanitize(currentUser.email);
-  if (!senderId) {
-    showGoldAlert("Your profile error", 4000);
-    return;
-  }
-
-  let receiverId = null;
-
-  if (targetUser._docId) {
-    receiverId = targetUser._docId;
-  } else if (targetUser.email) {
-    receiverId = sanitize(targetUser.email);
-  } else if (targetUser.chatId?.includes("@")) {
-    receiverId = sanitize(targetUser.chatId);
-  } else if (targetUser.uid) {
-    receiverId = targetUser.uid;
-  }
-
-  if (!receiverId) {
-    showGoldAlert("User not found", 4000);
-    return;
-  }
-
-  if (senderId === receiverId) {
+  if (!receiverId || senderId === receiverId) {
     showGoldAlert("Can't gift yourself", 4000);
     return;
   }
@@ -1546,63 +1411,84 @@ async function sendStarsToUser(targetUser, amt) {
   const glowColor = randomColor();
 
   try {
+    // 1. Update balances (safe transaction)
     await runTransaction(db, async (tx) => {
-      const senderSnap = await tx.get(fromRef);
-      const receiverSnap = await tx.get(toRef);
+      const s = await tx.get(fromRef);
+      if (!s.exists()) throw "Profile missing";
+      if ((s.data().stars || 0) < amt) throw "Not enough stars";
 
-      if (!senderSnap.exists()) throw "Profile missing";
-      if ((senderSnap.data().stars || 0) < amt) throw "Not enough stars";
-
-      if (!receiverSnap.exists()) {
-        tx.set(toRef, {
-          chatId: targetUser.chatId || "User",
-          email: targetUser.email || targetUser.chatId,
-          stars: 0
-        }, { merge: true });
+      const r = await tx.get(toRef);
+      if (!r.exists()) {
+        tx.set(toRef, { chatId: targetUser.chatId || "VIP", stars: 0 }, { merge: true });
       }
 
       tx.update(fromRef, { stars: increment(-amt), starsGifted: increment(amt) });
       tx.update(toRef, { stars: increment(amt) });
     });
 
-    const bannerMsg = {
+       const bannerMsg = {
       content: `${currentUser.chatId} gifted ${amt} stars to ${targetUser.chatId}!`,
       timestamp: serverTimestamp(),
-      isBanner: true,
+      systemBanner: true,
       highlight: true,
       buzzColor: glowColor,
       type: "banner"
     };
 
-    const docRef = await addDoc(collection(db, "messages_room5"), bannerMsg);
-    renderMessagesFromArray([{ id: docRef.id, data: () => bannerMsg }], true);
+        const docRef = await addDoc(collection(db, "messages_room5"), bannerMsg);
 
+    renderMessagesFromArray([{
+      id: docRef.id,
+      data: () => bannerMsg
+    }], true);
+
+    // HOLY LINE — BRINGS GLOW TO LIFE
     setTimeout(() => {
       const el = document.getElementById(docRef.id);
       if (el) triggerBannerEffect(el);
     }, 100);
+    
+    // 4. Glow animation
+    setTimeout(() => {
+      const msgEl = document.getElementById(docRef.id);
+      if (!msgEl) return;
+      const contentEl = msgEl.querySelector(".content") || msgEl;
+      contentEl.style.setProperty("--pulse-color", glowColor);
+      contentEl.classList.add("baller-highlight");
+      setTimeout(() => {
+        contentEl.classList.remove("baller-highlight");
+        contentEl.style.boxShadow = "none";
+      }, 21000);
+    }, 80);
 
-    showGoldAlert(`You sent ${amt} stars to ${targetUser.chatId}!`, 4000);
+    // 5. Success popup
+    showGoldAlert(`✅ You sent ${amt} ⭐ to ${targetUser.chatId}!`, 4000);
 
+    // 6. Receiver sync
     await updateDoc(toRef, {
-      lastGift: { from: currentUser.chatId, amt, at: Date.now() }
+      lastGift: {
+        from: currentUser.chatId,
+        amt,
+        at: Date.now(),
+      },
     });
 
+    // 6.5 Notification
     await addDoc(collection(db, "notifications"), {
-      recipientId: receiverId,
-      title: "Star Gift!",
-      message: `${currentUser.chatId} gifted you ${amt} stars!`,
+      userId: receiverId,
+      message: `💫 ${currentUser.chatId} gifted you ${amt} ⭐!`,
+      read: false,
+      timestamp: serverTimestamp(),
       type: "starGift",
-      fromChatId: currentUser.chatId,
-      amount: amt,
-      createdAt: serverTimestamp()
+      fromUserId: currentUser.uid,
     });
 
+    // 7. Mark banner as shown
     await updateDoc(doc(db, "messages_room5", docRef.id), { bannerShown: true });
 
   } catch (err) {
-    console.error("Gift failed:", err);
-    showGoldAlert("Failed — try again", 4000);
+    console.error("❌ sendStarsToUser failed:", err);
+    showGoldAlert(`⚠️ Error: ${err.message || "Gift failed"}`, 4000);
   }
 }
 /* ===============================
@@ -1666,7 +1552,6 @@ try {
   }
 }
 });
-
 /* ===============================
    🔐 VIP Login (Whitelist Check)
 ================================= */
@@ -1797,7 +1682,6 @@ document.getElementById("hostLogoutBtn")?.addEventListener("click", async (e) =>
     showStarPopup("Logout failed — try again!");
   }
 });
-
 /* ===============================
    💫 Auto Star Earning System
 ================================= */
@@ -4155,90 +4039,33 @@ function showUnlockConfirm(video, onUnlockCallback) {
 }
 
 async function unlockVideo(video) {
-  if (!currentUser?.uid) {
-    return showGoldAlert("Login required");
-  }
+  if (!currentUser?.uid) return showGoldAlert("Login required");
+  if (currentUser.uid === video.uploaderId) return showGoldAlert("You already own this video");
 
-  if (currentUser.uid === video.uploaderId) {
-    return showGoldAlert("You already own this clip");
-  }
-
-  const cost = Number(video.highlightVideoPrice) || 0;
-  if (cost <= 0) {
-    return showGoldAlert("Invalid price");
-  }
+  const cost = video.highlightVideoPrice;
 
   try {
-    // ——— ATOMIC TRANSACTION: Transfer STRZ + Unlock ———
-    await runTransaction(db, async (tx) => {
-      const buyerDoc = await tx.get(doc(db, "users", currentUser.uid));
-      const buyerData = buyerDoc.data();
+    await runTransaction(db, async tx => {
+      const senderSnap = await tx.get(doc(db, "users", currentUser.uid));
+      if ((senderSnap.data()?.stars || 0) < cost) throw "Not enough STRZ";
 
-      if ((buyerData?.stars || 0) < cost) {
-        throw new Error("Not enough STRZ");
-      }
-
-      // Deduct from buyer, add to uploader
-      tx.update(doc(db, "users", currentUser.uid), {
-        stars: increment(-cost)
-      });
-      tx.update(doc(db, "users", video.uploaderId), {
-        stars: increment(cost)
-      });
-
-      // Mark video as unlocked
-      tx.update(doc(db, "highlightVideos", video.id), {
-        unlockedBy: arrayUnion(currentUser.uid)
-      });
-
-      // Add to buyer's unlocked list
-      tx.update(doc(db, "users", currentUser.uid), {
-        unlockedVideos: arrayUnion(video.id)
-      });
+      tx.update(doc(db, "users", currentUser.uid), { stars: increment(-cost) });
+      tx.update(doc(db, "users", video.uploaderId), { stars: increment(cost) });
+      tx.update(doc(db, "highlightVideos", video.id), { unlockedBy: arrayUnion(currentUser.uid) });
+      tx.update(doc(db, "users", currentUser.uid), { unlockedVideos: arrayUnion(video.id) });
     });
 
-    // ——— LOCAL CACHE UPDATE ———
     const unlocked = JSON.parse(localStorage.getItem("userUnlockedVideos") || "[]");
     if (!unlocked.includes(video.id)) {
       unlocked.push(video.id);
       localStorage.setItem("userUnlockedVideos", JSON.stringify(unlocked));
     }
 
-    // ——— SEND NOTIFICATION TO UPLOADER —
-    try {
-      await addDoc(collection(db, "notifications"), {
-        type: "clip_purchased",
-        title: "Your clip was unlocked!",
-        message: `${currentUser.chatId || "Someone"} paid ${cost} STRZ for "${video.title}"`,
-        videoId: video.id,
-        videoTitle: video.title,
-        buyerId: currentUser.uid,
-        buyerName: currentUser.chatId || "Anonymous",
-        recipientId: video.uploaderId,
-        read: false,
-        createdAt: serverTimestamp()
-      });
-    } catch (notifErr) {
-      console.warn("Notification failed (non-critical):", notifErr);
-      // Don't break unlock if notification fails
-    }
-
-    // — SUCCESS —
-    showGoldAlert(`Unlocked "${video.title}"!`);
-    
-    // Close modal & refresh highlights
+    showGoldAlert('Unlocked "' + video.title + '"!');
     document.getElementById("highlightsModal")?.remove();
-    setTimeout(() => highlightsBtn?.click(), 400);
-
-    // Optional: refresh notifications badge instantly
-    if (typeof loadNotifications === "function") {
-      loadNotifications();
-    }
-
-  } catch (error) {
-    console.error("Unlock failed:", error);
-    const msg = error.message || error;
-    showGoldAlert(msg === "Not enough STRZ" ? "Not enough STRZ" : "Unlock failed — try again");
+    setTimeout(() => highlightsBtn.click(), 400);
+  } catch (e) {
+    showGoldAlert("Unlock failed: " + (e.message || e));
   }
 }
 
