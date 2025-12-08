@@ -1,102 +1,129 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>STRZ Admin Panel</title>
-<style>
-  body { 
-    font-family: 'Segoe UI', sans-serif; 
-    background: #0a0a0a; 
-    color: #eee; 
-    margin: 0; 
-    padding: 0;
-    background: linear-gradient(135deg, #0f0f1f, #1a0033);
-  }
-  .hidden { display: none; }
-  .container { max-width: 1600px; margin: 0 auto; padding: 20px; }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>STRZ Admin Panel</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: linear-gradient(135deg, #0a0a0a, #1a0033);
+      color: #eee;
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+    }
+    .hidden { display: none; }
+    .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
 
-  h1, h2, h3 { 
-    background: linear-gradient(90deg, #ff006e, #ff8c00);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    font-weight: 800;
-  }
-  h1 { font-size: 3rem; text-align: center; margin: 50px 0 20px; }
-  h2 { font-size: 2rem; margin: 40px 0 20px; text-align: center; }
+    h1, h2, h3 {
+      background: linear-gradient(90deg, #ff006e, #ff8c00);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      font-weight: 800;
+    }
+    h1 { font-size: 2.8rem; text-align: center; margin: 60px 0 30px; }
 
-  .tabs {
-    display: flex; justify-content: center; gap: 16px; margin: 30px 0; flex-wrap: wrap;
-  }
-  .tab-btn {
-    padding: 14px 32px; border-radius: 50px; background: #1a1a1a; color: #ccc;
-    border: 2px solid #333; cursor: pointer; font-weight: 600; transition: all 0.3s;
-  }
-  .tab-btn.active {
-    background: linear-gradient(90deg, #ff006e, #ff4500);
-    color: #fff; border-color: #ff006e; box-shadow: 0 0 30px rgba(255,0,110,0.6);
-  }
+    /* Tabs */
+    .tabs {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      margin-bottom: 40px;
+      flex-wrap: wrap;
+    }
+    .tab-btn {
+      padding: 14px 32px;
+      border-radius: 50px;
+      background: #1a1a1a;
+      color: #ccc;
+      border: 2px solid #333;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.3s;
+    }
+    .tab-btn.active {
+      background: linear-gradient(90deg, #ff006e, #ff4500);
+      color: #fff;
+      border-color: #ff006e;
+      box-shadow: 0 0 30px rgba(255,0,110,0.5);
+    }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
 
-  .card {
-    background: #111; border-radius: 20px; padding: 30px; margin-bottom: 40px;
-    border: 1px solid rgba(255,0,110,0.3); box-shadow: 0 15px 50px rgba(0,0,0,0.7);
-  }
+    /* Card */
+    .card {
+      background: #111;
+      border-radius: 20px;
+      padding: 30px;
+      margin-bottom: 40px;
+      border: 1px solid rgba(255,0,110,0.3);
+      box-shadow: 0 15px 50px rgba(0,0,0,0.7);
+    }
 
-  table {
-    width: 100%; border-collapse: collapse; background: #0a0a0a; border-radius: 16px; overflow: hidden;
-  }
-  th, td {
-    padding: 16px 12px; text-align: center; border-bottom: 1px solid #333;
-  }
-  th {
-    background: rgba(255,0,110,0.15); color: #ff8c00; font-weight: 700; text-transform: uppercase; font-size: 0.9rem;
-  }
-  tr:hover { background: rgba(255,0,110,0.08); }
+    /* Table */
+    table { width: 100%; border-collapse: collapse; background: #0a0a0a; border-radius: 16px; overflow: hidden; }
+    th, td { padding: 16px 14px; text-align: center; border-bottom: 1px solid #333; vertical-align: middle; }
+    th { background: rgba(255,0,110,0.15); color: #ff8c00; font-weight: 700; text-transform: uppercase; font-size: 0.9rem; letter-spacing: 0.5px; }
+    tr:hover { background: rgba(255,0,110,0.08); }
 
-  input[type=text], input[type=number], input[type=email] {
-    background: #1a1a1a; color: #fff; border: 1px solid #444; padding: 12px; border-radius: 10px; width: 100%;
-  }
-  input:focus { outline: none; border-color: #ff006e; box-shadow: 0 0 0 3px rgba(255,0,110,0.3); }
+    input[type=text], input[type=number], input[type=email] {
+      background: #1a1a1a;
+      color: #fff;
+      border: 1px solid #444;
+      padding: 12px;
+      border-radius: 10px;
+      width: 100%;
+      font-size: 14px;
+    }
+    input:focus { outline: none; border-color: #ff006e; box-shadow: 0 0 0 3px rgba(255,0,110,0.2); }
 
-  button {
-    padding: 12px 24px; border: none; border-radius: 50px; cursor: pointer;
-    font-weight: 700; transition: all 0.3s; box-shadow: 0 6px 20px rgba(0,0,0,0.4);
-  }
-  .btn-primary { background: linear-gradient(90deg,#ff006e,#ff4500); color:#fff; }
-  .btn-danger { background: #c42c2c; color:#fff; }
-  button:hover { transform: translateY(-3px); box-shadow: 0 10px 30px rgba(255,0,110,0.5); }
+    button {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 50px;
+      cursor: pointer;
+      font-weight: 700;
+      transition: all 0.3s;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+    }
+    .btn-primary { background: linear-gradient(90deg,#ff006e,#ff4500); color:#fff; }
+    .btn-danger { background: #c42c2c; color:#fff; }
+    button:hover { transform: translateY(-3px); box-shadow: 0 10px 30px rgba(255,0,110,0.5); }
 
-  .header-actions {
-    display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; margin-bottom: 24px;
-  }
-  .actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+    .header-actions {
+      display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; margin-bottom: 24px;
+    }
+    .actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
 
-  #loaderOverlay {
-    position: fixed; inset: 0; background: rgba(0,0,0,0.98); display: none;
-    align-items: center; justify-content: center; flex-direction: column; z-index: 999999; color: #ff006e; font-size: 2rem;
-  }
+    #loaderOverlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.98); display: none;
+      align-items: center; justify-content: center; flex-direction: column; z-index: 999999; color: #ff006e; font-size: 2rem;
+    }
 </style>
 </head>
 <body>
 
 <div id="loaderOverlay">
-  <div>Processing Empire...</div>
+  <div>Processing...</div>
   <div id="loaderText" style="font-size:1.2rem;margin-top:20px;"></div>
 </div>
 
+<!-- LOGIN -->
 <section id="adminGate" class="container" style="text-align:center;padding-top:15vh;">
-  <h1>STRZ ADMIN</h1>
-  <p style="color:#888;font-size:1.2rem;margin-bottom:40px;">Enter the control room</p>
+  <h1>STRZ Admin</h1>
+  <p style="color:#888;font-size:1.2rem;margin-bottom:40px;">Enter to control the empire</p>
   <div style="max-width:420px;margin:0 auto;">
-    <input type="email" id="adminEmail" placeholder="admin@strz.com" style="width:100%;padding:18px;margin-bottom:20px;border-radius:50px;font-size:18px;">
-    <button id="adminCheckBtn" class="btn-primary" style="width:100%;padding:18px;font-size:20px;">ENTER</button>
+    <input type="email" id="adminEmail" placeholder="admin@domain.com" style="width:100%;margin-bottom:20px;padding:18px;border-radius:50px;font-size:18px;">
+    <button id="adminCheckBtn" class="btn-primary" style="width:100%;padding:18px;font-size:20px;">Enter</button>
     <div id="adminGateMsg" style="margin-top:20px;color:#ff6b6b;font-size:1.1rem;"></div>
   </div>
 </section>
 
+<!-- PANEL -->
 <section id="adminPanel" class="hidden container">
   <h1>ADMIN CONTROL CENTER</h1>
-  <p style="text-align:center;font-size:1.3rem;">Welcome, <strong id="currentAdminEmail" style="color:#00ff9d;"></strong> 
+  <p style="text-align:center;font-size:1.3rem;margin-bottom:40px;">Logged as <strong id="currentAdminEmail" style="color:#00ff9d;"></strong> 
     <button id="logoutBtn" class="btn-danger" style="margin-left:20px;">Logout</button>
   </p>
 
@@ -111,8 +138,13 @@
   <div id="usersTab" class="tab-content active">
     <div class="card">
       <div class="header-actions">
-        <input type="text" id="userSearch" placeholder="Search users...">
+        <h3>Users Management</h3>
         <div class="actions">
+          <input type="text" id="userSearch" placeholder="Search users...">
+          <button id="selectAllUsers">Select All</button>
+          <button id="massRemoveUsersBtn" class="btn-danger">Remove Selected</button>
+          <button id="copyToFeaturedBtn" class="btn-primary">Copy to Featured</button>
+          <button id="moveToWhitelistBtn" class="btn-primary">Move to Whitelist</button>
           <button id="exportCurrentCsv" class="btn-primary">Export CSV</button>
         </div>
       </div>
@@ -135,10 +167,15 @@
   <div id="whitelistTab" class="tab-content">
     <div class="card">
       <div class="header-actions">
-        <div style="display:flex;gap:12px;flex-wrap:wrap;">
+        <h3>Whitelist Management</h3>
+        <div class="actions">
           <input type="email" id="wlEmail" placeholder="Email">
           <input type="text" id="wlPhone" placeholder="Phone">
-          <button id="addWhitelistBtn" class="btn-primary">Add to Whitelist</button>
+          <button id="addWhitelistBtn" class="btn-primary">Add</button>
+          <input type="file" id="wlCsvUpload">
+          <label><input type="checkbox" id="cleanUpLady"> Clean old</label>
+          <button id="selectAllWhitelist">Select All</button>
+          <button id="massRemoveWhitelistBtn" class="btn-danger">Remove Selected</button>
         </div>
       </div>
       <table id="whitelistTable">
@@ -148,9 +185,37 @@
     </div>
   </div>
 
-  <!-- FEATURED & WITHDRAWALS — same as before -->
-  <div id="featuredTab" class="tab-content">...</div>
-  <div id="withdrawalsTab" class="tab-content">...</div>
+  <!-- FEATURED -->
+  <div id="featuredTab" class="tab-content">
+    <div class="card">
+      <div class="header-actions">
+        <h3>Featured Hosts</h3>
+        <div class="actions">
+          <button id="selectAllFeatured">Select All</button>
+          <button id="massRemoveFeaturedBtn" class="btn-danger">Remove Selected</button>
+          <button id="exportFeaturedCsv" class="btn-primary">Export CSV</button>
+        </div>
+      </div>
+      <table id="featuredTable">
+        <thead><tr><th><input type="checkbox" id="selectAllFeatured"></th><th>Email</th><th>Phone</th><th>Popup</th><th>Video</th><th>Added</th><th>Actions</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- WITHDRAWALS -->
+  <div id="withdrawalsTab" class="tab-content">
+    <div class="card">
+      <div class="header-actions">
+        <h3>Withdrawal Requests</h3>
+        <button id="exportWithdrawalsCsv" class="btn-primary">Export CSV</button>
+      </div>
+      <table id="withdrawalsTable">
+        <thead><tr><th>Date</th><th>Username</th><th>User ID</th><th>Amount</th><th>Bank</th><th>Account</th><th>Status</th><th>Action</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
 </section>
 
 <script type="module" src="00x00.js"></script>
