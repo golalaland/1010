@@ -1901,30 +1901,18 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
         </div>
       </div>
 
-   <div class="profile-actions">
-  <!-- Host button + badge -->
-  <div id="hostSettingsWrapper" style="position:relative; display:none; display:inline-block;">
-    <button id="hostSettingsBtn" class="smalla-btn">Settings</button>
-
-    <!-- TINY RED BADGE — WILL SHOW NOW -->
-    <div id="hostBadge" style="
-      display:none;
-      position:absolute;
-      top:-8px; right:-8px;
-      width:18px; height:18px;
-      background:#ff0033;
-      color:#fff;
-      border-radius:50%;
-      font-size:12px;
-      font-weight:900;
-      line-height:18px;
-      text-align:center;
-      border:2px solid #000;
-      box-shadow:0 0 10px rgba(255,0,0,0.8);
-      z-index:999;
-      pointer-events:none;
-    ">⁕</div>
-  </div>
+ <div class="profile-actions">
+        <!-- Host button takes Redeem's place -->
+        <div id="hostSettingsWrapper" style="text-align:center; margin-top:0; display:none; display:inline-block;">
+            <button id="hostSettingsBtn" class="smalla-btn">⚙️</button>
+        <!-- TINY RED ASTERISK BADGE -->
+  <span id="hostBadge" style="display:none;position:absolute;top:-6px;right:-6px;
+&nbsp;&nbsp;&nbsp;&nbsp;background:#ff0033;color:#fff;width:14px;height:14px;border-radius:50%;
+&nbsp;&nbsp;&nbsp;&nbsp;font-size:10px;font-weight:900;line-height:14px;text-align:center;
+&nbsp;&nbsp;&nbsp;&nbsp;border:2px solid #000;box-shadow:0 0 6px rgba(255,0,0,0.6);pointer-events:none;">
+    ⁕
+  </span>
+</div>
 
   <a id="tipBtn" class="smalla-btn" href="#" target="_blank" style="display:none;">🔘</a>
 </div>
