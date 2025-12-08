@@ -430,6 +430,7 @@ document.getElementById("markAllRead")?.addEventListener("click", async () => {
 });
 
 
+
 // HELPERS — ALL INCLUDED
 function showStarPopup(text) {
   const popup = document.getElementById("starPopup");
@@ -1283,6 +1284,42 @@ document.getElementById("markAllRead")?.addEventListener("click", async () => {
     clearBtn.textContent = "Error";
   }
 });
+
+// ========== HOST BADGE NOTIFICATION — SMALL & CUTE ==========
+const hostBtn = document.getElementById('hostSettingsBtn');
+const hostBadge = document.getElementById('hostBadge');
+const hostWrapper = document.getElementById('hostSettingsWrapper');
+
+// Check for host notifications (run once on load)
+async function checkHostNotifications() {
+  if (!currentUser?.isHost || !hostBadge) return;
+
+  try {
+    const q = query(
+      collection(db, "notifications"),
+      where("userId", "==", currentUser.uid),
+      where("type", "==", "host"),
+      where("read", "==", false),
+      limit(1)
+    );
+    const snap = await getDocs(q);
+    hostBadge.style.display = snap.empty ? "none" : "flex";
+  } catch (e) {
+    console.warn("Host badge check failed:", e);
+  }
+}
+
+// Click host button → hide badge (even if not cleared)
+hostBtn?.addEventListener('click', () => {
+  hostBadge.style.display = "none";
+  // Your existing host tab logic here
+});
+
+// Auto-check every 30 seconds
+setInterval(checkHostNotifications, 30000);
+
+// Initial check
+checkHostNotifications();
 
 /* ---------- 🆔 ChatID Modal ---------- */
 async function promptForChatID(userRef, userData) {
@@ -2581,6 +2618,7 @@ if (modal) {
     }
   };
 }
+
 
 /* ---------- UPDATE HOST COUNT ON BUTTON (OPTIONAL BUT CLEAN) ---------- */
 window.updateHostCount = () => {
