@@ -18,77 +18,90 @@
     button:disabled { opacity: 0.5; cursor: not-allowed; }
     #loaderOverlay { position: fixed; inset: 0; background: rgba(0,0,0,0.95); display: none; align-items: center; justify-content: center; z-index: 9999; }
     #loaderText { color: #0f9; font-size: 18px; }
+    #adminGate { text-align: center; margin-top: 50px; }
+    #adminGateMsg { color: #ff6b6b; }
   </style>
 </head>
 <body>
   <div id="loaderOverlay"><div id="loaderText">Working...</div></div>
-  <h1>Tap Master Admin Dashboard</h1>
-  <div class="tab-container">
-    <div class="tab active" data-tab="leaderboards">Leaderboards</div>
-    <div class="tab" data-tab="winners">Winners History</div>
-    <div class="tab" data-tab="rewards">Rewards Management</div>
-    <div class="tab" data-tab="configs">Game Configs</div>
-    <div class="tab" data-tab="withdrawals">Withdrawals</div>
+
+  <div id="adminGate">
+    <h2>Admin Login</h2>
+    <input id="adminEmail" type="email" placeholder="Admin Email">
+    <button id="adminCheckBtn">Login</button>
+    <p id="adminGateMsg"></p>
   </div>
 
-  <div id="leaderboards" class="section active">
-    <h2>Leaderboard Feeds</h2>
-    <select id="lb-type">
-      <option value="daily">Daily General</option>
-      <option value="weekly">Weekly General</option>
-      <option value="monthly">Monthly General</option>
-      <option value="bid">Bid Royale</option>
-    </select>
-    <input id="lb-limit" type="number" placeholder="Top N (e.g. 50)" value="50">
-    <select id="bid-round" style="display:none;"></select>
-    <button id="fetch-lb">Fetch Top Players</button>
-    <table id="lb-table">
-      <thead><tr><th>Rank</th><th>User</th><th>Taps</th><th>Email</th></tr></thead>
-      <tbody></tbody>
-    </table>
-    <button id="save-winners">Save Current as Today's Winners</button>
-  </div>
+  <div id="adminPanel" style="display: none;">
+    <h1>Tap Master Admin Dashboard</h1>
+    <button id="logoutBtn">Logout</button>
+    <div class="tab-container">
+      <div class="tab active" data-tab="leaderboards">Leaderboards</div>
+      <div class="tab" data-tab="winners">Winners History</div>
+      <div class="tab" data-tab="rewards">Rewards Management</div>
+      <div class="tab" data-tab="configs">Game Configs</div>
+      <div class="tab" data-tab="withdrawals">Withdrawals</div>
+    </div>
 
-  <div id="winners" class="section">
-    <h2>Winners History</h2>
-    <input id="winners-from" type="date" placeholder="From Date">
-    <input id="winners-to" type="date" placeholder="To Date">
-    <button id="fetch-winners">Fetch Winners</button>
-    <button id="export-csv">Export as CSV</button>
-    <button id="clear-winners">Clear All Winners</button>
-    <table id="winners-table">
-      <thead><tr><th>Date</th><th>Rank</th><th>User</th><th>Taps</th><th>Rewards</th></tr></thead>
-      <tbody></tbody>
-    </table>
-  </div>
+    <div id="leaderboards" class="section active">
+      <h2>Leaderboard Feeds</h2>
+      <select id="lb-type">
+        <option value="daily">Daily General</option>
+        <option value="weekly">Weekly General</option>
+        <option value="monthly">Monthly General</option>
+        <option value="bid">Bid Royale</option>
+      </select>
+      <input id="lb-limit" type="number" placeholder="Top N (e.g. 50)" value="50">
+      <select id="bid-round" style="display:none;"></select>
+      <button id="fetch-lb">Fetch Top Players</button>
+      <table id="lb-table">
+        <thead><tr><th>Rank</th><th>User</th><th>Taps</th><th>Email</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <button id="save-winners">Save Current as Today's Winners</button>
+    </div>
 
-  <div id="rewards" class="section">
-    <h2>Rewards Management</h2>
-    <p>Set batch rewards (e.g., top 1-10: cash 5000, stars 0)</p>
-    <div id="reward-rules"></div>
-    <button id="add-rule">Add Reward Rule</button>
-    <select id="reward-winners-date"></select>
-    <button id="apply-rewards">Apply & Mass Send Rewards</button>
-    <button id="send-notifs">Send Custom Notifications</button>
-    <textarea id="notif-message" placeholder="Custom notification message"></textarea>
-  </div>
+    <div id="winners" class="section">
+      <h2>Winners History</h2>
+      <input id="winners-from" type="date" placeholder="From Date">
+      <input id="winners-to" type="date" placeholder="To Date">
+      <button id="fetch-winners">Fetch Winners</button>
+      <button id="export-csv">Export as CSV</button>
+      <button id="clear-winners">Clear All Winners</button>
+      <table id="winners-table">
+        <thead><tr><th>Date</th><th>Rank</th><th>User</th><th>Taps</th><th>Rewards</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
 
-  <div id="configs" class="section">
-    <h2>Game Configurations</h2>
-    <input id="bid-cost" type="number" placeholder="Bid Cost (Stars)">
-    <input id="pool-increase" type="number" placeholder="Pool Increase per Player">
-    <input id="base-pool" type="number" placeholder="Base Prize Pool">
-    <input id="max-pool" type="number" placeholder="Max Prize Pool (0 for unlimited)">
-    <button id="save-configs">Save Configs</button>
-  </div>
+    <div id="rewards" class="section">
+      <h2>Rewards Management</h2>
+      <p>Set batch rewards (e.g., top 1-10: cash 5000, stars 0)</p>
+      <div id="reward-rules"></div>
+      <button id="add-rule">Add Reward Rule</button>
+      <select id="reward-winners-date"></select>
+      <button id="apply-rewards">Apply & Mass Send Rewards</button>
+      <button id="send-notifs">Send Custom Notifications</button>
+      <textarea id="notif-message" placeholder="Custom notification message"></textarea>
+    </div>
 
-  <div id="withdrawals" class="section">
-    <h2>Withdrawals Management</h2>
-    <table id="withdrawals-table">
-      <thead><tr><th>Date</th><th>Username</th><th>UID</th><th>Amount</th><th>Bank</th><th>Account</th><th>Status</th><th>Action</th></tr></thead>
-      <tbody></tbody>
-    </table>
-    <button id="export-withdrawals-csv">Export Withdrawals CSV</button>
+    <div id="configs" class="section">
+      <h2>Game Configurations</h2>
+      <input id="bid-cost" type="number" placeholder="Bid Cost (Stars)">
+      <input id="pool-increase" type="number" placeholder="Pool Increase per Player">
+      <input id="base-pool" type="number" placeholder="Base Prize Pool">
+      <input id="max-pool" type="number" placeholder="Max Prize Pool (0 for unlimited)">
+      <button id="save-configs">Save Configs</button>
+    </div>
+
+    <div id="withdrawals" class="section">
+      <h2>Withdrawals Management</h2>
+      <table id="withdrawals-table">
+        <thead><tr><th>Date</th><th>Username</th><th>UID</th><th>Amount</th><th>Bank</th><th>Account</th><th>Status</th><th>Action</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <button id="export-withdrawals-csv">Export Withdrawals CSV</button>
+    </div>
   </div>
 
   <script type="module">
@@ -109,8 +122,18 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
+    const adminGate = document.getElementById("adminGate");
+    const adminPanel = document.getElementById("adminPanel");
+    const adminEmailInput = document.getElementById("adminEmail");
+    const adminCheckBtn = document.getElementById("adminCheckBtn");
+    const adminGateMsg = document.getElementById("adminGateMsg");
+    const logoutBtn = document.getElementById("logoutBtn");
     const loaderOverlay = document.getElementById("loaderOverlay");
     const loaderText = document.getElementById("loaderText");
+
+    let currentAdmin = null;
+    let currentLbData = [];
+    let currentWinnersData = [];
 
     function showLoader(text = "Working...") {
       loaderText.textContent = text;
@@ -146,27 +169,36 @@
       a.click();
     }
 
-    let currentLbData = [];
-    let currentWinnersData = [];
+    adminCheckBtn.addEventListener("click", async () => {
+      const email = adminEmailInput.value.trim().toLowerCase();
+      if (!email) return adminGateMsg.textContent = "Enter email";
+      showLoader("Checking...");
+      const q = query(collection(db, "users"), where("email", "==", email));
+      const snap = await getDocs(q);
+      hideLoader();
+      if (snap.empty) return adminGateMsg.textContent = "Not found";
+      const data = snap.docs[0].data();
+      if (!data.isAdmin) return adminGateMsg.textContent = "Not admin";
+      currentAdmin = { id: snap.docs[0].id, email };
+      adminGate.style.display = "none";
+      adminPanel.style.display = "block";
+      initTabs();
+      loadBidRounds();
+      loadWinnerDates();
+      loadConfigs();
+      initRewardRules();
+      loadWithdrawals();
+    });
 
-    initTabs();
-    loadBidRounds();
-    loadWinnerDates();
-    loadConfigs();
-    initRewardRules();
-    loadWithdrawals();
+    logoutBtn.addEventListener("click", () => {
+      currentAdmin = null;
+      adminPanel.style.display = "none";
+      adminGate.style.display = "block";
+      adminEmailInput.value = "";
+      adminGateMsg.textContent = "";
+    });
 
-    function initTabs() {
-      document.querySelectorAll('.tab').forEach(tab => {
-        tab.addEventListener('click', () => {
-          document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-          tab.classList.add('active');
-          document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-          document.getElementById(tab.dataset.tab).classList.add('active');
-        });
-      });
-    }
-
+    // Rest of the script remains the same
     document.getElementById('lb-type').addEventListener('change', (e) => {
       const isBid = e.target.value === 'bid';
       document.getElementById('bid-round').style.display = isBid ? 'inline' : 'none';
@@ -221,6 +253,24 @@
     });
 
     document.getElementById('export-withdrawals-csv').addEventListener('click', exportWithdrawalsCSV);
+
+    function initTabs() {
+      document.querySelectorAll('.tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+          document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+          tab.classList.add('active');
+          document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+          document.getElementById(tab.dataset.tab).classList.add('active');
+          if (tab.dataset.tab === 'leaderboards') {
+            fetchLeaderboard();
+          } else if (tab.dataset.tab === 'winners') {
+            fetchWinnersHistory();
+          } else if (tab.dataset.tab === 'withdrawals') {
+            loadWithdrawals();
+          }
+        });
+      });
+    }
 
     async function fetchLeaderboard() {
       const type = document.getElementById('lb-type').value;
