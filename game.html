@@ -419,66 +419,64 @@
       container.appendChild(rule);
     }
 
-    async function applyRewards() {
-      const date = document.getElementById('reward-winners-date').value;
-      const winnersRef = doc(db, 'winners', date);
-      const snap = await getDoc(winnersRef);
-      if (!snap.exists()) return alert('No winners for this date');
-      let winners = snap.data().winners;
+   async function applyRewards() {
+  const date = document.getElementById('reward-winners-date').value;
+  const winnersRef = doc(db, 'winners', date);
+  const snap = await getDoc(winnersRef);
+  if (!snap.exists()) return alert('No winners for this date');
+  let winners = snap.data().winners;
 
-      const rules = Array.from(document.querySelectorAll('#reward-rules > div')).map(div => ({
-        start: parseInt(div.querySelector('.rule-start').value),
-        end: parseInt(div.querySelector('.rule-end').value),
-        cash: parseInt(div.querySelector('.rule-cash').value),
-        stars: parseInt(div.querySelector('.rule-stars').value)
-      }));
+  const rules = Array.from(document.querySelectorAll('#reward-rules > div')).map(div => ({
+    start: parseInt(div.querySelector('.rule-start').value),
+    end: parseInt(div.querySelector('.rule-end').value),
+    cash: parseInt(div.querySelector('.rule-cash').value),
+    stars: parseInt(div.querySelector('.rule-stars').value)
+  }));
 
-      winners = winners.map(w => {
-        for (let rule of rules) {
-          if (w.rank >= rule.start && w.rank <= rule.end) {
-            w.rewards = { cash: rule.cash, stars: rule.stars };
-            break;
-          }
-        }
-        return w;
+  winners = winners.map(w => {
+    for (let rule of rules) {
+      if (w.rank >= rule.start && w.rank <= rule.end) {
+        w.rewards = { cash: rule.cash, stars: rule.stars };
+        break;
+      }
+    }
+    return w;
+  });
+
+  await updateDoc(winnersRef, { winners });
+
+  // APPLY REWARDS + SEND NOTIFICATIONS
+  for (let w of winners) {
+    if (w.rewards.cash > 0 || w.rewards.stars > 0) {
+      const userRef = doc(db, 'users', w.uid);
+      await runTransaction(db, async t => {
+        const u = await t.get(userRef);
+        const d = u.data();
+        t.update(userRef, {
+          cash: (d.cash || 0) + w.rewards.cash,
+          stars: (d.stars || 0) + w.rewards.stars
+        });
       });
 
-      await updateDoc(winnersRef, { winners });
+      // THIS SENDS THE NOTIFICATION TO THEIR BELL
+      const rewardText = [];
+      if (w.rewards.cash > 0) rewardText.push(`₦${w.rewards.cash.toLocaleString()} cash`);
+      if (w.rewards.stars > 0) rewardText.push(`${w.rewards.stars.toLocaleString()} stars`);
 
-      // Mass update users
-      for (let w of winners) {
-        if (w.rewards.cash > 0 || w.rewards.stars > 0) {
-          const userRef = doc(db, 'users', w.uid);
-          await runTransaction(db, async t => {
-            const u = await t.get(userRef);
-            const d = u.data();
-            t.update(userRef, {
-              cash: (d.cash || 0) + w.rewards.cash,
-              stars: (d.stars || 0) + w.rewards.stars
-            });
-          });
-        }
-      }
-      alert('Rewards applied and sent');
+      await addDoc(collection(db, "notifications"), {
+        recipientId: w.uid,
+        title: "Leaderboard Winner!",
+        message: `You placed #${w.rank} and won ${rewardText.join(" + ")}!`,
+        type: "leaderboardReward",
+        rank: w.rank,
+        cash: w.rewards.cash,
+        stars: w.rewards.stars,
+        createdAt: serverTimestamp()
+      });
     }
-
-    async function sendNotifications() {
-      const message = document.getElementById('notif-message').value;
-      if (!message) return alert('Enter message');
-      const date = document.getElementById('reward-winners-date').value;
-      const winnersRef = doc(db, 'winners', date);
-      const snap = await getDoc(winnersRef);
-      if (!snap.exists()) return alert('No winners');
-      const winners = snap.data().winners;
-      for (let w of winners) {
-        await addDoc(collection(db, 'notifications'), {
-          uid: w.uid,
-          message,
-          timestamp: serverTimestamp()
-        });
-      }
-      alert('Notifications sent');
-    }
+  }
+  alert('Rewards sent + users notified in their bell!');
+}
 
     async function loadConfigs() {
       const configRef = doc(db, 'configs', 'game');
