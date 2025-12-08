@@ -543,13 +543,17 @@
       container.appendChild(rule);
     }
 
-   async function applyRewards() {
+ async function applyRewards() {
   const date = document.getElementById('reward-winners-date').value;
   const winnersRef = doc(db, 'winners', date);
   const snap = await getDoc(winnersRef);
-  if (!snap.exists()) return dopeAlert('No winners for this date');
-  let winners = snap.data().winners;
+  if (!snap.exists()) return dopeAlert('No winners for this date', 'Error', 'Warning');
 
+  const winnersDoc = snap.data();
+  const winners = winnersDoc.winners;
+  const isBidRoyale = winnersDoc.type === "bid" || winnersDoc.type === "bid_royale" || date.includes("bid_");
+
+  // Apply your rules (unchanged)
   const rules = Array.from(document.querySelectorAll('#reward-rules > div')).map(div => ({
     start: parseInt(div.querySelector('.rule-start').value),
     end: parseInt(div.querySelector('.rule-end').value),
@@ -557,51 +561,76 @@
     stars: parseInt(div.querySelector('.rule-stars').value)
   }));
 
-  winners = winners.map(w => {
+  winners.forEach(w => {
     for (let rule of rules) {
       if (w.rank >= rule.start && w.rank <= rule.end) {
         w.rewards = { cash: rule.cash, stars: rule.stars };
         break;
       }
     }
-    return w;
   });
 
   await updateDoc(winnersRef, { winners });
 
-  // APPLY REWARDS + SEND NOTIFICATIONS
+  // REWARD + SEND CONTEXT-AWARE NOTIFICATIONS
   for (let w of winners) {
     if (w.rewards.cash > 0 || w.rewards.stars > 0) {
       const userRef = doc(db, 'users', w.uid);
       await runTransaction(db, async t => {
         const u = await t.get(userRef);
-        const d = u.data();
+        const d = u.data() || {};
         t.update(userRef, {
           cash: (d.cash || 0) + w.rewards.cash,
           stars: (d.stars || 0) + w.rewards.stars
         });
       });
 
-      // THIS SENDS THE NOTIFICATION TO THEIR BELL
       const rewardText = [];
       if (w.rewards.cash > 0) rewardText.push(`₦${w.rewards.cash.toLocaleString()} cash`);
       if (w.rewards.stars > 0) rewardText.push(`${w.rewards.stars.toLocaleString()} stars`);
 
+      let title, message, type;
+
+      if (isBidRoyale) {
+        // BID ROYALE — EPIC WAR VIBES
+        const rankText = w.rank === 1 ? "YOU ARE THE BID ROYALE CHAMPION!" :
+                        w.rank === 2 ? "2ND PLACE — WARRIOR!" :
+                        w.rank === 3 ? "3RD PLACE — LEGEND!" :
+                        `TOP ${w.rank} — DOMINATED THE WAR!`;
+
+        title = "BID ROYALE VICTORY!";
+        message = `${rankText}\nYou crushed the arena and won ${rewardText.join(" + ")}`;
+        type = "bid_royale_winner";
+      } else {
+        // NORMAL TAPMASTER — CLEAN DAILY WIN
+        title = "TapMaster Winner!";
+        message = `You placed #${w.rank} on the leaderboard!\nYou won ${rewardText.join(" + ")}`;
+        type = "daily_leaderboard";
+      }
+
       await addDoc(collection(db, "notifications"), {
         recipientId: w.uid,
-        title: "TapMaster Reward!",
-        message: `You placed #${w.rank} and won ${rewardText.join(" + ")}!`,
-        type: "leaderboardReward",
+        title,
+        message,
+        type,
         rank: w.rank,
         cash: w.rewards.cash,
         stars: w.rewards.stars,
-        createdAt: serverTimestamp()
+        isBidRoyale,
+        createdAt: serverTimestamp(),
+        read: false
       });
     }
   }
-  dopeAlert('Rewards sent + users notified in their bell!');
-}
 
+  const eventName = isBidRoyale ? "BID ROYALE" : "DAILY LEADERBOARD";
+  dopeAlert(
+    `${eventName} REWARDS SENT!\n${winners.filter(w => w.rewards.cash || w.rewards.stars).length} players paid`,
+    isBidRoyale ? "WAR IS OVER" : "DAILY WINS DISTRIBUTED",
+    isBidRoyale ? "Crown" : "Trophy",
+    8000
+  );
+}
     async function loadConfigs() {
       const configRef = doc(db, 'configs', 'game');
       const snap = await getDoc(configRef);
