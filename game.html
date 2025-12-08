@@ -183,11 +183,12 @@
       adminGate.style.display = "none";
       adminPanel.style.display = "block";
       initTabs();
-      loadBidRounds();
-      loadWinnerDates();
-      loadConfigs();
+      await loadBidRounds();
+      await loadWinnerDates();
+      await loadConfigs();
       initRewardRules();
-      loadWithdrawals();
+      await loadWithdrawals();
+      await fetchLeaderboard(); // Added this for initial load of default tab
     });
 
     logoutBtn.addEventListener("click", () => {
