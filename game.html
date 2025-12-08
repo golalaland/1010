@@ -44,7 +44,7 @@
     </div>
 
     <div id="leaderboards" class="section active">
-      <h2>Leaderboard Feeds</h2>
+      <h2>Leaderboard Feeds (Live)</h2>
       <select id="lb-type">
         <option value="daily">Daily General</option>
         <option value="weekly">Weekly General</option>
@@ -53,7 +53,7 @@
       </select>
       <input id="lb-limit" type="number" placeholder="Top N (e.g. 50)" value="50">
       <select id="bid-round" style="display:none;"></select>
-      <button id="fetch-lb">Fetch Top Players</button>
+      <button id="fetch-lb">Refresh</button>
       <table id="lb-table">
         <thead><tr><th>Rank</th><th>User</th><th>Taps</th><th>Email</th></tr></thead>
         <tbody></tbody>
@@ -107,7 +107,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
     import {
-      getFirestore, doc, getDoc, setDoc, updateDoc, collection, getDocs, query, where, orderBy, limit, serverTimestamp, runTransaction, addDoc, deleteDoc
+      getFirestore, doc, getDoc, setDoc, updateDoc, collection, getDocs, query, where, orderBy, limit, serverTimestamp, runTransaction, addDoc, deleteDoc, onSnapshot
     } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
     const firebaseConfig = {
@@ -134,6 +134,7 @@
     let currentAdmin = null;
     let currentLbData = [];
     let currentWinnersData = [];
+    let lbUnsub = null;
 
     function showLoader(text = "Working...") {
       loaderText.textContent = text;
@@ -188,10 +189,11 @@
       await loadConfigs();
       initRewardRules();
       await loadWithdrawals();
-      await fetchLeaderboard(); // Added this for initial load of default tab
+      await startLbListener(); // Start live listener for default tab
     });
 
     logoutBtn.addEventListener("click", () => {
+      if (lbUnsub) lbUnsub();
       currentAdmin = null;
       adminPanel.style.display = "none";
       adminGate.style.display = "block";
@@ -200,16 +202,11 @@
     });
 
     // Rest of the script remains the same
-    document.getElementById('lb-type').addEventListener('change', (e) => {
-      const isBid = e.target.value === 'bid';
-      document.getElementById('bid-round').style.display = isBid ? 'inline' : 'none';
-    });
+    document.getElementById('lb-type').addEventListener('change', startLbListener);
+    document.getElementById('lb-limit').addEventListener('change', startLbListener);
+    document.getElementById('bid-round').addEventListener('change', startLbListener);
 
-    document.getElementById('fetch-lb').addEventListener('click', async () => {
-      showLoader("Fetching leaderboard...");
-      await fetchLeaderboard();
-      hideLoader();
-    });
+    document.getElementById('fetch-lb').addEventListener('click', startLbListener);
 
     document.getElementById('save-winners').addEventListener('click', async () => {
       showLoader("Saving winners...");
@@ -263,45 +260,58 @@
           document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
           document.getElementById(tab.dataset.tab).classList.add('active');
           if (tab.dataset.tab === 'leaderboards') {
-            fetchLeaderboard();
+            startLbListener();
           } else if (tab.dataset.tab === 'winners') {
             fetchWinnersHistory();
           } else if (tab.dataset.tab === 'withdrawals') {
             loadWithdrawals();
           }
+          if (lbUnsub && tab.dataset.tab !== 'leaderboards') {
+            lbUnsub();
+            lbUnsub = null;
+          }
         });
       });
     }
 
-    async function fetchLeaderboard() {
+    async function startLbListener() {
+      if (lbUnsub) lbUnsub();
       const type = document.getElementById('lb-type').value;
       const lbLimit = parseInt(document.getElementById('lb-limit').value) || 50;
       const tableBody = document.getElementById('lb-table').querySelector('tbody');
-      tableBody.innerHTML = '';
+      tableBody.innerHTML = '<tr><td colspan="4">Loading...</td></tr>';
       currentLbData = [];
 
       if (type === 'bid') {
         const roundId = document.getElementById('bid-round').value;
-        const tapsQuery = query(collection(db, 'taps'), where('roundId', '==', roundId), orderBy('count', 'desc'), limit(lbLimit));
-        const snaps = await getDocs(tapsQuery);
-        const scores = {};
-        snaps.forEach(d => {
-          const data = d.data();
-          if (!scores[data.uid]) scores[data.uid] = { uid: data.uid, username: data.username, taps: 0, email: '' };
-          scores[data.uid].taps += data.count;
+        const q = query(collection(db, 'taps'), where('roundId', '==', roundId));
+        lbUnsub = onSnapshot(q, (snap) => {
+          const scores = {};
+          snap.forEach(d => {
+            const data = d.data();
+            if (!scores[data.uid]) scores[data.uid] = { uid: data.uid, username: data.username, taps: 0, email: '' };
+            scores[data.uid].taps += data.count;
+          });
+          currentLbData = Object.values(scores).sort((a,b) => b.taps - a.taps).slice(0, lbLimit);
+          renderLbTable();
         });
-        currentLbData = Object.values(scores).sort((a,b) => b.taps - a.taps);
       } else {
-        const key = getLeaderboardKey(type);
-        const field = `taps${type.charAt(0).toUpperCase() + type.slice(1)}.${key}`;
-        const q = query(collection(db, 'users'), orderBy(field, 'desc'), limit(lbLimit));
-        const snaps = await getDocs(q);
-        currentLbData = snaps.docs.map(doc => {
-          const d = doc.data();
-          return { uid: doc.id, username: d.chatId, taps: d[field] || 0, email: d.email };
-        }).filter(u => u.taps > 0);
+        const q = collection(db, 'users');
+        lbUnsub = onSnapshot(q, (snap) => {
+          const key = getLeaderboardKey(type);
+          const users = snap.docs.map(doc => {
+            const d = doc.data();
+            return { uid: doc.id, username: d.chatId, taps: d[`taps${type.charAt(0).toUpperCase() + type.slice(1)}`]?.[key] || 0, email: d.email };
+          });
+          currentLbData = users.filter(u => u.taps > 0).sort((a,b) => b.taps - a.taps).slice(0, lbLimit);
+          renderLbTable();
+        });
       }
+    }
 
+    function renderLbTable() {
+      const tableBody = document.getElementById('lb-table').querySelector('tbody');
+      tableBody.innerHTML = '';
       currentLbData.forEach((u, i) => {
         const row = document.createElement('tr');
         row.innerHTML = `<td>${i+1}</td><td>${u.username}</td><td>${u.taps}</td><td>${u.email || ''}</td>`;
@@ -325,7 +335,7 @@
     }
 
     async function saveWinners() {
-      if (currentLbData.length === 0) return alert('Fetch leaderboard first');
+      if (currentLbData.length === 0) return alert('No data');
       const date = new Date().toISOString().split('T')[0];
       const winnersRef = doc(db, 'winners', date);
       await setDoc(winnersRef, {
@@ -335,7 +345,7 @@
         winners: currentLbData.map((u, i) => ({ rank: i+1, ...u, rewards: { cash: 0, stars: 0 } })),
         timestamp: serverTimestamp()
       });
-      alert('Winners saved for ' + date);
+      alert('Saved');
       loadWinnerDates();
     }
 
