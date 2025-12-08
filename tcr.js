@@ -3361,74 +3361,114 @@ confirmBtn.onclick = async () => {
   }
 }
 // ================================
-// UPLOAD HIGHLIGHT — CLEAN NO-SPINNER 2025 VERSION
+// UPLOAD HIGHLIGHT — GOD MODE 2025 (FINAL)
 // ================================
 document.getElementById("uploadHighlightBtn")?.addEventListener("click", async () => {
   const btn = document.getElementById("uploadHighlightBtn");
-  
-  // Reset button state
+
+  // Reset state
   btn.disabled = false;
   btn.classList.remove("uploading");
-  
-  // ——— AUTH CHECK ———
-  if (!currentUser?.uid) {
-    showGiftAlert("Please sign in first!", "error");
-    return;
-  }
+  btn.textContent = "Post Highlight";
 
-  // ——— GRAB INPUTS ———
-  const fileInput     = document.getElementById("highlightUploadInput");
+  // AUTH
+  if (!currentUser?.uid) return showGiftAlert("Sign in to upload", "error");
+
+  // INPUTS
+  const fileInput = document.getElementById("highlightUploadInput");
   const videoUrlInput = document.getElementById("highlightVideoInput");
-  const title         = document.getElementById("highlightTitleInput").value.trim();
-  const desc          = document.getElementById("highlightDescInput").value.trim();
-  const price         = parseInt(document.getElementById("highlightPriceInput").value) || 0;
+  const title = document.getElementById("highlightTitleInput").value.trim();
+  const desc = document.getElementById("highlightDescInput").value.trim();
+  const price = parseInt(document.getElementById("highlightPriceInput").value) || 0;
 
-  // ——— VALIDATION ———
-  if (!title)                     return showStarPopup("Title is required", "error");
-  if (price < 10)                 return showStarPopup("Minimum price: 10 STRZ", "error");
+  // VALIDATION
+  if (!title) return showStarPopup("Title required", "error");
+  if (price < 10) return showStarPopup("Minimum 10 STRZ", "error");
   if (!fileInput.files[0] && !videoUrlInput.value.trim())
-                                  return showStarPopup("Upload a file or paste a URL", "error");
+    return showStarPopup("Add file or URL", "error");
 
-  // ——— START UPLOAD → BLANK BUTTON ———
+  // UPLOAD MODE
   btn.disabled = true;
   btn.classList.add("uploading");
-  btn.textContent = ""; // ← BLANK IT OUT
-  showStarPopup("Uploading your highlight...", "loading");
+  btn.textContent = "";
+  showStarPopup("Dropping fire...", "loading");
 
   try {
     let finalVideoUrl = videoUrlInput.value.trim();
 
-    // ——— FILE UPLOAD (if selected) ———
+    // FILE UPLOAD
     if (fileInput.files[0]) {
       const file = fileInput.files[0];
       if (file.size > 500 * 1024 * 1024) {
-        showGiftAlert("File too big — max 500MB", "error");
-        resetButton();
+        showGiftAlert("Max 500MB", "error");
+        reset();
         return;
       }
 
-      const storageRef = ref(storage, `highlights/${currentUser.uid}_${Date.now()}_${file.name}`);
+      const storageRef = ref(storage, `highlights/${currentUser.uid}_${Date.now()}_${Math.random().toString(36).slice(2)}`);
       const snapshot = await uploadBytes(storageRef, file);
       finalVideoUrl = await getDownloadURL(snapshot.ref);
     }
 
-    // ——— SAVE TO FIRESTORE ———
-    await addDoc(collection(db, "highlightVideos"), {
+    // SAVE CLIP TO FIRESTORE
+    const clipRef = await addDoc(collection(db, "highlightVideos"), {
       uploaderId: currentUser.uid,
-      uploaderName: currentUser.chatId || "Anonymous",
+      uploaderName: currentUser.chatId || "Legend",
       videoUrl: finalVideoUrl,
       highlightVideoPrice: price,
       title,
       description: desc || "",
       uploadedAt: serverTimestamp(),
+      createdAt: serverTimestamp(),
       unlockedBy: [],
-      createdAt: serverTimestamp()
+      views: 0
     });
 
-    // ——— SUCCESS ———
-   showStarPopup("CLIP LIVE — EARNING STARS!", "success");
-    btn.textContent = "Posted!";
-    btn.style.background = "#00ff9d";
+    // NOTIFY ALL PAST BUYERS (LOYAL FANS)
+    try {
+      const pastClips = await getDocs(
+        query(collection(db, "highlightVideos"), where("uploaderId", "==", currentUser.uid))
+      );
+
+      const loyalFans = new Set();
+      pastClips.forEach(doc => {
+        const data = doc.data();
+        if (Array.isArray(data.unlockedBy)) {
+          data.unlockedBy.forEach(uid => {
+            if (uid !== currentUser.uid) loyalFans.add(uid);
+          });
+        }
+      });
+
+      if (loyalFans.size > 0) {
+        const batch = writeBatch(db);
+        const message = `@${currentUser.chatId} just dropped a new highlight!`;
+
+        for (const fanId of loyalFans) {
+          const notifRef = doc(collection(db, "notifications"));
+          batch.set(notifRef, {
+            recipientId: fanId,
+            title: "New Drop!",
+            message,
+            type: "new_highlight",
+            fromUploader: currentUser.chatId,
+            fromUploaderId: currentUser.uid,
+            clipId: clipRef.id,
+            createdAt: serverTimestamp(),
+            read: false
+          });
+        }
+        await batch.commit();
+        console.log(`Notified ${loyalFans.size} loyal fans`);
+      }
+    } catch (notifyErr) {
+      console.warn("Fan notifications failed (upload still succeeded):", notifyErr);
+    }
+
+    // SUCCESS
+    showStarPopup("CLIP LIVE — FANS NOTIFIED!", "success");
+    btn.textContent = "DROPPED!";
+    btn.style.background = "linear-gradient(90deg,#00ff9d,#00cc66)";
 
     // Reset form
     fileInput.value = "";
@@ -3436,16 +3476,29 @@ document.getElementById("uploadHighlightBtn")?.addEventListener("click", async (
     document.getElementById("highlightTitleInput").value = "";
     document.getElementById("highlightDescInput").value = "";
     document.getElementById("highlightPriceInput").value = "50";
+
+    // Refresh my clips
     if (typeof loadMyClips === "function") loadMyClips();
 
-    // Reset button after 2s
-    setTimeout(resetButton, 2000);
+    // Auto reset button
+    setTimeout(() => {
+      btn.textContent = "Post Highlight";
+      btn.classList.remove("uploading");
+      btn.disabled = false;
+      btn.style.background = "";
+    }, 3000);
 
   } catch (err) {
     console.error("Upload failed:", err);
-   showStarPopup("Upload failed — try again", "error");
-    resetButton();
+    showStarPopup("Upload failed — try again", "error");
+    btn.textContent = "Failed";
+    setTimeout(() => {
+      btn.textContent = "Post Highlight";
+      btn.classList.remove("uploading");
+      btn.disabled = false;
+    }, 2000);
   }
+});
 
   // ——— RESET BUTTON ———
   function resetButton() {
