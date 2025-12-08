@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tap Master Admin Dashboard</title>
+  <style>
+    body { font-family: 'Poppins', sans-serif; background: #0a0a0a; color: #fff; padding: 20px; }
+    .tab-container { display: flex; gap: 10px; margin-bottom: 20px; }
+    .tab { padding: 10px 20px; background: #333; border-radius: 8px; cursor: pointer; }
+    .tab.active { background: #0f9; color: #000; }
+    .section { display: none; }
+    .section.active { display: block; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 10px; border: 1px solid #333; text-align: left; }
+    input, button { padding: 8px; margin: 5px; border-radius: 5px; border: none; }
+    button { background: #0f9; color: #000; cursor: pointer; }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+  </style>
+</head>
+<body>
+  <h1>Tap Master Admin Dashboard</h1>
+  <div class="tab-container">
+    <div class="tab active" data-tab="leaderboards">Leaderboards</div>
+    <div class="tab" data-tab="winners">Winners History</div>
+    <div class="tab" data-tab="rewards">Rewards Management</div>
+    <div class="tab" data-tab="configs">Game Configs</div>
+  </div>
+
+  <div id="leaderboards" class="section active">
+    <h2>Leaderboard Feeds</h2>
+    <select id="lb-type">
+      <option value="daily">Daily General</option>
+      <option value="weekly">Weekly General</option>
+      <option value="monthly">Monthly General</option>
+      <option value="bid">Bid Royale</option>
+    </select>
+    <input id="lb-limit" type="number" placeholder="Top N (e.g. 50)" value="50">
+    <select id="bid-round" style="display:none;">
+      <!-- Populated dynamically -->
+    </select>
+    <button id="fetch-lb">Fetch Top Players</button>
+    <table id="lb-table">
+      <thead><tr><th>Rank</th><th>User</th><th>Taps</th><th>Email</th></tr></thead>
+      <tbody></tbody>
+    </table>
+    <button id="save-winners">Save Current as Today's Winners</button>
+  </div>
+
+  <div id="winners" class="section">
+    <h2>Winners History</h2>
+    <input id="winners-from" type="date" placeholder="From Date">
+    <input id="winners-to" type="date" placeholder="To Date">
+    <button id="fetch-winners">Fetch Winners</button>
+    <button id="export-csv">Export as CSV</button>
+    <button id="clear-winners">Clear All Winners</button>
+    <table id="winners-table">
+      <thead><tr><th>Date</th><th>Rank</th><th>User</th><th>Taps</th><th>Rewards</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <div id="rewards" class="section">
+    <h2>Rewards Management</h2>
+    <p>Set batch rewards (e.g., top 1-10: cash 5000, stars 0)</p>
+    <div id="reward-rules">
+      <!-- Dynamic inputs -->
+    </div>
+    <button id="add-rule">Add Reward Rule</button>
+    <select id="reward-winners-date">
+      <!-- Populated with saved winner dates -->
+    </select>
+    <button id="apply-rewards">Apply & Mass Send Rewards</button>
+    <button id="send-notifs">Send Custom Notifications</button>
+    <textarea id="notif-message" placeholder="Custom notification message"></textarea>
+  </div>
+
+  <div id="configs" class="section">
+    <h2>Game Configurations</h2>
+    <input id="bid-cost" type="number" placeholder="Bid Cost (Stars)">
+    <input id="pool-increase" type="number" placeholder="Pool Increase per Player">
+    <input id="base-pool" type="number" placeholder="Base Prize Pool">
+    <input id="max-pool" type="number" placeholder="Max Prize Pool (0 for unlimited)">
+    <button id="save-configs">Save Configs</button>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+    import {
+      getFirestore, doc, getDoc, setDoc, updateDoc, collection, getDocs, query, where, orderBy, limit, serverTimestamp, runTransaction, addDoc, deleteDoc
+    } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyD_GjkTox5tum9o4AupO0LeWzjTocJg8RI",
+      authDomain: "dettyverse.firebaseapp.com",
+      projectId: "dettyverse",
+      storageBucket: "dettyverse.firebasestorage.app",
+      messagingSenderId: "1036459652488",
+      appId: "1:1036459652488:web:e8910172ed16e9cac9b63d",
+      measurementId: "G-NX2KWZW85V"
+    };
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    let currentUser = null;
+    let currentLbData = [];
+    let currentWinnersData = [];
+
+    onAuthStateChanged(auth, user => {
+      if (user) {
+        loadAdmin(user);
+      } else {
+        alert('Admin login required');
+      }
+    });
+
+    async function loadAdmin(user) {
+      currentUser = user;
+      // Assume admin check via Firestore rules or custom claim
+      initTabs();
+      loadBidRounds();
+      loadWinnerDates();
+      loadConfigs();
+      initRewardRules();
+    }
+
+    function initTabs() {
+      document.querySelectorAll('.tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+          document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+          tab.classList.add('active');
+          document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+          document.getElementById(tab.dataset.tab).classList.add('active');
+        });
+      });
+    }
+
+    document.getElementById('fetch-lb').addEventListener('click', fetchLeaderboard);
+    document.getElementById('save-winners').addEventListener('click', saveWinners);
+    document.getElementById('fetch-winners').addEventListener('click', fetchWinnersHistory);
+    document.getElementById('export-csv').addEventListener('click', exportCSV);
+    document.getElementById('clear-winners').addEventListener('click', clearWinners);
+    document.getElementById('add-rule').addEventListener('click', addRewardRule);
+    document.getElementById('apply-rewards').addEventListener('click', applyRewards);
+    document.getElementById('send-notifs').addEventListener('click', sendNotifications);
+    document.getElementById('save-configs').addEventListener('click', saveConfigs);
+
+    document.getElementById('lb-type').addEventListener('change', (e) => {
+      const isBid = e.target.value === 'bid';
+      document.getElementById('bid-round').style.display = isBid ? 'inline' : 'none';
+    });
+
+    async function fetchLeaderboard() {
+      const type = document.getElementById('lb-type').value;
+      const lbLimit = parseInt(document.getElementById('lb-limit').value) || 50;
+      const tableBody = document.getElementById('lb-table').querySelector('tbody');
+      tableBody.innerHTML = '';
+      currentLbData = [];
+
+      if (type === 'bid') {
+        const roundId = document.getElementById('bid-round').value;
+        const tapsQuery = query(collection(db, 'taps'), where('roundId', '==', roundId), orderBy('count', 'desc'), limit(lbLimit));
+        const snaps = await getDocs(tapsQuery);
+        const scores = {};
+        snaps.forEach(d => {
+          const data = d.data();
+          if (!scores[data.uid]) scores[data.uid] = { uid: data.uid, username: data.username, taps: 0, email: '' };
+          scores[data.uid].taps += data.count;
+        });
+        currentLbData = Object.values(scores).sort((a,b) => b.taps - a.taps);
+      } else {
+        const key = getLeaderboardKey(type);
+        const field = `taps${type.charAt(0).toUpperCase() + type.slice(1)}.${key}`;
+        const q = query(collection(db, 'users'), orderBy(field, 'desc'), limit(lbLimit));
+        const snaps = await getDocs(q);
+        currentLbData = snaps.docs.map(doc => {
+          const d = doc.data();
+          return { uid: doc.id, username: d.chatId, taps: d[field] || 0, email: d.email };
+        }).filter(u => u.taps > 0);
+      }
+
+      currentLbData.forEach((u, i) => {
+        const row = `<tr><td>${i+1}</td><td>${u.username}</td><td>${u.taps}</td><td>${u.email || ''}</td></tr>`;
+        tableBody.innerHTML += row;
+      });
+    }
+
+    function getLeaderboardKey(period) {
+      const now = new Date();
+      if (period === 'daily') return now.toISOString().split('T')[0];
+      if (period === 'weekly') return `${now.getFullYear()}-W${getWeekNumber(now)}`;
+      return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    }
+
+    function getWeekNumber(date) {
+      const d = new Date(date);
+      d.setHours(0, 0, 0, 0);
+      d.setDate(d.getDate() + 4 - (d.getDay() || 7));
+      const yearStart = new Date(d.getFullYear(), 0, 1);
+      return Math.ceil(((d - yearStart) / 86400000 + 1) / 7);
+    }
+
+    async function saveWinners() {
+      if (currentLbData.length === 0) return alert('Fetch leaderboard first');
+      const date = new Date().toISOString().split('T')[0];
+      const winnersRef = doc(db, 'winners', date);
+      await setDoc(winnersRef, {
+        date,
+        type: document.getElementById('lb-type').value,
+        roundId: document.getElementById('lb-type').value === 'bid' ? document.getElementById('bid-round').value : null,
+        winners: currentLbData.map((u, i) => ({ rank: i+1, ...u, rewards: { cash: 0, stars: 0 } })),
+        timestamp: serverTimestamp()
+      });
+      alert('Winners saved for ' + date);
+    }
+
+    async function loadBidRounds() {
+      const rounds = await getDocs(collection(db, 'bids'));
+      const uniqueRounds = [...new Set(rounds.docs.map(d => d.data().roundId))];
+      const select = document.getElementById('bid-round');
+      select.innerHTML = uniqueRounds.map(r => `<option value="${r}">${r}</option>`).join('');
+    }
+
+    async function loadWinnerDates() {
+      const winners = await getDocs(collection(db, 'winners'));
+      const dates = winners.docs.map(d => d.id).sort((a,b) => b.localeCompare(a));
+      const select = document.getElementById('reward-winners-date');
+      select.innerHTML = dates.map(d => `<option value="${d}">${d}</option>`).join('');
+    }
+
+    async function fetchWinnersHistory() {
+      const from = document.getElementById('winners-from').value;
+      const to = document.getElementById('winners-to').value;
+      let q = collection(db, 'winners');
+      if (from && to) q = query(q, where('date', '>=', from), where('date', '<=', to));
+      const snaps = await getDocs(q);
+      const tableBody = document.getElementById('winners-table').querySelector('tbody');
+      tableBody.innerHTML = '';
+      currentWinnersData = [];
+      snaps.docs.forEach(doc => {
+        const data = doc.data();
+        data.winners.forEach(w => {
+          const row = `<tr><td>${data.date}</td><td>${w.rank}</td><td>${w.username}</td><td>${w.taps}</td><td>Cash: ${w.rewards.cash}, Stars: ${w.rewards.stars}</td></tr>`;
+          tableBody.innerHTML += row;
+          currentWinnersData.push({ date: data.date, ...w });
+        });
+      });
+    }
+
+    function exportCSV() {
+      if (currentWinnersData.length === 0) return alert('Fetch winners first');
+      let csv = 'Date,Rank,User,Taps,Cash,Stars,Email\n';
+      currentWinnersData.forEach(w => {
+        csv += `${w.date},${w.rank},${w.username},${w.taps},${w.rewards.cash},${w.rewards.stars},${w.email || ''}\n`;
+      });
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'winners.csv';
+      a.click();
+    }
+
+    async function clearWinners() {
+      if (!confirm('Clear all winners history?')) return;
+      const winners = await getDocs(collection(db, 'winners'));
+      winners.docs.forEach(async d => await deleteDoc(d.ref));
+      alert('Cleared');
+      document.getElementById('winners-table').querySelector('tbody').innerHTML = '';
+    }
+
+    function initRewardRules() {
+      const container = document.getElementById('reward-rules');
+      addRewardRule(); // Start with one
+    }
+
+    function addRewardRule() {
+      const container = document.getElementById('reward-rules');
+      const rule = document.createElement('div');
+      rule.innerHTML = `
+        Top <input type="number" class="rule-start" value="1" min="1"> - 
+        <input type="number" class="rule-end" value="10" min="1">:
+        Cash <input type="number" class="rule-cash" value="5000">,
+        Stars <input type="number" class="rule-stars" value="0">
+      `;
+      container.appendChild(rule);
+    }
+
+    async function applyRewards() {
+      const date = document.getElementById('reward-winners-date').value;
+      const winnersRef = doc(db, 'winners', date);
+      const snap = await getDoc(winnersRef);
+      if (!snap.exists()) return alert('No winners for this date');
+      let winners = snap.data().winners;
+
+      const rules = Array.from(document.querySelectorAll('#reward-rules > div')).map(div => ({
+        start: parseInt(div.querySelector('.rule-start').value),
+        end: parseInt(div.querySelector('.rule-end').value),
+        cash: parseInt(div.querySelector('.rule-cash').value),
+        stars: parseInt(div.querySelector('.rule-stars').value)
+      }));
+
+      winners = winners.map(w => {
+        for (let rule of rules) {
+          if (w.rank >= rule.start && w.rank <= rule.end) {
+            w.rewards = { cash: rule.cash, stars: rule.stars };
+            break;
+          }
+        }
+        return w;
+      });
+
+      await updateDoc(winnersRef, { winners });
+
+      // Mass update users
+      for (let w of winners) {
+        if (w.rewards.cash > 0 || w.rewards.stars > 0) {
+          const userRef = doc(db, 'users', w.uid);
+          await runTransaction(db, async t => {
+            const u = await t.get(userRef);
+            const d = u.data();
+            t.update(userRef, {
+              cash: (d.cash || 0) + w.rewards.cash,
+              stars: (d.stars || 0) + w.rewards.stars
+            });
+          });
+        }
+      }
+      alert('Rewards applied and sent');
+    }
+
+    async function sendNotifications() {
+      const message = document.getElementById('notif-message').value;
+      if (!message) return alert('Enter message');
+      const date = document.getElementById('reward-winners-date').value;
+      const winnersRef = doc(db, 'winners', date);
+      const snap = await getDoc(winnersRef);
+      if (!snap.exists()) return;
+      const winners = snap.data().winners;
+      // Placeholder for notifications - integrate with your notification system
+      // e.g., add to a notifications collection or use FCM
+      for (let w of winners) {
+        await addDoc(collection(db, 'notifications'), {
+          uid: w.uid,
+          message,
+          timestamp: serverTimestamp()
+        });
+      }
+      alert('Notifications sent - check notifications collection');
+    }
+
+    async function loadConfigs() {
+      const configRef = doc(db, 'configs', 'game');
+      const snap = await getDoc(configRef);
+      if (snap.exists()) {
+        const d = snap.data();
+        document.getElementById('bid-cost').value = d.BID_COST;
+        document.getElementById('pool-increase').value = d.POOL_INCREASE_PER_PLAYER;
+        document.getElementById('base-pool').value = d.BASE_PRIZE_POOL;
+        document.getElementById('max-pool').value = d.MAX_PRIZE_POOL || 0;
+      }
+    }
+
+    async function saveConfigs() {
+      const configRef = doc(db, 'configs', 'game');
+      await setDoc(configRef, {
+        BID_COST: parseInt(document.getElementById('bid-cost').value),
+        POOL_INCREASE_PER_PLAYER: parseInt(document.getElementById('pool-increase').value),
+        BASE_PRIZE_POOL: parseInt(document.getElementById('base-pool').value),
+        MAX_PRIZE_POOL: parseInt(document.getElementById('max-pool').value) || null
+      });
+      alert('Configs saved - restart client to apply');
+    }
+  </script>
+</body>
+</html>
