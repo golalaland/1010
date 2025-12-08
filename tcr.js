@@ -1286,12 +1286,16 @@ document.getElementById("markAllRead")?.addEventListener("click", async () => {
   }
 });
 
-// RED BADGES CODE — ALREADY PERFECT
+// HOST BADGE — FINAL WORKING VERSION
 const hostBtn = document.getElementById('hostSettingsBtn');
 const hostBadge = document.getElementById('hostBadge');
 
 async function checkHostNotifications() {
-  if (!currentUser?.isHost || !hostBadge) return;
+  if (!currentUser?.isHost || !hostBadge) {
+    hostBadge && (hostBadge.style.display = "none");
+    return;
+  }
+
   try {
     const q = query(
       collection(db, "notifications"),
@@ -1301,17 +1305,25 @@ async function checkHostNotifications() {
       limit(1)
     );
     const snap = await getDocs(q);
-    hostBadge.style.display = snap.empty ? "none" : "flex";
+    
+    // THIS LINE IS THE KEY
+    hostBadge.style.display = snap.empty ? "none" : "block";
+    
   } catch (e) {
-    console.warn("Host badge check failed:", e);
+    console.warn("Badge check failed:", e);
+    hostBadge.style.display = "none";
   }
 }
 
-hostBtn?.addEventListener('click', () => {
+// Hide badge when clicked
+hostBtn?.addEventListener("click", () => {
   hostBadge.style.display = "none";
 });
 
-setInterval(checkHostNotifications, 30000);
+// Check every 15 seconds
+setInterval(checkHostNotifications, 15000);
+
+// Run immediately
 checkHostNotifications();
 
 /* ---------- 🆔 ChatID Modal ---------- */
