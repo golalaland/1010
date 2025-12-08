@@ -1285,15 +1285,12 @@ document.getElementById("markAllRead")?.addEventListener("click", async () => {
   }
 });
 
-// ========== HOST BADGE NOTIFICATION — SMALL & CUTE ==========
+// RED BADGES CODE — ALREADY PERFECT
 const hostBtn = document.getElementById('hostSettingsBtn');
 const hostBadge = document.getElementById('hostBadge');
-const hostWrapper = document.getElementById('hostSettingsWrapper');
 
-// Check for host notifications (run once on load)
 async function checkHostNotifications() {
   if (!currentUser?.isHost || !hostBadge) return;
-
   try {
     const q = query(
       collection(db, "notifications"),
@@ -1309,16 +1306,11 @@ async function checkHostNotifications() {
   }
 }
 
-// Click host button → hide badge (even if not cleared)
 hostBtn?.addEventListener('click', () => {
   hostBadge.style.display = "none";
-  // Your existing host tab logic here
 });
 
-// Auto-check every 30 seconds
 setInterval(checkHostNotifications, 30000);
-
-// Initial check
 checkHostNotifications();
 
 /* ---------- 🆔 ChatID Modal ---------- */
