@@ -453,18 +453,165 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 .buzz-btn:hover{animation:buzzPulse 1.5s infinite;}
 @keyframes buzzPulse{0%{box-shadow:0 0 0 0 rgba(255,20,147,0.18)}70%{box-shadow:0 0 0 12px rgba(255,20,147,0)}100%{box-shadow:0 0 0 0 rgba(255,20,147,0)}}
 
-/* profile glass bar */
-.profile{display:none;flex-direction:column;gap:8px;margin-top:10px;}
-.profile-card{background:var(--glass);padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);display:flex;flex-direction:column;gap:8px;}
-.profile-top{display:flex;align-items:center;justify-content:space-between;gap:10px;}
-.profile-left{display:flex;flex-direction:column;gap:2px;}
-.profile-name{font-weight:800;}
-.profile-label{color: var(--accent);font-weight: 800;font-size: 10px;}
-.profile-value{color: #fff;font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", "Courier New", monospace;font-weight: 400;font-size: 11px;}
-.profile-value span,.profile-value .icon{margin-left:2px;}
-.profile-actions{display:flex;gap:8px;align-items:center;justify-content:flex-end;}
-.smalla-btn{padding:4px 10px;border-radius:8px;background: var(--accent);border: 0;color: #000;cursor: pointer;font-weight:700;font-size:12px;text-decoration: none;transition: transform .15s, box-shadow .15s;}
-.smalla-btn:hover{transform: translateY(-2px);box-shadow: 0 4px 10px rgba(255,20,147,0.3);}
+/* PROFILE GLASS BAR — FINAL DOPE EDITION */
+.profile {
+  display: none;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.profile-card {
+  background: rgba(15, 15, 25, 0.7);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 18px 20px;
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.profile-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.profile-left {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+
+.profile-name {
+  font-weight: 800;
+  font-size: 1.4rem;
+  color: #fff;
+  letter-spacing: 0.5px;
+}
+
+.profile-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.profile-stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.95rem;
+}
+
+.profile-label {
+  color: #ff3366;
+  font-weight: 800;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.profile-value {
+  color: #ffffff;
+  font-family: ui-monospace, "Roboto Mono", monospace;
+  font-weight: 600;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* RIGHT SIDE — BUTTONS + BADGE */
+.profile-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+  position: relative;
+}
+
+/* Host Button + Badge */
+#hostSettingsWrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.smalla-btn {
+  background: rgba(255, 51, 102, 0.15);
+  border: 1px solid rgba(255, 51, 102, 0.3);
+  color: #ff3366;
+  padding: 10px 18px;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(8px);
+  min-width: 90px;
+  text-align: center;
+}
+
+.smalla-btn:hover {
+  background: rgba(255, 51, 102, 0.25);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(255, 51, 102, 0.2);
+}
+
+/* RED BADGE — SMALL, CUTE, SUBTLE */
+.host-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  background: #ff3366;
+  color: #000;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 900;
+  border: 2px solid #000;
+  box-shadow: 0 0 10px rgba(255, 51, 102, 0.6);
+  z-index: 10;
+}
+
+/* GLASSY LOGOUT — TINY & ELEGANT */
+#logoutWrapper {
+  margin-top: 4px;
+}
+
+.tiny-glass-logout {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #ff3366;
+  padding: 8px 16px;
+  border-radius: 50px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s;
+  backdrop-filter: blur(8px);
+}
+
+.tiny-glass-logout:hover {
+  background: rgba(255, 51, 102, 0.15);
+  border-color: #ff3366;
+  transform: translateY(-1px);
+}
+
+.tiny-glass-logout svg {
+  width: 13px;
+  height: 13px;
+}
 .star-popup{position:fixed;left:50%;top:18%;transform:translateX(-50%);background:var(--card);padding:8px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.05);display:none;z-index:1000;color:var(--accent);font-size:13px;white-space:nowrap;text-align:center;}
 .onlineCount{font-size:11px;color:var(--muted);}
 #authBox{display:flex;justify-content:center;margin:12px 0;}
@@ -1785,108 +1932,6 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 #hostSettingsWrapper {
   position: relative;
   display: inline-block;
-}
-.profile-card {
-  background: rgba(20,20,30,0.9);
-  border-radius: 20px;
-  padding: 20px;
-  border: 1px solid rgba(255,0,110,0.2);
-  backdrop-filter: blur(12px);
-}
-
-.profile-top {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 20px;
-}
-
-.profile-left {
-  flex: 1;
-}
-
-.profile-name {
-  font-size: 1.6rem;
-  font-weight: 800;
-  margin-bottom: 12px;
-  color: #fff;
-}
-
-.profile-stats {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.stat-row {
-  display: flex;
-  justify-content: space-between;
-  font-size: 1.1rem;
-}
-
-.profile-label {
-  color: #aaa;
-  font-weight: 600;
-}
-
-.profile-value {
-  color: #00ff9d;
-  font-weight: 800;
-}
-
-.profile-actions {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-}
-
-#hostSettingsWrapper {
-  position: relative;
-  display: inline-block;
-}
-
-.smalla-btn {
-  background: rgba(255,0,110,0.15);
-  border: 1px solid rgba(255,0,110,0.3);
-  color: #fff;
-  padding: 10px 16px;
-  border-radius: 12px;
-  font-size: 1rem;
-  cursor: pointer;
-}
-
-.host-badge {
-  position: absolute;
-  top: -6px;
-  right: -6px;
-  background: #ff006e;
-  color: #fff;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  font-weight: bold;
-  border: 2px solid #000;
-  box-shadow: 0 0 10px rgba(255,0,110,0.8);
-  z-index: 10;
-}
-
-.tiny-glass-logout {
-  background: rgba(255,0,110,0.15);
-  border: 1px solid rgba(255,0,110,0.4);
-  color: #ff3366;
-  padding: 8px 16px;
-  border-radius: 50px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  cursor: pointer;
 }
 </style>
 </head>
