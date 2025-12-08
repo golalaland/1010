@@ -3361,18 +3361,21 @@ confirmBtn.onclick = async () => {
   }
 }
 // ================================
-// UPLOAD HIGHLIGHT — GOD MODE 2025 (FINAL)
+// UPLOAD HIGHLIGHT — GOD MODE 2025 (FINAL FIXED)
 // ================================
 document.getElementById("uploadHighlightBtn")?.addEventListener("click", async () => {
   const btn = document.getElementById("uploadHighlightBtn");
 
-  // Reset state
+  // Reset button state
   btn.disabled = false;
   btn.classList.remove("uploading");
   btn.textContent = "Post Highlight";
 
-  // AUTH
-  if (!currentUser?.uid) return showGiftAlert("Sign in to upload", "error");
+  // AUTH CHECK
+  if (!currentUser?.uid) {
+    showGiftAlert("Sign in to upload", "error");
+    return;
+  }
 
   // INPUTS
   const fileInput = document.getElementById("highlightUploadInput");
@@ -3401,7 +3404,7 @@ document.getElementById("uploadHighlightBtn")?.addEventListener("click", async (
       const file = fileInput.files[0];
       if (file.size > 500 * 1024 * 1024) {
         showGiftAlert("Max 500MB", "error");
-        reset();
+        resetBtn();
         return;
       }
 
@@ -3410,7 +3413,7 @@ document.getElementById("uploadHighlightBtn")?.addEventListener("click", async (
       finalVideoUrl = await getDownloadURL(snapshot.ref);
     }
 
-    // SAVE CLIP TO FIRESTORE
+    // SAVE TO FIRESTORE
     const clipRef = await addDoc(collection(db, "highlightVideos"), {
       uploaderId: currentUser.uid,
       uploaderName: currentUser.chatId || "Legend",
@@ -3424,7 +3427,7 @@ document.getElementById("uploadHighlightBtn")?.addEventListener("click", async (
       views: 0
     });
 
-    // NOTIFY ALL PAST BUYERS (LOYAL FANS)
+    // NOTIFY ALL PAST BUYERS
     try {
       const pastClips = await getDocs(
         query(collection(db, "highlightVideos"), where("uploaderId", "==", currentUser.uid))
@@ -3477,7 +3480,6 @@ document.getElementById("uploadHighlightBtn")?.addEventListener("click", async (
     document.getElementById("highlightDescInput").value = "";
     document.getElementById("highlightPriceInput").value = "50";
 
-    // Refresh my clips
     if (typeof loadMyClips === "function") loadMyClips();
 
     // Auto reset button
@@ -3498,16 +3500,16 @@ document.getElementById("uploadHighlightBtn")?.addEventListener("click", async (
       btn.disabled = false;
     }, 2000);
   }
-});
 
-  // ——— RESET BUTTON ———
-  function resetButton() {
+  // Helper reset
+  function resetBtn() {
     btn.disabled = false;
     btn.classList.remove("uploading");
-    btn.textContent = "Post";
-    btn.style.background = ""; // back to original gradient
+    btn.textContent = "Post Highlight";
+    btn.style.background = "";
   }
 });
+
 (function() {
   const onlineCountEl = document.getElementById('onlineCount');
   const storageKey = 'fakeOnlineCount';
