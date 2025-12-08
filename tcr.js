@@ -3393,7 +3393,7 @@ document.getElementById("uploadHighlightBtn")?.addEventListener("click", async (
   // UPLOAD MODE
   btn.disabled = true;
   btn.classList.add("uploading");
-  btn.textContent = "";
+  btn.textContent = "....";
   showStarPopup("Dropping fire...", "loading");
 
   try {
@@ -3445,13 +3445,13 @@ document.getElementById("uploadHighlightBtn")?.addEventListener("click", async (
 
       if (loyalFans.size > 0) {
         const batch = writeBatch(db);
-        const message = `@${currentUser.chatId} just dropped a new highlight!`;
+        const message = `@${currentUser.chatId} just posted a new highlight!`;
 
         for (const fanId of loyalFans) {
           const notifRef = doc(collection(db, "notifications"));
           batch.set(notifRef, {
             recipientId: fanId,
-            title: "New Drop!",
+            title: "New Reels Drop!🎞",
             message,
             type: "new_highlight",
             fromUploader: currentUser.chatId,
