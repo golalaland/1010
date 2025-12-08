@@ -39,7 +39,7 @@ const withdrawalsTableBody = document.querySelector("#withdrawalsTable tbody");
 const userSearch = document.getElementById("userSearch");
 const exportCurrentCsv = document.getElementById("exportCurrentCsv");
 const exportFeaturedCsv = document.getElementById("exportFeaturedCsv");
-const exportWithdrawalsCsv = document.getElementById("exportWithdrawalsCsv");
+const exportwithdrawalsCsv = document.getElementById("exportwithdrawalsCsv");
 
 const wlEmailInput = document.getElementById("wlEmail");
 const wlPhoneInput = document.getElementById("wlPhone");
@@ -113,7 +113,7 @@ adminCheckBtn?.addEventListener("click", async () => {
   currentAdminEmailEl.textContent = admin.email;
   adminGate.classList.add("hidden");
   adminPanel.classList.remove("hidden");
-  await Promise.all([loadUsers(), loadWhitelist(), loadFeatured(), loadWithdrawals()]);
+  await Promise.all([loadUsers(), loadWhitelist(), loadFeatured(), loadwithdrawals()]);
 });
 
 logoutBtn?.addEventListener("click", () => {
@@ -239,7 +239,7 @@ async function loadWhitelist() {
 }
 
 // WITHDRAWALS — FIXED & WORKING
-async function loadWithdrawals() {
+async function loadwithdrawals() {
   if (!withdrawalsTableBody) return;
   withdrawalsTableBody.innerHTML = "<tr><td colspan='8' style='text-align:center;padding:100px;color:#888;'>Loading withdrawals...</td></tr>";
   try {
@@ -270,7 +270,7 @@ async function loadWithdrawals() {
             resolvedAt: serverTimestamp(),
             resolvedBy: currentAdmin.email
           });
-          loadWithdrawals();
+          loadwithdrawals();
         };
       }
       withdrawalsTableBody.appendChild(tr);
@@ -348,7 +348,7 @@ exportCurrentCsv?.addEventListener("click", () => {
   downloadCSV("users.csv", rows);
 });
 
-exportWithdrawalsCsv?.addEventListener("click", async () => {
+exportwithdrawalsCsv?.addEventListener("click", async () => {
   const rows = [["Date","Username","Amount","Status"]];
   const snap = await getDocs(query(collection(db, "withdrawals"), orderBy("requestedAt", "desc")));
   snap.forEach(d => {
@@ -363,5 +363,5 @@ if (currentAdmin) {
   loadUsers();
   loadWhitelist();
   loadFeatured();
-  loadWithdrawals();
+  loadwithdrawals();
 }
