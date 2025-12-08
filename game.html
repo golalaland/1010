@@ -16,15 +16,19 @@
     input, button { padding: 8px; margin: 5px; border-radius: 5px; border: none; }
     button { background: #0f9; color: #000; cursor: pointer; }
     button:disabled { opacity: 0.5; cursor: not-allowed; }
+    #loaderOverlay { position: fixed; inset: 0; background: rgba(0,0,0,0.95); display: none; align-items: center; justify-content: center; z-index: 9999; }
+    #loaderText { color: #0f9; font-size: 18px; }
   </style>
 </head>
 <body>
+  <div id="loaderOverlay"><div id="loaderText">Working...</div></div>
   <h1>Tap Master Admin Dashboard</h1>
   <div class="tab-container">
     <div class="tab active" data-tab="leaderboards">Leaderboards</div>
     <div class="tab" data-tab="winners">Winners History</div>
     <div class="tab" data-tab="rewards">Rewards Management</div>
     <div class="tab" data-tab="configs">Game Configs</div>
+    <div class="tab" data-tab="withdrawals">Withdrawals</div>
   </div>
 
   <div id="leaderboards" class="section active">
@@ -36,9 +40,7 @@
       <option value="bid">Bid Royale</option>
     </select>
     <input id="lb-limit" type="number" placeholder="Top N (e.g. 50)" value="50">
-    <select id="bid-round" style="display:none;">
-      <!-- Populated dynamically -->
-    </select>
+    <select id="bid-round" style="display:none;"></select>
     <button id="fetch-lb">Fetch Top Players</button>
     <table id="lb-table">
       <thead><tr><th>Rank</th><th>User</th><th>Taps</th><th>Email</th></tr></thead>
@@ -63,13 +65,9 @@
   <div id="rewards" class="section">
     <h2>Rewards Management</h2>
     <p>Set batch rewards (e.g., top 1-10: cash 5000, stars 0)</p>
-    <div id="reward-rules">
-      <!-- Dynamic inputs -->
-    </div>
+    <div id="reward-rules"></div>
     <button id="add-rule">Add Reward Rule</button>
-    <select id="reward-winners-date">
-      <!-- Populated with saved winner dates -->
-    </select>
+    <select id="reward-winners-date"></select>
     <button id="apply-rewards">Apply & Mass Send Rewards</button>
     <button id="send-notifs">Send Custom Notifications</button>
     <textarea id="notif-message" placeholder="Custom notification message"></textarea>
@@ -84,9 +82,17 @@
     <button id="save-configs">Save Configs</button>
   </div>
 
+  <div id="withdrawals" class="section">
+    <h2>Withdrawals Management</h2>
+    <table id="withdrawals-table">
+      <thead><tr><th>Date</th><th>Username</th><th>UID</th><th>Amount</th><th>Bank</th><th>Account</th><th>Status</th><th>Action</th></tr></thead>
+      <tbody></tbody>
+    </table>
+    <button id="export-withdrawals-csv">Export Withdrawals CSV</button>
+  </div>
+
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
     import {
       getFirestore, doc, getDoc, setDoc, updateDoc, collection, getDocs, query, where, orderBy, limit, serverTimestamp, runTransaction, addDoc, deleteDoc
     } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
@@ -101,30 +107,54 @@
       measurementId: "G-NX2KWZW85V"
     };
     const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
     const db = getFirestore(app);
 
-    let currentUser = null;
+    const loaderOverlay = document.getElementById("loaderOverlay");
+    const loaderText = document.getElementById("loaderText");
+
+    function showLoader(text = "Working...") {
+      loaderText.textContent = text;
+      loaderOverlay.style.display = "flex";
+    }
+    function hideLoader() { loaderOverlay.style.display = "none"; }
+
+    function showConfirm(title, msg) {
+      return new Promise(resolve => {
+        const overlay = document.createElement("div");
+        overlay.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.95);display:flex;align-items:center;justify-content:center;z-index:999999;backdrop-filter:blur(12px);";
+        overlay.innerHTML = `
+          <div style="background:#111;padding:32px;border-radius:18px;text-align:center;max-width:380px;width:90%;box-shadow:0 0 60px rgba(255,0,110,0.5);border:1px solid #444;">
+            <h3 style="color:#fff;margin:0 0 16px;font-size:22px;">${title}</h3>
+            <p style="color:#ccc;margin:0 0 24px;line-height:1.6;">${msg}</p>
+            <div style="display:flex;gap:16px;justify-content:center;">
+              <button id="no" style="padding:12px 28px;background:#333;color:#ccc;border:none;border-radius:12px;font-weight:600;cursor:pointer;">Cancel</button>
+              <button id="yes" style="padding:12px 28px;background:linear-gradient(90deg,#ff006e,#ff4500);color:#fff;border:none;border-radius:12px;font-weight:700;cursor:pointer;">Confirm</button>
+            </div>
+          </div>`;
+        document.body.appendChild(overlay);
+        overlay.querySelector("#no").onclick = () => { overlay.remove(); resolve(false); };
+        overlay.querySelector("#yes").onclick = () => { overlay.remove(); resolve(true); };
+      });
+    }
+
+    function downloadCSV(filename, rows) {
+      const csv = rows.map(r => r.map(c => `"${String(c ?? "").replace(/"/g, '""')}"`).join(",")).join("\n");
+      const blob = new Blob(["\uFEFF" + csv], { type: "text/csv" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = filename;
+      a.click();
+    }
+
     let currentLbData = [];
     let currentWinnersData = [];
 
-    onAuthStateChanged(auth, user => {
-      if (user) {
-        loadAdmin(user);
-      } else {
-        alert('Admin login required');
-      }
-    });
-
-    async function loadAdmin(user) {
-      currentUser = user;
-      // Assume admin check via Firestore rules or custom claim
-      initTabs();
-      loadBidRounds();
-      loadWinnerDates();
-      loadConfigs();
-      initRewardRules();
-    }
+    initTabs();
+    loadBidRounds();
+    loadWinnerDates();
+    loadConfigs();
+    initRewardRules();
+    loadWithdrawals();
 
     function initTabs() {
       document.querySelectorAll('.tab').forEach(tab => {
@@ -137,20 +167,60 @@
       });
     }
 
-    document.getElementById('fetch-lb').addEventListener('click', fetchLeaderboard);
-    document.getElementById('save-winners').addEventListener('click', saveWinners);
-    document.getElementById('fetch-winners').addEventListener('click', fetchWinnersHistory);
-    document.getElementById('export-csv').addEventListener('click', exportCSV);
-    document.getElementById('clear-winners').addEventListener('click', clearWinners);
-    document.getElementById('add-rule').addEventListener('click', addRewardRule);
-    document.getElementById('apply-rewards').addEventListener('click', applyRewards);
-    document.getElementById('send-notifs').addEventListener('click', sendNotifications);
-    document.getElementById('save-configs').addEventListener('click', saveConfigs);
-
     document.getElementById('lb-type').addEventListener('change', (e) => {
       const isBid = e.target.value === 'bid';
       document.getElementById('bid-round').style.display = isBid ? 'inline' : 'none';
     });
+
+    document.getElementById('fetch-lb').addEventListener('click', async () => {
+      showLoader("Fetching leaderboard...");
+      await fetchLeaderboard();
+      hideLoader();
+    });
+
+    document.getElementById('save-winners').addEventListener('click', async () => {
+      showLoader("Saving winners...");
+      await saveWinners();
+      hideLoader();
+    });
+
+    document.getElementById('fetch-winners').addEventListener('click', async () => {
+      showLoader("Fetching history...");
+      await fetchWinnersHistory();
+      hideLoader();
+    });
+
+    document.getElementById('export-csv').addEventListener('click', exportCSV);
+
+    document.getElementById('clear-winners').addEventListener('click', async () => {
+      if (await showConfirm("Clear", "Clear all winners?")) {
+        showLoader("Clearing...");
+        await clearWinners();
+        hideLoader();
+      }
+    });
+
+    document.getElementById('add-rule').addEventListener('click', addRewardRule);
+
+    document.getElementById('apply-rewards').addEventListener('click', async () => {
+      showLoader("Applying rewards...");
+      await applyRewards();
+      hideLoader();
+    });
+
+    document.getElementById('send-notifs').addEventListener('click', async () => {
+      showLoader("Sending notifications...");
+      await sendNotifications();
+      hideLoader();
+    });
+
+    document.getElementById('save-configs').addEventListener('click', async () => {
+      showLoader("Saving configs...");
+      await saveConfigs();
+      hideLoader();
+    });
+
+    document.getElementById('export-withdrawals-csv').addEventListener('click', exportWithdrawalsCSV);
 
     async function fetchLeaderboard() {
       const type = document.getElementById('lb-type').value;
@@ -182,8 +252,9 @@
       }
 
       currentLbData.forEach((u, i) => {
-        const row = `<tr><td>${i+1}</td><td>${u.username}</td><td>${u.taps}</td><td>${u.email || ''}</td></tr>`;
-        tableBody.innerHTML += row;
+        const row = document.createElement('tr');
+        row.innerHTML = `<td>${i+1}</td><td>${u.username}</td><td>${u.taps}</td><td>${u.email || ''}</td>`;
+        tableBody.appendChild(row);
       });
     }
 
@@ -214,11 +285,12 @@
         timestamp: serverTimestamp()
       });
       alert('Winners saved for ' + date);
+      loadWinnerDates();
     }
 
     async function loadBidRounds() {
-      const rounds = await getDocs(collection(db, 'bids'));
-      const uniqueRounds = [...new Set(rounds.docs.map(d => d.data().roundId))];
+      const bids = await getDocs(collection(db, 'bids'));
+      const uniqueRounds = [...new Set(bids.docs.map(d => d.data().roundId))].sort((a,b) => b.localeCompare(a));
       const select = document.getElementById('bid-round');
       select.innerHTML = uniqueRounds.map(r => `<option value="${r}">${r}</option>`).join('');
     }
@@ -233,8 +305,9 @@
     async function fetchWinnersHistory() {
       const from = document.getElementById('winners-from').value;
       const to = document.getElementById('winners-to').value;
-      let q = collection(db, 'winners');
-      if (from && to) q = query(q, where('date', '>=', from), where('date', '<=', to));
+      let q = query(collection(db, 'winners'), orderBy('date', 'desc'));
+      if (from) q = query(q, where('date', '>=', from));
+      if (to) q = query(q, where('date', '<=', to));
       const snaps = await getDocs(q);
       const tableBody = document.getElementById('winners-table').querySelector('tbody');
       tableBody.innerHTML = '';
@@ -242,8 +315,10 @@
       snaps.docs.forEach(doc => {
         const data = doc.data();
         data.winners.forEach(w => {
-          const row = `<tr><td>${data.date}</td><td>${w.rank}</td><td>${w.username}</td><td>${w.taps}</td><td>Cash: ${w.rewards.cash}, Stars: ${w.rewards.stars}</td></tr>`;
-          tableBody.innerHTML += row;
+          const rewardsStr = `Cash: ${w.rewards.cash}, Stars: ${w.rewards.stars}`;
+          const row = document.createElement('tr');
+          row.innerHTML = `<td>${data.date}</td><td>${w.rank}</td><td>${w.username}</td><td>${w.taps}</td><td>${rewardsStr}</td>`;
+          tableBody.appendChild(row);
           currentWinnersData.push({ date: data.date, ...w });
         });
       });
@@ -251,24 +326,19 @@
 
     function exportCSV() {
       if (currentWinnersData.length === 0) return alert('Fetch winners first');
-      let csv = 'Date,Rank,User,Taps,Cash,Stars,Email\n';
-      currentWinnersData.forEach(w => {
-        csv += `${w.date},${w.rank},${w.username},${w.taps},${w.rewards.cash},${w.rewards.stars},${w.email || ''}\n`;
-      });
-      const blob = new Blob([csv], { type: 'text/csv' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'winners.csv';
-      a.click();
+      const headers = ['Date','Rank','User','Taps','Cash','Stars','Email'];
+      const rows = [headers, ...currentWinnersData.map(w => [w.date, w.rank, w.username, w.taps, w.rewards.cash, w.rewards.stars, w.email || ''])];
+      downloadCSV('winners.csv', rows);
     }
 
     async function clearWinners() {
-      if (!confirm('Clear all winners history?')) return;
       const winners = await getDocs(collection(db, 'winners'));
-      winners.docs.forEach(async d => await deleteDoc(d.ref));
+      for (const d of winners.docs) {
+        await deleteDoc(d.ref);
+      }
       alert('Cleared');
       document.getElementById('winners-table').querySelector('tbody').innerHTML = '';
+      loadWinnerDates();
     }
 
     function initRewardRules() {
@@ -337,10 +407,8 @@
       const date = document.getElementById('reward-winners-date').value;
       const winnersRef = doc(db, 'winners', date);
       const snap = await getDoc(winnersRef);
-      if (!snap.exists()) return;
+      if (!snap.exists()) return alert('No winners');
       const winners = snap.data().winners;
-      // Placeholder for notifications - integrate with your notification system
-      // e.g., add to a notifications collection or use FCM
       for (let w of winners) {
         await addDoc(collection(db, 'notifications'), {
           uid: w.uid,
@@ -348,7 +416,7 @@
           timestamp: serverTimestamp()
         });
       }
-      alert('Notifications sent - check notifications collection');
+      alert('Notifications sent');
     }
 
     async function loadConfigs() {
@@ -371,7 +439,52 @@
         BASE_PRIZE_POOL: parseInt(document.getElementById('base-pool').value),
         MAX_PRIZE_POOL: parseInt(document.getElementById('max-pool').value) || null
       });
-      alert('Configs saved - restart client to apply');
+      alert('Configs saved');
+    }
+
+    async function loadWithdrawals() {
+      const tableBody = document.getElementById('withdrawals-table').querySelector('tbody');
+      tableBody.innerHTML = '';
+      const q = query(collection(db, "withdrawals"), orderBy("requestedAt", "desc"));
+      const snap = await getDocs(q);
+      snap.forEach(d => {
+        const w = d.data();
+        let dateStr = "Unknown";
+        if (w.requestedAt?.toDate) dateStr = w.requestedAt.toDate().toLocaleString();
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${dateStr}</td>
+          <td>${w.username || "—"}</td>
+          <td>${(w.uid || "").replace(/_/g, ".")}</td>
+          <td>₦${(w.amount || 0).toLocaleString()}</td>
+          <td>${w.bankName || "—"}</td>
+          <td>${w.bankAccountNumber || "—"}</td>
+          <td>${w.status || "pending"}</td>
+          <td>${w.status === "pending" ? '<button class="resolve-withdraw">Resolve</button>' : 'Done'}</td>
+        `;
+        const resolveBtn = row.querySelector('.resolve-withdraw');
+        if (resolveBtn) {
+          resolveBtn.addEventListener('click', async () => {
+            if (await showConfirm('Resolve', `Mark as resolved?`)) {
+              showLoader('Resolving...');
+              await updateDoc(doc(db, 'withdrawals', d.id), { status: 'resolved', resolvedAt: serverTimestamp() });
+              hideLoader();
+              loadWithdrawals();
+            }
+          });
+        }
+        tableBody.appendChild(row);
+      });
+    }
+
+    async function exportWithdrawalsCSV() {
+      const rows = [['Date','Username','Amount','Status']];
+      const snap = await getDocs(collection(db, 'withdrawals'));
+      snap.forEach(d => {
+        const w = d.data();
+        rows.push([w.requestedAt?.toDate?.().toLocaleString() || '—', w.username||'', w.amount||0, w.status||'pending']);
+      });
+      downloadCSV('withdrawals.csv', rows);
     }
   </script>
 </body>
