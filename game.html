@@ -152,24 +152,138 @@
     }
     function hideLoader() { loaderOverlay.style.display = "none"; }
 
-    function showConfirm(title, msg) {
-      return new Promise(resolve => {
-        const overlay = document.createElement("div");
-        overlay.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.95);display:flex;align-items:center;justify-content:center;z-index:999999;backdrop-filter:blur(12px);";
-        overlay.innerHTML = `
-          <div style="background:#111;padding:32px;border-radius:18px;text-align:center;max-width:380px;width:90%;box-shadow:0 0 60px rgba(255,0,110,0.5);border:1px solid #444;">
-            <h3 style="color:#fff;margin:0 0 16px;font-size:22px;">${title}</h3>
-            <p style="color:#ccc;margin:0 0 24px;line-height:1.6;">${msg}</p>
-            <div style="display:flex;gap:16px;justify-content:center;">
-              <button id="no" style="padding:12px 28px;background:#333;color:#ccc;border:none;border-radius:12px;font-weight:600;cursor:pointer;">Cancel</button>
-              <button id="yes" style="padding:12px 28px;background:linear-gradient(90deg,#ff006e,#ff4500);color:#fff;border:none;border-radius:12px;font-weight:700;cursor:pointer;">Confirm</button>
-            </div>
-          </div>`;
-        document.body.appendChild(overlay);
-        overlay.querySelector("#no").onclick = () => { overlay.remove(); resolve(false); };
-        overlay.querySelector("#yes").onclick = () => { overlay.remove(); resolve(true); };
-      });
-    }
+  function showConfirm(title = "Confirm", msg = "Are you sure?") {
+  return new Promise(resolve => {
+    const overlay = document.createElement("div");
+    overlay.style.cssText = `
+      position:fixed;inset:0;
+      background:rgba(0,0,0,0.96);
+      backdrop-filter:blur(20px);
+      display:flex;align-items:center;justify-content:center;
+      z-index:999999;
+      opacity:0;
+      transition:opacity 0.5s ease;
+    `;
+
+    overlay.innerHTML = `
+      <div style="
+        background:linear-gradient(135deg,#1a0033,#2d1b69,#0f0c29);
+        padding:40px 32px;
+        border-radius:28px;
+        max-width:440px;
+        width:92%;
+        text-align:center;
+        box-shadow:0 0 120px rgba(255,0,110,0.6),inset 0 0 60px rgba(0,255,150,0.15);
+        border:3px solid transparent;
+        background-clip:padding-box;
+        position:relative;
+        overflow:hidden;
+        transform:scale(0.9);
+        transition:transform 0.6s cubic-bezier(0.18,0.89,0.32,1.28);
+      ">
+        <div style="
+          position:absolute;
+          inset:0;
+          background:linear-gradient(45deg,transparent 30%,rgba(0,255,150,0.12) 50%,transparent 70%);
+          animation:shine 5s infinite;
+        "></div>
+
+        <h3 style="
+          margin:0 0 20px;
+          font-size:32px;
+          color:#0f9;
+          text-shadow:0 0 30px #0f9,0 0 60px #0f9;
+          font-weight:900;
+          letter-spacing:1px;
+        ">${title}</h3>
+
+        <p style="
+          margin:0 0 36px;
+          font-size:19px;
+          color:#fff;
+          line-height:1.7;
+          opacity:0.95;
+        ">${msg}</p>
+
+        <div style="display:flex;gap:22px;justify-content:center;">
+          <button id="no" style="
+            flex:1;
+            padding:18px;
+            background:#222;
+            color:#aaa;
+            border:none;
+            border-radius:20px;
+            font-weight:800;
+            font-size:16px;
+            cursor:pointer;
+            box-shadow:0 8px 25px rgba(0,0,0,0.7);
+            transition:all 0.3s;
+          " onmouseover="this.style.background='#444';this.style.transform='translateY(-4px)'"
+             onmouseout="this.style.background='#222';this.style.transform='translateY(0)'">CANCEL</button>
+
+          <button id="yes" style="
+            flex:1;
+            padding:18px;
+            background:linear-gradient(90deg,#ff006e,#ff3300,#ff006e);
+            color:#fff;
+            border:none;
+            border-radius:20px;
+            font-weight:900;
+            font-size:16px;
+            cursor:pointer;
+            box-shadow:0 12px 40px rgba(255,0,110,0.8);
+            animation:pulse 2s infinite;
+            background-size:200%;
+            transition:all 0.4s;
+          " onmouseover="this.style.transform='scale(1.08)';this.style.backgroundPosition='right'"
+             onmouseout="this.style.transform='scale(1)';this.style.backgroundPosition='left'">YES, DO IT</button>
+        </div>
+      </div>
+    `;
+
+    // Add styles for animations
+    const style = document.createElement("style");
+    style.textContent = `
+      @keyframes shine {
+        0% { transform: translateX(-150%) translateY(-150%) rotate(30deg); }
+        100% { transform: translateX(150%) translateY(150%) rotate(30deg); }
+      }
+      @keyframes pulse {
+        0%, 100% { box-shadow: 0 12px 40px rgba(255,0,110,0.8); }
+        50% { box-shadow: 0 20px 60px rgba(255,0,110,1); }
+      }
+    `;
+    document.head.appendChild(style);
+
+    document.body.appendChild(overlay);
+
+    // Animate in
+    setTimeout(() => {
+      overlay.style.opacity = "1";
+      overlay.querySelector("div > div").style.transform = "scale(1)";
+    }, 50);
+
+    // Button actions
+    overlay.querySelector("#no").onclick = () => {
+      overlay.style.opacity = "0";
+      setTimeout(() => { overlay.remove(); style.remove(); }, 500);
+      resolve(false);
+    };
+
+    overlay.querySelector("#yes").onclick = () => {
+      overlay.style.opacity = "0";
+      setTimeout(() => { overlay.remove(); style.remove(); }, 500);
+      resolve(true);
+    };
+
+    // Click outside to cancel
+    overlay.onclick = (e) => {
+      if (e.target === overlay) {
+        overlay.querySelector("#no").click();
+      }
+    };
+  });
+}
 
     function downloadCSV(filename, rows) {
       const csv = rows.map(r => r.map(c => `"${String(c ?? "").replace(/"/g, '""')}"`).join(",")).join("\n");
