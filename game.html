@@ -465,7 +465,7 @@
 
       await addDoc(collection(db, "notifications"), {
         recipientId: w.uid,
-        title: "Leaderboard Winner!",
+        title: "TapMaster Reward!",
         message: `You placed #${w.rank} and won ${rewardText.join(" + ")}!`,
         type: "leaderboardReward",
         rank: w.rank,
