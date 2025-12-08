@@ -39,7 +39,7 @@ const withdrawalsTableBody = document.querySelector("#withdrawalsTable tbody");
 const userSearch = document.getElementById("userSearch");
 const exportCurrentCsv = document.getElementById("exportCurrentCsv");
 const exportFeaturedCsv = document.getElementById("exportFeaturedCsv");
-const exportwithdrawalsCsv = document.getElementById("exportwithdrawalsCsv");
+const exportWithdrawalsCsv = document.getElementById("exportWithdrawalsCsv");
 
 const wlEmailInput = document.getElementById("wlEmail");
 const wlPhoneInput = document.getElementById("wlPhone");
@@ -113,7 +113,7 @@ adminCheckBtn?.addEventListener("click", async () => {
   currentAdminEmailEl.textContent = admin.email;
   adminGate.classList.add("hidden");
   adminPanel.classList.remove("hidden");
-  await Promise.all([loadUsers(), loadWhitelist(), loadFeatured(), loadwithdrawals()]);
+  await Promise.all([loadUsers(), loadWhitelist(), loadFeatured(), loadWithdrawals()]);
 });
 
 logoutBtn?.addEventListener("click", () => {
@@ -239,44 +239,87 @@ async function loadWhitelist() {
 }
 
 // WITHDRAWALS — FIXED & WORKING
-async function loadwithdrawals() {
+async function loadWithdrawals() {
   if (!withdrawalsTableBody) return;
   withdrawalsTableBody.innerHTML = "<tr><td colspan='8' style='text-align:center;padding:100px;color:#888;'>Loading withdrawals...</td></tr>";
+
   try {
     const q = query(collection(db, "withdrawals"), orderBy("requestedAt", "desc"));
     const snap = await getDocs(q);
+
     withdrawalsTableBody.innerHTML = "";
+
+    if (snap.empty) {
+      withdrawalsTableBody.innerHTML = "<tr><td colspan='8' style='text-align:center;padding:100px;color:#888;'>No withdrawal requests yet</td></tr>";
+      return;
+    }
+
     snap.forEach(d => {
       const w = d.data();
+
+      // SAFE DATE — works even if requestedAt is string or missing
+      let dateStr = "Unknown date";
+      if (w.requestedAt) {
+        if (typeof w.requestedAt.toDate === "function") {
+          dateStr = w.requestedAt.toDate().toLocaleString();
+        } else if (w.requestedAt.seconds) {
+          dateStr = new Date(w.requestedAt.seconds * 1000).toLocaleString();
+        } else if (typeof w.requestedAt === "string") {
+          dateStr = w.requestedAt;
+        }
+      }
+
       const tr = document.createElement("tr");
       tr.innerHTML = `
-        <td>${new Date(w.requestedAt.toDate()).toLocaleString()}</td>
+        <td>${dateStr}</td>
         <td>${w.username || "—"}</td>
-        <td>${w.uid.replace(/_/g, ".")}</td>
-        <td style="color:#00ff9d;font-weight:700;">₦${w.amount.toLocaleString()}</td>
+        <td>${(w.uid || "").replace(/_/g, ".")}</td>
+        <td style="color:#00ffea;font-weight:800;font-size:18px;">₦${(w.amount || 0).toLocaleString()}</td>
         <td>${w.bankName || "—"}</td>
         <td>${w.bankAccountNumber || "—"}</td>
-        <td><span style="color:${w.status === "pending" ? "#ff6b6b" : "#51cf66"};font-weight:700;">${w.status.toUpperCase()}</span></td>
         <td>
-          ${w.status === "pending" ? `<button class="resolve-btn btn-primary">Mark Resolved</button>` : "Done"}
+          <span style="padding:8px 16px;border-radius:50px;font-weight:700;
+                       background:${w.status === "pending" ? "rgba(255,107,107,0.2)" : "rgba(81,207,102,0.2)"};
+                       color:${w.status === "pending" ? "#ff6b6b" : "#51cf66"};">
+            ${w.status?.toUpperCase() || "PENDING"}
+          </span>
+        </td>
+        <td>
+          ${w.status === "pending" ? `
+            <button class="resolve-btn btn-primary" style="padding:10px 20px;">Mark Resolved</button>
+          ` : `<span style="color:#666;">Completed</span>`}
         </td>
       `;
-      if (w.status === "pending") {
-        tr.querySelector(".resolve-btn").onclick = async () => {
-          const ok = await showConfirm("Resolve", "Mark as resolved?");
+
+      // Resolve button
+      const btn = tr.querySelector(".resolve-btn");
+      if (btn) {
+        btn.onclick = async () => {
+          const ok = await showConfirm("Resolve Withdrawal", `Mark ₦${w.amount.toLocaleString()} as paid?`);
           if (!ok) return;
-          await updateDoc(doc(db, "withdrawals", d.id), {
-            status: "resolved",
-            resolvedAt: serverTimestamp(),
-            resolvedBy: currentAdmin.email
-          });
-          loadwithdrawals();
+          showLoader("Updating...");
+          try {
+            await updateDoc(doc(db, "withdrawals", d.id), {
+              status: "resolved",
+              resolvedAt: serverTimestamp(),
+              resolvedBy: currentAdmin.email
+            });
+            showGoldAlert("Withdrawal resolved!");
+            loadWithdrawals();
+          } catch (e) {
+            showGoldAlert("Failed to resolve");
+          } finally {
+            hideLoader();
+          }
         };
       }
+
       withdrawalsTableBody.appendChild(tr);
     });
-  } catch (e) {
-    withdrawalsTableBody.innerHTML = "<tr><td colspan='8' style='color:#f66;padding:100px;text-align:center;'>Load failed</td></tr>";
+
+  } catch (err) {
+    console.error("Withdrawals error:", err);
+    withdrawalsTableBody.innerHTML = "<tr><td colspan='8' style='color:#f66;padding:100px;text-align:center;'>Load failed — check console</td></tr>";
   }
 }
 
@@ -348,7 +391,7 @@ exportCurrentCsv?.addEventListener("click", () => {
   downloadCSV("users.csv", rows);
 });
 
-exportwithdrawalsCsv?.addEventListener("click", async () => {
+exportWithdrawalsCsv?.addEventListener("click", async () => {
   const rows = [["Date","Username","Amount","Status"]];
   const snap = await getDocs(query(collection(db, "withdrawals"), orderBy("requestedAt", "desc")));
   snap.forEach(d => {
@@ -363,5 +406,5 @@ if (currentAdmin) {
   loadUsers();
   loadWhitelist();
   loadFeatured();
-  loadwithdrawals();
+  loadWithdrawals();
 }
