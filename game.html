@@ -43,6 +43,16 @@
       <div class="tab" data-tab="withdrawals">Withdrawals</div>
     </div>
 
+    <!-- CUSTOM DOPE ALERT — REPLACES ALL browser alert() -->
+<div id="dopeAlert" style="position:fixed;inset:0;background:rgba(0,0,0,0.92);backdrop-filter:blur(16px);display:none;align-items:center;justify-content:center;z-index:999999;opacity:0;transition:opacity 0.4s ease;">
+  <div style="background:linear-gradient(135deg,#0f0c29,#302b63,#24243e);padding:40px 30px;border-radius:24px;max-width:420px;width:90%;text-align:center;box-shadow:0 0 80px rgba(0,255,150,0.4),inset 0 0 40px rgba(0,255,150,0.1);border:2px solid #0f9;transform:scale(0.9);transition:transform 0.5s cubic-bezier(0.18,0.89,0.32,1.28);">
+    <div style="font-size:52px;margin-bottom:16px;opacity:0;transform:translateY(-30px);transition:all 0.6s ease;" id="dopeIcon">Checkmark</div>
+    <h2 style="margin:0 0 16px;font-size:28px;color:#0f9;text-shadow:0 0 20px #0f9;opacity:0;transform:translateY(20px);transition:all 0.7s ease;" id="dopeTitle">Success!</h2>
+    <p style="margin:0;font-size:18px;color:#fff;opacity:0.9;line-height:1.6;opacity:0;transform:translateY(20px);transition:all 0.8s ease;" id="dopeMessage">Operation completed successfully.</p>
+    <button id="dopeClose" style="margin-top:28px;padding:14px 36px;background:#0f9;color:#000;font-weight:900;border:none;border-radius:16px;cursor:pointer;box-shadow:0 8px 20px rgba(0,255,150,0.4);transition:all 0.3s;" onmouseover="this.style.transform='scale(1.08)'" onmouseout="this.style.transform='scale(1)'">GOT IT</button>
+  </div>
+</div>
+
     <div id="leaderboards" class="section active">
       <h2>Leaderboard Feeds (Live)</h2>
       <select id="lb-type">
@@ -335,7 +345,7 @@
     }
 
     async function saveWinners() {
-      if (currentLbData.length === 0) return alert('No data');
+      if (currentLbData.length === 0) return dopeAlert('No data');
       const date = new Date().toISOString().split('T')[0];
       const winnersRef = doc(db, 'winners', date);
       await setDoc(winnersRef, {
@@ -345,7 +355,7 @@
         winners: currentLbData.map((u, i) => ({ rank: i+1, ...u, rewards: { cash: 0, stars: 0 } })),
         timestamp: serverTimestamp()
       });
-      alert('Saved');
+      dopeAlert('Saved');
       loadWinnerDates();
     }
 
@@ -386,7 +396,7 @@
     }
 
     function exportCSV() {
-      if (currentWinnersData.length === 0) return alert('Fetch winners first');
+      if (currentWinnersData.length === 0) return dopeAlert('Fetch winners first');
       const headers = ['Date','Rank','User','Taps','Cash','Stars','Email'];
       const rows = [headers, ...currentWinnersData.map(w => [w.date, w.rank, w.username, w.taps, w.rewards.cash, w.rewards.stars, w.email || ''])];
       downloadCSV('winners.csv', rows);
@@ -397,7 +407,7 @@
       for (const d of winners.docs) {
         await deleteDoc(d.ref);
       }
-      alert('Cleared');
+      dopeAlert('Cleared');
       document.getElementById('winners-table').querySelector('tbody').innerHTML = '';
       loadWinnerDates();
     }
@@ -423,7 +433,7 @@
   const date = document.getElementById('reward-winners-date').value;
   const winnersRef = doc(db, 'winners', date);
   const snap = await getDoc(winnersRef);
-  if (!snap.exists()) return alert('No winners for this date');
+  if (!snap.exists()) return dopeAlert('No winners for this date');
   let winners = snap.data().winners;
 
   const rules = Array.from(document.querySelectorAll('#reward-rules > div')).map(div => ({
@@ -475,7 +485,7 @@
       });
     }
   }
-  alert('Rewards sent + users notified in their bell!');
+  dopeAlert('Rewards sent + users notified in their bell!');
 }
 
     async function loadConfigs() {
@@ -498,7 +508,7 @@
         BASE_PRIZE_POOL: parseInt(document.getElementById('base-pool').value),
         MAX_PRIZE_POOL: parseInt(document.getElementById('max-pool').value) || null
       });
-      alert('Configs saved');
+      dopedopeAlert('Configs saved');
     }
 
     async function loadWithdrawals() {
@@ -545,6 +555,49 @@
       });
       downloadCSV('withdrawals.csv', rows);
     }
+    // DOPE ALERT — REPLACE ALL alert() CALLS
+function dopeAlert(message, title = "Done!", icon = "Checkmark", duration = 5000) {
+  const alertBox = document.getElementById("dopeAlert");
+  const iconEl = document.getElementById("dopeIcon");
+  const titleEl = document.getElementById("dopeTitle");
+  const msgEl = document.getElementById("dopeMessage");
+
+  // Set content
+  titleEl.textContent = title;
+  msgEl.textContent = message;
+  iconEl.innerHTML = icon;
+
+  // Show + animate in
+  alertBox.style.display = "flex";
+  setTimeout(() => {
+    alertBox.style.opacity = "1";
+    document.querySelectorAll("#dopeAlert > div > *").forEach((el, i) => {
+      setTimeout(() => {
+        el.style.opacity = "1";
+        el.style.transform = "translateY(0) scale(1)";
+      }, i * 150);
+    });
+  }, 50);
+
+  // Auto close
+  const autoClose = setTimeout(() => closeDope(), duration);
+
+  // Manual close
+  document.getElementById("dopeClose").onclick = () => {
+    clearTimeout(autoClose);
+    closeDope();
+  };
+
+  function closeDope() {
+    alertBox.style.opacity = "0";
+    setTimeout(() => alertBox.style.display = "none", 400);
+  }
+}
+
+// OVERRIDE NATIVE alert() — NOW IT'S DOPE
+window.alert = function(message) {
+  dopeAlert(message, "Alert", "Warning", 7000);
+};
   </script>
 </body>
 </html>
