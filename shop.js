@@ -388,17 +388,17 @@ const renderTabContent = (type) => {
     btn.textContent = 'Invite Friends';
     DOM.tabContent.appendChild(btn);
 
-   btn.addEventListener('click', () => {
+  btn.addEventListener('click', () => {
   const chatId = currentUser?.chatId || 'friend';
-  const cleanChatId = encodeURIComponent(chatId.startsWith('@') ? chatId : `@${chatId}`);
+  const prettyHandle = chatId.startsWith('@') ? chatId : `@${chatId}`;
 
   const message = `Hey! I'm hosting on xixi live, join my tab and let’s win together! Sign up using my link: `;
-  const link = `https://cube.xixi.live/signup?ref=${cleanChatId}`;
+  const link = `https://cube.xixi.live/signup?ref=${encodeURIComponent(prettyHandle)}`;
 
   const fullText = message + link;
 
   navigator.clipboard.writeText(fullText)
-    .then(() => showThemedMessage('Copied!', 'Referral link copied to clipboard', 2000))
+    .then(() => showThemedMessage('Copied!', 'Your invite link is ready!', 2000))
     .catch(() => showThemedMessage('Error', 'Could not copy link', 2000));
 });
   } else if (type === 'badges') {
