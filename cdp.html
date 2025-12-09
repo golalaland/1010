@@ -23,6 +23,12 @@
       margin:0;
     }
 
+      /* ADD THESE ↓ */
+  transform: scale(0.85);
+  transform-origin: top center;
+  width:117.6%;
+}
+
     .container {
       width:100%;
       max-width:480px;
@@ -167,19 +173,7 @@
 
     @keyframes marquee { 0% { transform:translateX(0); } 100% { transform:translateX(-50%); } }
     @keyframes spin { to { transform:rotate(360deg); } }
-    body {
-  display:flex;
-  justify-content:center;
-  align-items:flex-start;
-  padding:0;
-  margin:0;
-
-  /* ADD THESE ↓ */
-  transform: scale(0.85);
-  transform-origin: top center;
-  width:117.6%;
-}
-
+  
   </style>
 </head>
 <body>
