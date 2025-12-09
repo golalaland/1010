@@ -315,7 +315,7 @@ let currentUser = null;
     if (DOM.username) {
       DOM.username.textContent = currentUser.chatId || storedUser.displayName || storedUser.email.split('@')[0] || 'Guest';
     }
-    if (DOM.stars) DOM.stars.textContent = `${formatNumber(currentUser.stars)} Stars`;
+    if (DOM.stars) DOM.stars.textContent = `${formatNumber(currentUser.stars)} ⭐️`;
     if (DOM.cash) DOM.cash.textContent = `₦${formatNumber(currentUser.cash)}`;
     if (DOM.hostTabs) DOM.hostTabs.style.display = currentUser.isHost ? '' : 'none';
 
@@ -340,7 +340,7 @@ let currentUser = null;
       currentUser = { uid, ...data, email: storedUser.email };
 
       DOM.username.textContent = currentUser.chatId || storedUser.displayName || storedUser.email.split('@')[0] || 'Guest';
-      DOM.stars.textContent = `${formatNumber(currentUser.stars)} Stars`;
+      DOM.stars.textContent = `${formatNumber(currentUser.stars)} ⭐️`;
       DOM.cash.textContent = `₦${formatNumber(currentUser.cash)}`;
       DOM.hostTabs.style.display = currentUser.isHost ? '' : 'none';
       updateHostPanels();
