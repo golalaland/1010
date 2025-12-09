@@ -2,66 +2,67 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=0.85, maximum-scale=0.85, user-scalable=no">
   <title>CUBE DRINK PICKER</title>
   <style>
     :root {
       --bg: #000;
       --card: #111;
       --text: #fff;
-      --cube-green: #00ff9d;
-      --cube-glow: rgba(0, 255, 157, 0.25);
-      --shadow: rgba(0, 0, 0, 0.7);
+      --accent: #ff006e;
+      --success: #00ff9d;
+      --gold: #FFD700;
+      --shadow: rgba(255, 0, 110, 0.4);
     }
-    * { margin:0; padding:0; box-sizing:border-box; }
-    body { background:var(--bg); color:var(--text); font-family:system-ui,sans-serif; min-height:100vh; display:flex; justify-content:center; align-items:center; }
-    .container { max-width:500px; width:100%; padding:20px; text-align:center; }
-
-    .title { font-size:34px; font-weight:900; background:linear-gradient(90deg,#00ff9d,#39ff14); -webkit-background-clip:text; -webkit-text-fill-color:transparent; margin-bottom:8px; }
+    * { margin:0; padding:0; box-sizing:border-box; touch-action: manipulation; }
+    body { background:var(--bg); color:var(--text); font-family:system-ui,sans-serif; min-height:100vh; display:flex; justify-content:center; align-items:center; zoom:0.85; -webkit-text-size-adjust: none; }
+    .container { max-width:480px; width:100%; padding:20px; text-align:center; }
+    .title { font-size:32px; font-weight:900; background:linear-gradient(90deg,#ff006e,#ff8c00); -webkit-background-clip:text; -webkit-text-fill-color:transparent; margin-bottom:8px; }
     .welcome { color:#fff; font-size:18px; margin:20px 0; font-weight:600; }
-    .welcome span { color:var(--cube-green); }
+    .welcome span { color:var(--accent); }
 
-    .balance { font-size:18px; margin:30px 0; }
-    .stars { color:#FFD700; font-weight:900; }
+    .balance { font-size:18px; margin:30px 0; display:flex; justify-content:space-around; font-weight:900; }
+    .balance div { display:flex; align-items:center; gap:4px; }
+    .stars { color:#FFD700; }
 
-    .marquee { overflow:hidden; white-space:nowrap; margin:30px 0; border-radius:16px; background:#111; padding:12px 0; }
+    .marquee { overflow:hidden; white-space:nowrap; margin:30px 0; border-radius:16px; background:#111; padding:12px 0; box-shadow:0 0 20px rgba(255,0,110,0.2); }
     .marquee-inner { display:inline-block; animation:marquee 35s linear infinite; }
-    .marquee img { width:100px; height:100px; object-fit:cover; margin:0 18px; border-radius:14px; border:2px solid var(--cube-green); }
+    .marquee img { width:100px; height:100px; object-fit:cover; margin:0 18px; border-radius:14px; border:2px solid #333; }
 
     .cards-grid { 
       display:grid; 
       grid-template-columns:repeat(4,1fr); 
-      gap:18px; 
+      gap:16px; 
       perspective:1200px;
       margin:40px 0;
     }
 
     .card {
       width:100%;
-      height:150px;
+      height:140px;
       position:relative;
-      transform-style:preserve-preserve-3d;
+      transform-style:preserve-3d;
       cursor:pointer;
-      transition:transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-      border-radius:20px;
-      box-shadow:0 12px 40px var(--shadow);
+      transition:transform 0.7s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      border-radius:18px;
+      box-shadow:0 12px 35px rgba(0,0,0,0.8);
     }
 
-    .card:hover { transform:scale(1.07) translateY(-12px); }
+    .card:hover { transform:scale(1.06) translateY(-10px); }
 
     .card-face {
       position:absolute;
       width:100%;
       height:100%;
       backface-visibility:hidden;
-      border-radius:20px;
+      border-radius:18px;
       display:flex;
       align-items:center;
       justify-content:center;
       font-weight:900;
-      font-size:14px;
+      font-size:13px;
       text-align:center;
-      padding:16px;
+      padding:12px;
       overflow:hidden;
       border:3px solid transparent;
     }
@@ -75,7 +76,7 @@
       box-shadow: 0 0 20px var(--cube-glow);
     }
 
-    /* FRONT — CUBE GREEN CARD (GENERIC OR RANDOM) */
+    /* FRONT — CUBE GREEN CARD */
     .card-front {
       background: linear-gradient(135deg, #001a0f, #003322);
       color: var(--cube-green);
@@ -95,15 +96,22 @@
       position:fixed; inset:0; background:rgba(0,0,0,0.95); display:none; align-items:center; justify-content:center; z-index:999; }
     .phone-modal.active { display:flex; }
     .phone-content {
-      background:#111; padding:30px; border-radius:20px; width:90%; max-width:380px; border:2px solid var(--cube-green); text-align:center; }
+      background:#111; padding:30px; border-radius:20px; width:90%; max-width:380px; border:2px solid var(--accent); text-align:center; position:relative; }
+    .phone-close { position:absolute; top:10px; right:10px; color:#aaa; font-size:24px; cursor:pointer; }
     .phone-input {
       width:100%; padding:16px; margin:20px 0; border:none; border-radius:12px; background:#222; color:#fff; font-size:16px; }
     .btn-confirm {
-      background: var(--cube-green); color:#000; border:none; padding:16px; border-radius:12px; font-weight:900; font-size:18px; cursor:pointer; }
+      background:linear-gradient(90deg,#ff006e,#ff3366); color:#fff; border:none; padding:16px; border-radius:12px; font-weight:900; font-size:18px; cursor:pointer; }
+
+    .final-modal {
+      position:fixed; inset:0; background:rgba(0,0,0,0.95); display:none; align-items:center; justify-content:center; z-index:999; }
+    .final-modal.active { display:flex; }
+    .final-content { background:#111; padding:30px; border-radius:20px; width:90%; max-width:380px; border:2px solid var(--success); text-align:center; position:relative; }
+    .final-close { position:absolute; top:10px; right:10px; color:#aaa; font-size:24px; cursor:pointer; }
 
     .spinner { position:fixed; inset:0; background:rgba(0,0,0,0.98); display:none; align-items:center; justify-content:center; z-index:9999; }
     .spinner.active { display:flex; }
-    .spinner::after { content:""; width:60px; height:60px; border:6px solid #222; border-top:6px solid var(--cube-green); border-radius:50%; animation:spin 1s linear infinite; }
+    .spinner::after { content:""; width:60px; height:60px; border:6px solid #222; border-top:6px solid var(--accent); border-radius:50%; animation:spin 1s linear infinite; }
 
     @keyframes marquee { 0% { transform:translateX(0); } 100% { transform:translateX(-50%); } }
     @keyframes spin { to { transform:rotate(360deg); } }
@@ -115,7 +123,7 @@
     <div class="welcome" id="welcomeMsg">Welcome <span id="username">Guest</span>, you're on <span id="hostName">someone</span>'s VIP!</div>
 
     <div class="balance">
-      <div>Stars: <span id="stars-count" class="stars">0</span></div>
+      <div>Stars: <span id="stars-count" class="stars">0</span> ⭐</div>
       <div>Cash: ₦<span id="cash-count">0</span></div>
     </div>
 
@@ -129,10 +137,20 @@
   <!-- PHONE MODAL -->
   <div class="phone-modal" id="phoneModal">
     <div class="phone-content">
-      <h2 style="color:var(--cube-green);">Delivery Phone Number</h2>
+      <span class="phone-close" id="phoneClose">&times;</span>
+      <h2 style="color:var(--accent);">Delivery Phone Number</h2>
       <p style="color:#888;margin:10px 0 20px;">We'll text/call this number to deliver your drink</p>
       <input type="tel" id="phoneInput" class="phone-input" placeholder="+234 801 234 5678">
       <button class="btn-confirm" id="phoneConfirm">CONFIRM & PICK</button>
+    </div>
+  </div>
+
+  <!-- FINAL MODAL -->
+  <div class="final-modal" id="finalModal">
+    <div class="final-content">
+      <span class="final-close" id="finalClose">&times;</span>
+      <h2 style="color:var(--success);">Congratulations!</h2>
+      <p style="color:#fff;margin:20px 0;" id="finalMessage"></p>
     </div>
   </div>
 
@@ -160,21 +178,15 @@
       "Hennessy Paradise","Cîroc Coconut","Don Julio 1942","Moët Ice","Ace of Spades",
       "Jack Daniel’s","Martell Blue Swift","Remy Martin XO","Grey Goose","Patrón Silver",
       "Casamigos Blanco","1800 Coconut","D’ussé VSOP","Belvedere","Cristal",
-      "Dom Pérignon","Johnnie Walker Blue","Macallan 18","Heineken","Guinness","Red Bull"
+      "Dom Pérignon","Johnnie Walker Blue","Macallan 18","Heineken","Guinness","Red Bull",
+      "Tequila Rose","Blue Nun","Veuve Clicquot"
     ];
 
-    // YOUR CANVA BACK CARD
+    // YOUR CANVA CARD BACK
     const CARD_BACK = "https://cdn.shopify.com/s/files/1/0962/6648/6067/files/Beige_Minimal_Romantic_Love_Questions_Card_Game_Document_1.png?v=1765313291";
 
-    // GENERIC CUBE GREEN FRONT CARD (you can change this to any image)
-    const CARD_FRONT = "https://cdn.shopify.com/s/files/1/0962/6648/6067/files/Beige_Minimal_Romantic_Love_Questions_Card_Game_Document_1.png?v=1765313291"; // ← put your front card here (or use random ones below)
-
-    // OPTIONAL: Random front cards (uncomment if you want variety)
-    // const CARD_FRONTS = [
-    //   "https://i.imgur.com/card1.png",
-    //   "https://i.imgur.com/card2.png",
-    //   "https://i.imgur.com/card3.png"
-    // ];
+    // GENERIC CUBE GREEN FRONT
+    const CARD_FRONT = "https://i.imgur.com/8Y5k0qB.png"; // Replace with your Canva front PNG
 
     const DOM = {
       username: document.getElementById('username'),
@@ -186,6 +198,10 @@
       phoneModal: document.getElementById('phoneModal'),
       phoneInput: document.getElementById('phoneInput'),
       phoneConfirm: document.getElementById('phoneConfirm'),
+      phoneClose: document.getElementById('phoneClose'),
+      finalModal: document.getElementById('finalModal'),
+      finalMessage: document.getElementById('finalMessage'),
+      finalClose: document.getElementById('finalClose'),
       spinner: document.getElementById('spinner')
     };
 
@@ -224,15 +240,15 @@
         const host = currentUser.hostName || currentUser.invitedBy || 'someone';
         DOM.hostName.textContent = host.startsWith('@') ? host : `@${host}`;
 
-        DOM.stars.textContent = currentUser.stars || 0;
-        DOM.cash.textContent = currentUser.cash || 0;
+        DOM.stars.textContent = formatNumber(currentUser.stars) + ' ⭐';
+        DOM.cash.textContent = formatNumber(currentUser.cash);
 
         onSnapshot(userRef, (snap) => {
           if (!snap.exists()) return;
           const d = snap.data();
           currentUser = { uid, ...d };
-          DOM.stars.textContent = currentUser.stars || 0;
-          DOM.cash.textContent = currentUser.cash || 0;
+          DOM.stars.textContent = formatNumber(currentUser.stars) + ' ⭐';
+          DOM.cash.textContent = formatNumber(currentUser.cash);
         });
 
       } catch (e) {
@@ -242,11 +258,21 @@
       }
     };
 
+    const formatNumber = (n) => n.toLocaleString('en-US');
+
     const initMarquee = () => {
       const inner = DOM.marquee;
-      for (let i = 0; i < 16; i++) {
+      const yourImgLinks = [
+        "https://source.unsplash.com/random/100x100/?hennessy",
+        "https://source.unsplash.com/random/100x100/?ciroc",
+        "https://source.unsplash.com/random/100x100/?donjulio",
+        // Paste more links here, e.g. "https://cdn.shopify.com/your-drink1.jpg", "https://i.imgur.com/drink2.jpg"
+        // It will automatically loop them
+      ];
+
+      for (let i = 0; i < 20; i++) {
         const img = document.createElement('img');
-        img.src = "https://source.unsplash.com/random/100x100/?cocktail,drink&" + i;
+        img.src = yourImgLinks[i % yourImgLinks.length];
         inner.appendChild(img);
       }
       inner.innerHTML += inner.innerHTML;
@@ -254,21 +280,19 @@
 
     const initCards = () => {
       const shuffled = [...drinks].sort(() => Math.random() - 0.5);
+      const cardNumbers = [...Array(24).keys()].map(n => n + 1).sort(() => Math.random() - 0.5); // Random 1-24
+
       DOM.cardsGrid.innerHTML = '';
 
-      shuffled.forEach(drink => {
+      shuffled.forEach((drink, i) => {
         const card = document.createElement('div');
         card.className = 'card';
         card.dataset.drink = drink;
-
-        // Use your Canva back + CUBE green front
-        const frontImg = CARD_FRONT; // or CARD_FRONTS[Math.floor(Math.random() * CARD_FRONTS.length)] for random
+        card.dataset.number = cardNumbers[i];
 
         card.innerHTML = `
           <div class="card-face card-back" style="background-image:url('${CARD_BACK}')"></div>
-          <div class="card-face card-front" style="background-image:url('${frontImg}');background-size:cover;color:#fff;text-shadow:2px 2px 8px #000;">
-            ${drink}
-          </div>
+          <div class="card-face card-front">${drink}</div>
         `;
 
         card.onclick = () => pickCard(card);
@@ -279,7 +303,7 @@
     const pickCard = (card) => {
       if (card.classList.contains('flipped')) return;
       if (!currentUser || currentUser.stars < COST) {
-        alert(`Need ${COST} Stars to pick!`);
+        alert(`Need ${COST} Stars to pick a drink!`);
         return;
       }
 
@@ -309,7 +333,8 @@
                 drink: card.dataset.drink,
                 phone,
                 timestamp: serverTimestamp(),
-                status: 'pending'
+                status: 'pending',
+                cardNumber: Number(card.dataset.number)
               })
             });
           });
@@ -317,17 +342,23 @@
           card.classList.add('flipped');
           card.classList.add('locked');
 
-          alert(`You picked:\n${card.dataset.drink}\n\nDelivery → ${phone}\n\nThank you for joining Cube!`);
+          DOM.finalMessage.textContent = `You picked card #${card.dataset.number}!\nWe'll reach out shortly.`;
+          DOM.finalModal.classList.add('active');
 
           currentUser.stars -= COST;
-          DOM.stars.textContent = currentUser.stars;
+          DOM.stars.textContent = formatNumber(currentUser.stars) + ' ⭐';
+
         } catch (e) {
+          console.error("Error:", e);
           alert('Failed. Try again.');
         } finally {
           hideSpinner();
         }
       };
     };
+
+    DOM.phoneClose.onclick = () => DOM.phoneModal.classList.remove('active');
+    DOM.finalClose.onclick = () => DOM.finalModal.classList.remove('active');
 
     loadCurrentUser();
     initMarquee();
