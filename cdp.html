@@ -267,7 +267,17 @@ box-shadow: 0 0 12px rgba(0, 255, 136, 0.4);   /* soft green glow */
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import { getFirestore, doc, getDoc, onSnapshot, runTransaction, serverTimestamp, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  import { 
+    getFirestore, 
+    doc, 
+    getDoc, 
+    onSnapshot, 
+    runTransaction, 
+    serverTimestamp, 
+    updateDoc, 
+    collection,
+    addDoc 
+  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
   const app = initializeApp({
     apiKey: "AIzaSyD_GjkTox5tum9o4AupO0LeWzjTocJg8RI",
@@ -290,8 +300,8 @@ box-shadow: 0 0 12px rgba(0, 255, 136, 0.4);   /* soft green glow */
     "Tequila Rose","Blue Nun","Veuve Clicquot"
   ];
 
-  const CARD_BACK = "https://cdn.shopify.com/s/files/1/0962/6648/6067/files/Sipcard.png?v=1765319696";
-  const CARD_FRONT = "https://cdn.shopify.com/s/files/1/0962/6648/6067/files/Sipcard.png?v=1765319696"; // Replace with your front card
+  const CARD_BACK = "https://cdn.shopify.com/s/files/1/0962/6648/6067/files/Beige_Minimal_Romantic_Love_Questions_Card_Game_Document_1.png?v=1765313291";
+  const CARD_FRONT = "https://i.imgur.com/YOUR-FRONT-CARD.png"; // ← Change this
 
   const DOM = {
     username: document.getElementById('username'),
@@ -313,9 +323,8 @@ box-shadow: 0 0 12px rgba(0, 255, 136, 0.4);   /* soft green glow */
   const showSpinner = () => DOM.spinner.classList.add('active');
   const hideSpinner = () => DOM.spinner.classList.remove('active');
 
-  // FIXED: CORRECT DOCUMENT ID FROM EMAIL
   const emailToDocId = (email) => {
-    if (!email || !email.includes('@')) return null;
+    if (!email?.includes('@')) return null;
     const [local, domain] = email.toLowerCase().split('@');
     return `${local}_${domain.replace(/\./g, '_')}`;
   };
@@ -373,7 +382,7 @@ box-shadow: 0 0 12px rgba(0, 255, 136, 0.4);   /* soft green glow */
       "https://cdn.shopify.com/s/files/1/0962/6648/6067/files/42.png?v=1764928903",
       "https://cdn.shopify.com/s/files/1/0962/6648/6067/files/48.png?v=1764928903",
       "https://cdn.shopify.com/s/files/1/0962/6648/6067/files/40.png?v=1764928903",
-      // Add more — it auto-loops
+      // Add more
     ];
 
     yourLinks.forEach(link => {
@@ -408,65 +417,79 @@ box-shadow: 0 0 12px rgba(0, 255, 136, 0.4);   /* soft green glow */
     });
   };
 
- const pickCard = (card) => {
-  if (card.classList.contains('flipped')) return;
-  if (!currentUser || currentUser.stars < COST) {
-    alert(`Need ${COST} Stars to pick a drink!`);
-    return;
-  }
-
-  DOM.phoneModal.classList.add('active');
-
-  DOM.phoneConfirm.onclick = async () => {
-    const phone = DOM.phoneInput.value.trim();
-    if (!phone || phone.length < 10) {
-      alert('Valid phone number required');
+  const pickCard = (card) => {
+    if (card.classList.contains('flipped')) return;
+    if (!currentUser || currentUser.stars < COST) {
+      alert(`Need ${COST} Stars to pick a drink!`);
       return;
     }
 
-    DOM.phoneModal.classList.remove('active');
-    DOM.phoneInput.value = '';
-    showSpinner();
+    DOM.phoneModal.classList.add('active');
 
-    try {
-      const uid = emailToDocId(currentUser.email);
-      const userRef = doc(db, 'users', uid);
+    DOM.phoneConfirm.onclick = async () => {
+      const phone = DOM.phoneInput.value.trim();
+      if (!phone || phone.length < 10) {
+        alert('Valid phone number required');
+        return;
+      }
 
-      const snap = await getDoc(userRef);
-      if (!snap.exists()) throw "User not found";
-      const data = snap.data();
+      DOM.phoneModal.classList.remove('active');
+      DOM.phoneInput.value = '';
+      showSpinner();
 
-      if (data.stars < COST) throw "Not enough stars";
+      try {
+        const uid = emailToDocId(currentUser.email);
+        const userRef = doc(db, 'users', uid);
 
-      await updateDoc(userRef, {
-        stars: data.stars - COST,
-        drinkRequests: arrayUnion({
+        // 1. Deduct stars from user
+        await runTransaction(db, async (t) => {
+          const snap = await t.get(userRef);
+          if (!snap.exists()) throw "User not found";
+          const data = snap.data();
+          if (data.stars < COST) throw "Not enough stars";
+
+          t.update(userRef, {
+            stars: data.stars - COST
+          });
+        });
+
+        // 2. Create separate drink request document
+        await addDoc(collection(db, 'drinkRequests'), {
+          userId: uid,
+          userEmail: currentUser.email,
+          username: currentUser.chatId || currentUser.email.split('@')[0],
           drink: card.dataset.drink,
-          phone,
+          phone: phone,
           cardNumber: Number(card.dataset.number),
+          timestamp: serverTimestamp(),
           status: 'pending',
-          timestamp: Date.now() // ← This fixes everything
-        })
-      });
+          delivered: false
+        });
 
-      card.classList.add('flipped');
-      card.classList.add('locked');
+        // Success!
+        card.classList.add('flipped');
+        card.classList.add('locked');
 
-      DOM.finalMessage.textContent = `You picked card #${card.dataset.number}!\nWe'll reach out shortly.`;
-      DOM.finalModal.classList.add('active');
+        DOM.finalMessage.innerHTML = `
+          <strong>Congratulations!</strong><br><br>
+          You picked card <strong>#${card.dataset.number}</strong><br>
+          Drink: <strong>${card.dataset.drink}</strong><br><br>
+          We'll deliver to:<br><strong>${phone}</strong>
+        `;
+        DOM.finalModal.classList.add('active');
 
-      currentUser.stars -= COST;
-      DOM.stars.textContent = currentUser.stars.toLocaleString();
+        currentUser.stars -= COST;
+        DOM.stars.textContent = currentUser.stars.toLocaleString();
 
-    } catch (e) {
-      console.error(e);
-      alert('Failed: ' + (e.message || 'Try again'));
-    } finally {
-      hideSpinner();
-    }
+      } catch (e) {
+        console.error("Order failed:", e);
+        alert('Failed to place order. Try again.');
+      } finally {
+        hideSpinner();
+      }
+    };
   };
-};
-  
+
   DOM.phoneClose.onclick = () => DOM.phoneModal.classList.remove('active');
   DOM.finalClose.onclick = () => DOM.finalModal.classList.remove('active');
 
