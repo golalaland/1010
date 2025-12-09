@@ -1,0 +1,608 @@
+// adminshop.js
+// Admin dashboard: auth, Firestore CRUD for shopItems, purchases management, CSV export.
+
+// ---------------- FIREBASE IMPORTS ----------------
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+  getAuth,
+  signInWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged,
+  createUserWithEmailAndPassword
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import {
+  getFirestore,
+  collection,
+  getDocs,
+  doc,
+  getDoc,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  query,
+  orderBy,
+  serverTimestamp,
+  increment,
+  where,
+  writeBatch
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+// ---------------- CONFIG - REPLACE WITH YOURS ----------------
+const firebaseConfig = {
+  apiKey: "AIzaSyDbKz4ef_eUDlCukjmnK38sOwueYuzqoao",
+  authDomain: "metaverse-1010.firebaseapp.com",
+  projectId: "metaverse-1010",
+  storageBucket: "metaverse-1010.firebasestorage.app",
+  messagingSenderId: "1044064238233",
+  appId: "1:1044064238233:web:2fbdfb811cb0a3ba349608",
+  measurementId: "G-S77BMC266C"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+// ---------------- DOM ----------------
+const spinner = document.getElementById('shopSpinner');
+const mainApp = document.getElementById('mainApp');
+const loginPanel = document.getElementById('loginPanel');
+const adminEmailEl = document.getElementById('adminEmail');
+
+const productsGrid = document.getElementById('productsGrid');
+const addProductBtn = document.getElementById('addProductBtn');
+const productModal = document.getElementById('productModal');
+const closeProductModal = document.getElementById('closeProductModal');
+const saveProductBtn = document.getElementById('saveProductBtn');
+
+const ordersList = document.getElementById('ordersList');
+const exportCsvBtn = document.getElementById('exportCsvBtn');
+
+const signOutBtn = document.getElementById('signOutBtn');
+const signInBtn = document.getElementById('signInBtn');
+const tryDevBtn = document.getElementById('tryDevBtn');
+
+const loginEmail = document.getElementById('loginEmail');
+const loginPassword = document.getElementById('loginPassword');
+
+const modalTitle = document.getElementById('modalTitle');
+const productName = document.getElementById('productName');
+const productImage = document.getElementById('productImage');
+const productCost = document.getElementById('productCost');
+const productCashReward = document.getElementById('productCashReward');
+const productAvailable = document.getElementById('productAvailable');
+const productDescription = document.getElementById('productDescription');
+
+let editingId = null;
+let currentUser = null;
+
+// ---------------- Helpers ----------------
+function showSpinner(show = true) {
+  spinner.classList.toggle('active', show);
+}
+
+function showToast(msg) {
+  // simple toast fallback - use alert for reliability
+  console.log("TOAST:", msg);
+  // consider adding a on-page toast element if desired
+  alert(msg);
+}
+
+// ---------------- AUTH ----------------
+signOutBtn.onclick = async () => {
+  await signOut(auth);
+};
+
+signInBtn.onclick = async () => {
+  const email = loginEmail.value.trim();
+  const pw = loginPassword.value;
+  if (!email || !pw) return showToast("Enter email & password");
+  showSpinner(true);
+  try {
+    await signInWithEmailAndPassword(auth, email, pw);
+    // auth state listener handles UI load
+  } catch (err) {
+    console.error(err);
+    showToast("Sign in failed: " + err.message);
+  } finally {
+    showSpinner(false);
+  }
+};
+
+// Optional dev helper: create a firebase user and a Firestore admin doc.
+// NOTE: remove in production or restrict.
+tryDevBtn.onclick = async () => {
+  const email = loginEmail.value.trim() || `admin${Date.now()}@example.com`;
+  const pw = loginPassword.value || "SuperSecret123!";
+  showSpinner(true);
+  try {
+    const cred = await createUserWithEmailAndPassword(auth, email, pw);
+    // create users doc with isAdmin:true
+    await addDoc(collection(db, "users"), {
+      uid: cred.user.uid,
+      email,
+      isAdmin: true,
+      createdAt: serverTimestamp()
+    });
+    showToast("Dev admin created. Sign in now.");
+  } catch (e) {
+    console.error(e);
+    showToast("Dev create failed: " + e.message);
+  } finally { showSpinner(false); }
+};
+
+// Auth listener: ensure user doc has isAdmin:true
+onAuthStateChanged(auth, async (user) => {
+  currentUser = user;
+  if (!user) {
+    // show login
+    mainApp.style.display = "none";
+    loginPanel.style.display = "block";
+    return;
+  }
+
+  // check user doc: we look in `users` collection for document with uid === user.uid
+  // You might store user docs with uid as doc id; support both patterns:
+  showSpinner(true);
+  try {
+    // Try doc with uid as ID first
+    let userDocRef = doc(db, "users", user.uid);
+    let userSnap = await getDoc(userDocRef);
+    if (!userSnap.exists()) {
+      // fallback: query users collection for a doc where uid === user.uid
+      const q = query(collection(db, "users"), where("uid", "==", user.uid));
+      const results = await getDocs(q);
+      if (!results.empty) {
+        userSnap = results.docs[0];
+      }
+    }
+
+    if (!userSnap || !userSnap.exists()) {
+      showToast("No user record found in 'users' collection. Create a user doc with isAdmin:true.");
+      await signOut(auth);
+      return;
+    }
+
+    const data = userSnap.data();
+    if (!data.isAdmin) {
+      showToast("Access denied: user is not an admin.");
+      await signOut(auth);
+      return;
+    }
+
+    // success: show main app
+    adminEmailEl.textContent = user.email || data.email || "Admin";
+    loginPanel.style.display = "none";
+    mainApp.style.display = "block";
+
+    // initial load
+    loadProducts();
+    loadPurchases();
+  } catch (err) {
+    console.error(err);
+    showToast("Auth check failed: " + err.message);
+    await signOut(auth);
+  } finally {
+    showSpinner(false);
+  }
+});
+
+// ---------------- TABS ----------------
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', (e) => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    e.target.classList.add('active');
+    const tab = e.target.dataset.tab;
+    document.querySelectorAll('.tab-section').forEach(s => s.classList.remove('active'));
+    document.getElementById(tab + '-section').classList.add('active');
+    if (tab === 'products') loadProducts();
+    if (tab === 'orders') loadPurchases();
+  });
+});
+
+// ---------------- PRODUCTS CRUD ----------------
+addProductBtn.onclick = () => {
+  editingId = null;
+  modalTitle.innerText = "Add Product";
+  productName.value = "";
+  productImage.value = "";
+  productCost.value = "";
+  productCashReward.value = "";
+  productAvailable.value = "";
+  productDescription.value = "";
+  productModal.style.display = "flex";
+};
+
+closeProductModal.onclick = () => productModal.style.display = "none";
+
+saveProductBtn.onclick = async () => {
+  const docData = {
+    name: productName.value.trim(),
+    img: productImage.value.trim() || "",
+    cost: Number(productCost.value) || 0,
+    cashReward: Number(productCashReward.value) || 0,
+    available: Number(productAvailable.value) || 0,
+    description: productDescription.value.trim(),
+    updatedAt: serverTimestamp()
+  };
+
+  if (!docData.name) return showToast("Name required");
+
+  showSpinner(true);
+  try {
+    if (editingId) {
+      await updateDoc(doc(db, "shopItems", editingId), docData);
+      showToast("Product updated");
+    } else {
+      // If your current shopItems require numeric `id` field, auto-calc next id (optional)
+      // we will create a doc and leave `id` if you prefer manual numeric ids
+      await addDoc(collection(db, "shopItems"), { ...docData, createdAt: serverTimestamp() });
+      showToast("Product added");
+    }
+    productModal.style.display = "none";
+    loadProducts();
+  } catch (err) {
+    console.error(err);
+    showToast("Save failed: " + err.message);
+  } finally { showSpinner(false); }
+};
+
+async function loadProducts() {
+  showSpinner(true);
+  productsGrid.innerHTML = "";
+  try {
+    const snap = await getDocs(collection(db, "shopItems"));
+    snap.forEach(docSnap => {
+      const d = docSnap.data();
+      const docId = docSnap.id;
+      productsGrid.insertAdjacentHTML('beforeend', productCardHTML(docId, d));
+    });
+  } catch (err) {
+    console.error(err);
+    showToast("Load products failed: " + err.message);
+  } finally { showSpinner(false); }
+}
+
+function productCardHTML(id, d) {
+  return `
+    <div class="product-card" data-id="${id}">
+      <img src="${escapeHtml(d.img || '')}" alt="${escapeHtml(d.name || '')}">
+      <h3>${escapeHtml(d.name || '')}</h3>
+      <div class="meta">Cost: ${Number(d.cost || 0)} ⭐ • ₦${Number(d.cashReward || 0)}</div>
+      <div class="meta">Available: ${Number(d.available || 0)}</div>
+      <div class="user-details">${escapeHtml(d.description || '')}</div>
+      <div class="admin-btns">
+        <button class="edit-btn" onclick="window.__editProduct('${id}')">Edit</button>
+        <button class="delete-btn" onclick="window.__deleteProduct('${id}')">Delete</button>
+      </div>
+    </div>
+  `;
+}
+
+// expose global edit/delete for the rendered HTML buttons
+window.__editProduct = async function(id) {
+  showSpinner(true);
+  try {
+    const snap = await getDoc(doc(db, "shopItems", id));
+    if (!snap.exists()) return showToast("Product not found");
+    const d = snap.data();
+    editingId = id;
+    modalTitle.innerText = "Edit Product";
+    productName.value = d.name || "";
+    productImage.value = d.img || "";
+    productCost.value = d.cost || "";
+    productCashReward.value = d.cashReward || "";
+    productAvailable.value = d.available || "";
+    productDescription.value = d.description || "";
+    productModal.style.display = "flex";
+  } catch (err) {
+    console.error(err);
+    showToast("Failed to open edit: " + err.message);
+  } finally { showSpinner(false); }
+};
+
+window.__deleteProduct = async function(id) {
+  if (!confirm("Delete this product?")) return;
+  showSpinner(true);
+  try {
+    await deleteDoc(doc(db, "shopItems", id));
+    showToast("Product deleted");
+    loadProducts();
+  } catch (err) {
+    console.error(err);
+    showToast("Delete failed: " + err.message);
+  } finally { showSpinner(false); }
+};
+
+
+//// ---------------- LOAD PURCHASES (Admin) ----------------
+async function loadPurchases() {
+  showSpinner(true);
+  ordersList.innerHTML = "";
+  try {
+    const snap = await getDocs(query(collection(db, "purchases"), orderBy("timestamp", "desc")));
+    if (snap.empty) {
+      ordersList.innerHTML = `<div class="small muted">No purchases yet</div>`;
+      return;
+    }
+
+    for (const docSnap of snap.docs) {
+      const p = docSnap.data();
+      const id = docSnap.id;
+      const status = p.status || 'pending';
+
+      // Determine payment display
+      let paymentDesc = "—";
+      if (Number(p.cost || 0) > 0) {
+        paymentDesc = `${Number(p.cost)} ⭐`; // stars used for purchase
+      }
+
+      // User info display
+      const userInfo = `
+        <div class="user-details">
+          <div><strong>${escapeHtml(p.email || p.userId || '—')}</strong></div>
+          <div class="small muted">Phone: ${escapeHtml(p.phone || '—')}</div>
+          <div class="small muted">Cash Reward: ₦${Number(p.cashReward || 0)} • Redeemed: ₦${Number(p.redeemedCash || 0)}</div>
+        </div>
+      `;
+
+      ordersList.insertAdjacentHTML('beforeend', `
+        <div class="order-item" data-id="${id}">
+          <div class="order-row">
+            <div style="flex:1">
+              <div>
+                <strong>${escapeHtml(p.productName || p.productId || '—')}</strong> • 
+                <span class="small muted">${new Date(p.timestamp?.toDate ? p.timestamp.toDate() : p.timestamp || Date.now()).toLocaleString()}</span>
+              </div>
+              <div class="small muted">Buyer: ${escapeHtml(p.email || p.userId || '—')}</div>
+              <div class="small muted">Payment: ${paymentDesc}</div>
+              <div class="small muted">Status: <span class="badge">${escapeHtml(status)}</span></div>
+              ${userInfo}
+            </div>
+            <div style="display:flex;flex-direction:column;justify-content:center">
+              <div>
+                <button class="fulfill-btn" onclick="window.__fulfillPurchase('${id}')">Fulfill</button>
+                <button class="refund-btn" onclick="window.__refundPurchase('${id}')">Refund</button>
+                <button class="delete-btn" onclick="window.__deletePurchase('${id}')">Delete</button>
+              </div>
+              <div style="margin-top:10px">
+                <button class="themed-btn ghost" onclick="window.__viewPurchase('${id}')">View Raw</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `);
+    }
+  } catch (err) {
+    console.error(err);
+    showToast("Load purchases failed: " + err.message);
+  } finally {
+    showSpinner(false);
+  }
+}
+
+// ---------------- DELETE PURCHASE ----------------
+window.__deletePurchase = async function(id) {
+  if (!confirm("Delete this purchase permanently?")) return;
+  showSpinner(true);
+  try {
+    await deleteDoc(doc(db, "purchases", id));
+    showToast("Purchase deleted");
+    loadPurchases();
+  } catch(err) {
+    console.error(err);
+    showToast("Delete failed: " + err.message);
+  } finally {
+    showSpinner(false);
+  }
+};
+
+// expose view raw (simple alert)
+window.__viewPurchase = async function(id) {
+  const snap = await getDoc(doc(db, "purchases", id));
+  if (!snap.exists()) return showToast("Purchase not found");
+  alert(JSON.stringify(snap.data(), null, 2));
+};
+
+// fulfill
+window.__fulfillPurchase = async function(id) {
+  if (!confirm("Mark as fulfilled?")) return;
+  showSpinner(true);
+  try {
+    await updateDoc(doc(db, "purchases", id), { status: "fulfilled", fulfilledAt: serverTimestamp() });
+    showToast("Marked fulfilled");
+    loadPurchases();
+  } catch (err) {
+    console.error(err);
+    showToast("Fulfill failed: " + err.message);
+  } finally { showSpinner(false); }
+};
+
+// ---------------- FULFILL PURCHASE ----------------
+window.__fulfillPurchase = async function(id) {
+  if (!confirm("Mark this purchase as fulfilled?")) return;
+  showSpinner(true);
+  try {
+    const psnap = await getDoc(doc(db, "purchases", id));
+    if (!psnap.exists()) throw new Error("Purchase not found");
+    const purchase = psnap.data();
+
+    // update status
+    await updateDoc(doc(db, "purchases", id), {
+      status: "fulfilled",
+      fulfilledAt: serverTimestamp()
+    });
+
+    showToast(`Purchase of "${purchase.productName}" by ${purchase.email} marked fulfilled`);
+    loadPurchases(); // reload list
+  } catch (err) {
+    console.error(err);
+    showToast("Fulfill failed: " + err.message);
+  } finally { showSpinner(false); }
+};
+
+// ---------------- REFUND PURCHASE ----------------
+window.__refundPurchase = async function(id) {
+  if (!confirm("Issue refund for this purchase?")) return;
+  showSpinner(true);
+  try {
+    const psnap = await getDoc(doc(db, "purchases", id));
+    if (!psnap.exists()) throw new Error("Purchase not found");
+    const purchase = psnap.data();
+
+    const userId = purchase.userId || null;
+    const userEmail = purchase.email || null;
+
+    if (Number(purchase.cost || 0) > 0) {
+      // Stars purchase refund
+      await updateDoc(doc(db, "users", userId), {
+        stars: increment(Number(purchase.cost))
+      });
+      await addDoc(collection(db, "refunds"), {
+        orderId: id,
+        userId,
+        userEmail,
+        amount: Number(purchase.cost),
+        method: "stars",
+        createdAt: serverTimestamp()
+      });
+    } else if (Number(purchase.cashReward || 0) > 0) {
+      // Cash purchase refund
+      await addDoc(collection(db, "refunds"), {
+        orderId: id,
+        userId,
+        userEmail,
+        amount: Number(purchase.cashReward),
+        method: "cash",
+        createdAt: serverTimestamp()
+      });
+    }
+
+    // mark purchase as refunded
+    await updateDoc(doc(db, "purchases", id), {
+      status: "refunded",
+      refundedAt: serverTimestamp(),
+      refundMethod: Number(purchase.cost || 0) > 0 ? "stars" : "cash"
+    });
+
+    showToast(`Refund issued for "${purchase.productName}" to ${userEmail || 'unknown user'}`);
+    loadPurchases(); // reload list
+  } catch (err) {
+    console.error(err);
+    showToast("Refund failed: " + err.message);
+  } finally { showSpinner(false); }
+};
+
+// ---------------- CSV EXPORT ----------------
+exportCsvBtn.onclick = async () => {
+  showSpinner(true);
+  try {
+    const rows = [];
+    const snap = await getDocs(query(collection(db, "purchases"), orderBy("timestamp", "desc")));
+    if (snap.empty) return showToast("No purchases to export");
+
+    // header
+    rows.push([
+      "purchaseId",
+      "timestamp",
+      "userId",
+      "userEmail",
+      "productId",
+      "productName",
+      "starsSpent",
+      "cashReward",
+      "redeemedCash",
+      "status",
+      "fulfilledAt",
+      "refundedAt"
+    ].join(","));
+
+    for (const docSnap of snap.docs) {
+      const o = docSnap.data();
+      const timestamp = o.timestamp?.toDate ? o.timestamp.toDate().toISOString() : (o.timestamp || "");
+      const fulfilledAt = o.fulfilledAt?.toDate ? o.fulfilledAt.toDate().toISOString() : "";
+      const refundedAt = o.refundedAt?.toDate ? o.refundedAt.toDate().toISOString() : "";
+      
+      const row = [
+        `"${docSnap.id}"`,
+        `"${timestamp}"`,
+        `"${o.userId || ''}"`,
+        `"${o.email || ''}"`,
+        `"${o.productId || ''}"`,
+        `"${o.productName || ''}"`,
+        `"${o.cost || 0}"`,
+        `"${o.cashReward || 0}"`,
+        `"${o.redeemedCash || 0}"`,
+        `"${o.status || ''}"`,
+        `"${fulfilledAt}"`,
+        `"${refundedAt}"`
+      ].join(",");
+      rows.push(row);
+    }
+
+    const csvString = rows.join("\n");
+    const blob = new Blob([csvString], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `purchases_${(new Date()).toISOString().slice(0,19).replace(/[:T]/g,'-')}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    showToast("CSV exported with stars & cash info");
+  } catch (err) {
+    console.error(err);
+    showToast("CSV export failed: " + err.message);
+  } finally { showSpinner(false); }
+};
+const clearPurchasesBtn = document.getElementById('clearPurchasesBtn');
+
+clearPurchasesBtn.onclick = async () => {
+  if (!confirm("Are you sure you want to delete ALL purchases? This cannot be undone.")) return;
+  showSpinner(true);
+  try {
+    const snap = await getDocs(collection(db, "purchases"));
+    if (snap.empty) {
+      showToast("No purchases to delete.");
+      return;
+    }
+
+    const batchSize = 500; // Firestore batch limit
+    let batchCount = 0;
+    const batches = [];
+
+    // Split docs into batches
+    snap.docs.forEach((docSnap, index) => {
+      const batchIndex = Math.floor(index / batchSize);
+      if (!batches[batchIndex]) batches[batchIndex] = [];
+      batches[batchIndex].push(docSnap.ref);
+    });
+
+    // Delete each batch
+    for (const batchRefs of batches) {
+      const batch = writeBatch(db); // ✅ correct way to create batch
+      batchRefs.forEach(ref => batch.delete(ref));
+      await batch.commit();
+      batchCount += batchRefs.length;
+    }
+
+    showToast(`Deleted ${batchCount} purchases.`);
+    loadPurchases(); // reload empty list
+  } catch (err) {
+    console.error(err);
+    showToast("Failed to clear purchases: " + err.message);
+  } finally {
+    showSpinner(false);
+  }
+};
+
+// ---------------- Utilities ----------------
+function escapeHtml(s) {
+  if (!s) return "";
+  return String(s)
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'", "&#039;");
+}
