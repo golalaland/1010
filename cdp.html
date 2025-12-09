@@ -49,19 +49,30 @@
     }
     .welcome span { color:var(--cube-green); }
 
-    .balance {
-      display:flex;
-      justify-content:space-around;
-      font-size:20px;
-      margin:25px 0;
-      font-weight:900;
-      background:#111;
-      padding:16px;
-      border-radius:16px;
-      border:2px solid #333;
-    }
-    .balance div { display:flex; align-items:center; gap:6px; }
-    .stars { color:#FFD700; }
+  .balance {
+  display: flex;
+  flex-direction: column;   /* stack vertically */
+  align-items: center;       /* center horizontally */
+  gap: 10px;                 /* space between Stars and Cash */
+  font-size: 16px;           /* smaller text */
+  margin: 20px 0;
+  font-weight: 900;
+  background: #111;
+  padding: 14px;
+  border-radius: 16px;
+  border: 2px solid #333;
+}
+
+.balance div {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.stars {
+  color: #FFD700;
+}
+
 
     .marquee {
       overflow:hidden;
