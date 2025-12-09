@@ -49,28 +49,32 @@
     }
     .welcome span { color:var(--cube-green); }
 
-  .balance {
-  display: flex;
-  flex-direction: column;   /* stack vertically */
-  align-items: center;       /* center horizontally */
-  gap: 10px;                 /* space between Stars and Cash */
-  font-size: 16px;           /* smaller text */
-  margin: 20px 0;
-  font-weight: 900;
-  background: #111;
-  padding: 14px;
-  border-radius: 16px;
-  border: 2px solid #333;
+.balance {
+    display: flex;
+    flex-direction: column;     /* ← stacks children vertically */
+    gap: 12px;                  /* space between the two lines */
+    justify-content: center;
+    align-items: flex-start;     /* or "center" if you want them centered */
+    
+    font-size: 13px;            /* slightly smaller than 20px */
+    font-weight: 900;
+    background: #111;
+    padding: 14px 20px;         /* reduced padding a bit */
+    border-radius: 14px;
+    border: 2px solid #333;
+    width: fit-content;         /* makes the box only as wide as needed */
+    margin: 25px auto;          /* keeps your original vertical margin and centers horizontally */
 }
 
 .balance div {
-  display: flex;
-  align-items: center;
-  gap: 6px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    white-space: nowrap;        /* prevents breaking in the middle */
 }
 
 .stars {
-  color: #FFD700;
+    color: #FFD700;
 }
 
 
@@ -185,11 +189,10 @@
     <div class="title">CUBE DRINK PICKER</div>
     <div class="welcome" id="welcomeMsg">Welcome <span id="username">Guest</span>, you're on <span id="hostName">someone</span>'s VIP!</div>
 
-    <div class="balance">
-      <div>Stars: <span id="stars-count" class="stars">0</span> Stars</div>
-      <div>Cash: ₦<span id="cash-count">0</span></div>
-    </div>
-
+   <div class="balance">
+  <div>Stars: <span id="stars-count" class="stars">0</span> ⭐️</div>
+  <div>Cash: ₦<span id="cash-count">0</span></div>
+</div>
     <div class="marquee">
       <div class="marquee-inner" id="marquee"></div>
     </div>
