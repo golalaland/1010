@@ -13,37 +13,32 @@
   --bg:           #000000;
   --card:         #0a0a0a;
   --glass:        rgba(255,255,255,0.04);
-  --border-dim:   rgba(180,20,50,0.25);
 
-  /* Text tones */
+  /* Text */
   --text:         #ffffff;
-  --text-muted:   #aaaaaa;
-  --text-dim:     #777777;
+  --text-muted:   #ff6688;
+  --text-dim:     #aa4455;
 
-  /* Your original neon-green accents (kept exactly as you wanted) */
-  --accent:       #39FF14;   /* electric toxic green for tips, badges, etc. */
-  --pulse-color:  #39FF14;
-  --buzz-color:   #00FFFF;
-
-  /* RED ROOM SEDUCTIVE PALETTE – the star of the show */
-  --rr-900:       #660015;   /* deepest blood */
-  --rr-800:       #990020;
+  /* RED ROOM PALETTE ONLY – zero green anywhere */
+  --rr-900:       #660015;
+  --rr-800:       #880020;
   --rr-700:       #bb0028;
-  --rr-600:       #cc0033;   /* main button color */
+  --rr-600:       #cc0033;   /* main buttons */
   --rr-500:       #e6003d;   /* hover / active */
-  --rr-400:       #ff1744;   /* bright accents, active borders */
+  --rr-400:       #ff1744;   /* borders, active tabs, spinner */
   --rr-300:       #ff3366;   /* glows, usernames, close buttons */
-  --rr-glow:      rgba(255, 23, 68, 0.35);
-  --rr-glow-soft: rgba(220, 0, 60, 0.22);
+  --rr-200:       #ff6688;   /* muted accents */
+
+  --rr-glow:      rgba(255, 23, 68, 0.4);
+  --rr-glow-soft: rgba(220, 0, 60, 0.25);
   --rr-glow-dim:  rgba(180, 20, 50, 0.18);
 
-  /* Quick shortcuts you can use anywhere */
+  /* Shortcuts */
   --redroom-main:    var(--rr-600);
-  --redroom-dark:    var(--rr-800);
-  --redroom-deeper:  var(--rr-900);
   --redroom-hover:   var(--rr-500);
   --redroom-accent:  var(--rr-400);
 }
+  
 #videoWrapper .nav-buttons {
   display: flex;
   justify-content: center;
@@ -1539,7 +1534,9 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 /* ---------- Chat Tap Modal ---------- */
 .tap-modal {
   position: absolute;
-  background: rgba(0,0,0,0.85);
+  background: rgba(15, 0, 5, 0.94);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(180, 20, 20, 50, 0.5);
   color: #fff;
   padding: 6px 10px;
   border-radius: 8px;
@@ -1548,94 +1545,127 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   gap: 8px;
   z-index: 9999;
   pointer-events: auto;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.7), 0 0 12px rgba(255, 23, 68, 0.25);
 }
 
 .tap-modal button {
   background: none;
   border: none;
-  color: #fff;
-  cursor: pointer;
+  color: var(--rr-300);
   font-weight: 600;
   padding: 2px 6px;
+  border-radius: 4px;
+  transition: all 0.22s;
+}
+.tap-modal button:hover {
+  background: rgba(255, 23, 68, 0.3);
+  color: #fff;
 }
 
-.tap-modal button:hover {
-  background: rgba(255,255,255,0.2);
-  border-radius: 4px;
-}
+/* Bottom session bar */
 #sessionBar {
   display: flex;
-  justify-content: space-around; /* keeps buttons spaced nicely */
-  gap: 8px;                      /* adds consistent spacing */
-  background: rgba(255,255,255,0.08);
-  backdrop-filter: blur(6px);
-  border-radius: 12px;
+  justify-content: space-around;
+  gap: 8px;
+  background: rgba(20, 0, 8, 0.7);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(180, 20, 50, 0.4);
+  border-radius: 14px;
   padding: 6px 0;
-  cursor: pointer;
 }
 
+/* Sliding session drawer */
 #sessionModal {
   position: fixed;
   bottom: -100%;
   left: 0; right: 0;
   height: 65%;
-  background: rgba(15,15,15,0.95);
+  background: linear-gradient(135deg, #0a0a0a, #111);
   color: #fff;
   border-radius: 20px 20px 0 0;
-  transition: bottom 0.4s ease;
+  border-top: 2px solid var(--rr-400);
+  box-shadow: 0 -10px 40px rgba(0,0,0,0.9);
+  transition: bottom 0.4s cubic-bezier(0.22, 1, 0.36, 1);
   z-index: 1000;
   overflow-y: auto;
 }
 #sessionModal.active { bottom: 0; }
 
-.sessionTabs button {
-  background: none; border: none;
-  color: #aaa; padding: 10px 16px;
-  font-weight: 700; cursor: pointer;
-}
-.sessionTabs button.active { color: #fff; border-bottom: 2px solid #ff33cc; }
-
-.ballerTabs button.active { color: #fff; border-bottom: 2px solid #ffcc00; }
-
-.baller-card {
-  display: flex; align-items: center;
-  padding: 8px 12px; border-bottom: 1px solid rgba(255,255,255,0.1);
-}
-.baller-card img { width: 32px; height: 32px; border-radius: 50%; margin-right: 10px; }
-
-/* Unified compact session buttons */
-.session-btn {
-  background: #222;             
-  color: #fff;
+/* Tabs – pure blood-red underline */
+.sessionTabs button,
+.ballerTabs button {
+  background: none;
   border: none;
+  color: #aaa;
+  padding: 10px 16px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.sessionTabs button.active,
+.ballerTabs button.active {
+  color: #fff;
+  border-bottom: 3px solid var(--rr-400);   /* deep blood red, no green/orange ever again */
+}
+
+/* List items */
+.baller-card {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  border-bottom: 1px solid rgba(180, 20, 50, 0.3);
+  transition: background 0.25s;
+}
+.baller-card:hover {
+  background: rgba(180, 20, 50, 0.15);
+}
+.baller-card img {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  margin-right: 10px;
+  border: 2px solid transparent;
+}
+.baller-card:hover img {
+  border-color: var(--rr-400);
+}
+
+/* Compact session buttons – wet velvet red */
+.session-btn {
+  background: linear-gradient(135deg, var(--rr-700), var(--rr-800));
+  color: #fff;
+  border: 1px solid rgba(255, 50, 100, 0.3);
   border-radius: 10px;
   padding: 4px 10px;
   font-size: 12px;
   font-weight: 600;
-  cursor: pointer;
-  display: inline-block;
-  box-shadow: 0 0 4px rgba(0, 0, 0, 0.3);
-  transition: transform 0.2s, background 0.2s;
-  margin: 0 2px; /* tiny buffer between buttons */
+  box-shadow: 0 3px 8px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.12);
+  transition: all 0.22s;
+  margin: 0 2px;
 }
-
 .session-btn:hover {
-  transform: scale(1.05);
-  background: #333;
+  background: linear-gradient(135deg, var(--rr-600), var(--rr-700));
+  transform: translateY(-1px) scale(1.05);
+  box-shadow: 0 6px 14px rgba(0,0,0,0.7), 0 0 10px var(--rr-glow-soft);
 }
 
-/* Star Hosts gets the gradient */
+/* Star Hosts button – premium button */
 .star-hosts-btn {
-  background: linear-gradient(90deg, #ff007a, #ffa500);
-  box-shadow: 0 0 4px rgba(255, 0, 122, 0.3);
+  background: linear-gradient(90deg, var(--rr-500), var(--rr-400));
+  border: 1px solid rgba(255, 80, 120, 0.4);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.6), 0 0 14px var(--rr-glow-soft);
 }
-/* Tiny inline spinner — no size change, no text flicker */
+.star-hosts-btn:hover {
+  background: linear-gradient(90deg, #ff1a57, #ff3366);
+  transform: translateY(-2px);
+}
+
+/* Spinner – blood red */
 .btn-spinner {
-  display: inline-block;
   width: 16px;
   height: 16px;
   border: 2px solid transparent;
-  border-top-color: currentColor;
+  border-top-color: var(--rr-400);
+  border-left-color: var(--rr-400);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
   opacity: 0;
@@ -1643,10 +1673,7 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   vertical-align: middle;
   margin-left: 6px;
 }
-
-.btn-spinner.visible {
-  opacity: 1;
-}
+.btn-spinner.visible { opacity: 1; }
 
 @keyframes spin {
   to { transform: rotate(360deg); }
