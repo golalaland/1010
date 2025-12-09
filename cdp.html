@@ -11,93 +11,88 @@
       --text: #fff;
       --accent: #ff006e;
       --success: #00ff9d;
-      --gold: #FFD700;
     }
     * { margin:0; padding:0; box-sizing:border-box; }
     body { background:var(--bg); color:var(--text); font-family:system-ui,sans-serif; min-height:100vh; display:flex; justify-content:center; align-items:center; }
-    .container { max-width:480px; width:100%; padding:20px; text-align:center; }
-    .title { font-size:32px; font-weight:900; background:linear-gradient(90deg,#ff006e,#ff8c00); -webkit-background-clip:text; -webkit-text-fill-color:transparent; margin-bottom:10px; }
-    .subtitle { color:#888; font-size:14px; margin-bottom:20px; }
+    .container { max-width:500px; width:100%; padding:20px; text-align:center; }
+    
+    .title { font-size:34px; font-weight:900; background:linear-gradient(90deg,#ff006e,#ff8c00); -webkit-background-clip:text; -webkit-text-fill-color:transparent; margin-bottom:8px; }
+    .welcome { color:#fff; font-size:18px; margin:20px 0; font-weight:600; }
+    .welcome span { color:var(--accent); }
 
-    .balance { font-size:18px; margin:30px 0; }
+    .balance { font-size:18px; margin:25px 0; }
     .stars { color:#FFD700; font-weight:900; }
 
     .marquee { overflow:hidden; white-space:nowrap; margin:30px 0; border-radius:16px; background:#111; padding:12px 0; }
-    .marquee-inner { display:inline-block; animation:marquee 30s linear infinite; }
-    .marquee img { width:90px; height:90px; object-fit:cover; margin:0 15px; border-radius:12px; border:2px solid #333; }
+    .marquee-inner { display:inline-block; animation:marquee 35s linear infinite; }
+    .marquee img { width:100px; height:100px; object-fit:cover; margin:0 18px; border-radius:14px; border:2px solid #333; }
 
     .cards-grid { 
       display:grid; 
-      grid-template-columns:repeat(7,1fr); 
-      gap:12px; 
+      grid-template-columns:repeat(4,1fr); 
+      gap:16px; 
       perspective:1200px;
       margin:40px 0;
     }
 
     .card {
       width:100%;
-      height:110px;
+      height:140px;
       position:relative;
       transform-style:preserve-3d;
       cursor:pointer;
       transition:transform 0.7s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-      border-radius:16px;
-      box-shadow:0 10px 30px rgba(0,0,0,0.7);
+      border-radius:18px;
+      box-shadow:0 12px 35px rgba(0,0,0,0.8);
     }
 
-    .card:hover { transform:scale(1.06) translateY(-10px); }
+    .card:hover { transform:scale(1.06) translateY(-12px); }
 
     .card-face {
       position:absolute;
       width:100%;
       height:100%;
       backface-visibility:hidden;
-      border-radius:16px;
+      border-radius:18px;
       display:flex;
       align-items:center;
       justify-content:center;
       font-weight:900;
-      font-size:11px;
+      font-size:13px;
       text-align:center;
-      padding:10px;
+      padding:12px;
       overflow:hidden;
     }
 
-    /* YOUR CUSTOM CANVA CARD BACK (PNG OR SVG) */
+    /* YOUR CANVA CARD BACK — TRANSPARENT & SEXY */
     .card-back {
-      background-image: url('https://i.imgur.com/YOUR-CANVA-CARD-BACK.png'); /* REPLACE THIS LINK */
+      background-image: url('https://cdn.shopify.com/s/files/1/0962/6648/6067/files/Beige_Minimal_Romantic_Love_Questions_Card_Game_Document.png?v=1765312333');
       background-size: cover;
       background-position: center;
       border:3px solid #ff006e;
-      box-shadow:0 0 40px rgba(255,0,110,0.5);
+      box-shadow:0 0 40px rgba(255,0,110,0.6);
     }
 
     .card-front {
-      background:linear-gradient(135deg,#000428,#004e92);
+      background:linear-gradient(135deg,#000,#111);
       color:#00ff9d;
       border:3px solid #00ff9d;
-      box-shadow:0 0 40px rgba(0,255,157,0.7);
+      box-shadow:0 0 40px rgba(0,255,157,0.8);
       transform:rotateY(180deg);
-      font-size:12px;
-      text-shadow:0 0 10px #000;
+      font-size:14px;
+      text-shadow:0 0 12px #000;
+      font-weight:900;
     }
 
-    .card.flipped {
-      transform:rotateY(180deg);
-    }
-
-    .card.locked {
-      opacity:0.6;
-      cursor:not-allowed;
-      pointer-events:none;
-    }
+    .card.flipped { transform:rotateY(180deg); }
+    .card.locked { opacity:0.6; cursor:not-allowed; pointer-events:none; }
 
     .phone-modal {
       position:fixed; inset:0; background:rgba(0,0,0,0.95); display:none; align-items:center; justify-content:center; z-index:999;
     }
     .phone-modal.active { display:flex; }
     .phone-content {
-      background:#111; padding:30px; border-radius:20px; width:90%; max-width:380px; border:2px solid var(--accent); }
+      background:#111; padding:30px; border-radius:20px; width:90%; max-width:380px; border:2px solid var(--accent); text-align:center; }
     .phone-input {
       width:100%; padding:16px; margin:20px 0; border:none; border-radius:12px; background:#222; color:#fff; font-size:16px; }
     .btn-confirm {
@@ -114,7 +109,7 @@
 <body>
   <div class="container">
     <div class="title">CUBE DRINK PICKER</div>
-    <div class="subtitle">She invited you. Now pick your poison. We deliver IRL</div>
+    <div class="welcome" id="welcomeMsg">Welcome <span id="username">Guest</span>, you're on <span id="hostName">someone</span>'s VIP!</div>
 
     <div class="balance">
       <div>Stars: <span id="stars-count" class="stars">0</span></div>
@@ -131,7 +126,7 @@
   <!-- PHONE MODAL -->
   <div class="phone-modal" id="phoneModal">
     <div class="phone-content">
-      <h2 style="color:var(--accent);">Delivery Phone</h2>
+      <h2 style="color:var(--accent);">Delivery Phone Number</h2>
       <p style="color:#888;margin:10px 0 20px;">We'll text/call this number to deliver your drink</p>
       <input type="tel" id="phoneInput" class="phone-input" placeholder="+234 801 234 5678">
       <button class="btn-confirm" id="phoneConfirm">CONFIRM & PICK</button>
@@ -165,17 +160,12 @@
       "Dom Pérignon","Johnnie Walker Blue","Macallan 18","Heineken","Guinness","Red Bull"
     ];
 
-    // UPLOAD THIS IMAGE FROM CANVA AND REPLACE THIS URL
-    const CARD_BACK_IMAGE = "https://i.imgur.com/YOUR-CANVA-CARD-BACK.png"; // REPLACE THIS
-
-    const drinkImages = [
-      "https://i.imgur.com/drink1.jpg",
-      "https://i.imgur.com/drink2.jpg",
-      "https://i.imgur.com/drink3.jpg",
-      // add more or repeat
-    ];
+    // YOUR CANVA CARD — PERFECT
+    const CARD_BACK = "https://cdn.shopify.com/s/files/1/0962/6648/6067/files/Beige_Minimal_Romantic_Love_Questions_Card_Game_Document.png?v=1765312333";
 
     const DOM = {
+      username: document.getElementById('username'),
+      hostName: document.getElementById('hostName'),
       stars: document.getElementById('stars-count'),
       cash: document.getElementById('cash-count'),
       cardsGrid: document.getElementById('cards-grid'),
@@ -196,26 +186,58 @@
     };
 
     const loadCurrentUser = async () => {
-      const stored = JSON.parse(localStorage.getItem('vipUser') || localStorage.getItem('hostUser')) || null;
-      if (!stored?.email) return;
+      showSpinner();
+      try {
+        const stored = JSON.parse(localStorage.getItem('vipUser') || localStorage.getItem('hostUser') || '{}');
+        if (!stored?.email) return;
 
-      const uid = emailToDocId(stored.email);
-      if (!uid) return;
+        const uid = emailToDocId(stored.email);
+        if (!uid) return;
 
-      const userRef = doc(db, 'users', uid);
-      onSnapshot(userRef, (snap) => {
-        if (!snap.exists()) return;
-        currentUser = { uid, ...snap.data() };
+        const userRef = doc(db, 'users', uid);
+        const snap = await getDoc(userRef);
+
+        if (!snap.exists()) {
+          currentUser = { uid, stars: 0, cash: 0 };
+          DOM.username.textContent = stored.email.split('@')[0];
+          DOM.stars.textContent = '0';
+          DOM.cash.textContent = '0';
+          hideSpinner();
+          return;
+        }
+
+        const data = snap.data();
+        currentUser = { uid, ...data, email: stored.email };
+
+        // Update welcome message
+        DOM.username.textContent = currentUser.chatId || stored.email.split('@')[0];
+        const host = currentUser.hostName || currentUser.invitedBy || 'someone';
+        DOM.hostName.textContent = host.startsWith('@') ? host : `@${host}`;
+
         DOM.stars.textContent = currentUser.stars || 0;
         DOM.cash.textContent = currentUser.cash || 0;
-      });
+
+        // Real-time updates
+        onSnapshot(userRef, (snap) => {
+          if (!snap.exists()) return;
+          const d = snap.data();
+          currentUser = { uid, ...d };
+          DOM.stars.textContent = currentUser.stars || 0;
+          DOM.cash.textContent = currentUser.cash || 0;
+        });
+
+      } catch (e) {
+        console.error(e);
+      } finally {
+        hideSpinner();
+      }
     };
 
     const initMarquee = () => {
       const inner = DOM.marquee;
-      for (let i = 0; i < 20; i++) {
+      for (let i = 0; i < 16; i++) {
         const img = document.createElement('img');
-        img.src = drinkImages[i % drinkImages.length] || 'https://via.placeholder.com/90';
+        img.src = "https://source.unsplash.com/random/100x100/?cocktail,drink,alcohol&" + i;
         inner.appendChild(img);
       }
       inner.innerHTML += inner.innerHTML;
@@ -231,7 +253,7 @@
         card.dataset.drink = drink;
 
         card.innerHTML = `
-          <div class="card-face card-back" style="background-image:url('${CARD_BACK_IMAGE}')"></div>
+          <div class="card-face card-back" style="background-image:url('${CARD_BACK}')"></div>
           <div class="card-face card-front">${drink}</div>
         `;
 
@@ -243,7 +265,7 @@
     const pickCard = (card) => {
       if (card.classList.contains('flipped')) return;
       if (!currentUser || currentUser.stars < COST) {
-        alert(`Need ${COST} Stars to pick!`);
+        alert(`Need ${COST} Stars to pick a drink!`);
         return;
       }
 
@@ -251,7 +273,7 @@
       DOM.phoneConfirm.onclick = async () => {
         const phone = DOM.phoneInput.value.trim();
         if (!phone || phone.length < 10) {
-          alert('Valid phone number required');
+          alert('Enter a valid phone number');
           return;
         }
 
@@ -261,16 +283,19 @@
 
         try {
           const userRef = doc(db, 'users', currentUser.uid);
+
           await runTransaction(db, async (t) => {
             const snap = await t.get(userRef);
+            if (!snap.exists()) throw "User not found";
             const data = snap.data();
+
             if (data.stars < COST) throw "Not enough stars";
 
             t.update(userRef, {
               stars: data.stars - COST,
               drinkRequests: arrayUnion({
                 drink: card.dataset.drink,
-                phone,
+                phone: phone,
                 timestamp: serverTimestamp(),
                 status: 'pending'
               })
@@ -280,11 +305,13 @@
           card.classList.add('flipped');
           card.classList.add('locked');
 
-          alert(`You picked:\n${card.dataset.drink}\n\nDelivery → ${phone}\nThank you for joining Cube!`);
+          alert(`You picked:\n${card.dataset.drink}\n\nDelivery → ${phone}\n\nThank you for joining Cube!`);
 
           currentUser.stars -= COST;
           DOM.stars.textContent = currentUser.stars;
+
         } catch (e) {
+          console.error("Redeem error:", e);
           alert('Failed. Try again.');
         } finally {
           hideSpinner();
