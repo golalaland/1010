@@ -12,88 +12,74 @@
       --accent: #ff006e;
       --success: #00ff9d;
       --gold: #FFD700;
-      --shadow: rgba(255, 0, 110, 0.4);
     }
     * { margin:0; padding:0; box-sizing:border-box; }
     body { background:var(--bg); color:var(--text); font-family:system-ui,sans-serif; min-height:100vh; display:flex; justify-content:center; align-items:center; }
     .container { max-width:480px; width:100%; padding:20px; text-align:center; }
     .title { font-size:32px; font-weight:900; background:linear-gradient(90deg,#ff006e,#ff8c00); -webkit-background-clip:text; -webkit-text-fill-color:transparent; margin-bottom:10px; }
-    .subtitle { color:#aaa; font-size:14px; margin-bottom:20px; }
+    .subtitle { color:#888; font-size:14px; margin-bottom:20px; }
 
-    .balance { font-size:18px; margin:20px 0; }
+    .balance { font-size:18px; margin:30px 0; }
     .stars { color:#FFD700; font-weight:900; }
 
-    .marquee { overflow:hidden; white-space:nowrap; margin:30px 0; border-radius:16px; background:#111; padding:12px 0; box-shadow:0 0 20px rgba(255,0,110,0.2); }
-    .marquee-inner { display:inline-block; animation:marquee 25s linear infinite; }
-    .marquee img { width:90px; height:90px; object-fit:cover; margin:0 15px; border-radius:12px; border:2px solid #333; box-shadow:0 4px 15px rgba(0,0,0,0.6); }
+    .marquee { overflow:hidden; white-space:nowrap; margin:30px 0; border-radius:16px; background:#111; padding:12px 0; }
+    .marquee-inner { display:inline-block; animation:marquee 30s linear infinite; }
+    .marquee img { width:90px; height:90px; object-fit:cover; margin:0 15px; border-radius:12px; border:2px solid #333; }
 
     .cards-grid { 
       display:grid; 
       grid-template-columns:repeat(7,1fr); 
       gap:12px; 
-      perspective:1000px;
-      margin:30px 0;
+      perspective:1200px;
+      margin:40px 0;
     }
 
     .card {
       width:100%;
-      height:100px;
+      height:110px;
       position:relative;
-      transform-style:preserve-preserve-3d;
+      transform-style:preserve-3d;
       cursor:pointer;
-      transition:transform 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-      border-radius:14px;
-      box-shadow:0 8px 25px rgba(0,0,0,0.6);
+      transition:transform 0.7s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      border-radius:16px;
+      box-shadow:0 10px 30px rgba(0,0,0,0.7);
     }
 
-    .card:hover { transform:scale(1.05) translateY(-8px); }
+    .card:hover { transform:scale(1.06) translateY(-10px); }
 
     .card-face {
       position:absolute;
       width:100%;
       height:100%;
       backface-visibility:hidden;
-      border-radius:14px;
+      border-radius:16px;
       display:flex;
       align-items:center;
       justify-content:center;
       font-weight:900;
-      font-size:12px;
+      font-size:11px;
       text-align:center;
-      padding:8px;
-      box-shadow:0 4px 20px rgba(0,0,0,0.7);
+      padding:10px;
+      overflow:hidden;
     }
 
+    /* YOUR CUSTOM CANVA CARD BACK (PNG OR SVG) */
     .card-back {
-      background:linear-gradient(135deg,#0f0c29,#1a0033);
+      background-image: url('https://i.imgur.com/YOUR-CANVA-CARD-BACK.png'); /* REPLACE THIS LINK */
+      background-size: cover;
+      background-position: center;
       border:3px solid #ff006e;
-      box-shadow:0 0 30px var(--shadow), inset 0 0 20px rgba(255,0,110,0.3);
-    }
-
-    .card-back::before {
-      content:"CUBE";
-      font-size:20px;
-      font-weight:900;
-      color:#ff006e;
-      text-shadow:0 0 15px #ff006e;
-      letter-spacing:8px;
-    }
-
-    .card-back::after {
-      content:"DRINK";
-      position:absolute;
-      bottom:8px;
-      font-size:10px;
-      color:#ff3366;
-      letter-spacing:4px;
+      box-shadow:0 0 40px rgba(255,0,110,0.5);
     }
 
     .card-front {
-      background:linear-gradient(135deg,#000,#111);
+      background:linear-gradient(135deg,#000428,#004e92);
       color:#00ff9d;
-      border:2px solid #00ff9d;
-      box-shadow:0 0 30px rgba(0,255,157,0.6);
+      border:3px solid #00ff9d;
+      box-shadow:0 0 40px rgba(0,255,157,0.7);
       transform:rotateY(180deg);
+      font-size:12px;
+      text-shadow:0 0 10px #000;
     }
 
     .card.flipped {
@@ -101,9 +87,9 @@
     }
 
     .card.locked {
-      opacity:0.5;
+      opacity:0.6;
       cursor:not-allowed;
-      filter:grayscale(100%);
+      pointer-events:none;
     }
 
     .phone-modal {
@@ -111,16 +97,11 @@
     }
     .phone-modal.active { display:flex; }
     .phone-content {
-      background:#111; padding:30px; border-radius:20px; width:90%; max-width:380px; border:2px solid var(--accent);
-      box-shadow:0 0 40px rgba(255,0,110,0.5);
-    }
+      background:#111; padding:30px; border-radius:20px; width:90%; max-width:380px; border:2px solid var(--accent); }
     .phone-input {
-      width:100%; padding:16px; margin:20px 0; border:none; border-radius:12px; background:#222; color:#fff; font-size:16px;
-    }
+      width:100%; padding:16px; margin:20px 0; border:none; border-radius:12px; background:#222; color:#fff; font-size:16px; }
     .btn-confirm {
-      background:linear-gradient(90deg,#ff006e,#ff3366); color:#fff; border:none; padding:16px; border-radius:12px; font-weight:900; font-size:18px; cursor:pointer;
-      box-shadow:0 8px 25px rgba(255,0,110,0.6);
-    }
+      background:linear-gradient(90deg,#ff006e,#ff3366); color:#fff; border:none; padding:16px; border-radius:12px; font-weight:900; font-size:18px; cursor:pointer; }
 
     .spinner { position:fixed; inset:0; background:rgba(0,0,0,0.98); display:none; align-items:center; justify-content:center; z-index:9999; }
     .spinner.active { display:flex; }
@@ -133,7 +114,7 @@
 <body>
   <div class="container">
     <div class="title">CUBE DRINK PICKER</div>
-    <div class="subtitle">She invited you. Now pick your drink. We'll deliver it IRL</div>
+    <div class="subtitle">She invited you. Now pick your poison. We deliver IRL</div>
 
     <div class="balance">
       <div>Stars: <span id="stars-count" class="stars">0</span></div>
@@ -150,8 +131,8 @@
   <!-- PHONE MODAL -->
   <div class="phone-modal" id="phoneModal">
     <div class="phone-content">
-      <h2 style="color:var(--accent);margin-bottom:10px;">Delivery Phone Number</h2>
-      <p style="color:#aaa;margin-bottom:20px;">We'll call/text this number to deliver your drink</p>
+      <h2 style="color:var(--accent);">Delivery Phone</h2>
+      <p style="color:#888;margin:10px 0 20px;">We'll text/call this number to deliver your drink</p>
       <input type="tel" id="phoneInput" class="phone-input" placeholder="+234 801 234 5678">
       <button class="btn-confirm" id="phoneConfirm">CONFIRM & PICK</button>
     </div>
@@ -178,18 +159,20 @@
     const COST = 100;
 
     const drinks = [
-      "Hennessy Paradise", "Cîroc Coconut", "Don Julio 1942", "Moët Ice", "Ace of Spades",
-      "Jack Daniel’s", "Martell Blue Swift", "Remy Martin XO", "Grey Goose", "Patrón Silver",
-      "Casamigos Blanco", "1800 Coconut", "D’ussé VSOP", "Belvedere", "Cristal Champagne",
-      "Dom Pérignon", "Johnnie Walker Blue", "Macallan 18", "Heineken", "Guinness", "Red Bull"
+      "Hennessy Paradise","Cîroc Coconut","Don Julio 1942","Moët Ice","Ace of Spades",
+      "Jack Daniel’s","Martell Blue Swift","Remy Martin XO","Grey Goose","Patrón Silver",
+      "Casamigos Blanco","1800 Coconut","D’ussé VSOP","Belvedere","Cristal",
+      "Dom Pérignon","Johnnie Walker Blue","Macallan 18","Heineken","Guinness","Red Bull"
     ];
 
+    // UPLOAD THIS IMAGE FROM CANVA AND REPLACE THIS URL
+    const CARD_BACK_IMAGE = "https://i.imgur.com/YOUR-CANVA-CARD-BACK.png"; // REPLACE THIS
+
     const drinkImages = [
-      "https://i.imgur.com/0z3X5kM.jpg",
-      "https://i.imgur.com/X7kP9Lm.jpg",
-      "https://i.imgur.com/9vR2kLm.jpg",
-      "https://i.imgur.com/Z3vR9Lm.jpg",
-      "https://i.imgur.com/K9pL3mQ.jpg"
+      "https://i.imgur.com/drink1.jpg",
+      "https://i.imgur.com/drink2.jpg",
+      "https://i.imgur.com/drink3.jpg",
+      // add more or repeat
     ];
 
     const DOM = {
@@ -213,10 +196,7 @@
     };
 
     const loadCurrentUser = async () => {
-      const vipRaw = localStorage.getItem('vipUser');
-      const hostRaw = localStorage.getItem('hostUser');
-      const stored = vipRaw ? JSON.parse(vipRaw) : hostRaw ? JSON.parse(hostRaw) : null;
-
+      const stored = JSON.parse(localStorage.getItem('vipUser') || localStorage.getItem('hostUser')) || null;
       if (!stored?.email) return;
 
       const uid = emailToDocId(stored.email);
@@ -233,9 +213,9 @@
 
     const initMarquee = () => {
       const inner = DOM.marquee;
-      for (let i =  i < 20; i++) {
+      for (let i = 0; i < 20; i++) {
         const img = document.createElement('img');
-        img.src = drinkImages[i % drinkImages.length];
+        img.src = drinkImages[i % drinkImages.length] || 'https://via.placeholder.com/90';
         inner.appendChild(img);
       }
       inner.innerHTML += inner.innerHTML;
@@ -249,27 +229,29 @@
         const card = document.createElement('div');
         card.className = 'card';
         card.dataset.drink = drink;
+
         card.innerHTML = `
-          <div class="card-face card-back"></div>
+          <div class="card-face card-back" style="background-image:url('${CARD_BACK_IMAGE}')"></div>
           <div class="card-face card-front">${drink}</div>
         `;
+
         card.onclick = () => pickCard(card);
         DOM.cardsGrid.appendChild(card);
       });
     };
 
     const pickCard = (card) => {
-      if (card.classList.contains('flipped')) return;  // ← THIS WAS BROKEN BEFORE
+      if (card.classList.contains('flipped')) return;
       if (!currentUser || currentUser.stars < COST) {
-        alert(`Need ${COST} Stars to pick a drink!`);
+        alert(`Need ${COST} Stars to pick!`);
         return;
       }
 
       DOM.phoneModal.classList.add('active');
       DOM.phoneConfirm.onclick = async () => {
         const phone = DOM.phoneInput.value.trim();
-        if (!/^[\d\s+\-()]{10,15}$/.test(phone)) {
-          alert('Enter valid phone number');
+        if (!phone || phone.length < 10) {
+          alert('Valid phone number required');
           return;
         }
 
@@ -298,18 +280,19 @@
           card.classList.add('flipped');
           card.classList.add('locked');
 
-          alert(`You picked:\n${card.dataset.drink}\n\nWe'll deliver to ${phone}!\nThank you for joining Cube!`);
+          alert(`You picked:\n${card.dataset.drink}\n\nDelivery → ${phone}\nThank you for joining Cube!`);
 
           currentUser.stars -= COST;
           DOM.stars.textContent = currentUser.stars;
         } catch (e) {
-          alert('Failed to save drink request. Try again.');
+          alert('Failed. Try again.');
         } finally {
           hideSpinner();
         }
       };
     };
 
+    // INIT
     loadCurrentUser();
     initMarquee();
     initCards();
