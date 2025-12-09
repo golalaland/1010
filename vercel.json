@@ -3,6 +3,8 @@
     { "source": "/tapmaster", "destination": "/tapmaster.html" },
     { "source": "/signup", "destination": "/signup.html" },
     { "source": "/chat", "destination": "/chat.html" },
+        { "source": "/shop", "destination": "/shop.html" },
+        { "source": "/game", "destination": "/game.html" },
      { "source": "/menu", "destination": "/menu.html" }
   ]
 }
