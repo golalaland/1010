@@ -901,5 +901,3 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Initial run
   replaceStarsWithSVG();
-
-});
