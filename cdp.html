@@ -290,7 +290,7 @@ box-shadow: 0 0 12px rgba(0, 255, 136, 0.4);   /* soft green glow */
   const db = getFirestore(app);
 
   let currentUser = null;
-  const COST = 100;
+  const COST = 100; // ← Change this number anytime to adjust cost
 
   const drinks = [
     "Hennessy Paradise","Cîroc Coconut","Don Julio 1942","Moët Ice","Ace of Spades",
@@ -301,7 +301,7 @@ box-shadow: 0 0 12px rgba(0, 255, 136, 0.4);   /* soft green glow */
   ];
 
   const CARD_BACK = "https://cdn.shopify.com/s/files/1/0962/6648/6067/files/Beige_Minimal_Romantic_Love_Questions_Card_Game_Document_1.png?v=1765313291";
-  const CARD_FRONT = "https://i.imgur.com/YOUR-FRONT-CARD.png"; // ← Change this
+  const CARD_FRONT = "https://i.imgur.com/YOUR-FRONT-CARD.png"; // ← Replace with your front card
 
   const DOM = {
     username: document.getElementById('username'),
@@ -382,7 +382,6 @@ box-shadow: 0 0 12px rgba(0, 255, 136, 0.4);   /* soft green glow */
       "https://cdn.shopify.com/s/files/1/0962/6648/6067/files/42.png?v=1764928903",
       "https://cdn.shopify.com/s/files/1/0962/6648/6067/files/48.png?v=1764928903",
       "https://cdn.shopify.com/s/files/1/0962/6648/6067/files/40.png?v=1764928903",
-      // Add more
     ];
 
     yourLinks.forEach(link => {
@@ -419,8 +418,9 @@ box-shadow: 0 0 12px rgba(0, 255, 136, 0.4);   /* soft green glow */
 
   const pickCard = (card) => {
     if (card.classList.contains('flipped')) return;
+
     if (!currentUser || currentUser.stars < COST) {
-      alert(`Need ${COST} Stars to pick a drink!`);
+      alert(`You need ${COST} Stars to pick a drink!`);
       return;
     }
 
@@ -429,7 +429,7 @@ box-shadow: 0 0 12px rgba(0, 255, 136, 0.4);   /* soft green glow */
     DOM.phoneConfirm.onclick = async () => {
       const phone = DOM.phoneInput.value.trim();
       if (!phone || phone.length < 10) {
-        alert('Valid phone number required');
+        alert('Please enter a valid phone number');
         return;
       }
 
@@ -441,11 +441,11 @@ box-shadow: 0 0 12px rgba(0, 255, 136, 0.4);   /* soft green glow */
         const uid = emailToDocId(currentUser.email);
         const userRef = doc(db, 'users', uid);
 
-        // 1. Deduct stars from user
         await runTransaction(db, async (t) => {
           const snap = await t.get(userRef);
           if (!snap.exists()) throw "User not found";
           const data = snap.data();
+
           if (data.stars < COST) throw "Not enough stars";
 
           t.update(userRef, {
@@ -453,7 +453,7 @@ box-shadow: 0 0 12px rgba(0, 255, 136, 0.4);   /* soft green glow */
           });
         });
 
-        // 2. Create separate drink request document
+        // Save to drinkRequests collection
         await addDoc(collection(db, 'drinkRequests'), {
           userId: uid,
           userEmail: currentUser.email,
