@@ -161,7 +161,7 @@ box-shadow: 0 0 12px rgba(0, 255, 136, 0.4);   /* soft green glow */
 
 /* Back of the card (Canva image) */
 .card-back {
-  background-image: url('https://cdn.shopify.com/s/files/1/0962/6648/6067/files/Beige_Minimal_Romantic_Love_Questions_Card_Game_Document_1.png?v=1765313291');
+  background-image: url('https://cdn.shopify.com/s/files/1/0962/6648/6067/files/Sipcard.png?v=1765319696');
   background-size: cover;
   background-position: center;
 }
@@ -265,218 +265,213 @@ box-shadow: 0 0 12px rgba(0, 255, 136, 0.4);   /* soft green glow */
   <!-- SPINNER -->
   <div class="spinner" id="spinner"></div>
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getFirestore, doc, getDoc, onSnapshot, runTransaction, serverTimestamp, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getFirestore, doc, getDoc, onSnapshot, runTransaction, serverTimestamp, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-    const app = initializeApp({
-      apiKey: "AIzaSyD_GjkTox5tum9o4AupO0LeWzjTocJg8RI",
-      authDomain: "dettyverse.firebaseapp.com",
-      projectId: "dettyverse",
-      storageBucket: "dettyverse.firebasestorage.app",
-      messagingSenderId: "1036459652488",
-      appId: "1:1036459652488:web:e8910172ed16e9cac9b63d"
-    });
-    const db = getFirestore(app);
+  const app = initializeApp({
+    apiKey: "AIzaSyD_GjkTox5tum9o4AupO0LeWzjTocJg8RI",
+    authDomain: "dettyverse.firebaseapp.com",
+    projectId: "dettyverse",
+    storageBucket: "dettyverse.firebasestorage.app",
+    messagingSenderId: "1036459652488",
+    appId: "1:1036459652488:web:e8910172ed16e9cac9b63d"
+  });
+  const db = getFirestore(app);
 
-    let currentUser = null;
-    const COST = 100;
+  let currentUser = null;
+  const COST = 100;
 
-    const drinks = [
-      "Hennessy Paradise","Cîroc Coconut","Don Julio 1942","Moët Ice","Ace of Spades",
-      "Jack Daniel’s","Martell Blue Swift","Remy Martin XO","Grey Goose","Patrón Silver",
-      "Casamigos Blanco","1800 Coconut","D’ussé VSOP","Belvedere","Cristal",
-      "Dom Pérignon","Johnnie Walker Blue","Macallan 18","Heineken","Guinness","Red Bull",
-      "Tequila Rose","Blue Nun","Veuve Clicquot"
-    ];
+  const drinks = [
+    "Hennessy Paradise","Cîroc Coconut","Don Julio 1942","Moët Ice","Ace of Spades",
+    "Jack Daniel’s","Martell Blue Swift","Remy Martin XO","Grey Goose","Patrón Silver",
+    "Casamigos Blanco","1800 Coconut","D’ussé VSOP","Belvedere","Cristal",
+    "Dom Pérignon","Johnnie Walker Blue","Macallan 18","Heineken","Guinness","Red Bull",
+    "Tequila Rose","Blue Nun","Veuve Clicquot"
+  ];
 
-    // YOUR CANVA BACK CARD
-    const CARD_BACK = "https://cdn.shopify.com/s/files/1/0962/6648/6067/files/Beige_Minimal_Romantic_Love_Questions_Card_Game_Document_1.png?v=1765313291";
+  const CARD_BACK = "https://cdn.shopify.com/s/files/1/0962/6648/6067/files/Beige_Minimal_Romantic_Love_Questions_Card_Game_Document_1.png?v=1765313291";
+  const CARD_FRONT = "https://i.imgur.com/YOUR-FRONT-CARD.png"; // Replace with your front card
 
-    // YOUR CANVA FRONT CARD (replace this!)
-    const CARD_FRONT = "https://i.imgur.com/YOUR-FRONT-CARD.png";
+  const DOM = {
+    username: document.getElementById('username'),
+    hostName: document.getElementById('hostName'),
+    stars: document.getElementById('stars-count'),
+    cash: document.getElementById('cash-count'),
+    cardsGrid: document.getElementById('cards-grid'),
+    marquee: document.getElementById('marquee'),
+    phoneModal: document.getElementById('phoneModal'),
+    phoneInput: document.getElementById('phoneInput'),
+    phoneConfirm: document.getElementById('phoneConfirm'),
+    phoneClose: document.getElementById('phoneClose'),
+    finalModal: document.getElementById('finalModal'),
+    finalMessage: document.getElementById('finalMessage'),
+    finalClose: document.getElementById('finalClose'),
+    spinner: document.getElementById('spinner')
+  };
 
-    const DOM = {
-      username: document.getElementById('username'),
-      hostName: document.getElementById('hostName'),
-      stars: document.getElementById('stars-count'),
-      cash: document.getElementById('cash-count'),
-      cardsGrid: document.getElementById('cards-grid'),
-      marquee: document.getElementById('marquee'),
-      phoneModal: document.getElementById('phoneModal'),
-      phoneInput: document.getElementById('phoneInput'),
-      phoneConfirm: document.getElementById('phoneConfirm'),
-      phoneClose: document.getElementById('phoneClose'),
-      finalModal: document.getElementById('finalModal'),
-      finalMessage: document.getElementById('finalMessage'),
-      finalClose: document.getElementById('finalClose'),
-      spinner: document.getElementById('spinner')
-    };
+  const showSpinner = () => DOM.spinner.classList.add('active');
+  const hideSpinner = () => DOM.spinner.classList.remove('active');
 
-    const showSpinner = () => DOM.spinner.classList.add('active');
-    const hideSpinner = () => DOM.spinner.classList.remove('active');
+  // FIXED: CORRECT DOCUMENT ID FROM EMAIL
+  const emailToDocId = (email) => {
+    if (!email || !email.includes('@')) return null;
+    const [local, domain] = email.toLowerCase().split('@');
+    return `${local}_${domain.replace(/\./g, '_')}`;
+  };
 
-    const emailToDocId = (email) => {
-      if (!email?.includes('@')) return null;
-      const [local, domain] = email.toLowerCase().split('@');
-      return `${local}_${domain.replace(/\./g, '_')}`;
-    };
+  const loadCurrentUser = async () => {
+    showSpinner();
+    try {
+      const stored = JSON.parse(localStorage.getItem('vipUser') || localStorage.getItem('hostUser') || '{}');
+      if (!stored?.email) return;
 
-    const loadCurrentUser = async () => {
-      showSpinner();
-      try {
-        const stored = JSON.parse(localStorage.getItem('vipUser') || localStorage.getItem('hostUser') || '{}');
-        if (!stored?.email) return;
+      const uid = emailToDocId(stored.email);
+      if (!uid) return;
 
-        const uid = emailToDocId(stored.email);
-        if (!uid) return;
+      const userRef = doc(db, 'users', uid);
+      const snap = await getDoc(userRef);
 
-        const userRef = doc(db, 'users', uid);
-        const snap = await getDoc(userRef);
+      if (!snap.exists()) {
+        currentUser = { uid, stars: 0, cash: 0, email: stored.email };
+        DOM.username.textContent = stored.email.split('@')[0];
+        hideSpinner();
+        return;
+      }
 
-        if (!snap.exists()) {
-          currentUser = { uid, stars: 0, cash: 0 };
-          DOM.username.textContent = stored.email.split('@')[0];
-          hideSpinner();
-          return;
-        }
+      const data = snap.data();
+      currentUser = { uid, ...data, email: stored.email };
 
-        const data = snap.data();
-        currentUser = { uid, ...data, email: stored.email };
+      DOM.username.textContent = currentUser.chatId || stored.email.split('@')[0];
+      const host = currentUser.hostName || currentUser.invitedBy || 'someone';
+      DOM.hostName.textContent = host.startsWith('@') ? host : `@${host}`;
 
-        DOM.username.textContent = currentUser.chatId || stored.email.split('@')[0];
-        const host = currentUser.hostName || currentUser.invitedBy || 'someone';
-        DOM.hostName.textContent = host.startsWith('@') ? host : `${host}`;
+      DOM.stars.textContent = (currentUser.stars || 0).toLocaleString();
+      DOM.cash.textContent = (currentUser.cash || 0).toLocaleString();
 
+      onSnapshot(userRef, (snap) => {
+        if (!snap.exists()) return;
+        const d = snap.data();
+        currentUser = { uid, ...d };
         DOM.stars.textContent = (currentUser.stars || 0).toLocaleString();
         DOM.cash.textContent = (currentUser.cash || 0).toLocaleString();
+      });
 
-        onSnapshot(userRef, (snap) => {
-          if (!snap.exists()) return;
-          const d = snap.data();
-          currentUser = { uid, ...d };
-          DOM.stars.textContent = (currentUser.stars || 0).toLocaleString();
-          DOM.cash.textContent = (currentUser.cash || 0).toLocaleString();
+    } catch (e) {
+      console.error(e);
+    } finally {
+      hideSpinner();
+    }
+  };
+
+  const initMarquee = () => {
+    const inner = DOM.marquee;
+    const yourLinks = [
+      "https://cdn.shopify.com/s/files/1/0962/6648/6067/files/47.png?v=1764928903",
+      "https://cdn.shopify.com/s/files/1/0962/6648/6067/files/46.png?v=1764928904",
+      "https://cdn.shopify.com/s/files/1/0962/6648/6067/files/36.png?v=1764928903",
+      "https://cdn.shopify.com/s/files/1/0962/6648/6067/files/42.png?v=1764928903",
+      "https://cdn.shopify.com/s/files/1/0962/6648/6067/files/48.png?v=1764928903",
+      "https://cdn.shopify.com/s/files/1/0962/6648/6067/files/40.png?v=1764928903",
+      // Add more — it auto-loops
+    ];
+
+    yourLinks.forEach(link => {
+      const img = document.createElement('img');
+      img.src = link;
+      inner.appendChild(img);
+    });
+    inner.innerHTML += inner.innerHTML;
+  };
+
+  const initCards = () => {
+    const shuffled = [...drinks].sort(() => Math.random() - 0.5);
+    const numbers = Array.from({length:24},(_,i)=>i+1).sort(()=>Math.random()-0.5);
+
+    DOM.cardsGrid.innerHTML = '';
+
+    shuffled.forEach((drink, i) => {
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.dataset.drink = drink;
+      card.dataset.number = numbers[i];
+
+      card.innerHTML = `
+        <div class="card-face card-back" style="background-image:url('${CARD_BACK}')"></div>
+        <div class="card-face card-front" style="background-image:url('${CARD_FRONT}');background-size:cover;color:#fff;text-shadow:2px 2px 10px #000;">
+          ${drink}
+        </div>
+      `;
+
+      card.onclick = () => pickCard(card);
+      DOM.cardsGrid.appendChild(card);
+    });
+  };
+
+  const pickCard = (card) => {
+    if (card.classList.contains('flipped')) return;
+    if (!currentUser || currentUser.stars < COST) {
+      alert(`Need ${COST} Stars to pick!`);
+      return;
+    }
+
+    DOM.phoneModal.classList.add('active');
+    DOM.phoneConfirm.onclick = async () => {
+      const phone = DOM.phoneInput.value.trim();
+      if (!phone || phone.length < 10) {
+        alert('Valid phone number required');
+        return;
+      }
+
+      DOM.phoneModal.classList.remove('active');
+      DOM.phoneInput.value = '';
+      showSpinner();
+
+      try {
+        // FIXED: Use correct document ID
+        const uid = emailToDocId(currentUser.email);
+        const userRef = doc(db, 'users', uid);
+
+        await runTransaction(db, async (t) => {
+          const snap = await t.get(userRef);
+          if (!snap.exists()) throw "User not found";
+          const data = snap.data();
+          if (data.stars < COST) throw "Not enough stars";
+
+          t.update(userRef, {
+            stars: data.stars - COST,
+            drinkRequests: arrayUnion({
+              drink: card.dataset.drink,
+              phone,
+              timestamp: serverTimestamp(),
+              status: 'pending',
+              cardNumber: Number(card.dataset.number)
+            })
+          });
         });
 
+        card.classList.add('flipped');
+        card.classList.add('locked');
+
+        DOM.finalMessage.textContent = `You picked card #${card.dataset.number}!\nWe'll reach out shortly.`;
+        DOM.finalModal.classList.add('active');
+
+        currentUser.stars -= COST;
+        DOM.stars.textContent = currentUser.stars.toLocaleString();
+
       } catch (e) {
-        console.error(e);
+        console.error("Error:", e);
+        alert('Failed. Try again.');
       } finally {
         hideSpinner();
       }
     };
+  };
 
-    const initMarquee = () => {
-      const inner = DOM.marquee;
-      const yourLinks = [
-        "https://cdn.shopify.com/s/files/1/0962/6648/6067/files/47.png?v=1764928903",
-        "https://cdn.shopify.com/s/files/1/0962/6648/6067/files/46.png?v=1764928904",
-        "https://cdn.shopify.com/s/files/1/0962/6648/6067/files/36.png?v=1764928903",
-        "https://cdn.shopify.com/s/files/1/0962/6648/6067/files/42.png?v=1764928903",
-        "https://cdn.shopify.com/s/files/1/0962/6648/6067/files/46.png?v=1764928904",
-        "https://cdn.shopify.com/s/files/1/0962/6648/6067/files/48.png?v=1764928903",
-        "https://cdn.shopify.com/s/files/1/0962/6648/6067/files/40.png?v=1764928903",
-        "https://cdn.shopify.com/s/files/1/0962/6648/6067/files/36.png?v=1764928903",
-        "https://cdn.shopify.com/s/files/1/0962/6648/6067/files/42.png?v=1764928903",
-        "https://cdn.shopify.com/s/files/1/0962/6648/6067/files/36.png?v=1764928903",
-        // Add as many as you want — it auto-loops
-      ];
+  DOM.phoneClose.onclick = () => DOM.phoneModal.classList.remove('active');
+  DOM.finalClose.onclick = () => DOM.finalModal.classList.remove('active');
 
-      yourLinks.forEach(link => {
-        const img = document.createElement('img');
-        img.src = link;
-        inner.appendChild(img);
-      });
-      inner.innerHTML += inner.innerHTML;
-    };
-
-    const initCards = () => {
-      const shuffled = [...drinks].sort(() => Math.random() - 0.5);
-      const numbers = Array.from({length:24},(_,i)=>i+1).sort(()=>Math.random()-0.5);
-
-      DOM.cardsGrid.innerHTML = '';
-
-      shuffled.forEach((drink, i) => {
-        const card = document.createElement('div');
-        card.className = 'card';
-        card.dataset.drink = drink;
-        card.dataset.number = numbers[i];
-
-        card.innerHTML = `
-          <div class="card-face card-back" style="background-image:url('${CARD_BACK}')"></div>
-          <div class="card-face card-front" style="background-image:url('${CARD_FRONT}');background-size:cover;color:#fff;text-shadow:2px 2px 10px #000;">
-            ${drink}
-          </div>
-        `;
-
-        card.onclick = () => pickCard(card);
-        DOM.cardsGrid.appendChild(card);
-      });
-    };
-
-    const pickCard = (card) => {
-      if (card.classList.contains('flipped')) return;
-      if (!currentUser || currentUser.stars < COST) {
-        alert(`Need ${COST} Stars to pick!`);
-        return;
-      }
-
-      DOM.phoneModal.classList.add('active');
-      DOM.phoneConfirm.onclick = async () => {
-        const phone = DOM.phoneInput.value.trim();
-        if (!phone || phone.length < 10) {
-          alert('Valid phone number required');
-          return;
-        }
-
-        DOM.phoneModal.classList.remove('active');
-        DOM.phoneInput.value = '';
-        showSpinner();
-
-        try {
-          const userRef = doc(db, 'users', currentUser.uid);
-          await runTransaction(db, async (t) => {
-            const snap = await t.get(userRef);
-            if (!snap.exists()) throw "User not found";
-            const data = snap.data();
-            if (data.stars < COST) throw "Not enough stars";
-
-            t.update(userRef, {
-              stars: data.stars - COST,
-              drinkRequests: arrayUnion({
-                drink: card.dataset.drink,
-                phone,
-                timestamp: serverTimestamp(),
-                status: 'pending',
-                cardNumber: Number(card.dataset.number)
-              })
-            });
-          });
-
-          card.classList.add('flipped');
-          card.classList.add('locked');
-
-          DOM.finalMessage.textContent = `You picked card #${card.dataset.number}!\nWe'll reach out shortly.`;
-          DOM.finalModal.classList.add('active');
-
-          currentUser.stars -= COST;
-          DOM.stars.textContent = currentUser.stars.toLocaleString();
-
-        } catch (e) {
-          console.error(e);
-          alert('Failed. Try again.');
-        } finally {
-          hideSpinner();
-        }
-      };
-    };
-
-    DOM.phoneClose.onclick = () => DOM.phoneModal.classList.remove('active');
-    DOM.finalClose.onclick = () => DOM.finalModal.classList.remove('active');
-
-    loadCurrentUser();
-    initMarquee();
-    initCards();
-  </script>
-</body>
-</html>
+  loadCurrentUser();
+  initMarquee();
+  initCards();
+</script>
