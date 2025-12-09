@@ -9,21 +9,41 @@
 <link rel="icon" href="data:," />
 <style>
 :root {
-  --bg: #000;
-  --card: #111;
-  --muted: #aaa;
-  --accent: #39FF14;        /* kept your neon green for other elements */
-  --glass: rgba(255,255,255,0.03);
-  --pulse-color: #39FF14;
-  --buzz-color: #0FF;
+  /* Core dark base */
+  --bg:           #000000;
+  --card:         #0a0a0a;
+  --glass:        rgba(255,255,255,0.04);
+  --border-dim:   rgba(180,20,50,0.25);
 
-  /* New Red Room button colors */
-  --redroom-main: #cc0033;
-  --redroom-dark: #990020;
-  --redroom-deeper: #660015;
-  --redroom-glow: rgba(220, 0, 50, 0.25);
+  /* Text tones */
+  --text:         #ffffff;
+  --text-muted:   #aaaaaa;
+  --text-dim:     #777777;
+
+  /* Your original neon-green accents (kept exactly as you wanted) */
+  --accent:       #39FF14;   /* electric toxic green for tips, badges, etc. */
+  --pulse-color:  #39FF14;
+  --buzz-color:   #00FFFF;
+
+  /* RED ROOM SEDUCTIVE PALETTE – the star of the show */
+  --rr-900:       #660015;   /* deepest blood */
+  --rr-800:       #990020;
+  --rr-700:       #bb0028;
+  --rr-600:       #cc0033;   /* main button color */
+  --rr-500:       #e6003d;   /* hover / active */
+  --rr-400:       #ff1744;   /* bright accents, active borders */
+  --rr-300:       #ff3366;   /* glows, usernames, close buttons */
+  --rr-glow:      rgba(255, 23, 68, 0.35);
+  --rr-glow-soft: rgba(220, 0, 60, 0.22);
+  --rr-glow-dim:  rgba(180, 20, 50, 0.18);
+
+  /* Quick shortcuts you can use anywhere */
+  --redroom-main:    var(--rr-600);
+  --redroom-dark:    var(--rr-800);
+  --redroom-deeper:  var(--rr-900);
+  --redroom-hover:   var(--rr-500);
+  --redroom-accent:  var(--rr-400);
 }
-  
 #videoWrapper .nav-buttons {
   display: flex;
   justify-content: center;
