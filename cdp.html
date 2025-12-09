@@ -408,66 +408,65 @@ box-shadow: 0 0 12px rgba(0, 255, 136, 0.4);   /* soft green glow */
     });
   };
 
-  const pickCard = (card) => {
-    if (card.classList.contains('flipped')) return;
-    if (!currentUser || currentUser.stars < COST) {
-      alert(`Need ${COST} Stars to pick!`);
+ const pickCard = (card) => {
+  if (card.classList.contains('flipped')) return;
+  if (!currentUser || currentUser.stars < COST) {
+    alert(`Need ${COST} Stars to pick a drink!`);
+    return;
+  }
+
+  DOM.phoneModal.classList.add('active');
+
+  DOM.phoneConfirm.onclick = async () => {
+    const phone = DOM.phoneInput.value.trim();
+    if (!phone || phone.length < 10) {
+      alert('Valid phone number required');
       return;
     }
 
-    DOM.phoneModal.classList.add('active');
-    DOM.phoneConfirm.onclick = async () => {
-      const phone = DOM.phoneInput.value.trim();
-      if (!phone || phone.length < 10) {
-        alert('Valid phone number required');
-        return;
-      }
+    DOM.phoneModal.classList.remove('active');
+    DOM.phoneInput.value = '';
+    showSpinner();
 
-      DOM.phoneModal.classList.remove('active');
-      DOM.phoneInput.value = '';
-      showSpinner();
+    try {
+      const uid = emailToDocId(currentUser.email);
+      const userRef = doc(db, 'users', uid);
 
-      try {
-        // FIXED: Use correct document ID
-        const uid = emailToDocId(currentUser.email);
-        const userRef = doc(db, 'users', uid);
+      const snap = await getDoc(userRef);
+      if (!snap.exists()) throw "User not found";
+      const data = snap.data();
 
-        await runTransaction(db, async (t) => {
-          const snap = await t.get(userRef);
-          if (!snap.exists()) throw "User not found";
-          const data = snap.data();
-          if (data.stars < COST) throw "Not enough stars";
+      if (data.stars < COST) throw "Not enough stars";
 
-          t.update(userRef, {
-            stars: data.stars - COST,
-            drinkRequests: arrayUnion({
-              drink: card.dataset.drink,
-              phone,
-              timestamp: serverTimestamp(),
-              status: 'pending',
-              cardNumber: Number(card.dataset.number)
-            })
-          });
-        });
+      await updateDoc(userRef, {
+        stars: data.stars - COST,
+        drinkRequests: arrayUnion({
+          drink: card.dataset.drink,
+          phone,
+          cardNumber: Number(card.dataset.number),
+          status: 'pending',
+          timestamp: Date.now() // ← This fixes everything
+        })
+      });
 
-        card.classList.add('flipped');
-        card.classList.add('locked');
+      card.classList.add('flipped');
+      card.classList.add('locked');
 
-        DOM.finalMessage.textContent = `You picked card #${card.dataset.number}!\nWe'll reach out shortly.`;
-        DOM.finalModal.classList.add('active');
+      DOM.finalMessage.textContent = `You picked card #${card.dataset.number}!\nWe'll reach out shortly.`;
+      DOM.finalModal.classList.add('active');
 
-        currentUser.stars -= COST;
-        DOM.stars.textContent = currentUser.stars.toLocaleString();
+      currentUser.stars -= COST;
+      DOM.stars.textContent = currentUser.stars.toLocaleString();
 
-      } catch (e) {
-        console.error("Error:", e);
-        alert('Failed. Try again.');
-      } finally {
-        hideSpinner();
-      }
-    };
+    } catch (e) {
+      console.error(e);
+      alert('Failed: ' + (e.message || 'Try again'));
+    } finally {
+      hideSpinner();
+    }
   };
-
+};
+  
   DOM.phoneClose.onclick = () => DOM.phoneModal.classList.remove('active');
   DOM.finalClose.onclick = () => DOM.finalModal.classList.remove('active');
 
