@@ -50,33 +50,48 @@
     .welcome span { color:var(--cube-green); }
 
 .balance {
-    display: flex;
-    flex-direction: column;     /* ← stacks children vertically */
-    gap: 12px;                  /* space between the two lines */
-    justify-content: center;
-    align-items: flex-start;     /* or "center" if you want them centered */
-    
-    font-size: 13px;            /* slightly smaller than 20px */
-    font-weight: 900;
-    background: #111;
-    padding: 14px 20px;         /* reduced padding a bit */
-    border-radius: 14px;
-    border: 2px solid #333;
-    width: fit-content;         /* makes the box only as wide as needed */
-    margin: 25px auto;          /* keeps your original vertical margin and centers horizontally */
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 18px;
+  background: #111;
+  padding: 14px 20px;
+  border-radius: 14px;
+  border: 2px solid #333;
+  width: fit-content;
+  margin: 25px auto;
 }
 
-.balance div {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    white-space: nowrap;        /* prevents breaking in the middle */
+.item {
+  display: flex;
+  align-items: center;
+  gap: 8px;                 /* space between label and value */
+  white-space: nowrap;
 }
 
-.stars {
-    color: #FFD700;
+.label {
+  font-weight: 900;         /* only the titles are bold */
+  color: #fff;
+  min-width: 60px;          /* keeps alignment nice when numbers grow */
 }
 
+.value {
+  font-weight: 400;         /* numbers + symbols normal weight */
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 4px;                 /* tight space between number and ⭐️ or ₦ */
+}
+
+#stars-count {
+  color: #FFD700;           /* gold color for star count */
+}
+
+/* Optional: make the actual star emoji a bit smaller and perfectly aligned */
+.value .emoji {
+  font-size: 1.1em;
+  margin-top: -2px;         /* tiny tweak for perfect vertical alignment */
+}
 
     .marquee {
       overflow:hidden;
@@ -189,9 +204,15 @@
     <div class="title">SIP PICKER</div>
     <div class="welcome" id="welcomeMsg">Welcome <span id="username">Guest</span>, you're on <span id="hostName">someone</span>'s Bar!</div>
 
-   <div class="balance">
-  <div>STRZ COLLECTED: <span id="stars-count" class="stars">0</span> ⭐️</div>
-  <div>CASH EARNED: ₦<span id="cash-count">0</span></div>
+<div class="balance">
+  <div class="item">
+    <span class="label">Stars:</span>
+    <span class="value"><span id="stars-count">0</span> ⭐️</span>
+  </div>
+  <div class="item">
+    <span class="label">Cash:</span>
+    <span class="value">₦<span id="cash-count">0</span></span>
+  </div>
 </div>
     <div class="marquee">
       <div class="marquee-inner" id="marquee"></div>
@@ -327,16 +348,16 @@
     const initMarquee = () => {
       const inner = DOM.marquee;
       const yourLinks = [
-        "https://source.unsplash.com/random/110x110/?hennessy",
-        "https://source.unsplash.com/random/110x110/?ciroc",
-        "https://source.unsplash.com/random/110x110/?donjulio",
-        "https://source.unsplash.com/random/110x110/?moet",
-        "https://source.unsplash.com/random/110x110/?aceofspades",
-        "https://source.unsplash.com/random/110x110/?jackdaniels",
-        "https://source.unsplash.com/random/110x110/?martell",
-        "https://source.unsplash.com/random/110x110/?remy",
-        "https://source.unsplash.com/random/110x110/?greygoose",
-        "https://source.unsplash.com/random/110x110/?patron",
+        "https://cdn.shopify.com/s/files/1/0962/6648/6067/files/47.png?v=1764928903",
+        "https://cdn.shopify.com/s/files/1/0962/6648/6067/files/46.png?v=1764928904",
+        "https://cdn.shopify.com/s/files/1/0962/6648/6067/files/36.png?v=1764928903",
+        "https://cdn.shopify.com/s/files/1/0962/6648/6067/files/42.png?v=1764928903",
+        "https://cdn.shopify.com/s/files/1/0962/6648/6067/files/46.png?v=1764928904",
+        "https://cdn.shopify.com/s/files/1/0962/6648/6067/files/48.png?v=1764928903",
+        "https://cdn.shopify.com/s/files/1/0962/6648/6067/files/40.png?v=1764928903",
+        "https://cdn.shopify.com/s/files/1/0962/6648/6067/files/36.png?v=1764928903",
+        "https://cdn.shopify.com/s/files/1/0962/6648/6067/files/42.png?v=1764928903",
+        "https://cdn.shopify.com/s/files/1/0962/6648/6067/files/36.png?v=1764928903",
         // Add as many as you want — it auto-loops
       ];
 
