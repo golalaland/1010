@@ -388,15 +388,19 @@ const renderTabContent = (type) => {
     btn.textContent = 'Invite Friends';
     DOM.tabContent.appendChild(btn);
 
-    btn.addEventListener('click', () => {
-      const message = `Hey! I'm hosting on xixi live, join my tab and let’s win together 🎉 Sign up using my link: `;
-      const link = `https://golalaland.github.io/chat/ref.html?ref=${encodeURIComponent(currentUser.uid)}`;
-      const fullText = message + link;
+   btn.addEventListener('click', () => {
+  const chatId = currentUser?.chatId || 'friend';
+  const cleanChatId = encodeURIComponent(chatId.startsWith('@') ? chatId : `@${chatId}`);
 
-      navigator.clipboard.writeText(fullText)
-        .then(() => showThemedMessage('Copied!', 'Invite message copied.', 1500))
-        .catch(() => showThemedMessage('Error', 'Failed to copy invite.', 1800));
-    });
+  const message = `Hey! I'm hosting on xixi live, join my tab and let’s win together! Sign up using my link: `;
+  const link = `https://cube.xixi.live/signup?ref=${cleanChatId}`;
+
+  const fullText = message + link;
+
+  navigator.clipboard.writeText(fullText)
+    .then(() => showThemedMessage('Copied!', 'Referral link copied to clipboard', 2000))
+    .catch(() => showThemedMessage('Error', 'Could not copy link', 2000));
+});
   } else if (type === 'badges') {
     const badgeImg = currentUser.hostBadgeImg || 'https://www.svgrepo.com/show/492657/crown.svg';
     DOM.tabContent.innerHTML = `
