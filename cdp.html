@@ -326,7 +326,7 @@ box-shadow: 0 0 12px rgba(0, 255, 136, 0.4);   /* soft green glow */
 
         DOM.username.textContent = currentUser.chatId || stored.email.split('@')[0];
         const host = currentUser.hostName || currentUser.invitedBy || 'someone';
-        DOM.hostName.textContent = host.startsWith('@') ? host : `@${host}`;
+        DOM.hostName.textContent = host.startsWith('@') ? host : `${host}`;
 
         DOM.stars.textContent = (currentUser.stars || 0).toLocaleString();
         DOM.cash.textContent = (currentUser.cash || 0).toLocaleString();
