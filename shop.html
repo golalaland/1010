@@ -92,11 +92,20 @@ header {
   font-size: 1.55rem;
   font-weight: 800;
   color: var(--theme-solid);
-  display: flex;
-  align-items: center;
+  display: inline-flex;
+  align-items: baseline;        /* ← this is the magic */
   justify-content: center;
   gap: 8px;
   font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+/* Force the star to match the exact height and baseline of the numbers */
+.balance-value .emoji {
+  font-size: 1.1em;             /* slightly smaller than the text */
+  line-height: 1;
+  margin-bottom: -0.05em;       /* tiny nudge up if still needed */
+  display: inline-block;
 }
 
 /* ========== HOST TABS ========== */
@@ -772,9 +781,9 @@ header {
     <div class="balances">
       <div class="balance-item">
         <div class="balance-label">Stars Balance</div>
-        <div class="balance-value" id="stars-count">
-          <span class="num">0</span> ⭐
-        </div>
+       <div class="balance-value" id="stars-count">
+  <span class="num">0</span> <span class="emoji">⭐</span>
+</div>
       </div>
       
       <div class="balance-item">
