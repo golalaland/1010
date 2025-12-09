@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cube Drink Picker</title>
+  <style>
+    :root {
+      --bg: #000;
+      --card: #111;
+      --text: #fff;
+      --muted: #aaa;
+      --accent: #ff006e;
+      --success: #00ff9d;
+      --danger: #ff3366;
+      --border: #333;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; font-family:system-ui, sans-serif; }
+    body { background:var(--bg); color:var(--text); min-height:100vh; display:flex; justify-content:center; align-items:center; }
+    .container { max-width:480px; width:100%; padding:20px; }
+    header { text-align:center; margin-bottom:20px; }
+    .title { font-size:28px; font-weight:900; color:var(--accent); }
+    .balance { font-size:16px; margin-bottom:20px; text-align:center; }
+    .marquee { overflow:hidden; white-space:nowrap; margin-bottom:20px; border:1px solid var(--border); border-radius:12px; padding:10px 0; background:var(--card); }
+    .marquee-inner { display:inline-block; animation:marquee 20s linear infinite; }
+    .marquee img { width:80px; height:80px; object-fit:cover; margin:0 10px; border-radius:8px; }
+    .cards-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:10px; margin-bottom:20px; }
+    .card { background:var(--card); border:1px solid var(--border); border-radius:12px; height:80px; cursor:pointer; transition:0.2s; position:relative; overflow:hidden; }
+    .card:hover { border-color:var(--accent); }
+    .card-face-back { background:url('https://via.placeholder.com/100?text=Back') center/cover; width:100%; height:100%; }
+    .card-face-front { background:var(--success); display:flex; align-items:center; justify-content:center; font-weight:700; position:absolute; inset:0; transform:rotateY(180deg); backface-visibility:hidden; transition:transform 0.6s; }
+    .card.flipped .card-face-front { transform:rotateY(0deg); }
+    .card.flipped .card-face-back { transform:rotateY(180deg); }
+    .phone-modal { position:fixed; inset:0; background:rgba(0,0,0,0.9); display:none; align-items:center; justify-content:center; z-index:999; }
+    .phone-modal.active { display:flex; }
+    .phone-content { background:var(--card); padding:24px; border-radius:16px; width:90%; max-width:360px; text-align:center; border:1px solid var(--border); }
+    .phone-input { width:100%; padding:12px; margin-bottom:16px; border:none; border-radius:12px; background:#222; color:var(--text); }
+    .btn { padding:12px; border:none; border-radius:12px; font-weight:700; cursor:pointer; width:100%; }
+    .btn-confirm { background:var(--accent); color:#000; }
+    .spinner { position:fixed; inset:0; background:rgba(0,0,0,0.9); display:none; align-items:center; justify-content:center; z-index:9999; }
+    .spinner.active { display:flex; }
+    .spinner::after { content:""; width:40px; height:40px; border:4px solid var(--border); border-top:4px solid var(--accent); border-radius:50%; animation:spin 1s linear infinite; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    @keyframes marquee { 0% { transform:translateX(0); } 100% { transform:translateX(-50%); } }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="title">CUBE DRINK PICKER</div>
+    </header>
+    <div class="balance">
+      Stars: <span id="stars-count">0</span> ⭐<br>
+      Cash: ₦<span id="cash-count">0</span>
+    </div>
+    <div class="marquee">
+      <div class="marquee-inner">
+        <!-- Drink images will be added here -->
+      </div>
+    </div>
+    <div class="cards-grid" id="cards-grid">
+      <!-- 21 cards here -->
+    </div>
+  </div>
+
+  <!-- PHONE MODAL -->
+  <div class="phone-modal" id="phoneModal">
+    <div class="phone-content">
+      <h2>Enter Phone Number</h2>
+      <input type="tel" id="phoneInput" placeholder="Phone for delivery">
+      <button class="btn btn-confirm" id="phoneConfirm">Confirm</button>
+    </div>
+  </div>
+
+  <!-- SPINNER -->
+  <div class="spinner" id="spinner"></div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getFirestore, doc, getDoc, onSnapshot, collection, getDocs, runTransaction, serverTimestamp, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyD_GjkTox5tum9o4AupO0LeWzjTocJg8RI",
+      authDomain: "dettyverse.firebaseapp.com",
+      projectId: "dettyverse",
+      storageBucket: "dettyverse.firebasestorage.app",
+      messagingSenderId: "1036459652488",
+      appId: "1:1036459652488:web:e8910172ed16e9cac9b63d",
+      measurementId: "G-NX2KWZW85V"
+    };
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    let currentUser = null;
+    const drinks = ['Cocktail 1', 'Cocktail 2', 'Juice 3', 'Soda 4', 'Wine 5', 'Beer 6', 'Mocktail 7', 'Lemonade 8', 'Tea 9', 'Coffee 10', 'Smoothie 11', 'Energy Drink 12', 'Water 13', 'Milkshake 14', 'Cider 15', 'Champagne 16', 'Vodka Mix 17', 'Whiskey Sour 18', 'Margarita 19', 'Mojito 20', 'Pina Colada 21'];
+    const drinkImages = ['https://via.placeholder.com/80?text=Drink1', 'https://via.placeholder.com/80?text=Drink2']; // Add your 21 image URLs here
+
+    const DOM = {
+      stars: document.getElementById('stars-count'),
+      cash: document.getElementById('cash-count'),
+      cardsGrid: document.getElementById('cards-grid'),
+      phoneModal: document.getElementById('phoneModal'),
+      phoneInput: document.getElementById('phoneInput'),
+      phoneConfirm: document.getElementById('phoneConfirm'),
+      spinner: document.getElementById('spinner')
+    };
+
+    const showSpinner = () => DOM.spinner.classList.add('active');
+    const hideSpinner = () => DOM.spinner.classList.remove('active');
+
+    const formatNumber = n => n ? new Intl.NumberFormat('en-NG').format(Number(n)) : '0';
+
+    const emailToDocId = (email) => {
+      if (!email || !email.includes('@')) return null;
+      const [local, domain] = email.toLowerCase().split('@');
+      return `${local}_${domain.replace(/\./g, '_')}`;
+    };
+
+    const loadCurrentUser = async () => {
+      showSpinner();
+      try {
+        const vipRaw = localStorage.getItem('vipUser');
+        const hostRaw = localStorage.getItem('hostUser');
+        const storedUser = vipRaw ? JSON.parse(vipRaw) : hostRaw ? JSON.parse(hostRaw) : null;
+
+        if (!storedUser?.email) {
+          currentUser = null;
+          DOM.stars.textContent = '0';
+          DOM.cash.textContent = '0';
+          return;
+        }
+
+        const uid = emailToDocId(storedUser.email);
+        if (!uid) return;
+
+        const userRef = doc(db, 'users', uid);
+        const snap = await getDoc(userRef);
+
+        if (!snap.exists()) {
+          currentUser = { uid, stars: 0, cash: 0, email: storedUser.email };
+          return;
+        }
+
+        currentUser = { uid, ...snap.data(), email: storedUser.email };
+        DOM.stars.textContent = formatNumber(currentUser.stars);
+        DOM.cash.textContent = formatNumber(currentUser.cash);
+
+        onSnapshot(userRef, (snap) => {
+          if (!snap.exists()) return;
+          const data = snap.data();
+          currentUser = { uid, ...data, email: storedUser.email };
+          DOM.stars.textContent = formatNumber(currentUser.stars);
+          DOM.cash.textContent = formatNumber(currentUser.cash);
+        });
+      } catch (e) {
+        console.error(e);
+      } finally {
+        hideSpinner();
+      }
+    };
+
+    const initMarquee = () => {
+      const inner = document.querySelector('.marquee-inner');
+      drinkImages.forEach(img => {
+        const el = document.createElement('img');
+        el.src = img;
+        inner.appendChild(el);
+      });
+      // Duplicate for seamless loop
+      inner.innerHTML += inner.innerHTML;
+    };
+
+    const initCards = () => {
+      const grid = DOM.cardsGrid;
+      grid.innerHTML = '';
+      drinks.sort(() => Math.random() - 0.5); // Shuffle drinks
+
+      for (let i = 0; i < 21; i++) {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.dataset.drink = drinks[i];
+        card.innerHTML = `
+          <div class="card-face-back"></div>
+          <div class="card-face-front">${drinks[i]}</div>
+        `;
+        card.onclick = () => pickCard(card);
+        grid.appendChild(card);
+      }
+    };
+
+    const pickCard = async (card) => {
+      if (!currentUser) return alert('Login required');
+      if (currentUser.stars < 100) return alert('Not enough stars (100 needed)');
+
+      DOM.phoneModal.classList.add('active');
+
+      DOM.phoneConfirm.onclick = async () => {
+        const phone = DOM.phoneInput.value.trim();
+        if (!phone) return alert('Phone required for delivery');
+
+        DOM.phoneModal.classList.remove('active');
+        DOM.phoneInput.value = '';
+
+        showSpinner();
+        try {
+          const userRef = doc(db, 'users', currentUser.uid);
+          await runTransaction(db, async (t) => {
+            const snap = await t.get(userRef);
+            const data = snap.data();
+            if (data.stars < 100) throw 'Not enough stars';
+
+            t.update(userRef, {
+              stars: data.stars - 100,
+              drinkRequests: arrayUnion({
+                drink: card.dataset.drink,
+                phone,
+                timestamp: serverTimestamp()
+              })
+            });
+          });
+
+          card.classList.add('flipped');
+          alert(`You picked: ${card.dataset.drink}! We'll deliver to ${phone}.`);
+
+          currentUser.stars -= 100;
+          DOM.stars.textContent = formatNumber(currentUser.stars);
+        } catch (e) {
+          alert(e || 'Failed');
+        } finally {
+          hideSpinner();
+        }
+      };
+    };
+
+    loadCurrentUser();
+    initMarquee();
+    initCards();
+  </script>
+</body>
+</html>
