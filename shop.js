@@ -613,7 +613,7 @@ const createProductCard = (product) => {
   return card;
 };
 
-/* ------------------ Redeem product — 100% WORKING (NO SYNTAX ERRORS) ------------------ */
+/* ------------------ Redeem product — FINAL FIXED (NO SYNTAX ERRORS) ------------------ */
 const redeemProduct = async (product) => {
   if (!currentUser) return showThemedMessage('Not Logged In', 'Please sign in to redeem items.');
   if (currentUser.stars < product.cost) return showThemedMessage('Not Enough Stars', 'You do not have enough stars.');
@@ -625,7 +625,7 @@ const redeemProduct = async (product) => {
   showConfirmModal('Confirm Redemption', `Redeem "${product.name}" for ${product.cost} Stars?`, async () => {
     showSpinner();
     try {
-      // Use correct document ID from email
+      // CORRECT UID FROM EMAIL
       const correctUid = emailToDocId(currentUser.email);
       if (!correctUid) throw new Error("Invalid user ID");
 
@@ -648,7 +648,7 @@ const redeemProduct = async (product) => {
         const uData = uSnap.data();
         const pData = pSnap.data();
 
-        const cost = Number(pData.cost) || 0);
+        const cost = Number(pData.cost) || 0;
         const available = Number(pData.available || 0);
 
         if (Number(uData.stars) < cost) throw new Error('Not enough stars');
@@ -663,18 +663,18 @@ const redeemProduct = async (product) => {
           newCash = Number(uData.cash || 0) + Number(pData.cashReward || 0);
         }
 
-        // Update user
+        // UPDATE USER
         t.update(userRef, {
           stars: newStars,
           cash: newCash
         });
 
-        // Update product
+        // UPDATE PRODUCT
         t.update(productRef, {
           available: available - 1
         });
 
-        // Record purchase
+        // RECORD PURCHASE
         const purchaseRef = doc(collection(db, 'purchases'));
         t.set(purchaseRef, {
           userId: correctUid,
@@ -688,11 +688,11 @@ const redeemProduct = async (product) => {
         });
       });
 
-      // Update local state
+      // UPDATE LOCAL STATE
       currentUser.stars = newStars;
       currentUser.cash = newCash;
 
-      // Animate balances
+      // ANIMATE BALANCES
       const prevStars = parseNumberFromText(DOM.stars.textContent);
       const prevCash = parseNumberFromText(DOM.cash.textContent);
       animateNumber(DOM.stars, prevStars, newStars);
