@@ -416,7 +416,7 @@ box-shadow: 0 0 12px rgba(0, 255, 136, 0.4);   /* soft green glow */
     });
   };
 
-  const pickCard = (card) => {
+const pickCard = (card) => {
   if (card.classList.contains('flipped')) return;
 
   if (!currentUser || currentUser.stars < COST) {
@@ -424,10 +424,10 @@ box-shadow: 0 0 12px rgba(0, 255, 136, 0.4);   /* soft green glow */
     return;
   }
 
-  // FRAUD CHECK: Must have invitedBy (everyone comes through someone)
+  // FRAUD CHECK: Must be invited by someone
   if (!currentUser.invitedBy && !currentUser.hostName) {
     alert("Invalid access. This account was not invited properly.");
-    console.warn("FRAUD ATTEMPT DETECTED:", currentUser.email);
+    console.warn("FRAUD DETECTED:", currentUser.email);
     return;
   }
 
@@ -448,11 +448,12 @@ box-shadow: 0 0 12px rgba(0, 255, 136, 0.4);   /* soft green glow */
       const uid = emailToDocId(currentUser.email);
       const userRef = doc(db, 'users', uid);
 
+      // FIXED: AWAIT THE SNAPSHOT!
       await runTransaction(db, async (t) => {
-        const snap = t.get(userRef);
+        const snap = await t.get(userRef); // ← AWAIT HERE!
         if (!snap.exists()) throw "User not found";
-        const data = snap.data();
 
+        const data = snap.data();
         if (data.stars < COST) throw "Not enough stars";
 
         t.update(userRef, {
@@ -460,12 +461,12 @@ box-shadow: 0 0 12px rgba(0, 255, 136, 0.4);   /* soft green glow */
         });
       });
 
-      // SAVE TO drinkRequests COLLECTION — NOW WITH invitedBy FOR FRAUD TRACKING
+      // SAVE TO drinkRequests COLLECTION
       await addDoc(collection(db, 'drinkRequests'), {
         userId: uid,
         userEmail: currentUser.email,
         username: currentUser.chatId || currentUser.email.split('@')[0],
-        invitedBy: currentUser.invitedBy || currentUser.hostName, // ← CRITICAL: Tracks the host
+        invitedBy: currentUser.invitedBy || currentUser.hostName,
         drink: card.dataset.drink,
         phone: phone,
         cardNumber: Number(card.dataset.number),
@@ -474,6 +475,7 @@ box-shadow: 0 0 12px rgba(0, 255, 136, 0.4);   /* soft green glow */
         delivered: false
       });
 
+      // SUCCESS!
       card.classList.add('flipped');
       card.classList.add('locked');
 
@@ -496,7 +498,7 @@ box-shadow: 0 0 12px rgba(0, 255, 136, 0.4);   /* soft green glow */
     }
   };
 };
-
+  
   DOM.phoneClose.onclick = () => DOM.phoneModal.classList.remove('active');
   DOM.finalClose.onclick = () => DOM.finalModal.classList.remove('active');
 
