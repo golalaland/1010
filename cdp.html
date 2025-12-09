@@ -216,7 +216,7 @@ box-shadow: 0 0 12px rgba(0, 255, 136, 0.4);   /* soft green glow */
 <body>
   <div class="container">
     <div class="title">SIP PICKER</div>
-    <div class="welcome" id="welcomeMsg">Welcome <span id="username">Guest</span>, you're on <span id="hostName">someone</span>'s Bar!</div>
+    <div class="welcome" id="welcomeMsg">Welcome <span id="username">Guest</span>, you're on <span id="hostName">no one</span>'s VIP!</div>
 
 <div class="balance">
   <div class="item">
@@ -353,7 +353,7 @@ box-shadow: 0 0 12px rgba(0, 255, 136, 0.4);   /* soft green glow */
 
       DOM.username.textContent = currentUser.chatId || stored.email.split('@')[0];
       const host = currentUser.hostName || currentUser.invitedBy || 'someone';
-      DOM.hostName.textContent = host.startsWith('@') ? host : `@${host}`;
+      DOM.hostName.textContent = host.startsWith('@') ? host : `${host}`;
 
       DOM.stars.textContent = (currentUser.stars || 0).toLocaleString();
       DOM.cash.textContent = (currentUser.cash || 0).toLocaleString();
