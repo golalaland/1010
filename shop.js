@@ -190,7 +190,6 @@ document.getElementById('closePreview')?.addEventListener('click', () => {
   DOM.imagePreview.style.display = 'none';
 });
 
-/* ------------------ Host stats updater ------------------ */
 /* ------------------ Host stats updater — 2025 FIXED FOR UNDERSCORE IDs ------------------ */
 const updateHostStats = async (newUser) => {
   // Safety first
@@ -259,29 +258,6 @@ const updateHostStats = async (newUser) => {
 
 /* ------------------ Current user state ------------------ */
 let currentUser = null;
-
-/* ------------------ Load current user from localStorage and Firestore ------------------ */
-const loadCurrentUser = async () => {
-  showSpinner();
-
-  try {
-    // --- Load user from localStorage ---
-    const vipRaw = localStorage.getItem('vipUser');
-    const hostRaw = localStorage.getItem('hostUser');
-    const storedUser = vipRaw ? JSON.parse(vipRaw) : hostRaw ? JSON.parse(hostRaw) : null;
-
-    // --- Reset UI ---
-    if (DOM.username) DOM.username.textContent = '******';
-    if (DOM.stars) DOM.stars.textContent = `0 ⭐️`;
-    if (DOM.cash) DOM.cash.textContent = `₦0`;
-    if (DOM.hostTabs) DOM.hostTabs.style.display = 'none';
-    await renderShop();
-
-    if (!storedUser?.email) {
-      currentUser = null;
-      return;
-    }
-
   const loadCurrentUser = async () => {
   showSpinner();
   try {
