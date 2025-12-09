@@ -258,10 +258,9 @@ const updateHostStats = async (newUser) => {
 
 /* ------------------ Current user state ------------------ */
 let currentUser = null;
-  const loadCurrentUser = async () => {
+ const loadCurrentUser = async () => {
   showSpinner();
   try {
-    // Load from localStorage (VIP or Host)
     const vipRaw = localStorage.getItem('vipUser');
     const hostRaw = localStorage.getItem('hostUser');
     const storedUser = vipRaw ? JSON.parse(vipRaw) : hostRaw ? JSON.parse(hostRaw) : null;
@@ -271,7 +270,6 @@ let currentUser = null;
     if (DOM.stars) DOM.stars.textContent = '0 Stars';
     if (DOM.cash) DOM.cash.textContent = '₦0';
     if (DOM.hostTabs) DOM.hostTabs.style.display = 'none';
-
     await renderShop();
 
     if (!storedUser?.email) {
@@ -280,11 +278,9 @@ let currentUser = null;
       return;
     }
 
-    // NEW: Convert email → document ID using underscore (example@gmail.com → example_gmail_com)
     const emailToDocId = (email) => {
-      if (!email) return null;
+      if (!email || !email.includes('@')) return null;
       const [local, domain] = email.toLowerCase().split('@');
-      if (!domain) return null;
       return `${local}_${domain.replace(/\./g, '_')}`;
     };
 
@@ -298,7 +294,6 @@ let currentUser = null;
     const userRef = doc(db, 'users', uid);
     const snap = await getDoc(userRef);
 
-    // User not in Firestore yet
     if (!snap.exists()) {
       currentUser = {
         uid,
@@ -326,7 +321,7 @@ let currentUser = null;
 
     updateHostPanels();
 
-    // First-load host stats update
+    // First-load host stats
     if (currentUser?.invitedBy && currentUser._firstLoad === undefined) {
       currentUser._firstLoad = true;
       await updateHostStats({
@@ -338,73 +333,18 @@ let currentUser = null;
       });
     }
 
-    // Setup VIP/Host features
-    try {
-      if (currentUser.isVIP) setupVIPButton();
-      else if (currentUser.isHost) setupHostGiftListener();
-    } catch (e) {
-      console.error('VIP/Host setup failed:', e);
-    }
-
-    // REALTIME LISTENER — NOW USING CORRECT UID
-    onSnapshot(userRef, async (docSnap) => {
+    // Realtime listener
+    onSnapshot(userRef, (docSnap) => {
       if (!docSnap.exists()) return;
       const data = docSnap.data();
       currentUser = { uid, ...data, email: storedUser.email };
 
-      // UI updates
-      if (DOM.username) {
-        DOM.username.textContent = currentUser.chatId || storedUser.displayName || storedUser.email.split('@')[0] || 'Guest';
-      }
-      if (DOM.stars) DOM.stars.textContent = `${formatNumber(currentUser.stars)} Stars`;
-      if (DOM.cash) DOM.cash.textContent = `₦${formatNumber(currentUser.cash)}`;
-      if (DOM.hostTabs) DOM.hostTabs.style.display = currentUser.isHost ? '' : 'none';
+      DOM.username.textContent = currentUser.chatId || storedUser.displayName || storedUser.email.split('@')[0] || 'Guest';
+      DOM.stars.textContent = `${formatNumber(currentUser.stars)} Stars`;
+      DOM.cash.textContent = `₦${formatNumber(currentUser.cash)}`;
+      DOM.hostTabs.style.display = currentUser.isHost ? '' : 'none';
       updateHostPanels();
-
-      await renderShop();
-
-      // INVITEE REWARD
-      if ((data.invitedBy || data.hostName) && !data.inviteeGiftShown) {
-        let inviterName = data.hostName || data.invitedBy;
-        let stars = data.inviteeGiftStars || 50;
-
-        try {
-          const inviterUid = emailToDocId(data.invitedBy);
-          if (inviterUid) {
-            const invSnap = await getDoc(doc(db, 'users', inviterUid));
-            if (invSnap.exists()) {
-              const inv = invSnap.data();
-              inviterName = inv.chatId || inv.hostName || inviterName;
-              stars = inv.inviteeGiftStars || stars;
-            }
-          }
-        } catch (e) { console.warn("Inviter fetch failed:", e); }
-
-        showReward(
-          `You've been gifted <b>+${stars} Stars</b> for joining <b>${inviterName}</b>'s VIP Tab.`,
-          'Congratulations!'
-        );
-
-        await updateDoc(userRef, { inviteeGiftShown: true });
-      }
-
-      // INVITER REWARD
-      const friends = Array.isArray(data.hostFriends) ? data.hostFriends : [];
-      const pending = friends.find(f => f.email && !f.giftShown);
-      if (pending) {
-        const name = pending.chatId || pending.email.split('@')[0];
-        const stars = pending.giftStars || 200;
-
-        showReward(
-          `You've been gifted <b>+${stars} Stars</b>, <b>${name}</b> joined your Tab!`,
-          'Congratulations!'
-        );
-
-        const updated = friends.map(f =>
-          f.email === pending.email ? { ...f, giftShown: true } : f
-        );
-        await updateDoc(userRef, { hostFriends: updated });
-      }
+      renderShop();
     });
 
   } catch (e) {
