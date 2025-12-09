@@ -40,6 +40,13 @@ function hideSpinner() {
   if (spinner) spinner.classList.remove('active');
 }
 
+// Convert email → Firestore document ID (example@gmail.com → example_gmail_com)
+const emailToDocId = (email) => {
+  if (!email || !email.includes('@')) return null;
+  const [local, domain] = email.toLowerCase().split('@');
+  return `${local}_${domain.replace(/\./g, '_')}`;
+};
+
 /* ------------------ DOM references ------------------ */
 const DOM = {
   username: document.getElementById('username'),
@@ -184,44 +191,67 @@ document.getElementById('closePreview')?.addEventListener('click', () => {
 });
 
 /* ------------------ Host stats updater ------------------ */
+/* ------------------ Host stats updater — 2025 FIXED FOR UNDERSCORE IDs ------------------ */
 const updateHostStats = async (newUser) => {
-  const referrerId = newUser.invitedBy;
-  if (!referrerId) return; // no host to update
+  // Safety first
+  if (!newUser?.email || !newUser?.invitedBy) return;
 
-  const sanitizedId = String(referrerId).replace(/[.#$[\]]/g, ',');
-  const hostRef = doc(db, 'users', sanitizedId);
+  // Convert referrer email → correct document ID (example@gmail.com → example_gmail_com)
+  const emailToDocId = (email) => {
+    if (!email || !email.includes('@')) return null;
+    const [local, domain] = email.toLowerCase().split('@');
+    return `${local}_${domain.replace(/\./g, '_')}`;
+  };
+
+  const hostUid = emailToDocId(newUser.invitedBy);
+  if (!hostUid) {
+    console.warn("Invalid referrer email:", newUser.invitedBy);
+    return;
+  }
+
+  const hostRef = doc(db, 'users', hostUid);
 
   try {
     await runTransaction(db, async (t) => {
       const hostSnap = await t.get(hostRef);
-      if (!hostSnap.exists()) return;
+      if (!hostSnap.exists()) {
+        console.log("Host not found in DB (yet):", hostUid);
+        return;
+      }
 
       const hostData = hostSnap.data() || {};
       const friends = Array.isArray(hostData.hostFriends) ? hostData.hostFriends.slice() : [];
 
-      // Check if this user already exists in hostFriends
-      const existing = friends.find(f => f.email === newUser.email);
+      // Prevent duplicate entries
+      const existing = friends.find(f => 
+        f.email?.toLowerCase() === newUser.email?.toLowerCase()
+      );
 
       if (!existing) {
-        // Add to hostFriends
         friends.push({
           email: newUser.email,
           chatId: newUser.chatId || '',
           chatIdLower: (newUser.chatId || '').toLowerCase(),
           isVIP: !!newUser.isVIP,
           isHost: !!newUser.isHost,
-          giftShown: false
+          giftShown: false,
+          joinedAt: serverTimestamp()
         });
       }
 
-      // Only increment hostVIP if new user is VIP AND not already counted
-      let hostVIP = hostData.hostVIP || 0;
+      // Count VIPs correctly
+      let hostVIP = Number(hostData.hostVIP || 0);
       if (newUser.isVIP && !existing) {
         hostVIP += 1;
       }
 
-      t.update(hostRef, { hostFriends: friends, hostVIP });
+      t.update(hostRef, {
+        hostFriends: friends,
+        hostVIP
+      });
     });
+
+    console.log("Host stats updated for:", hostUid);
   } catch (err) {
     console.error('Failed to update host stats:', err);
   }
@@ -252,154 +282,161 @@ const loadCurrentUser = async () => {
       return;
     }
 
-    // --- Get Firestore data ---
-    const uid = String(storedUser.email).replace(/[.#$[\]]/g, ',');
-    const userRef = doc(db, 'users', uid);
-    const snap = await getDoc(userRef);
+  const loadCurrentUser = async () => {
+  showSpinner();
+  try {
+    // Load from localStorage (VIP or Host)
+    const vipRaw = localStorage.getItem('vipUser');
+    const hostRaw = localStorage.getItem('hostUser');
+    const storedUser = vipRaw ? JSON.parse(vipRaw) : hostRaw ? JSON.parse(hostRaw) : null;
 
-    // --- Fallback user if not in Firestore ---
-    if (!snap.exists()) {
-      currentUser = {
-        uid,
-        stars: 0,
-        cash: 0,
-        isHost: false,
-        chatId: storedUser.displayName || storedUser.email.split('@')[0]
-      };
-      if (DOM.username) DOM.username.textContent = currentUser.chatId;
+    // Reset UI
+    if (DOM.username) DOM.username.textContent = 'Guest';
+    if (DOM.stars) DOM.stars.textContent = '0 Stars';
+    if (DOM.cash) DOM.cash.textContent = '₦0';
+    if (DOM.hostTabs) DOM.hostTabs.style.display = 'none';
+
+    await renderShop();
+
+    if (!storedUser?.email) {
+      currentUser = null;
+      hideSpinner();
       return;
     }
 
-    currentUser = { uid, ...snap.data() };
+    // NEW: Convert email → document ID using underscore (example@gmail.com → example_gmail_com)
+    const emailToDocId = (email) => {
+      if (!email) return null;
+      const [local, domain] = email.toLowerCase().split('@');
+      if (!domain) return null;
+      return `${local}_${domain.replace(/\./g, '_')}`;
+    };
 
-    // --- Update UI ---
-    if (DOM.username)
-      DOM.username.textContent =
-        currentUser.chatId ||
-        storedUser.displayName ||
-        storedUser.email.split('@')[0] ||
-        'Guest';
-    if (DOM.stars) DOM.stars.textContent = `${formatNumber(currentUser.stars)} ⭐️`;
+    const uid = emailToDocId(storedUser.email);
+    if (!uid) {
+      console.error("Invalid email format");
+      hideSpinner();
+      return;
+    }
+
+    const userRef = doc(db, 'users', uid);
+    const snap = await getDoc(userRef);
+
+    // User not in Firestore yet
+    if (!snap.exists()) {
+      currentUser = {
+        uid,
+        email: storedUser.email,
+        stars: 0,
+        cash: 0,
+        isHost: false,
+        isVIP: false,
+        chatId: storedUser.displayName || storedUser.email.split('@')[0]
+      };
+      if (DOM.username) DOM.username.textContent = currentUser.chatId;
+      hideSpinner();
+      return;
+    }
+
+    currentUser = { uid, ...snap.data(), email: storedUser.email };
+
+    // Update UI
+    if (DOM.username) {
+      DOM.username.textContent = currentUser.chatId || storedUser.displayName || storedUser.email.split('@')[0] || 'Guest';
+    }
+    if (DOM.stars) DOM.stars.textContent = `${formatNumber(currentUser.stars)} Stars`;
     if (DOM.cash) DOM.cash.textContent = `₦${formatNumber(currentUser.cash)}`;
     if (DOM.hostTabs) DOM.hostTabs.style.display = currentUser.isHost ? '' : 'none';
 
     updateHostPanels();
 
-    // --- Only update host stats if first time VIP/Host addition ---
+    // First-load host stats update
     if (currentUser?.invitedBy && currentUser._firstLoad === undefined) {
-      // Mark first load to prevent reload increments
-      currentUser._firstLoad = false;
-
+      currentUser._firstLoad = true;
       await updateHostStats({
-        email: currentUser.email || '',
+        email: currentUser.email,
         chatId: currentUser.chatId || '',
-        vipName: currentUser.chatId || '',
-        isVIP: currentUser.isVIP || false,
-        isHost: currentUser.isHost || false,
+        isVIP: !!currentUser.isVIP,
+        isHost: !!currentUser.isHost,
         invitedBy: currentUser.invitedBy
       });
     }
 
-    // --- Setup VIP/Host features ---
+    // Setup VIP/Host features
     try {
       if (currentUser.isVIP) setupVIPButton();
       else if (currentUser.isHost) setupHostGiftListener();
     } catch (e) {
-      console.error('Failed to initialize VIP/Host features:', e);
+      console.error('VIP/Host setup failed:', e);
     }
 
-    // --- Subscribe to realtime updates ---
+    // REALTIME LISTENER — NOW USING CORRECT UID
     onSnapshot(userRef, async (docSnap) => {
+      if (!docSnap.exists()) return;
       const data = docSnap.data();
-      if (!data) return;
-      currentUser = { uid, ...data };
+      currentUser = { uid, ...data, email: storedUser.email };
 
-      // Update UI live
-      if (DOM.username)
-        DOM.username.textContent =
-          currentUser.chatId ||
-          storedUser.displayName ||
-          storedUser.email.split('@')[0] ||
-          'Guest';
-      if (DOM.stars) DOM.stars.textContent = `${formatNumber(currentUser.stars)} ⭐️`;
+      // UI updates
+      if (DOM.username) {
+        DOM.username.textContent = currentUser.chatId || storedUser.displayName || storedUser.email.split('@')[0] || 'Guest';
+      }
+      if (DOM.stars) DOM.stars.textContent = `${formatNumber(currentUser.stars)} Stars`;
       if (DOM.cash) DOM.cash.textContent = `₦${formatNumber(currentUser.cash)}`;
       if (DOM.hostTabs) DOM.hostTabs.style.display = currentUser.isHost ? '' : 'none';
-
       updateHostPanels();
-      renderShop().catch(console.error);
 
-      /* --- Invitee reward flow --- */
-      try {
-        if ((data.invitedBy || data.hostName) && data.inviteeGiftShown !== true) {
-          let inviterName = data.hostName || data.invitedBy;
-          let inviteeStars = data.inviteeGiftStars;
+      await renderShop();
 
-          try {
-            const invRef = doc(db, 'users', String(data.invitedBy).replace(/[.#$[\]]/g, ','));
-            const invSnap = await getDoc(invRef);
+      // INVITEE REWARD
+      if ((data.invitedBy || data.hostName) && !data.inviteeGiftShown) {
+        let inviterName = data.hostName || data.invitedBy;
+        let stars = data.inviteeGiftStars || 50;
+
+        try {
+          const inviterUid = emailToDocId(data.invitedBy);
+          if (inviterUid) {
+            const invSnap = await getDoc(doc(db, 'users', inviterUid));
             if (invSnap.exists()) {
-              const invData = invSnap.data();
-              inviterName =
-                invData.chatId ||
-                invData.hostName ||
-                (invData.email ? invData.email.split('@')[0] : inviterName);
-              inviteeStars = inviteeStars || invData.inviteeGiftStars;
+              const inv = invSnap.data();
+              inviterName = inv.chatId || inv.hostName || inviterName;
+              stars = inv.inviteeGiftStars || stars;
             }
-          } catch (err) {
-            console.warn('Could not fetch inviter details:', err);
           }
+        } catch (e) { console.warn("Inviter fetch failed:", e); }
 
-          inviteeStars = inviteeStars || 50;
+        showReward(
+          `You've been gifted <b>+${stars} Stars</b> for joining <b>${inviterName}</b>'s VIP Tab.`,
+          'Congratulations!'
+        );
 
-          showReward(
-            `You’ve been gifted <b>+${inviteeStars}⭐️</b> for joining <b>${inviterName}</b>’s VIP Tab.`,
-            '⭐ Congratulations! ⭐️'
-          );
-
-          await updateDoc(userRef, {
-            inviteeGiftShown: true,
-            inviteeGiftStars: inviteeStars
-          });
-        }
-      } catch (e) {
-        console.error('Invitee reward flow error', e);
+        await updateDoc(userRef, { inviteeGiftShown: true });
       }
 
-      /* --- Inviter reward flow --- */
-      try {
-        const friendsArr = Array.isArray(data.hostFriends) ? data.hostFriends : [];
-        const pending = friendsArr.find(f => !f.giftShown && f.email);
+      // INVITER REWARD
+      const friends = Array.isArray(data.hostFriends) ? data.hostFriends : [];
+      const pending = friends.find(f => f.email && !f.giftShown);
+      if (pending) {
+        const name = pending.chatId || pending.email.split('@')[0];
+        const stars = pending.giftStars || 200;
 
-        if (pending) {
-          const friendName =
-            pending.vipName ||
-            pending.chatId ||
-            (pending.email ? pending.email.split('@')[0] : 'Friend');
+        showReward(
+          `You've been gifted <b>+${stars} Stars</b>, <b>${name}</b> joined your Tab!`,
+          'Congratulations!'
+        );
 
-          let inviterStars = pending.giftStars || 200;
-
-          showReward(
-            `You’ve been gifted <b>+${inviterStars}⭐️</b>, <b>${friendName}</b> just joined your Tab.`,
-            '⭐ Congratulations! ⭐️'
-          );
-
-          const updated = friendsArr.map(f =>
-            f.email === pending.email ? { ...f, giftShown: true, giftStars: inviterStars } : f
-          );
-
-          await updateDoc(userRef, { hostFriends: updated });
-        }
-      } catch (e) {
-        console.error('Inviter reward flow error', e);
+        const updated = friends.map(f =>
+          f.email === pending.email ? { ...f, giftShown: true } : f
+        );
+        await updateDoc(userRef, { hostFriends: updated });
       }
     });
+
   } catch (e) {
-    console.error('loadCurrentUser error', e);
+    console.error('loadCurrentUser error:', e);
   } finally {
     hideSpinner();
   }
 };
-
 
 /* ------------------ Host panels ------------------ */
 const updateHostPanels = () => {
