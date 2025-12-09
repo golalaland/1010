@@ -300,7 +300,7 @@ box-shadow: 0 0 12px rgba(0, 255, 136, 0.4);   /* soft green glow */
     "Tequila Rose","Blue Nun","Veuve Clicquot"
   ];
 
-  const CARD_BACK = "https://cdn.shopify.com/s/files/1/0962/6648/6067/files/Beige_Minimal_Romantic_Love_Questions_Card_Game_Document_1.png?v=1765313291";
+  const CARD_BACK = "https://cdn.shopify.com/s/files/1/0962/6648/6067/files/Sipcard.png?v=1765319696";
   const CARD_FRONT = "https://i.imgur.com/YOUR-FRONT-CARD.png"; // ← Replace with your front card
 
   const DOM = {
@@ -420,13 +420,13 @@ const pickCard = (card) => {
   if (card.classList.contains('flipped')) return;
 
   if (!currentUser || currentUser.stars < COST) {
-    alert(`You need ${COST} Stars to pick a drink!`);
+    finalModal(`You need ${COST} Stars to pick a drink!`);
     return;
   }
 
   // FRAUD CHECK: Must be invited by someone
   if (!currentUser.invitedBy && !currentUser.hostName) {
-    alert("Invalid access. This account was not invited properly.");
+    finalModal("Invalid access. This account was not invited properly.");
     console.warn("FRAUD DETECTED:", currentUser.email);
     return;
   }
@@ -436,7 +436,7 @@ const pickCard = (card) => {
   DOM.phoneConfirm.onclick = async () => {
     const phone = DOM.phoneInput.value.trim();
     if (!phone || phone.length < 10) {
-      alert('Please enter a valid phone number');
+      finalModal('Please enter a valid phone number');
       return;
     }
 
@@ -492,7 +492,7 @@ const pickCard = (card) => {
 
     } catch (e) {
       console.error("Order failed:", e);
-      alert('Failed to place order. Try again.');
+      finalModal('Failed to place order. Try again.');
     } finally {
       hideSpinner();
     }
