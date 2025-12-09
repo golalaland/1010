@@ -417,78 +417,85 @@ box-shadow: 0 0 12px rgba(0, 255, 136, 0.4);   /* soft green glow */
   };
 
   const pickCard = (card) => {
-    if (card.classList.contains('flipped')) return;
+  if (card.classList.contains('flipped')) return;
 
-    if (!currentUser || currentUser.stars < COST) {
-      alert(`You need ${COST} Stars to pick a drink!`);
+  if (!currentUser || currentUser.stars < COST) {
+    alert(`You need ${COST} Stars to pick a drink!`);
+    return;
+  }
+
+  // FRAUD CHECK: Must have invitedBy (everyone comes through someone)
+  if (!currentUser.invitedBy && !currentUser.hostName) {
+    alert("Invalid access. This account was not invited properly.");
+    console.warn("FRAUD ATTEMPT DETECTED:", currentUser.email);
+    return;
+  }
+
+  DOM.phoneModal.classList.add('active');
+
+  DOM.phoneConfirm.onclick = async () => {
+    const phone = DOM.phoneInput.value.trim();
+    if (!phone || phone.length < 10) {
+      alert('Please enter a valid phone number');
       return;
     }
 
-    DOM.phoneModal.classList.add('active');
+    DOM.phoneModal.classList.remove('active');
+    DOM.phoneInput.value = '';
+    showSpinner();
 
-    DOM.phoneConfirm.onclick = async () => {
-      const phone = DOM.phoneInput.value.trim();
-      if (!phone || phone.length < 10) {
-        alert('Please enter a valid phone number');
-        return;
-      }
+    try {
+      const uid = emailToDocId(currentUser.email);
+      const userRef = doc(db, 'users', uid);
 
-      DOM.phoneModal.classList.remove('active');
-      DOM.phoneInput.value = '';
-      showSpinner();
+      await runTransaction(db, async (t) => {
+        const snap = t.get(userRef);
+        if (!snap.exists()) throw "User not found";
+        const data = snap.data();
 
-      try {
-        const uid = emailToDocId(currentUser.email);
-        const userRef = doc(db, 'users', uid);
+        if (data.stars < COST) throw "Not enough stars";
 
-        await runTransaction(db, async (t) => {
-          const snap = await t.get(userRef);
-          if (!snap.exists()) throw "User not found";
-          const data = snap.data();
-
-          if (data.stars < COST) throw "Not enough stars";
-
-          t.update(userRef, {
-            stars: data.stars - COST
-          });
+        t.update(userRef, {
+          stars: data.stars - COST
         });
+      });
 
-        // Save to drinkRequests collection
-        await addDoc(collection(db, 'drinkRequests'), {
-          userId: uid,
-          userEmail: currentUser.email,
-          username: currentUser.chatId || currentUser.email.split('@')[0],
-          drink: card.dataset.drink,
-          phone: phone,
-          cardNumber: Number(card.dataset.number),
-          timestamp: serverTimestamp(),
-          status: 'pending',
-          delivered: false
-        });
+      // SAVE TO drinkRequests COLLECTION — NOW WITH invitedBy FOR FRAUD TRACKING
+      await addDoc(collection(db, 'drinkRequests'), {
+        userId: uid,
+        userEmail: currentUser.email,
+        username: currentUser.chatId || currentUser.email.split('@')[0],
+        invitedBy: currentUser.invitedBy || currentUser.hostName, // ← CRITICAL: Tracks the host
+        drink: card.dataset.drink,
+        phone: phone,
+        cardNumber: Number(card.dataset.number),
+        timestamp: serverTimestamp(),
+        status: 'pending',
+        delivered: false
+      });
 
-        // Success!
-        card.classList.add('flipped');
-        card.classList.add('locked');
+      card.classList.add('flipped');
+      card.classList.add('locked');
 
-        DOM.finalMessage.innerHTML = `
-          <strong>Congratulations!</strong><br><br>
-          You picked card <strong>#${card.dataset.number}</strong><br>
-          Drink: <strong>${card.dataset.drink}</strong><br><br>
-          We'll deliver to:<br><strong>${phone}</strong>
-        `;
-        DOM.finalModal.classList.add('active');
+      DOM.finalMessage.innerHTML = `
+        <strong>Congratulations!</strong><br><br>
+        You picked card <strong>#${card.dataset.number}</strong><br>
+        Drink: <strong>${card.dataset.drink}</strong><br><br>
+        We'll deliver to:<br><strong>${phone}</strong>
+      `;
+      DOM.finalModal.classList.add('active');
 
-        currentUser.stars -= COST;
-        DOM.stars.textContent = currentUser.stars.toLocaleString();
+      currentUser.stars -= COST;
+      DOM.stars.textContent = currentUser.stars.toLocaleString();
 
-      } catch (e) {
-        console.error("Order failed:", e);
-        alert('Failed to place order. Try again.');
-      } finally {
-        hideSpinner();
-      }
-    };
+    } catch (e) {
+      console.error("Order failed:", e);
+      alert('Failed to place order. Try again.');
+    } finally {
+      hideSpinner();
+    }
   };
+};
 
   DOM.phoneClose.onclick = () => DOM.phoneModal.classList.remove('active');
   DOM.finalClose.onclick = () => DOM.finalModal.classList.remove('active');
