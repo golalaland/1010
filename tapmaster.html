@@ -696,24 +696,16 @@ bar + footer */
   70% { transform:translate(-50%,-50%) scale(1.05); }
   100% { transform:translate(-50%,-50%) scale(1); opacity:1; }
 }
-/* ADD ONLY THESE 3 LINES TO YOUR CSS – everything else remains exactly as you have it */
-
-#tinyActionBar {
-  position: relative;                     /* new – gives modals a clean centering anchor */
-  transition: opacity 0.35s ease, transform 0.35s ease;
+#tinyActionBar { 
+  position: relative;
+  transition: opacity 0.35s ease, transform 0.35s ease; 
 }
-
-body.game-mode #tinyActionBar {
-  opacity: 0;
-  transform: translateY(40px);
-  pointer-events: none;
-}
-
-/* this one already existed in your code, just keep it */
-body.start-mode #tinyActionBar {
-  opacity: 1;
-  transform: translateY(0);
-}
+body.game-mode #tinyActionBar { opacity:0; transform:translateY(40px); pointer-events:none; }
+body.start-mode #tinyActionBar { opacity:1; transform:translateY(0); }
+.tiny-action-btn { position: relative; }   /* ← this one fixes the modal centering forever */
+/* ADD ONLY THESE TWO LINES — nothing else */
+#tinyActionBar { position: relative; }
+.tiny-action-btn { position: relative; }   /* this is the real killer fix */
 </style>
 </head>
 </body>
