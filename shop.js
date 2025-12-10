@@ -391,25 +391,24 @@ const loadCurrentUser = async () => {
       }
 
       // INVITER REWARD (when someone joins YOUR link)
-     // INVITER REWARD — FIXED: NO 200, USES isVIP FOR CORRECT STARS
+// INVITER REWARD — NO BS, NO FAKE 200, NO CONFUSION
 const friends = Array.isArray(data.hostFriends) ? data.hostFriends : [];
 
+// Find anyone who joined and hasn't been celebrated yet
 const pending = friends.find(f => f.email && !f.giftShown);
 
 if (pending) {
   const name = pending.chatId || pending.fullName || pending.email.split('@')[0];
-  const stars = pending.isVIP ? 100 : 50;  // ← REAL amount: 100 for VIP, 50 for Host
+  const stars = pending.isVIP ? 100 : 50;  // Real amount you actually give
 
   showReward(
-    `You've been gifted <b>+${stars} Stars</b> — <b>${name}</b> just joined your Hive!`,
+    `+${stars} Stars — <b>${name}</b> just joined your Hive!`,
     'Empire Growing!'
   );
 
-  // Only mark as shown — keep giftStars if you want, but we don't need it
+  // Just mark as shown — nothing else
   const updated = friends.map(f =>
-    f.email === pending.email 
-      ? { ...f, giftShown: true }
-      : f
+    f.email === pending.email ? { ...f, giftShown: true } : f
   );
 
   await updateDoc(userRef, { hostFriends: updated });
