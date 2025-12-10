@@ -716,6 +716,23 @@ body.start-mode div[style*="max-width:320px"][style*="border-radius:24px"] {
   opacity: 1;
   transform: translateY(0);
 }
+/* Profile Card – hide in game-mode, show in start-mode – NO ID NEEDED */
+div[style*="max-width:420px"][style*="box-shadow:0 8px 32px"] {
+  position: relative;
+  transition: opacity 0.4s ease, transform 0.4s ease;
+  pointer-events: auto;
+}
+
+body.game-mode div[style*="max-width:420px"][style*="box-shadow:0 8px 32px"] {
+  opacity: 0;
+  transform: translateY(30px);
+  pointer-events: none;
+}
+
+body.start-mode div[style*="max-width:420px"][style*="box-shadow:0 8px 32px"] {
+  opacity: 1;
+  transform: translateY(0);
+}
 </style>
 </head>
 </body>
