@@ -102,12 +102,22 @@
 
     @keyframes marquee { 0% { transform:translateX(0); } 100% { transform:translateX(-50%); } }
     @keyframes spin { to { transform:rotate(360deg); } }
+  .vip-highlight {
+    font-weight: 700;
+    font-size: 22px;
+  }
   </style>
 </head>
 <body>
   <div class="container">
     <div class="title">SIP PICKER</div>
-    <div class="welcome" id="welcomeMsg">Welcome <span id="username">Guest</span>, you're on <span id="hostName">no one</span>'s VIP!</div>
+ <div class="welcome" id="welcomeMsg">
+  Welcome 
+  <span id="username" class="vip-highlight">Guest</span>, 
+  you're on 
+  <span id="hostName" class="vip-highlight">no one</span>'s VIP!
+</div>
+
 
     <div class="balance">
       <div class="item"><span class="label">STRZ BALANCE:</span> <span class="value"><span id="stars-count">0</span> ⭐️</span></div>
