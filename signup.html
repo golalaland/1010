@@ -1,8 +1,3 @@
-let's change our signup html design to match it, something truly cool, go crazy:
- 
- 
- 
- 
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -335,9 +330,11 @@ Replace yeah?
 </html>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, doc, setDoc, getDoc, updateDoc, query, collection, where, getDocs, arrayUnion, orderBy, limit, serverTimestamp, increment } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, doc, setDoc, getDoc, updateDoc, query, collection, where, getDocs, arrayUnion, orderBy, limit, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
 // ADDED: auth import (moved to top-level as required)
 import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
 const firebaseConfig = {
   apiKey: "AIzaSyD_GjkTox5tum9o4AupO0LeWzjTocJg8RI",
   authDomain: "dettyverse.firebaseapp.com",
@@ -349,8 +346,10 @@ const firebaseConfig = {
 };
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+
 // ADDED: auth init
 const auth = getAuth(app);
+
 document.addEventListener('DOMContentLoaded', () => {
   let isVIP = false;
   let gender = '';
@@ -369,22 +368,32 @@ document.addEventListener('DOMContentLoaded', () => {
   const emailInput = document.getElementById('email');
   const dobInput = document.getElementById('dob');
   const fomoPopup = document.getElementById('fomoPopup');
+
   // ADDED: password input DOM (you added HTML for this already)
   const passwordInput = document.getElementById('password');
+
   const urlParams = new URLSearchParams(window.location.search);
   const referrer = urlParams.get('ref') || null;
   const validEmailSuffixes = ['@gmail.com','@yahoo.com','@icloud.com','@proton.me','@protonmail.com'];
+
+  // ────────────────────── REPLACE THIS FUNCTION ──────────────────────
 function sanitizeKey(email) {
-  return email
-    .trim()
-    .toLowerCase()
-    .replace(/[@.]/g, '_')
-    .replace(/[,\\/*[\]]/g, '_')
-    .replace(/_+/g, '_')
-    .replace(/^_|_$/g, '');
+  return email
+    .trim()
+    .toLowerCase()
+    // Replace @ and . (and any stray commas or forbidden chars) with _
+    .replace(/[@.]/g, '_')
+    // Also catch any other Firestore-forbidden chars just in case
+    .replace(/[,\\/*[\]]/g, '_')
+    // Collapse multiple underscores into one (optional but clean)
+    .replace(/_+/g, '_')
+    // Remove leading/trailing underscores
+    .replace(/^_|_$/g, '');
 }
+// ─────────────────────────────────────────────────────────────────────
   function cleanChatId(input){ return input.toLowerCase().replace(/[^a-z0-9_]/g, ''); }
   function isValidEmail(email) { return validEmailSuffixes.some(s => email.endsWith(s)); }
+
   function calculateAge(dobStr){
     if(!dobStr) return 0;
     const dob = new Date(dobStr);
@@ -392,14 +401,18 @@ function sanitizeKey(email) {
     const ageDt = new Date(diffMs);
     return Math.abs(ageDt.getUTCFullYear() - 1970);
   }
+
   async function isChatIdTaken(chatId) {
     const q = query(collection(db, "users"), where("chatIdLower", "==", chatId.toLowerCase()));
     const snapshot = await getDocs(q);
     return !snapshot.empty;
   }
+
   phoneInput.addEventListener('input', () => { phoneInput.value = phoneInput.value.replace(/\D/g,''); });
+
   femaleBtn.addEventListener('click', () => { gender='Female'; femaleBtn.classList.add('selected'); maleBtn.classList.remove('selected'); });
   maleBtn.addEventListener('click', () => { gender='Male'; maleBtn.classList.add('selected'); femaleBtn.classList.remove('selected'); });
+
   vipToggle.addEventListener('click', () => {
     isVIP = !isVIP;
     vipToggle.classList.toggle('on', isVIP);
@@ -407,21 +420,28 @@ function sanitizeKey(email) {
     vipMessage.style.opacity = isVIP ? '1' : '0';
     if(isVIP) triggerSprayConfetti();
   });
+
 function triggerSprayConfetti() {
   const vipColors = ['#FFD700', '#FFED97', '#E5C100', '#FFFFFF', '#B29700', '#C9A03F'];
+  
   const toggle = document.getElementById('vipToggle');
   const rect = toggle.getBoundingClientRect();
+
+  // EXACT same origin as your ORIGINAL code → shoots from the BOTTOM of the toggle
   const startX = rect.left + rect.width / 2 + window.scrollX;
-  const startY = rect.bottom + window.scrollY;
+  const startY = rect.bottom + window.scrollY;   // ← THIS is what you had and what makes it perfect
+
   for (let i = 0; i < 85; i++) {
     const p = document.createElement('div');
     const color = vipColors[Math.floor(Math.random() * vipColors.length)];
     const isDiamond = Math.random() > 0.7;
+
     p.style.position = 'fixed';
     p.style.left = `${startX}px`;
     p.style.top = `${startY}px`;
     p.style.pointerEvents = 'none';
     p.style.zIndex = '99999';
+
     if (isDiamond) {
       p.style.width = '13px';
       p.style.height = '13px';
@@ -437,24 +457,33 @@ function triggerSprayConfetti() {
       p.style.borderRadius = '4px';
       p.style.boxShadow = `0 0 20px ${color}`;
     }
+
     document.body.appendChild(p);
-    const angle = (Math.random() * Math.PI / 2.1) - Math.PI / 4.2;
-    const speed = 480 + Math.random() * 300;
+
+    // EXACT same upward fan physics as your original, just stronger & richer
+    const angle = (Math.random() * Math.PI / 2.1) - Math.PI / 4.2;  // Beautiful upward cone
+    const speed = 480 + Math.random() * 300;       // Strong pop
     const duration = 2400 + Math.random() * 800;
+
     const start = performance.now();
+
     (function animate(time) {
       const t = (time - start) / duration;
       if (t < 1) {
         const dx = Math.sin(angle) * speed * t;
-        const dy = -Math.cos(angle) * speed * t + 200 * t * t;
+        const dy = -Math.cos(angle) * speed * t + 200 * t * t;  // Gentle gravity
+
         p.style.transform = `translate(${dx}px, ${dy}px) rotate(${t * 1080}deg)`;
         p.style.opacity = `${1 - t}`;
+
         requestAnimationFrame(animate);
       } else {
         p.remove();
       }
     })(start);
   }
+
+  // Golden flash from the exact same point
   const flash = document.createElement('div');
   flash.style.position = 'fixed';
   flash.style.left = `${startX - 90}px`;
@@ -466,14 +495,17 @@ function triggerSprayConfetti() {
   flash.style.pointerEvents = 'none';
   flash.style.zIndex = '99998';
   document.body.appendChild(flash);
+
   flash.animate([
     { transform: 'scale(0)', opacity: 0.9 },
     { transform: 'scale(2)', opacity: 0 }
   ], { duration: 800 }).onfinish = () => flash.remove();
 }
+
   const today = new Date();
   const maxDate = new Date(today.getFullYear()-18,today.getMonth(),today.getDate());
   dobInput.max = maxDate.toISOString().split('T')[0];
+
   async function fetchRecentUsers() {
     const q = query(collection(db,"users"), orderBy("createdAt","desc"), limit(10));
     const snapshot = await getDocs(q);
@@ -488,6 +520,7 @@ function triggerSprayConfetti() {
     });
     return users;
   }
+
   async function showFOMO() {
     const users = await fetchRecentUsers();
     if(users.length===0) return;
@@ -501,13 +534,17 @@ function triggerSprayConfetti() {
     }, 10000);
   }
   showFOMO();
+
+  // helper: find inviter document (tries email-doc key first, then chatId lookup)
   async function findInviter(ref) {
     if(!ref) return null;
+    // try treat as sanitized email key (doc id)
     try {
       const docRef = doc(db, "users", sanitizeKey(ref));
       const snap = await getDoc(docRef);
       if(snap.exists()) return { ref: docRef, data: snap.data() };
     } catch(e){}
+    // else try lookup by chatIdLower
     try {
       const q = query(collection(db,"users"), where("chatIdLower","==", ref.toLowerCase()), limit(1));
       const snaps = await getDocs(q);
@@ -518,41 +555,8 @@ function triggerSprayConfetti() {
     } catch(e){}
     return null;
   }
-  // Ripple reward function (call this when a host earns, e.g., from gifts)
-  async function awardRippleRewards(earningHostId, baseStars = 0, baseCash = 0) {
-    const earningRef = doc(db, "users", earningHostId);
-    await updateDoc(earningRef, {
-      stars: increment(baseStars),
-      cash: increment(baseCash)
-    });
-    let currentId = earningHostId;
-    let level = 1;
-    const maxLevels = 3; // Pays levels N-1 to N-3 for a level 5 (your example: 4-2)
-    const commissionAmounts = {stars: [5, 3, 1], cash: [1, 0.5, 0.25]}; // Fixed x amounts; tweak or use %
 
-    while (level <= maxLevels) {
-      const currentSnap = await getDoc(doc(db, "users", currentId));
-      if (!currentSnap.exists()) break;
-      const currentData = currentSnap.data();
-      if (!currentData.invitedBy) break;
-
-      const uplineRef = doc(db, "users", currentData.invitedBy);
-      const uplineSnap = await getDoc(uplineRef);
-      if (!uplineSnap.exists() || !uplineSnap.data().isHost) break;
-
-      const commStars = commissionAmounts.stars[level - 1] || 0;
-      const commCash = commissionAmounts.cash[level - 1] || 0;
-      await updateDoc(uplineRef, {
-        stars: increment(commStars),
-        cash: increment(commCash),
-        "rippleEarnings.stars": increment(commStars),
-        "rippleEarnings.cash": increment(commCash)
-      });
-
-      currentId = currentData.invitedBy;
-      level++;
-    }
-  }
+  // === SIGNUP HANDLER (updated to create Firebase Auth user + strong password check) ===
   submitBtn.addEventListener('click', async () => {
     const fullName = nameInput.value.trim();
     const chatIdRaw = chatIdInput.value.trim();
@@ -561,17 +565,23 @@ function triggerSprayConfetti() {
     const email = emailInput.value.trim().toLowerCase();
     const dob = dobInput.value;
     const password = passwordInput ? passwordInput.value.trim() : '';
+
+    // 🧩 Basic validation
     if(!fullName || !chatId || !phone || !email || !gender || !dob || !password){
       messageEl.textContent = 'Please fill in all fields.';
       return;
     }
+
+    // 🧠 Password complexity validation (at least 8 chars, upper, lower, number, symbol)
     const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#^])[A-Za-z\d@$!%*?&#^]{8,}$/;
     if(!passwordRegex.test(password)){
       messageEl.textContent = 'Password must contain at least 8 characters, one uppercase, one lowercase, one number, and one symbol.';
       return;
     }
+
     const age = calculateAge(dob);
     if(age < 18){ messageEl.textContent='❌ You must be 18+ to sign up.'; return; }
+
     if(chatId.length < 5 || chatId.length > 15){
       messageEl.textContent='Username must be 5–15 characters.'; return;
     }
@@ -581,12 +591,15 @@ function triggerSprayConfetti() {
     if(!isValidEmail(email)){
       messageEl.textContent='Email address not valid.'; return;
     }
+
     spinner.style.display='inline-block';
     btnText.style.display='none';
     messageEl.textContent='Signing up...';
     submitBtn.disabled = true;
+
     const uidKey = sanitizeKey(email);
     const userRef = doc(db, "users", uidKey);
+
     try {
       const existingSnap = await getDoc(userRef);
       const chatTaken = await isChatIdTaken(chatId);
@@ -596,6 +609,8 @@ function triggerSprayConfetti() {
         submitBtn.disabled = false;
         return;
       }
+
+      // 🧱 Step 1: Create Firebase Authentication user
       let userCredential;
       try {
         userCredential = await createUserWithEmailAndPassword(auth, email, password);
@@ -614,14 +629,18 @@ function triggerSprayConfetti() {
         submitBtn.disabled = false;
         return;
       }
+
+      // 🧱 Step 2: Continue Firestore creation
       let country = 'Unknown';
-      try {
-        const res = await fetch('https://ipapi.co/json/');
-        const data = await res.json();
-        country = data.country_name || 'Unknown';
+      try { 
+        const res = await fetch('https://ipapi.co/json/'); 
+        const data = await res.json(); 
+        country = data.country_name || 'Unknown'; 
       } catch(e){}
+
       let inviterRecord = null;
       if(referrer) inviterRecord = await findInviter(referrer);
+
       let invitedByField = null;
       let hostNameField = null;
       if(inviterRecord && inviterRecord.data){
@@ -632,6 +651,7 @@ function triggerSprayConfetti() {
         if(referrer && !referrer.includes('@')) hostNameField = referrer;
         if(referrer && referrer.includes('@')) invitedByField = sanitizeKey(referrer);
       }
+
       const nowIso = new Date().toISOString();
       const userData = {
         uid: userCredential.user.uid,
@@ -681,21 +701,16 @@ function triggerSprayConfetti() {
         createdAt: serverTimestamp(),
         lastUpdated: serverTimestamp()
       };
-      if (userData.isHost) {
-        userData.rippleCount = 1;
-        if (inviterRecord && inviterRecord.data && inviterRecord.data.isHost) {
-          userData.rippleCount = (inviterRecord.data.rippleCount || 1) + 1;
-        }
-        userData.rippleTeam = [];
-        userData.rippleEarnings = { stars: 0, cash: 0 };
-      }
+
       await setDoc(userRef, userData);
+
+      // 🧩 Update inviter stats if any
       if(inviterRecord && inviterRecord.ref && inviterRecord.data){
         const inviterRef = inviterRecord.ref;
         const inviterData = inviterRecord.data;
         const bonusStars = isVIP ? 100 : 50;
         try {
-          const updateObj = {
+          await updateDoc(inviterRef, {
             hostFriends: arrayUnion({
               chatId,
               chatIdLower: chatId.toLowerCase(),
@@ -705,32 +720,21 @@ function triggerSprayConfetti() {
               hostVIP: isVIP ? 1 : 0,
               invitedBy: invitedByField || referrer || null
             }),
-            stars: increment(bonusStars),
-            starsGifted: increment(bonusStars)
-          };
-          if (userData.isHost && inviterData.isHost) {
-            updateObj.rippleTeam = arrayUnion({
-              phone: userData.phone,
-              email: userData.email,
-              chatId: userData.chatId,
-              name: userData.fullName,
-              rippleCount: userData.rippleCount
-            });
-          }
-          await updateDoc(inviterRef, updateObj);
+            stars: (inviterData.stars || 0) + bonusStars,
+            starsGifted: (inviterData.starsGifted || 0) + bonusStars
+          });
         } catch (err) {
           console.warn("Failed updating inviter stats:", err);
         }
       }
-      // Optional: Trigger small ripple for signup (tests reflection; remove if unwanted)
-      if (userData.isHost && invitedByField) {
-        await awardRippleRewards(uidKey, 0, 0); // Propagates commissions upline, reflects in main balances
-      }
+
+      // ✅ Success UI + redirect
       messageEl.textContent = `✅ Welcome ${fullName}! You’ve been gifted 50 ⭐️`;
       localStorage.setItem("vipUser", JSON.stringify({ email, chatId }));
       submitBtn.style.display = 'none';
       if(isVIP) triggerSprayConfetti();
       setTimeout(()=>{ window.location.href="nushop.html"; },1500);
+
     } catch (e) {
       console.error(e);
       messageEl.textContent = "❌ Signup failed. Please try again.";
