@@ -4,432 +4,297 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=0.85, maximum-scale=0.85, user-scalable=no">
 <title>CUBE VIP</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Poppins:wght@300;500;700&display=swap" rel="stylesheet">
 <style>
   :root {
-    --primary-blue: #0a0a23;
-    --accent-cyan: #00f0ff;
-    --accent-purple: #7c3aed;
+    --hot-pink: #ff00aa;
+    --deep-purple: #4400aa;
+    --wet-black: #0a001a;
+    --neon-glow: #ff00aa;
     --text: #ffffff;
-    --input-bg: rgba(10,10,35,0.7);
-    --input-border: rgba(0,240,255,0.4);
-    --glow-cyan: rgba(0,240,255,0.5);
-    --glow-purple: rgba(124,58,237,0.5);
+    --input-bg: rgba(10,0,30,0.6);
+    --input-border: rgba(255,0,170,0.5);
   }
   * { margin:0; padding:0; box-sizing:border-box; }
   body {
     min-height: 100vh;
-    background: radial-gradient(circle at center, #0a0a23 0%, #000000 100%);
-    font-family: 'Inter', sans-serif;
+    background: linear-gradient(135deg, #0f0020, #1a0033, #000000);
+    font-family: 'Poppins', sans-serif;
     color: var(--text);
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 2rem 1rem;
+    padding: 2rem 1rem 4rem;
     position: relative;
-    overflow: hidden;
+    overflow-x: hidden;
   }
-  body::before {
-    content: '';
+
+  /* Sneaky full-width video / poster zone (just drop your mp4 or jpg here) */
+  .hero-video {
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: 
-      radial-gradient(circle at 20% 80%, rgba(0,240,255,0.1) 0%, transparent 50%),
-      radial-gradient(circle at 80% 20%, rgba(124,58,237,0.1) 0%, transparent 50%),
-      radial-gradient(circle at 40% 40%, rgba(0,240,255,0.05) 0%, transparent 50%);
-    animation: float 20s ease-in-out infinite;
-    z-index: -1;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    object-fit: cover;
+    z-index: -3;
+    opacity: 0.35;
+    filter: brightness(0.6) contrast(1.3);
   }
-  @keyframes float {
-    0%, 100% { transform: translateY(0px) rotate(0deg); }
-    50% { transform: translateY(-20px) rotate(180deg); }
-  }
-  .cube-container {
+  .hero-overlay {
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: linear-gradient(180deg, transparent 0%, #000 90%);
+    z-index: -2;
+  }
+
+  /* Neon floating particles */
+  .particles {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
     pointer-events: none;
     z-index: -1;
   }
-  .cube {
+  .particle {
     position: absolute;
-    width: 100px;
-    height: 100px;
-    transform-style: preserve-3d;
-    animation: rotate 20s linear infinite;
+    width: 4px; height: 4px;
+    background: var(--hot-pink);
+    border-radius: 50%;
+    box-shadow: 0 0 15px var(--neon-glow);
+    animation: float 15s infinite linear;
   }
-  .cube-face {
-    position: absolute;
-    width: 100px;
-    height: 100px;
-    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
-    opacity: 0.1;
-    border: 1px solid var(--accent-cyan);
+  @keyframes float {
+    0% { transform: translateY(100vh) translateX(0); opacity: 0; }
+    10% { opacity: 1; }
+    90% { opacity: 1; }
+    100% { transform: translateY(-100px) translateX(100px); opacity: 0; }
   }
-  .cube .front  { transform: translateZ(50px); }
-  .cube .back   { transform: translateZ(-50px); }
-  .cube .right  { transform: rotateY(90deg) translateZ(50px); }
-  .cube .left   { transform: rotateY(-90deg) translateZ(50px); }
-  .cube .top    { transform: rotateX(90deg) translateZ(50px); }
-  .cube .bottom { transform: rotateX(-90deg) translateZ(50px); }
-  @keyframes rotate {
-    0% { transform: rotateX(0deg) rotateY(0deg); }
-    100% { transform: rotateX(360deg) rotateY(360deg); }
-  }
-  .cube:nth-child(1) { top: 20%; left: 10%; animation-delay: 0s; }
-  .cube:nth-child(2) { top: 60%; left: 80%; animation-delay: -5s; }
-  .cube:nth-child(3) { top: 80%; left: 20%; animation-delay: -10s; }
-  .cube:nth-child(4) { top: 40%; left: 70%; animation-delay: -15s; }
-  h2 {
+
+  h1 {
     font-family: 'Orbitron', sans-serif;
-    font-size: 4.8rem;
+    font-size: 5.5rem;
     font-weight: 900;
-    background: linear-gradient(90deg, var(--accent-cyan), var(--accent-purple), var(--accent-cyan));
+    background: linear-gradient(90deg, #ff00aa, #ff66cc, #ff00aa);
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
-    text-shadow: 0 0 40px var(--glow-cyan);
-    letter-spacing: 10px;
-    margin-bottom: 0.5rem;
-    animation: glitch 2s infinite;
+    text-shadow: 0 0 50px #ff00aa;
+    letter-spacing: 12px;
+    margin: 1rem 0 0.5rem;
+    animation: flicker 3s infinite;
     text-transform: uppercase;
   }
-  @keyframes glitch {
-    0%, 100% { transform: translate(0); }
-    20% { transform: translate(-2px, 2px); }
-    40% { transform: translate(-2px, -2px); }
-    60% { transform: translate(2px, 2px); }
-    80% { transform: translate(2px, -2px); }
+  @keyframes flicker {
+    0%,100% { opacity: 1; }
+    50% { opacity: 0.92; }
+    52% { opacity: 0.98; }
   }
-  .description {
-    font-size: 1.05rem;
+
+  .tagline {
+    font-size: 1.1rem;
     text-align: center;
     max-width: 90%;
-    line-height: 1.5;
-    margin: 0 auto 2rem;
-    color: rgba(255,255,255,0.9);
-    font-weight: 500;
-    text-shadow: 0 0 10px rgba(0,240,255,0.2);
+    margin-bottom: 2rem;
+    font-weight: 300;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: #ff99dd;
+    text-shadow: 0 0 20px #ff00aa;
   }
-  .form-group {
-    margin: 0.85rem 0;
-  }
+
   .form-group input {
-    width: 310px;
+    width: 320px;
     max-width: 90vw;
-    padding: 0.95rem 1.2rem;
-    border-radius: 30px;
+    padding: 1rem 1.4rem;
+    border-radius: 50px;
     border: 1px solid var(--input-border);
     background: var(--input-bg);
-    backdrop-filter: blur(20px);
+    backdrop-filter: blur(15px);
     color: white;
-    font-size: 0.95rem;
+    font-size: 1rem;
     text-align: center;
-    transition: all 0.3s;
-    box-shadow: 0 0 10px var(--glow-cyan);
+    margin: 0.8rem 0;
+    transition: all 0.4s;
+    box-shadow: 0 0 20px rgba(255,0,170,0.3);
   }
   .form-group input:focus {
     outline: none;
-    border-color: var(--accent-cyan);
-    box-shadow: 0 0 20px var(--glow-cyan);
-    transform: scale(1.02);
+    border-color: var(--hot-pink);
+    box-shadow: 0 0 30px rgba(255,0,170,0.8);
+    transform: scale(1.03);
   }
-  .gender-label, .dob-label {
-    text-align: center;
-    font-size: 0.9rem;
-    margin: 1.2rem 0 0.6rem;
-    color: rgba(255,255,255,0.9);
-    font-weight: 600;
-  }
+
   .gender-select {
     display: flex;
     justify-content: center;
-    gap: 22px;
-    margin: 0.5rem 0 1.5rem;
+    gap: 30px;
+    margin: 1.5rem 0;
   }
   .gender-select button {
-    width: 56px;
-    height: 56px;
+    width: 70px; height: 70px;
     border-radius: 50%;
-    border: 2px solid var(--input-border);
-    background: var(--input-bg);
-    color: white;
-    font-size: 1.4rem;
+    border: 2px solid var(--hot-pink);
+    background: rgba(255,0,170,0.15);
+    color: #fff;
+    font-size: 1.8rem;
     font-weight: bold;
     cursor: pointer;
-    transition: all 0.3s;
-    box-shadow: 0 0 10px var(--glow-purple);
+    transition: all 0.4s;
+    box-shadow: 0 0 0 20px rgba(255,0,170,0.5);
   }
-  .gender-select button:hover {
-    border-color: var(--accent-cyan);
-    transform: scale(1.1);
-    box-shadow: 0 0 20px var(--glow-cyan);
-  }
+  .gender-select button:hover,
   .gender-select button.selected {
-    background: var(--accent-cyan);
-    color: #0a0a23;
-    box-shadow: 0 0 20px var(--glow-cyan);
-    border-color: var(--accent-cyan);
+    background: var(--hot-pink);
+    color: #000;
+    transform: scale(1.15);
+    box-shadow: 0 0 40px #ff00aa;
   }
+
   #dob {
-    width: 200px;
-    padding: 0.9rem;
-    border-radius: 30px;
+    width: 220px;
+    padding: 1rem;
+    border-radius: 50px;
     border: 1px solid var(--input-border);
     background: var(--input-bg);
-    backdrop-filter: blur(20px);
+    backdrop-filter: blur(15px);
     color: white;
     text-align: center;
-    font-size: 0.95rem;
-    box-shadow: 0 0 10px var(--glow-purple);
+    box-shadow: 0 0 20px rgba(255,0,170,0.3);
   }
-  #vipLabel {
-    text-align: center;
-    font-weight: 600;
-    font-size: 1rem;
-    margin: 1.3rem 0 0.4rem;
-    color: #ccc;
-  }
-  #vipLabel.on { color: var(--accent-cyan); text-shadow: 0 0 10px var(--glow-cyan); }
+
   .vip-toggle {
-    width: 84px; height: 40px;
-    background: #0f0f23;
+    width: 90px; height: 46px;
+    background: #220044;
     border-radius: 50px;
     position: relative;
-    margin: 0 auto;
+    margin: 1.5rem auto;
     cursor: pointer;
-    border: 2px solid var(--input-border);
-    box-shadow: 0 0 10px var(--glow-purple);
+    border: 2px solid var(--hot-pink);
+    box-shadow: 0 0 25px rgba(255,0,170,0.6);
   }
   .vip-circle {
-    width: 36px; height: 36px;
-    background: #333;
+    width: 40px; height: 40px;
+    background: #ff00aa;
     border-radius: 50%;
     position: absolute;
-    left: 2px; top: 2px;
-    transition: 0.4s;
+    left: 3px; top: 3px;
+    transition: 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+    box-shadow: 0 0 20px #ff00aa;
   }
-  .vip-toggle.on .vip-circle {
-    left: 44px;
-    background: var(--accent-cyan);
-    box-shadow: 0 0 15px var(--glow-cyan);
-  }
+  .vip-toggle.on .vip-circle { left: 47px; }
+
   #vipMessage {
+    color: var(--hot-pink);
     text-align: center;
-    color: var(--accent-cyan);
-    font-size: 0.88rem;
+    font-weight: 700;
+    text-shadow: 0 0 15px #ff00aa;
     opacity: 0;
-    margin-top: 0.6rem;
-    font-weight: 600;
+    transition: 0.5s;
   }
+  .vip-toggle.on ~ #vipMessage { opacity: 1; }
+
   #submitBtn {
-    margin: 2rem auto 1.5rem;
-    padding: 0.9rem 2.4rem;
-    width: auto;
+    margin: 2.5rem auto;
+    padding: 1.1rem 3rem;
     border: none;
     border-radius: 50px;
-    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
-    color: #0a0a23;
-    font-weight: bold;
-    font-size: 1.05rem;
+    background: linear-gradient(135deg, #ff00aa, #ff3399);
+    color: #000;
+    font-size: 1.3rem;
+    font-weight: 900;
+    letter-spacing: 2px;
     cursor: pointer;
-    box-shadow: 0 8px 25px var(--glow-cyan);
-    transition: all 0.3s;
+    box-shadow: 0 10px 40px rgba(255,0,170,0.7);
+    transition: all 0.4s;
+    ;
   }
   #submitBtn:hover {
-    transform: translateY(-3px) scale(1.05);
-    box-shadow: 0 12px 30px var(--glow-cyan);
+    transform: translateY(-5px) scale(1.05);
+    box-shadow: 0 20px 50px rgba(255,0,170,0.9);
   }
+
   #fomoPopup {
     position: fixed;
-    top: 90px;
+    top: fixed;
+    top: 100px;
     left: 50%;
     transform: translateX(-50%);
-    background: rgba(10,10,35,0.9);
-    color: #fff;
-    padding: 1rem 2rem;
+    background: rgba(20,0,40,0.9);
+    color: #ff99dd;
+    padding: 1.2rem 2.5rem;
+    border-radius: 1px solid var(--hot-pink);
     border-radius: 50px;
-    font-size: 1.15rem;
-    font-weight: 600;
+    font-size: 1.3rem;
+    font-weight: 700;
+    text-shadow: 0 0 20px #ff00aa;
+    box-shadow: 0 0 40px rgba(255,0,170,0.8);
+    backdrop-filter: blur(15px);
+    z-index: 9999;
     opacity: 0;
-    transition: opacity 0.5s, transform 0.6s;
-    pointer-events: none;
-    z-index: 10000;
-    white-space: nowrap;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.6),
-                0 0 30px var(--glow-cyan);
-    border: 1px solid var(--input-border);
-    min-width: 320px;
-    text-align: center;
-    backdrop-filter: blur(20px);
+    transition: all 0.6s;
   }
   #fomoPopup.show {
     opacity: 1;
-    transform: translateX(-50%) translateY(-8px);
+    transform: translateX(-50%) translateY(-10px);
   }
-  .message { text-align: center; min-height: 20px; margin: 0.5rem 0; font-size: 0.9rem; }
+
   footer {
-    margin-top: 3rem;
+    margin-top: 4rem;
+    font-size: 0.8rem;
+    color: #ff66aa;
     text-align: center;
-    font-size: 0.78rem;
-    color: rgba(255,255,255,0.7);
-    line-height: 1.6;
-    padding: 1rem 0;
-  }
-  footer a { color: #ccc; text-decoration: none; }
-  footer a:hover { color: var(--accent-cyan); }
-  .password-requirements {
-    margin-top: 12px;
-    font-size: 13.5px;
-    color: #aaa;
-    transition: all 0.3s ease;
-    opacity: 0;
-    transform: translateY(-8px);
-    pointer-events: none;
-  }
-  .password-requirements.visible {
-    opacity: 1;
-    transform: translateY(0);
-  }
-  .req-header {
-    font-weight: 600;
-    color: #fff;
-    margin-bottom: 8px;
-    font-size: 14px;
-  }
-  .req-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin: 5px 0;
-    transition: color 0.3s ease;
-  }
-  .req-item.met {
-    color: var(--accent-cyan) !important;
-    font-weight: 500;
-  }
-  .req-item .checkmark {
-    width: 16px;
-    height: 16px;
-    border: 2px solid #555;
-    border-radius: 50%;
-    position: relative;
-    flex-shrink: 0;
-    transition: all 0.3s ease;
-  }
-  .req-item.met .checkmark {
-    background: var(--accent-cyan);
-    border-color: var(--accent-cyan);
-    box-shadow: 0 0 12px var(--glow-cyan);
-  }
-  .req-item.met .checkmark::after {
-    content: '✓';
-    position: absolute;
-    color: #0a0a23;
-    font-weight: bold;
-    font-size: 11px;
-    top: 49%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-  }
-  /* Glow effect when all are met */
-  .password-requirements.all-met .req-header {
-    color: var(--accent-cyan);
-    text-shadow: 0 0 10px var(--glow-cyan);
+    opacity: 0.8;
   }
 </style>
 </head>
 <body>
-<div class="cube-container">
-  <div class="cube">
-    <div class="cube-face front"></div>
-    <div class="cube-face back"></div>
-    <div class="cube-face right"></div>
-    <div class="cube-face left"></div>
-    <div class="cube-face top"></div>
-    <div class="cube-face bottom"></div>
+
+  <!-- Drop your sexy promo video or poster here (autoplay, muted, loop) -->
+  <video class="hero-video" autoplay muted loop playsinline>
+    <source src="https://cube.xixi.live/your-sexy-promo.mp4" type="video/mp4">
+    <!-- fallback sexy image if video fails -->
+    <img src="https://cube.xixi.live/sexy-poster.jpg" alt="" style="width:100%;height:100%;object-fit:cover;">
+  </video>
+  <div class="hero-overlay"></div>
+
+  <div class="particles">
+    <div class="particle" style="left:10%;animation-delay:0s;"></div>
+    <div class="particle" style="left:25%;animation-delay:2s;"></div>
+    <div class="particle" style="left:40%;animation-delay:4s;"></div>
+    <div class="particle" style="left:60%;animation-delay:1s;"></div>
+    <div class="particle" style="left:80%;animation-delay:3s;"></div>
+    <div class="particle" style="left:90%;animation-delay:5s;"></div>
   </div>
-  <div class="cube">
-    <div class="cube-face front"></div>
-    <div class="cube-face back"></div>
-    <div class="cube-face right"></div>
-    <div class="cube-face left"></div>
-    <div class="cube-face top"></div>
-    <div class="cube-face bottom"></div>
+
+  <div id="fomoPopup">Someone just unlocked VIP… you next?</div>
+
+  <h1>CUBE</h1>
+  <div class="tagline">Private • After Dark • No Rules</div>
+
+  <div class="form-group"><input type="text" placeholder="Full Name" id="name"></div>
+  <div class="form-group"><input type="text" placeholder="Choose Your Sexy @Handle" id="chatId"></div>
+  <div class="form-group"><input type="tel" placeholder="Phone (for VIP calls)" id="phone"></div>
+  <div class="form-group"><input type="email" placeholder="Email" id="email"></div>
+  <div class="form-group"><input type="password" placeholder="Password (make it spicy)" id="password"></div>
+
+  <div style="text-align:center;margin:1.5rem 0;color:#ff99dd;">I identify as</div>
+  <div class="gender-select">
+    <button id="fBtn">F</button>
+    <button id="mBtn">M</button>
   </div>
-  <div class="cube">
-    <div class="cube-face front"></div>
-    <div class="cube-face back"></div>
-    <div class="cube-face right"></div>
-    <div class="cube-face left"></div>
-    <div class="cube-face top"></div>
-    <div class="cube-face bottom"></div>
-  </div>
-  <div class="cube">
-    <div class="cube-face front"></div>
-    <div class="cube-face back"></div>
-    <div class="cube-face right"></div>
-    <div class="cube-face left"></div>
-    <div class="cube-face top"></div>
-    <div class="cube-face bottom"></div>
-  </div>
-</div>
-<div id="fomoPopup">Someone just joined the Cube!</div>
-<h2>CUBE</h2>
-<div class="description">
-  Dive into the digital frontier: exclusive streams, immersive chats, premium creators & VIP lounges.<br>
-  Enter the cube — where vibes align in infinite dimensions.
-</div>
-<div class="form-group"><input id="name" type="text" placeholder="Full Name"></div>
-<div class="form-group"><input id="chatId" type="text" placeholder="Choose Chat Name"></div>
-<div class="form-group"><input id="phone" type="text" placeholder="Phone Number"></div>
-<div class="form-group"><input id="email" type="email" placeholder="Email Address"></div>
-<div class="form-group"><input id="password" type="password" placeholder="Create Password (min 6 chars)"></div>
-<div id="passwordRequirements" class="password-requirements">
-  <div class="req-header">Password requirements met!</div>
-  <div class="req-item" data-rule="length">
-    <span class="checkmark"></span> 8 characters
-  </div>
-  <div class="req-item" data-rule="number">
-    <span class="checkmark"></span> 1 number
-  </div>
-  <div class="req-item" data-rule="special">
-    <span class="checkmark"></span> 1 special character e.g., $, !, @, %, &
-  </div>
-  <div class="req-item" data-rule="whitespace">
-    <span class="checkmark"></span> No leading or trailing whitespace
-  </div>
-</div>
-<div class="gender-label">Select Your Gender</div>
-<div class="gender-select">
-  <button id="femaleBtn">F</button>
-  <button id="maleBtn">M</button>
-</div>
-<div class="dob-label">Select Your Birth Date</div>
-<input id="dob" type="date" max="">
-<div id="vipLabel">VIP</div>
-<div class="vip-toggle" id="vipToggle"><div class="vip-circle"></div></div>
-<div id="vipMessage">You're in the Cube VIP dimension!</div>
-<button id="submitBtn">
-  <span class="btn-text">Enter Cube</span>
-  <span class="spinner" id="spinner"></span>
-</button>
-<div class="message" id="message"></div>
-<footer id="footer">
-  <div>©2025 xixi.live (GO LIVE. OWN YOUR VIBE.)</div>
-  <div>Enter the infinite • Dimensions await</div>
-  <div>3-1-1 Nihonbashi, Chuo-ku, Tokyo, Japan</div>
-  <div style="margin-top:8px;">
-    <a href="privacy.html">Privacy Policy</a> •
-    <a href="terms.html">Terms of Service</a>
-  </div>
-</footer>
+
+  <div style="text-align:center;color:#ff99dd;margin:1rem 0;">Birth Date</div>
+  <input type="date" id="dob" max="">
+
+  <div style="text-align:center;color:#ff99dd;margin:2rem 0 0.5rem;">VIP Access</div>
+  <div class="vip-toggle" id="vipToggle"><div class="vip-circle"></div></div>
+  <div id="vipMessage">You just turned the heat all the way up</div>
+
+  <button id="submitBtn">Enter The Cube</button>
+
+  <footer>
+    © 2025 cube.xixi.live — Adults only • Own your night
+  </footer>
 </body>
 </html>
 <script type="module">
