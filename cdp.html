@@ -92,10 +92,14 @@
   position: absolute;
   inset: 0;
   backface-visibility: hidden;
-  border-radius: 20px;            /* still rounds the image itself */
+  
+  /* ← THIS is the fix for the “eaten edges” */
+  border-radius: 4%;           /* use % instead of fixed px */
+  overflow: hidden;            /* makes sure nothing ever bleeds out */
+  
   background-size: cover;
   background-position: center;
-  /* ← removed ALL border, box-shadow, and glow */
+  background-repeat: no-repeat;
 }
 
 .card-back {
