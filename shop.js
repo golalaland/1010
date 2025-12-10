@@ -390,7 +390,7 @@ const loadCurrentUser = async () => {
         });
       }
 
-    // NEW INVITER REWARD — WORKS WITH CURRENT SIGNUP CODE
+     // NEW INVITER REWARD — WORKS WITH CURRENT SIGNUP CODE
 const friends = Array.isArray(data.hostFriends) ? data.hostFriends : [];
 
 // Look for any referral that hasn't been celebrated yet
@@ -407,8 +407,8 @@ if (pending) {
 
   // SHOW REWARD POPUP
   showReward(
-    `You've been gifted <b>+${stars} Stars</b> — <b>${name}</b> just joined your Hive!`,
-    'Empire Growing!'
+    `You've been gifted <b>+${stars} Stars</b> — <b>${name}</b> just joined your Tab!`,
+    'Congratulations!'
   );
 
   // Mark as shown — update the exact friend object
@@ -423,46 +423,63 @@ if (pending) {
     hostFriendsLastUpdated: serverTimestamp() 
   });
 }
-
 /* ------------------ Host panels ------------------ */
 const updateHostPanels = () => {
-  if (!currentUser?.isHost) {
-    if (DOM.hostTabs) DOM.hostTabs.style.display = 'none';
-    if (DOM.tabContent) DOM.tabContent.style.display = 'none';
-    return;
-  }
-  if (DOM.hostTabs) DOM.hostTabs.style.display = '';
-  if (DOM.tabContent) DOM.tabContent.style.display = '';
-  renderTabContent('vip');
+  if (!currentUser?.isHost) {
+    if (DOM.hostTabs) DOM.hostTabs.style.display = 'none';
+    if (DOM.tabContent) DOM.tabContent.style.display = 'none';
+    return;
+  }
+  if (DOM.hostTabs) DOM.hostTabs.style.display = '';
+  if (DOM.tabContent) DOM.tabContent.style.display = '';
+  renderTabContent('vip');
 };
+
 const renderTabContent = (type) => {
-  if (!DOM.tabContent) return;
-  DOM.tabContent.innerHTML = '';
-  if (!currentUser?.isHost) return;
-  if (type === 'vip') {
-    const vipReferralCount = currentUser.hostVIP || 0;
-    DOM.tabContent.innerHTML =  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<div class="stat-block" style="margin-bottom:12px;"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<div class="stat-value" id="vip-stat">${formatNumber(vipReferralCount)}</div> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<div class="stat-label">VIPs Signed Up</div> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</div> &nbsp;&nbsp;&nbsp;&nbsp;;
-  } else if (type === 'friends') {
-    renderFriendsList(DOM.tabContent, currentUser.hostFriends || []);
-    const btn = document.createElement('button');
-    btn.id = 'inviteFriendsBtn';
-    btn.className = 'themed-btn';
-    btn.textContent = 'Invite Friends';
-    DOM.tabContent.appendChild(btn);
-  btn.addEventListener('click', () => {
-  const chatId = currentUser?.chatId || 'friend';
-  const prettyHandle = chatId.startsWith('@') ? chatId : @${chatId};
-  const message = Hey! I'm hosting on xixi live, join my tab and let’s win together! Sign up using my link: ;
-  const link = https://cube.xixi.live/signup?ref=${encodeURIComponent(prettyHandle)};
-  const fullText = message + link;
-  navigator.clipboard.writeText(fullText)
-    .then(() => showThemedMessage('Copied!', 'Your invite link is ready!', 2000))
-    .catch(() => showThemedMessage('Error', 'Could not copy link', 2000));
+  if (!DOM.tabContent) return;
+  DOM.tabContent.innerHTML = '';
+  if (!currentUser?.isHost) return;
+
+  if (type === 'vip') {
+    const vipCount = currentUser.hostVIP || 0;
+    DOM.tabContent.innerHTML = `
+      <div class="stat-block" style="margin-bottom:12px;">
+        <div class="stat-value" id="vip-stat">${formatNumber(vipCount)}</div>
+        <div class="stat-label">VIPs Signed Up</div>
+      </div>
+    `;
+  } else if (type === 'friends') {
+    renderFriendsList(DOM.tabContent, currentUser.hostFriends || []);
+
+    const btn = document.createElement('button');
+    btn.id = 'inviteFriendsBtn';
+    btn.className = 'themed-btn';
+    btn.textContent = 'Invite Friends';
+    DOM.tabContent.appendChild(btn);
+
+  btn.addEventListener('click', () => {
+  const chatId = currentUser?.chatId || 'friend';
+  const prettyHandle = chatId.startsWith('@') ? chatId : `@${chatId}`;
+
+  const message = `Hey! I'm hosting on xixi live, join my tab and let’s win together! Sign up using my link: `;
+  const link = `https://cube.xixi.live/signup?ref=${encodeURIComponent(prettyHandle)}`;
+
+  const fullText = message + link;
+
+  navigator.clipboard.writeText(fullText)
+    .then(() => showThemedMessage('Copied!', 'Your invite link is ready!', 2000))
+    .catch(() => showThemedMessage('Error', 'Could not copy link', 2000));
 });
-  } else if (type === 'badges') {
-    const badgeImg = currentUser.hostBadgeImg || 'https://www.svgrepo.com/show/492657/crown.svg';
-    DOM.tabContent.innerHTML =  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<div class="stat-block"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<img src="${badgeImg}" style="width:100px;height:100px;"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<div class="stat-value">${currentUser.hostBadge || 'Gold'}</div> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<div class="stat-label">Badge Status</div> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</div> &nbsp;&nbsp;&nbsp;&nbsp;;
-  }
+  } else if (type === 'badges') {
+    const badgeImg = currentUser.hostBadgeImg || 'https://www.svgrepo.com/show/492657/crown.svg';
+    DOM.tabContent.innerHTML = `
+      <div class="stat-block">
+        <img src="${badgeImg}" style="width:100px;height:100px;">
+        <div class="stat-value">${currentUser.hostBadge || 'Gold'}</div>
+        <div class="stat-label">Badge Status</div>
+      </div>
+    `;
+  }
 };
 /* ------------------ Friends rendering ------------------ */
 function renderFriendsList(container, friends) {
