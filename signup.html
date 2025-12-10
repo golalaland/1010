@@ -477,18 +477,25 @@ submitBtn.onclick = async () => {
     // Create Auth user
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
 
-    // Resolve inviter + hiveName
-    let inviterDocId = null;
-    let hiveName = 'Unassigned';
-    if (cleanRef) {
-      inviterDocId = await getInviterDocId(cleanRef);
-      if (inviterDocId) {
-        const invSnap = await getDoc(doc(db, 'users', inviterDocId));
-        if (invSnap.exists()) {
-          hiveName = invSnap.data().hiveName || 'Unassigned';
-        }
+   // Resolve inviter + hiveName (HOSTS ONLY!)
+let inviterDocId = null;
+let hiveName = 'Unassigned';
+
+if (cleanRef) {
+  inviterDocId = await getInviterDocId(cleanRef);
+  if (inviterDocId) {
+    const invSnap = await getDoc(doc(db, 'users', inviterDocId));
+    if (invSnap.exists()) {
+      const inviterData = invSnap.data();
+
+      // ONLY inherit hiveName if inviter is a HOST (not VIP)
+      if (inviterData.isHost && inviterData.hiveName) {
+        hiveName = inviterData.hiveName;
       }
+      // If inviter is VIP → hiveName stays 'Unassigned'
     }
+  }
+}
 
     // Country
     let country = 'Unknown';
