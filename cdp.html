@@ -102,6 +102,21 @@
 
     @keyframes marquee { 0% { transform:translateX(0); } 100% { transform:translateX(-50%); } }
     @keyframes spin { to { transform:rotate(360deg); } }
+    .vip-tease {
+  color: #888;
+  font-size: 16px;
+  font-weight: 500;
+  margin: -20px 0 50px;
+  line-height: 1.5;
+  opacity: 0.9;
+}
+.vip-tease span {
+  color: var(--cube-green);
+  font-weight: 700;
+}
+.mobile-br { display:none; }
+@media (max-width: 420px) { .mobile-br { display:block; } }
+
   </style>
 </head>
 <body>
@@ -116,12 +131,16 @@
 
     <div class="marquee"><div class="marquee-inner" id="marquee"></div></div>
 
-    <h2 class="pick-title">PICK A CARD</h2>
+  <h2 class="pick-title">PICK A CARD</h2>
 
-    <div class="table-wrapper">
-      <div class="cards-grid" id="cards-grid"></div>
-    </div>
-  </div>
+<p class="vip-tease">
+  You’re joined <span id="hostNameTease">her</span> to party — pick your drink,<br class="mobile-br">
+  the night just got real expensive.
+</p>
+
+<div class="table-wrapper">
+  <div class="cards-grid" id="cards-grid"></div>
+</div>
 
   <!-- Modals -->
   <div class="phone-modal" id="phoneModal">
@@ -331,7 +350,9 @@
 
   DOM.phoneClose.onclick = () => { DOM.phoneModal.classList.remove('active'); document.querySelectorAll('.card.flipped:not(.locked)').forEach(c=>c.classList.remove('flipped')); };
   DOM.finalClose.onclick = () => DOM.finalModal.classList.remove('active');
-
+// Auto-fill the tease with real host name
+document.getElementById('hostNameTease').textContent = 
+  (currentUser?.hostName || currentUser?.invitedBy || 'her').replace(/^@/, '') || 'her';
   // INIT EVERYTHING
   loadCurrentUser();
   initMarquee();
