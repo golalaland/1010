@@ -134,7 +134,7 @@
   <h2 class="pick-title">PICK A CARD</h2>
 
 <p class="vip-tease">
-  You’re joined <span id="hostNameTease">her</span> to party — pick your drink,<br class="mobile-br">
+  You’ve joined <span id="hostName">her</span> to party — pick your drink and get ready for more action,<br class="mobile-br">
   the night just got real expensive.
 </p>
 
@@ -350,9 +350,6 @@
 
   DOM.phoneClose.onclick = () => { DOM.phoneModal.classList.remove('active'); document.querySelectorAll('.card.flipped:not(.locked)').forEach(c=>c.classList.remove('flipped')); };
   DOM.finalClose.onclick = () => DOM.finalModal.classList.remove('active');
-// Auto-fill the tease with real host name
-document.getElementById('hostNameTease').textContent = 
-  (currentUser?.hostName || currentUser?.invitedBy || 'her').replace(/^@/, '') || 'her';
   // INIT EVERYTHING
   loadCurrentUser();
   initMarquee();
