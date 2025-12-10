@@ -333,55 +333,93 @@
     });
   };
 
-  const pickCard = async (card) => {
-    if (!currentUser || currentUser.stars < COST) { card.classList.remove('flipped'); return finalModal(`You need ${COST} Stars`); }
-    if (!currentUser.invitedBy && !currentUser.hostName) { card.classList.remove('flipped'); return phoneModal("Invalid access"); }
+const pickCard = async (card) => {
+  if (!currentUser || currentUser.stars < COST) { 
+    card.classList.remove('flipped'); 
+    return finalModal(`You need ${COST} Stars`); 
+  }
+  if (!currentUser.invitedBy && !currentUser.hostName) { 
+    card.classList.remove('flipped'); 
+    return phoneModal("Invalid access"); 
+  }
 
-    DOM.phoneModal.classList.add('active');
-    DOM.phoneConfirm.onclick = async () => {
-      const phone = DOM.phoneInput.value.trim();
-      if (!phone || phone.length < 10) return phoneModal('Invalid phone');
+  DOM.phoneModal.classList.add('active');
+  DOM.phoneConfirm.onclick = async () => {
+    const phone = DOM.phoneInput.value.trim();
+    if (!phone || phone.length < 10) return phoneModal('Invalid phone');
+    
+    DOM.phoneModal.classList.remove('active'); 
+    DOM.phoneInput.value = ''; 
+    showSpinner();
 
-      DOM.phoneModal.classList.remove('active'); DOM.phoneInput.value = ''; showSpinner();
+    try {
+      const uid = emailToDocId(currentUser.email);
+      const userRef = doc(db, 'users', uid);
 
-      try {
-        const uid = emailToDocId(currentUser.email);
-        const userRef = doc(db, 'users', uid);
+      await runTransaction(db, async t => {
+        const snap = await t.get(userRef);
+        if (!snap.exists() || snap.data().stars < COST) throw "No stars";
+        t.update(userRef, { stars: snap.data().stars - COST });
+      });
 
-        await runTransaction(db, async t => {
-          const snap = await t.get(userRef);
-          if (!snap.exists() || snap.data().stars < COST) throw "No stars";
-          t.update(userRef, { stars: snap.data().stars - COST });
-        });
+      // Save drink request
+      await addDoc(collection(db, 'drinkRequests'), {
+        userId: uid,
+        userEmail: currentUser.email,
+        username: currentUser.chatId || currentUser.email.split('@')[0],
+        invitedBy: currentUser.invitedBy || currentUser.hostName,
+        drink: card.dataset.drink,
+        phone,
+        cardNumber: Number(card.dataset.number),
+        timestamp: serverTimestamp(),
+        status: 'pending',
+        delivered: false
+      });
 
-        await addDoc(collection(db, 'drinkRequests'), {
-          userId: uid, userEmail: currentUser.email,
-          username: currentUser.chatId || currentUser.email.split('@')[0],
-          invitedBy: currentUser.invitedBy || currentUser.hostName,
-          drink: card.dataset.drink, phone, cardNumber: Number(card.dataset.number),
-          timestamp: serverTimestamp(), status: 'pending', delivered: false
-        });
+      // SEND NOTIFICATION TO USER — THIS IS THE KEY
+      await addDoc(collection(db, "notifications"), {
+        userId: uid,
+        type: "drink_unlock",
+        title: "Drink Unlocked!",
+        message: `You just unlocked a ${card.dataset.drink}!\nWe'll deliver it to ${phone} soon.\nThank you for playing!`,
+        read: false,
+        timestamp: serverTimestamp(),
+        icon: "drink",
+        data: {
+          drink: card.dataset.drink,
+          phone: phone,
+          cardNumber: card.dataset.number
+        }
+      });
 
-        card.classList.add('locked');
-        DOM.finalMessage.innerHTML = `
+      card.classList.add('locked');
+      DOM.finalMessage.innerHTML = `
         You picked card <strong>#${card.dataset.number}</strong><br>
         Drink: <strong>${card.dataset.drink}</strong><br><br>
         We'll deliver to:<br><strong>${phone}</strong>
       `;
       DOM.finalModal.classList.add('active');
-        fireConfetti(); playWin();
+      fireConfetti(); 
+      playWin();
 
-        currentUser.stars -= COST;
-        DOM.stars.textContent = currentUser.stars.toLocaleString();
-      } catch(e) {
-        card.classList.remove('flipped');
-        finalModal('Failed. Try again.');
-      } finally { hideSpinner(); }
-    };
+      currentUser.stars -= COST;
+      DOM.stars.textContent = currentUser.stars.toLocaleString();
+
+    } catch(e) {
+      console.error("Drink unlock failed:", e);
+      card.classList.remove('flipped');
+      finalModal('Failed. Try again.');
+    } finally { 
+      hideSpinner(); 
+    }
   };
 
-  DOM.phoneClose.onclick = () => { DOM.phoneModal.classList.remove('active'); document.querySelectorAll('.card.flipped:not(.locked)').forEach(c=>c.classList.remove('flipped')); };
+  DOM.phoneClose.onclick = () => { 
+    DOM.phoneModal.classList.remove('active'); 
+    document.querySelectorAll('.card.flipped:not(.locked)').forEach(c => c.classList.remove('flipped')); 
+  };
   DOM.finalClose.onclick = () => DOM.finalModal.classList.remove('active');
+};
   // INIT EVERYTHING
   loadCurrentUser();
   initMarquee();
