@@ -11,185 +11,117 @@
       --text: #fff;
       --cube-green: #00ff9d;
       --shadow: rgba(0,0,0,0.8);
+      --glow: 0 0 30px rgba(0, 255, 157, 0.5);
+      --glow-intense: 0 0 50px rgba(0, 255, 157, 0.8);
     }
     * { margin:0; padding:0; box-sizing:border-box; touch-action: manipulation; }
     html, body { height:100%; width:100%; overflow:hidden; background:var(--bg); color:var(--text); font-family:system-ui,sans-serif; }
-    
-    body {
-      display:flex;
-      justify-content:center;
-      align-items:flex-start;
-      padding:0;
-      margin:0;
+
+    /* Subtle radial glow + scanlines */
+    body::before {
+      content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+      background: radial-gradient(circle at 50% 30%, rgba(0,255,157,0.08), transparent 70%);
     }
-    .container {
-      width:100%;
-      max-width:480px;
-      height:100vh;
-      padding:20px;
-      text-align:center;
-      overflow-y:auto;
-      -webkit-overflow-scrolling:touch;
+    body::after {
+      content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none; opacity: 0.4;
+      background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,255,157,0.03) 2px, rgba(0,255,157,0.03) 4px);
+      animation: scan 10s linear infinite;
     }
+    @keyframes scan { 0% { transform:translateY(-100%); } 100% { transform:translateY(100%); } }
+
+    body { display:flex; justify-content:center; align-items:flex-start; padding:0; margin:0; }
+    .container { width:100%; max-width:480px; height:100vh; padding:20px; text-align:center; overflow-y:auto; -webkit-overflow-scrolling:touch; }
 
     .title {
-      font-size:36px;
-      font-weight:900;
+      font-size:42px; font-weight:900;
       background:linear-gradient(90deg,#00ff9d,#39ff14);
-      -webkit-background-clip:text;
-      -webkit-text-fill-color:transparent;
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent;
       margin:10px 0 6px;
+      animation: pulseGlow 4s infinite alternate;
+      text-shadow: var(--glow-intense), 0 0 80px rgba(0,255,157,0.6);
+    }
+    @keyframes pulseGlow {
+      from { text-shadow: var(--glow), 0 0 60px rgba(0,255,157,0.4); }
+      to   { text-shadow: var(--glow-intense), 0 0 100px rgba(0,255,157,0.8); }
     }
 
-    .welcome {
-      color:#fff;
-      font-size:19px;
-      margin:12px 0 20px;
-      font-weight:600;
-    }
+    .welcome { color:#fff; font-size:19px; margin:12px 0 20px; font-weight:600; }
     .welcome span { color:var(--cube-green); }
 
-.balance {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  font-size: 18px;
-  background: #111;
-  padding: 14px 20px;
-  border-radius: 14px;
-  border: 2px solid #333;
-  width: fit-content;
-  margin: 25px auto;
-}
-
-.item {
-  display: flex;
-  align-items: center;
-  gap: 8px;                 /* space between label and value */
-  white-space: nowrap;
-}
-
-.label {
-  font-weight: 900;         /* only the titles are bold */
-  color: #fff;
-  min-width: 60px;          /* keeps alignment nice when numbers grow */
-}
-
-.value {
-  font-weight: 400;         /* numbers + symbols normal weight */
-  color: #fff;
-  display: flex;
-  align-items: center;
-  gap: 4px;                 /* tight space between number and ⭐️ or ₦ */
-}
-
-#stars-count {
-  color: #FFD700;           /* gold color for star count */
-}
-
-/* Optional: make the actual star emoji a bit smaller and perfectly aligned */
-.value .emoji {
-  font-size: 1.1em;
-  margin-top: -2px;         /* tiny tweak for perfect vertical alignment */
-}
+    .balance {
+      display:flex; flex-direction:column; gap:10px; font-size:18px;
+      background:rgba(17,17,17,0.7); backdrop-filter:blur(10px);
+      padding:14px 20px; border-radius:14px; border:1px solid rgba(0,255,157,0.3);
+      width:fit-content; margin:25px auto;
+      box-shadow:var(--glow);
+    }
+    .item { display:flex; align-items:center; gap:8px; white-space:nowrap; }
+    .label { font-weight:900; color:#fff; min-width:60px; }
+    .value { font-weight:400; color:#fff; display:flex; align-items:center; gap:4px; }
+    #stars-count { color:#FFD700; }
+    .value .emoji { font-size:1.1em; margin-top:-2px; }
 
     .marquee {
-      overflow:hidden;
-      white-space:nowrap;
-      margin:30px 0;
-      border-radius:18px;
-      background:#111;
-      padding:14px 0;
-      border:2px solid #333;
+      overflow:hidden; white-space:nowrap; margin:30px 0; border-radius:18px;
+      background:#111; padding:14px 0; border:2px solid #333;
     }
-    .marquee-inner {
-      display:inline-block;
-      animation:marquee 40s linear infinite;
-    }
+    .marquee-inner { display:inline-block; animation:marquee 40s linear infinite; }
     .marquee img {
-      width:110px;
-      height:110px;
-      object-fit:cover;
-      margin:0 20px;
-      border-radius:16px;
-      border:3px solid var(--cube-green);
+      width:110px; height:110px; object-fit:cover; margin:0 20px;
+      border-radius:16px; border:3px solid var(--cube-green);
       box-shadow:0 6px 20px rgba(0,255,157,0.3);
+      transition:all 0.3s ease;
     }
+    .marquee img:hover { transform:scale(1.15) rotate(5deg); border-color:#39ff14 !important; }
 
-/* Cards grid & cards – THIN green border + polish */
-.cards-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 18px;
-  perspective: 1200px;
-  margin: 40px 0;
-  padding-bottom: 100px;
-}
+    .pick-title {
+      text-align:center; font-size:32px; font-weight:900; color:#fff;
+      margin:50px 0 30px; letter-spacing:3px; text-transform:uppercase;
+      text-shadow:0 0 20px rgba(0,255,136,0.6), 0 4px 10px rgba(0,0,0,0.8);
+      animation:float 6s ease-in-out infinite;
+    }
+    @keyframes float { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-10px); } }
 
-.card {
-  width: 100%;
-  height: 130px;
-  position: relative;
-  transform-style: preserve-3d;
-  cursor: pointer;
-  transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  border-radius: 20px;
-  box-shadow: 0 12px 40px var(--shadow);
-}
-
-.card:hover {
-  transform: scale(1.07) translateY(-12px);
-}
-
-.card-face {
-  position: absolute;
-  inset: 0;                                      /* cleaner than width/height 100% */
-  backface-visibility: hidden;
-  border-radius: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 900;
-  font-size: 15px;
-  text-align: center;
-  padding: 16px;
-  overflow: hidden;
- border: 1px solid var(--cube-green);
-box-shadow: 0 0 12px rgba(0, 255, 136, 0.4);   /* soft green glow */
-  box-sizing: border-box;
-}
-
-/* Back of the card (Canva image) */
-.card-back {
-  background-image: url('https://cdn.shopify.com/s/files/1/0962/6648/6067/files/Sipcard.png?v=1765319696');
-  background-size: cover;
-  background-position: center;
-}
-
-/* Front of the card (revealed when flipped) */
-.card-front {
-  background: linear-gradient(135deg, #001a0f, #003322);
-  color: var(--cube-green);
-  transform: rotateY(180deg);
-  text-shadow: 0 0 10px #000;
-}
-
-/* Flip states */
-.card.flipped { transform: rotateY(180deg); }
-.card.locked { opacity: 0.6; cursor: not-allowed; pointer-events: none; }
+    .cards-grid {
+      display:grid; grid-template-columns:repeat(4,1fr); gap:18px;
+      perspective:1200px; margin:40px 0; padding-bottom:100px;
+    }
+    .card {
+      width:100%; height:130px; position:relative; transform-style:preserve-3d;
+      cursor:pointer; transition:all 0.6s cubic-bezier(0.175,0.885,0.32,1.275);
+      border-radius:20px; box-shadow:0 12px 40px var(--shadow);
+      border:1px solid rgba(0,255,157,0.3);
+    }
+    .card:hover {
+      transform:scale(1.12) translateY(-20px) rotate(2deg);
+      box-shadow:var(--glow-intense), 0 20px 50px rgba(0,0,0,0.9);
+      border-color:#00ff9d;
+    }
+    .card-face {
+      position:absolute; inset:0; backface-visibility:hidden; border-radius:20px;
+      display:flex; align-items:center; justify-content:center;
+      font-weight:900; font-size:15px; text-align:center; padding:16px;
+      border:1px solid var(--cube-green); box-shadow:0 0 12px rgba(0,255,136,0.4);
+      box-sizing:border-box;
+    }
+    .card-back  { background:url('https://cdn.shopify.com/s/files/1/0962/6648/6067/files/Sipcard.png?v=1765319696') center/cover; }
+    .card-front { background:url('https://i.imgur.com/8vK3s3Z.png') center/cover; color:#fff; text-shadow:2px 2px 10px #000; transform:rotateY(180deg); }
+    .card.flipped { transform:rotateY(180deg); }
+    .card.locked  { opacity:0.6; cursor:not-allowed; pointer-events:none; }
 
     .phone-modal, .final-modal {
-      position:fixed; inset:0; background:rgba(0,0,0,0.96); display:none; align-items:center; justify-content:center; z-index:999; }
+      position:fixed; inset:0; background:rgba(0,0,0,0.96); display:none;
+      align-items:center; justify-content:center; z-index:999;
+    }
     .phone-modal.active, .final-modal.active { display:flex; }
-    
     .phone-content, .final-content {
-      background:#111; padding:32px; border-radius:20px; width:90%; max-width:380px; border:3px solid var(--cube-green); text-align:center; position:relative; }
+      background:#111; padding:32px; border-radius:20px; width:90%; max-width:380px;
+      border:3px solid var(--cube-green); text-align:center; position:relative;
+      box-shadow:var(--glow-intense);
+    }
     .phone-close, .final-close { position:absolute; top:12px; right:12px; color:#888; font-size:28px; cursor:pointer; }
-
-    .phone-input {
-      width:100%; padding:18px; margin:20px 0; border:none; border-radius:14px; background:#222; color:#fff; font-size:17px; }
-    .btn-confirm {
-      background: var(--cube-green); color:#000; border:none; padding:18px; border-radius:14px; font-weight:900; font-size:19px; cursor:pointer; }
+    .phone-input { width:100%; padding:18px; margin:20px 0; border:none; border-radius:14px; background:#222; color:#fff; font-size:17px; }
+    .btn-confirm { background:var(--cube-green); color:#000; border:none; padding:18px; border-radius:14px; font-weight:900; font-size:19px; cursor:pointer; }
 
     .spinner { position:fixed; inset:0; background:rgba(0,0,0,0.98); display:none; align-items:center; justify-content:center; z-index:9999; }
     .spinner.active { display:flex; }
@@ -197,20 +129,6 @@ box-shadow: 0 0 12px rgba(0, 255, 136, 0.4);   /* soft green glow */
 
     @keyframes marquee { 0% { transform:translateX(0); } 100% { transform:translateX(-50%); } }
     @keyframes spin { to { transform:rotate(360deg); } }
-    
-  .pick-title {
-  text-align: center;
-  font-size: 32px;              /* big and bold */
-  font-weight: 900;             /* extra bold */
-  color: #fff;                  /* pure white */
-  margin: 50px 0 30px;          /* nice breathing room above and below */
-  letter-spacing: 3px;          /* premium spaced look */
-  text-transform: uppercase;
-  text-shadow: 
-    0 0 20px rgba(0, 255, 136, 0.6),
-    0 4px 10px rgba(0, 0, 0, 0.8);   /* subtle green glow + depth */
-  font-family: 'Arial Black', Impact, sans-serif; /* or any bold */
-}
   </style>
 </head>
 <body>
@@ -218,31 +136,19 @@ box-shadow: 0 0 12px rgba(0, 255, 136, 0.4);   /* soft green glow */
     <div class="title">SIP PICKER</div>
     <div class="welcome" id="welcomeMsg">Welcome <span id="username">Guest</span>, you're on <span id="hostName">no one</span>'s VIP!</div>
 
-<div class="balance">
-  <div class="item">
-    <span class="label">STRZ BALANCE:</span>
-    <span class="value"><span id="stars-count">0</span> ⭐️</span>
-  </div>
-  <div class="item">
-    <span class="label">CASH BALANCE:</span>
-    <span class="value">₦<span id="cash-count">0</span></span>
-  </div>
-</div>
+    <div class="balance">
+      <div class="item"><span class="label">STRZ BALANCE:</span><span class="value"><span id="stars-count">0</span> ⭐️</span></div>
+      <div class="item"><span class="label">CASH BALANCE:</span><span class="value">₦<span id="cash-count">0</span></span></div>
+    </div>
 
-    
-    <div class="marquee">
-  <div class="marquee-inner" id="marquee"></div>
-</div>
+    <div class="marquee"><div class="marquee-inner" id="marquee"></div></div>
 
-<!-- ADD THIS BIG BOLD CENTERED TITLE -->
-<h2 class="pick-title">PICK A CARD</h2>
-
-<div class="cards-grid" id="cards-grid"></div>
+    <h2 class="pick-title">PICK A CARD</h2>
 
     <div class="cards-grid" id="cards-grid"></div>
   </div>
 
-  <!-- PHONE MODAL -->
+  <!-- MODALS -->
   <div class="phone-modal" id="phoneModal">
     <div class="phone-content">
       <span class="phone-close" id="phoneClose">×</span>
@@ -253,7 +159,6 @@ box-shadow: 0 0 12px rgba(0, 255, 136, 0.4);   /* soft green glow */
     </div>
   </div>
 
-  <!-- FINAL MODAL -->
   <div class="final-modal" id="finalModal">
     <div class="final-content">
       <span class="final-close" id="finalClose">×</span>
@@ -262,22 +167,24 @@ box-shadow: 0 0 12px rgba(0, 255, 136, 0.4);   /* soft green glow */
     </div>
   </div>
 
-  <!-- SPINNER -->
   <div class="spinner" id="spinner"></div>
+
+  <!-- Confetti -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+  <script>
+    function fireConfetti() {
+      const duration = 4 * 1000, end = Date.now() + duration;
+      (function frame() {
+        confetti({ particleCount: 7, angle: 60, spread: 55, origin: { x: 0 }, colors: ['#00ff9d','#39ff14','#ffffff'] });
+        confetti({ particleCount: 7, angle: 120, spread: 55, origin: { x: 1 }, colors: ['#00ff9d','#39ff14','#ffffff'] });
+        if (Date.now() < end) requestAnimationFrame(frame);
+      }());
+    }
+  </script>
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import { 
-    getFirestore, 
-    doc, 
-    getDoc, 
-    onSnapshot, 
-    runTransaction, 
-    serverTimestamp, 
-    updateDoc, 
-    collection,
-    addDoc 
-  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  import { getFirestore, doc, getDoc, onSnapshot, runTransaction, serverTimestamp, updateDoc, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
   const app = initializeApp({
     apiKey: "AIzaSyD_GjkTox5tum9o4AupO0LeWzjTocJg8RI",
@@ -290,215 +197,131 @@ box-shadow: 0 0 12px rgba(0, 255, 136, 0.4);   /* soft green glow */
   const db = getFirestore(app);
 
   let currentUser = null;
-  const COST = 100; // ← Change this number anytime to adjust cost
+  const COST = 100;
 
-  const drinks = [
-    "Hennessy Paradise","Cîroc Coconut","Don Julio 1942","Moët Ice","Ace of Spades",
-    "Jack Daniel’s","Martell Blue Swift","Remy Martin XO","Grey Goose","Patrón Silver",
-    "Casamigos Blanco","1800 Coconut","D’ussé VSOP","Belvedere","Cristal",
-    "Dom Pérignon","Johnnie Walker Blue","Macallan 18","Heineken","Guinness","Red Bull",
-    "Tequila Rose","Blue Nun","Veuve Clicquot"
-  ];
-
+  const drinks = ["Hennessy Paradise","Cîroc Coconut","Don Julio 1942","Moët Ice","Ace of Spades","Jack Daniel’s","Martell Blue Swift","Remy Martin XO","Grey Goose","Patrón Silver","Casamigos Blanco","1800 Coconut","D’ussé VSOP","Belvedere","Cristal","Dom Pérignon","Johnnie Walker Blue","Macallan 18","Heineken","Guinness","Red Bull","Tequila Rose","Blue Nun","Veuve Clicquot"];
   const CARD_BACK = "https://cdn.shopify.com/s/files/1/0962/6648/6067/files/Sipcard.png?v=1765319696";
-  const CARD_FRONT = "https://i.imgur.com/YOUR-FRONT-CARD.png"; // ← Replace with your front card
+  const CARD_FRONT = "https://i.imgur.com/8vK3s3Z.png";  // PIMPED REVEAL CARD
 
   const DOM = {
-    username: document.getElementById('username'),
-    hostName: document.getElementById('hostName'),
-    stars: document.getElementById('stars-count'),
-    cash: document.getElementById('cash-count'),
-    cardsGrid: document.getElementById('cards-grid'),
-    marquee: document.getElementById('marquee'),
-    phoneModal: document.getElementById('phoneModal'),
-    phoneInput: document.getElementById('phoneInput'),
-    phoneConfirm: document.getElementById('phoneConfirm'),
-    phoneClose: document.getElementById('phoneClose'),
-    finalModal: document.getElementById('finalModal'),
-    finalMessage: document.getElementById('finalMessage'),
-    finalClose: document.getElementById('finalClose'),
-    spinner: document.getElementById('spinner')
+    username: document.getElementById('username'), hostName: document.getElementById('hostName'),
+    stars: document.getElementById('stars-count'), cash: document.getElementById('cash-count'),
+    cardsGrid: document.getElementById('cards-grid'), marquee: document.getElementById('marquee'),
+    phoneModal: document.getElementById('phoneModal'), phoneInput: document.getElementById('phoneInput'),
+    phoneConfirm: document.getElementById('phoneConfirm'), phoneClose: document.getElementById('phoneClose'),
+    finalModal: document.getElementById('finalModal'), finalMessage: document.getElementById('finalMessage'),
+    finalClose: document.getElementById('finalClose'), spinner: document.getElementById('spinner')
   };
 
   const showSpinner = () => DOM.spinner.classList.add('active');
   const hideSpinner = () => DOM.spinner.classList.remove('active');
+  const finalModal = (msg) => { DOM.finalMessage.textContent = msg; DOM.finalModal.classList.add('active'); };
 
-  const emailToDocId = (email) => {
-    if (!email?.includes('@')) return null;
-    const [local, domain] = email.toLowerCase().split('@');
-    return `${local}_${domain.replace(/\./g, '_')}`;
-  };
+  const emailToDocId = (email) => email?.includes('@') ? `${email.toLowerCase().split('@')[0]}_${email.split('@')[1].replace(/\./g,'_')}` : null;
 
   const loadCurrentUser = async () => {
     showSpinner();
     try {
       const stored = JSON.parse(localStorage.getItem('vipUser') || localStorage.getItem('hostUser') || '{}');
-      if (!stored?.email) return;
-
+      if (!stored?.email) return hideSpinner();
       const uid = emailToDocId(stored.email);
-      if (!uid) return;
+      if (!uid) return hideSpinner();
 
       const userRef = doc(db, 'users', uid);
       const snap = await getDoc(userRef);
-
       if (!snap.exists()) {
-        currentUser = { uid, stars: 0, cash: 0, email: stored.email };
+        currentUser = { uid, stars:0, cash:0, email:stored.email };
         DOM.username.textContent = stored.email.split('@')[0];
-        hideSpinner();
-        return;
+        return hideSpinner();
       }
-
       const data = snap.data();
-      currentUser = { uid, ...data, email: stored.email };
-
+      currentUser = { uid, ...data, email:stored.email };
       DOM.username.textContent = currentUser.chatId || stored.email.split('@')[0];
-      const host = currentUser.hostName || currentUser.invitedBy || 'someone';
-      DOM.hostName.textContent = host.startsWith('@') ? host : `${host}`;
+      DOM.hostName.textContent = (currentUser.hostName || currentUser.invitedBy || 'someone').replace(/^@/, '');
+      DOM.stars.textContent = (currentUser.stars||0).toLocaleString();
+      DOM.cash.textContent = (currentUser.cash||0).toLocaleString();
 
-      DOM.stars.textContent = (currentUser.stars || 0).toLocaleString();
-      DOM.cash.textContent = (currentUser.cash || 0).toLocaleString();
-
-      onSnapshot(userRef, (snap) => {
-        if (!snap.exists()) return;
-        const d = snap.data();
+      onSnapshot(userRef, s => {
+        if (!s.exists()) return;
+        const d = s.data();
         currentUser = { uid, ...d };
-        DOM.stars.textContent = (currentUser.stars || 0).toLocaleString();
-        DOM.cash.textContent = (currentUser.cash || 0).toLocaleString();
+        DOM.stars.textContent = (d.stars||0).toLocaleString();
+        DOM.cash.textContent = (d.cash||0).toLocaleString();
       });
-
-    } catch (e) {
-      console.error(e);
-    } finally {
-      hideSpinner();
-    }
+    } catch(e) { console.error(e); }
+    finally { hideSpinner(); }
   };
 
   const initMarquee = () => {
-    const inner = DOM.marquee;
-    const yourLinks = [
-      "https://cdn.shopify.com/s/files/1/0962/6648/6067/files/47.png?v=1764928903",
-      "https://cdn.shopify.com/s/files/1/0962/6648/6067/files/46.png?v=1764928904",
-      "https://cdn.shopify.com/s/files/1/0962/6648/6067/files/36.png?v=1764928903",
-      "https://cdn.shopify.com/s/files/1/0962/6648/6067/files/42.png?v=1764928903",
-      "https://cdn.shopify.com/s/files/1/0962/6648/6067/files/48.png?v=1764928903",
-      "https://cdn.shopify.com/s/files/1/0962/6648/6067/files/40.png?v=1764928903",
-    ];
-
-    yourLinks.forEach(link => {
-      const img = document.createElement('img');
-      img.src = link;
-      inner.appendChild(img);
-    });
-    inner.innerHTML += inner.innerHTML;
+    const links = ["https://cdn.shopify.com/s/files/1/0962/6648/6067/files/47.png?v=1764928903","https://cdn.shopify.com/s/files/1/0962/6648/6067/files/46.png?v=1764928904","https://cdn.shopify.com/s/files/1/0962/6648/6067/files/36.png?v=1764928903","https://cdn.shopify.com/s/files/1/0962/6648/6067/files/42.png?v=1764928903","https://cdn.shopify.com/s/files/1/0962/6648/6067/files/48.png?v=1764928903","https://cdn.shopify.com/s/files/1/0962/6648/6067/files/40.png?v=1764928903"];
+    links.forEach(l => { const i=document.createElement('img'); i.src=l; DOM.marquee.appendChild(i); });
+    DOM.marquee.innerHTML += DOM.marquee.innerHTML;
   };
 
   const initCards = () => {
-    const shuffled = [...drinks].sort(() => Math.random() - 0.5);
+    const shuffled = [...drinks].sort(()=>Math.random()-0.5);
     const numbers = Array.from({length:24},(_,i)=>i+1).sort(()=>Math.random()-0.5);
-
     DOM.cardsGrid.innerHTML = '';
-
-    shuffled.forEach((drink, i) => {
+    shuffled.forEach((drink,i) => {
       const card = document.createElement('div');
       card.className = 'card';
       card.dataset.drink = drink;
       card.dataset.number = numbers[i];
-
       card.innerHTML = `
-        <div class="card-face card-back" style="background-image:url('${CARD_BACK}')"></div>
-        <div class="card-face card-front" style="background-image:url('${CARD_FRONT}');background-size:cover;color:#fff;text-shadow:2px 2px 10px #000;">
-          ${drink}
-        </div>
+        <div class="card-face card-back"></div>
+        <div class="card-face card-front">${drink}</div>
       `;
-
       card.onclick = () => pickCard(card);
       DOM.cardsGrid.appendChild(card);
     });
   };
 
-const pickCard = (card) => {
-  if (card.classList.contains('flipped')) return;
+  const pickCard = async (card) => {
+    if (card.classList.contains('flipped')) return;
+    if (!currentUser || currentUser.stars < COST) return finalModal(`You need ${COST} Stars to pick a drink!`);
+    if (!currentUser.invitedBy && !currentUser.hostName) return finalModal("Invalid access. This account was not invited properly.");
 
-  if (!currentUser || currentUser.stars < COST) {
-    finalModal(`You need ${COST} Stars to pick a drink!`);
-    return;
-  }
+    DOM.phoneModal.classList.add('active');
+    DOM.phoneConfirm.onclick = async () => {
+      const phone = DOM.phoneInput.value.trim();
+      if (!phone || phone.length < 10) return finalModal('Please enter a valid phone number');
 
-  // FRAUD CHECK: Must be invited by someone
-  if (!currentUser.invitedBy && !currentUser.hostName) {
-    finalModal("Invalid access. This account was not invited properly.");
-    console.warn("FRAUD DETECTED:", currentUser.email);
-    return;
-  }
+      DOM.phoneModal.classList.remove('active');
+      DOM.phoneInput.value = '';
+      showSpinner();
 
-  DOM.phoneModal.classList.add('active');
+      try {
+        const uid = emailToDocId(currentUser.email);
+        const userRef = doc(db, 'users', uid);
 
-  DOM.phoneConfirm.onclick = async () => {
-    const phone = DOM.phoneInput.value.trim();
-    if (!phone || phone.length < 10) {
-      finalModal('Please enter a valid phone number');
-      return;
-    }
-
-    DOM.phoneModal.classList.remove('active');
-    DOM.phoneInput.value = '';
-    showSpinner();
-
-    try {
-      const uid = emailToDocId(currentUser.email);
-      const userRef = doc(db, 'users', uid);
-
-      // FIXED: AWAIT THE SNAPSHOT!
-      await runTransaction(db, async (t) => {
-        const snap = await t.get(userRef); // ← AWAIT HERE!
-        if (!snap.exists()) throw "User not found";
-
-        const data = snap.data();
-        if (data.stars < COST) throw "Not enough stars";
-
-        t.update(userRef, {
-          stars: data.stars - COST
+        await runTransaction(db, async (t) => {
+          const snap = await t.get(userRef);
+          if (!snap.exists() || snap.data().stars < COST) throw "Not enough stars";
+          t.update(userRef, { stars: snap.data().stars - COST });
         });
-      });
 
-      // SAVE TO drinkRequests COLLECTION
-      await addDoc(collection(db, 'drinkRequests'), {
-        userId: uid,
-        userEmail: currentUser.email,
-        username: currentUser.chatId || currentUser.email.split('@')[0],
-        invitedBy: currentUser.invitedBy || currentUser.hostName,
-        drink: card.dataset.drink,
-        phone: phone,
-        cardNumber: Number(card.dataset.number),
-        timestamp: serverTimestamp(),
-        status: 'pending',
-        delivered: false
-      });
+        await addDoc(collection(db, 'drinkRequests'), {
+          userId: uid, userEmail: currentUser.email,
+          username: currentUser.chatId || currentUser.email.split('@')[0],
+          invitedBy: currentUser.invitedBy || currentUser.hostName,
+          drink: card.dataset.drink, phone, cardNumber: Number(card.dataset.number),
+          timestamp: serverTimestamp(), status: 'pending', delivered: false
+        });
 
-      // SUCCESS!
-      card.classList.add('flipped');
-      card.classList.add('locked');
+        card.classList.add('flipped','locked');
+        DOM.finalMessage.innerHTML = `<strong>Congratulations!</strong><br><br>You picked card <strong>#${card.dataset.number}</strong><br>Drink: <strong>${card.dataset.drink}</strong><br><br>We'll deliver to:<br><strong>${phone}</strong>`;
+        DOM.finalModal.classList.add('active');
+        fireConfetti();
 
-      DOM.finalMessage.innerHTML = `
-        <strong>Congratulations!</strong><br><br>
-        You picked card <strong>#${card.dataset.number}</strong><br>
-        Drink: <strong>${card.dataset.drink}</strong><br><br>
-        We'll deliver to:<br><strong>${phone}</strong>
-      `;
-      DOM.finalModal.classList.add('active');
-
-      currentUser.stars -= COST;
-      DOM.stars.textContent = currentUser.stars.toLocaleString();
-
-    } catch (e) {
-      console.error("Order failed:", e);
-      finalModal('Failed to place order. Try again.');
-    } finally {
-      hideSpinner();
-    }
+        currentUser.stars -= COST;
+        DOM.stars.textContent = currentUser.stars.toLocaleString();
+      } catch(e) {
+        console.error(e);
+        finalModal('Failed to place order. Try again.');
+      } finally { hideSpinner(); }
+    };
   };
-};
-  
+
   DOM.phoneClose.onclick = () => DOM.phoneModal.classList.remove('active');
   DOM.finalClose.onclick = () => DOM.finalModal.classList.remove('active');
 
@@ -506,3 +329,5 @@ const pickCard = (card) => {
   initMarquee();
   initCards();
 </script>
+</body>
+</html>
