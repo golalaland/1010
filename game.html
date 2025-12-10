@@ -550,6 +550,12 @@
 // → Custom “Ripple Reward!” notification
 // → Fraud-proof & clean
 
+    // ADD THIS — fixes the error
+function formatNumber(num) {
+  if (!num || isNaN(num)) return '0';
+  return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+}
+
 // FINAL VERSION — WORKS WITH YOUR NEW invitedBy = DOC ID SYSTEM
 async function applyRewards() {
   const date = document.getElementById('reward-winners-date').value;
