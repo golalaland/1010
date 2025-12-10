@@ -498,7 +498,7 @@ const renderTabContent = (type) => {
       </div>
     `;
   }
-};
+
       
   else if (type === 'friends') {
     renderFriendsList(DOM.tabContent, currentUser.hostFriends || []);
