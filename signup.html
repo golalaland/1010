@@ -437,13 +437,12 @@ submitBtn.onclick = async () => {
   const dob = dobInput.value;
   const password = passwordInput.value.trim();
 
-  // === BASIC VALIDATION ===
   if (!fullName || !chatId || !phone || !email || !gender || !dob || !password) {
     messageEl.textContent = 'Fill all fields';
     return;
   }
   if (chatId.length < 5 || chatId.length > 15) {
-    messageEl.textContent = 'Username 5–15 chars';
+    messageEl.textContent = 'Username 5–15 characters';
     return;
   }
   if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#^])/.test(password)) {
@@ -459,41 +458,39 @@ submitBtn.onclick = async () => {
     return;
   }
 
-  spinner.style.display = 'inline-block';
-  btnText.style.display = 'none';
-  messageEl.textContent = 'Creating account...';
-  submitBtn.disabled = true;
+  submitBtn.classList.add('loading');
+  messageEl.textContent = 'Creating your empire...';
 
   const docId = sanitizeKey(email);
   const userRef = doc(db, "users", docId);
 
   try {
-    // 1. Check duplicates
-    const [docSnap, chatSnap] = await Promise.all([
+    // Check duplicates
+    const [docSnap, chatTaken] = await Promise.all([
       getDoc(userRef),
       isChatIdTaken(chatId)
     ]);
-    if (docSnap.exists() || chatSnap) {
-      throw new Error("User already exists");
+    if (docSnap.exists() || chatTaken) {
+      throw new Error("exists");
     }
 
-    // 2. Create Auth user
+    // Create Auth user
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
 
-    // 3. Resolve inviter + hiveName
+    // Resolve inviter + hiveName
     let inviterDocId = null;
-    let hiveName = 'Unassigned'; // Default filler
+    let hiveName = 'Unassigned';
     if (cleanRef) {
       inviterDocId = await getInviterDocId(cleanRef);
       if (inviterDocId) {
-        const inviterSnap = await getDoc(doc(db, 'users', inviterDocId));
-        if (inviterSnap.exists()) {
-          hiveName = inviterSnap.data().hiveName || 'Unassigned'; // Inherit inviter’s hive
+        const invSnap = await getDoc(doc(db, 'users', inviterDocId));
+        if (invSnap.exists()) {
+          hiveName = invSnap.data().hiveName || 'Unassigned';
         }
       }
     }
 
-    // 4. Get country
+    // Country
     let country = 'Unknown';
     try {
       const res = await fetch('https://ipapi.co/json/');
@@ -501,7 +498,7 @@ submitBtn.onclick = async () => {
       country = data.country_name || 'Unknown';
     } catch (e) {}
 
-    // 5. Create Firestore document
+    // FULL USER DATA — ALL FIELDS RESTORED
     const userData = {
       uid: userCredential.user.uid,
       fullName,
@@ -513,18 +510,41 @@ submitBtn.onclick = async () => {
       age: calculateAge(dob),
       gender,
       country,
+      city: "",
+      location: "",
+      bankName: "",
+      bankAccountNumber: "",
+      instagram: "",
+      tiktok: "",
+      whatsapp: "",
+      telegram: "",
+      bioPick: "",
+      naturePick: "",
+      fruitPick: "",
+      videoUrl: "",
+      popupPhoto: "",
       isVIP: !!isVIP,
       isHost: gender === 'Female' && !isVIP,
       isTrending: false,
+      isAdmin: false,
+      featuredHosts: false,
       invitedBy: inviterDocId,
       referral: rawRef || null,
-      hiveName, // NEW FIELD — inherited or Unassigned
-      hostLink: (!isVIP && gender === 'Female') 
-  ? `https://cube.xixi.com/signup?ref=${chatId}` 
-  : null,
+      hiveName, // Your hive system
+      hostLink: (!isVIP && gender === 'Female')
+        ? `https://cube.xixi.com/signup?ref=${chatId}`
+        : null,
       vipName: isVIP ? chatId : null,
+      socialShare: gender === 'Female' && !isVIP,
       stars: 50,
+      starsToday: 0,
+      starsGifted: 0,
       cash: 0,
+      points: 0,
+      gifts: 0,
+      views: 0,
+      inviteeGiftStars: 0,
+      inviteeGiftShown: false,
       vipCount: 0,
       hostFriends: [],
       usernameColor: '#' + Math.floor(Math.random() * 16777215).toString(16),
@@ -534,14 +554,12 @@ submitBtn.onclick = async () => {
 
     await setDoc(userRef, userData);
 
-    // 6. Reward inviter (fire-and-forget)
+    // Reward inviter
     if (inviterDocId) {
       const bonus = isVIP ? 100 : 50;
       await updateDoc(doc(db, "users", inviterDocId), {
         hostFriends: arrayUnion({
-          chatId,
-          fullName,
-          email,
+          chatId, fullName, email,
           isVIP: !!isVIP,
           isHost: userData.isHost,
           timestamp: serverTimestamp()
@@ -552,24 +570,22 @@ submitBtn.onclick = async () => {
       }).catch(console.warn);
     }
 
-    // SUCCESS
+    // SUCCESS — FULL REDIRECT
     messageEl.textContent = `Welcome ${fullName}! Gifted 50 stars`;
     localStorage.setItem("vipUser", JSON.stringify({ email, chatId }));
-    submitBtn.style.display = 'none';
     if (isVIP) triggerSprayConfetti();
-    setTimeout(() => location.href = "shop.html", 1500);
+
+    setTimeout(() => {
+      window.location.href = "shop.html";
+    }, 1800);
 
   } catch (err) {
-    console.error("Signup error:", err);
-    messageEl.textContent = err.message.includes("exists")
+    console.error(err);
+    messageEl.textContent = err.message?.includes("exists")
       ? "Account already exists"
-      : err.code?.includes("auth")
-      ? "Signup failed — try again"
-      : `Welcome ${fullName || chatId}!`; // Fallback success if Auth worked
-    submitBtn.disabled = false;
+      : "Signup failed — try again";
   } finally {
-    spinner.style.display = 'none';
-    btnText.style.display = 'inline';
+    submitBtn.classList.remove('loading');
   }
 };
 });
