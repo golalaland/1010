@@ -362,34 +362,25 @@ const loadCurrentUser = async () => {
       updateHostPanels();
       renderShop();
 
-      // INVITEE REWARD (when someone joins your link)
-      if ((data.invitedBy || data.hostName) && !data.inviteeGiftShown) {
-        let inviterName = data.hostName || data.invitedBy;
-        let stars = data.inviteeGiftStars || 50;
+    // INVITEE REWARD — NO @, CLEAN & PERFECT
+if (!data.inviteeGiftShown) {
+  // Use referral field — strip @ if exists
+  let inviterName = data.referral || 'a friend';
+  if (inviterName.startsWith('@')) {
+    inviterName = inviterName.slice(1);  // Remove the @
+  }
 
-        try {
-          const inviterUid = emailToDocId(data.invitedBy);
-          if (inviterUid) {
-            const invSnap = await getDoc(doc(db, 'users', inviterUid));
-            if (invSnap.exists()) {
-              const inv = invSnap.data();
-              inviterName = inv.chatId || inv.hostName || inviterName;
-              stars = inv.inviteeGiftStars || stars;
-            }
-          }
-        } catch (e) { console.warn("Inviter fetch failed:", e); }
+  const stars = data.inviteeGiftStars || 50;
 
-        showReward(
-          `You've been gifted <b>+${stars} Stars</b> for joining <b>${inviterName}</b>'s VIP Tab!`,
-          'Congratulations!'
-        );
+  showReward(
+    `You've been gifted <b>+${stars} Stars</b> for joining <b>${inviterName}</b>'s Tab!`,
+    'Welcome to the Empire!'
+  );
 
-        await updateDoc(userRef, { 
-          inviteeGiftShown: true,
-          inviteeGiftStars: stars 
-        });
-      }
-
+  await updateDoc(userRef, {
+    inviteeGiftShown: true
+  });
+}
       // INVITER REWARD (when someone joins YOUR link)
 // INVITER REWARD — NO BS, NO FAKE 200, NO CONFUSION
 const friends = Array.isArray(data.hostFriends) ? data.hostFriends : [];
