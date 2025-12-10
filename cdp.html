@@ -102,22 +102,12 @@
 
     @keyframes marquee { 0% { transform:translateX(0); } 100% { transform:translateX(-50%); } }
     @keyframes spin { to { transform:rotate(360deg); } }
-  .vip-highlight {
-    font-weight: 700;
-    font-size: 22px;
-  }
   </style>
 </head>
 <body>
   <div class="container">
     <div class="title">SIP PICKER</div>
- <div class="welcome" id="welcomeMsg">
-  Welcome 
-  <span id="username" class="vip-highlight">Guest</span>, 
-  you're on 
-  <span id="hostName" class="vip-highlight">no one</span>'s VIP!
-</div>
-
+    <div class="welcome" id="welcomeMsg">Welcome <span id="username">Guest</span>, you're on <span id="hostName">no one</span>'s VIP!</div>
 
     <div class="balance">
       <div class="item"><span class="label">STRZ BALANCE:</span> <span class="value"><span id="stars-count">0</span> ⭐️</span></div>
@@ -138,7 +128,7 @@
     <div class="phone-content">
       <span class="phone-close" id="phoneClose">×</span>
       <h2 style="color:var(--cube-green);">Enter Delivery Phone Number</h2>
-      <p style="color:#888;margin:15px 0 25px;font-size:13px;">We'll text/call this number to deliver your drink</p>
+      <p style="color:#888;margin:15px 0 25px;font-size:15px;">We'll text/call this number to deliver your drink</p>
       <input type="tel" id="phoneInput" class="phone-input" placeholder="+234 801 234 5678">
       <button class="btn-confirm" id="phoneConfirm">CONFIRM & PICK</button>
     </div>
@@ -149,14 +139,6 @@
       <span class="final-close" id="finalClose">×</span>
       <h2 style="color:var(--cube-green);">Congratulations!</h2>
       <p style="color:#fff;margin:25px 0;font-size:18px;" id="finalMessage"></p>
-    </div>
-  </div>
-
-   <div class="final-modal" id="finalModal1">
-    <div class="final-content">
-      <span class="final-close" id="finalClose">×</span>
-      <h2 style="color:var(--cube-green);"></h2>
-      <p style="color:#fff;margin:25px 0;font-size:13px;" id="finalMessage"></p>
     </div>
   </div>
 
@@ -300,13 +282,13 @@
   };
 
   const pickCard = async (card) => {
-    if (!currentUser || currentUser.stars < COST) { card.classList.remove('flipped'); return finalModal1(`You need ${COST} Stars`); }
-    if (!currentUser.invitedBy && !currentUser.hostName) { card.classList.remove('flipped'); return finalModal1("Invalid access"); }
+    if (!currentUser || currentUser.stars < COST) { card.classList.remove('flipped'); return finalModal(`You need ${COST} Stars`); }
+    if (!currentUser.invitedBy && !currentUser.hostName) { card.classList.remove('flipped'); return finalModal("Invalid access"); }
 
     DOM.phoneModal.classList.add('active');
     DOM.phoneConfirm.onclick = async () => {
       const phone = DOM.phoneInput.value.trim();
-      if (!phone || phone.length < 10) return finalModal1('Invalid phone');
+      if (!phone || phone.length < 10) return finalModal('Invalid phone');
 
       DOM.phoneModal.classList.remove('active'); DOM.phoneInput.value = ''; showSpinner();
 
@@ -329,15 +311,20 @@
         });
 
         card.classList.add('locked');
-        DOM.finalMessage.innerHTML = `<strong>Congratulations!</strong><br><br>Card #${card.dataset.number}<br>Drink: <strong>${card.dataset.drink}</strong><br><br>Delivery: <strong>${phone}</strong>`;
-        DOM.finalModal.classList.add('active');
+        DOM.finalMessage.innerHTML = `
+        <strong>Congratulations!</strong><br><br>
+        You picked card <strong>#${card.dataset.number}</strong><br>
+        Drink: <strong>${card.dataset.drink}</strong><br><br>
+        We'll deliver to:<br><strong>${phone}</strong>
+      `;
+      DOM.finalModal.classList.add('active');
         fireConfetti(); playWin();
 
         currentUser.stars -= COST;
         DOM.stars.textContent = currentUser.stars.toLocaleString();
       } catch(e) {
         card.classList.remove('flipped');
-        finalModal1('Failed. Try again.');
+        finalModal('Failed. Try again.');
       } finally { hideSpinner(); }
     };
   };
