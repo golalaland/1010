@@ -390,39 +390,31 @@ const loadCurrentUser = async () => {
         });
       }
 
-     // NEW INVITER REWARD — WORKS WITH CURRENT SIGNUP CODE
-const friends = Array.isArray(data.hostFriends) ? data.hostFriends : [];
+      // INVITER REWARD (when someone joins YOUR link)
+      const friends = Array.isArray(data.hostFriends) ? data.hostFriends : [];
+      const pending = friends.find(f => f.email && !f.giftShown);
+      if (pending) {
+        const name = pending.chatId || pending.vipName || pending.email.split('@')[0];
+        const stars = pending.giftStars || 200;
 
-// Look for any referral that hasn't been celebrated yet
-const pending = friends.find(f => 
-  f.email && 
-  f.isVIP !== undefined &&  // Must have isVIP field (from new signup)
-  !f.rewardShown             // ← We use rewardShown instead of giftShown
-);
+        showReward(
+          `You've been gifted <b>+${stars} Stars</b> — <b>${name}</b> just joined your Tab!`,
+          'Congratulations!'
+        );
 
-if (pending) {
-  const name = pending.chatId || pending.fullName || pending.email.split('@')[0];
-  const isVipReferral = !!pending.isVIP;
-  const stars = isVipReferral ? 100 : 50;  // Match your signup bonus
+        const updated = friends.map(f =>
+          f.email === pending.email ? { ...f, giftShown: true, giftStars: stars } : f
+        );
+        await updateDoc(userRef, { hostFriends: updated });
+      }
+    });
 
-  // SHOW REWARD POPUP
-  showReward(
-    `You've been gifted <b>+${stars} Stars</b> — <b>${name}</b> just joined your Tab!`,
-    'Congratulations!'
-  );
-
-  // Mark as shown — update the exact friend object
-  const updatedFriends = friends.map(f =>
-    f.email === pending.email 
-      ? { ...f, rewardShown: true }  // ← New field: rewardShown
-      : f
-  );
-
-  await updateDoc(userRef, { 
-    hostFriends: updatedFriends,
-    hostFriendsLastUpdated: serverTimestamp() 
-  });
-}
+  } catch (e) {
+    console.error('loadCurrentUser error:', e);
+  } finally {
+    hideSpinner();
+  }
+};
 /* ------------------ Host panels ------------------ */
 const updateHostPanels = () => {
   if (!currentUser?.isHost) {
