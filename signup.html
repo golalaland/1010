@@ -3,46 +3,109 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=0.85, maximum-scale=0.85, user-scalable=no">
-<title>TAPTAP VIP</title>
+<title>CUBE VIP</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
 <style>
   :root {
-    --gold: #ffea00;
-    --pink: #ff0080;
+    --primary-blue: #0a0a23;
+    --accent-cyan: #00f0ff;
+    --accent-purple: #7c3aed;
     --text: #ffffff;
-    --input-bg: rgba(15,15,35,0.55);
-    --input-border: rgba(255,234,0,0.35);
+    --input-bg: rgba(10,10,35,0.7);
+    --input-border: rgba(0,240,255,0.4);
+    --glow-cyan: rgba(0,240,255,0.5);
+    --glow-purple: rgba(124,58,237,0.5);
   }
   * { margin:0; padding:0; box-sizing:border-box; }
   body {
     min-height: 100vh;
-    background: url('https://cdn.shopify.com/s/files/1/0962/6648/6067/files/IMG_6015.jpg?v=1763341244') center/cover no-repeat fixed;
+    background: radial-gradient(circle at center, #0a0a23 0%, #000000 100%);
     font-family: 'Inter', sans-serif;
     color: var(--text);
     display: flex;
     flex-direction: column;
     align-items: center;
     padding: 2rem 1rem;
-    background-attachment: fixed;
+    position: relative;
+    overflow: hidden;
   }
-   h2 {
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: 
+      radial-gradient(circle at 20% 80%, rgba(0,240,255,0.1) 0%, transparent 50%),
+      radial-gradient(circle at 80% 20%, rgba(124,58,237,0.1) 0%, transparent 50%),
+      radial-gradient(circle at 40% 40%, rgba(0,240,255,0.05) 0%, transparent 50%);
+    animation: float 20s ease-in-out infinite;
+    z-index: -1;
+  }
+  @keyframes float {
+    0%, 100% { transform: translateY(0px) rotate(0deg); }
+    50% { transform: translateY(-20px) rotate(180deg); }
+  }
+  .cube-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: -1;
+  }
+  .cube {
+    position: absolute;
+    width: 100px;
+    height: 100px;
+    transform-style: preserve-3d;
+    animation: rotate 20s linear infinite;
+  }
+  .cube-face {
+    position: absolute;
+    width: 100px;
+    height: 100px;
+    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+    opacity: 0.1;
+    border: 1px solid var(--accent-cyan);
+  }
+  .cube .front  { transform: translateZ(50px); }
+  .cube .back   { transform: translateZ(-50px); }
+  .cube .right  { transform: rotateY(90deg) translateZ(50px); }
+  .cube .left   { transform: rotateY(-90deg) translateZ(50px); }
+  .cube .top    { transform: rotateX(90deg) translateZ(50px); }
+  .cube .bottom { transform: rotateX(-90deg) translateZ(50px); }
+  @keyframes rotate {
+    0% { transform: rotateX(0deg) rotateY(0deg); }
+    100% { transform: rotateX(360deg) rotateY(360deg); }
+  }
+  .cube:nth-child(1) { top: 20%; left: 10%; animation-delay: 0s; }
+  .cube:nth-child(2) { top: 60%; left: 80%; animation-delay: -5s; }
+  .cube:nth-child(3) { top: 80%; left: 20%; animation-delay: -10s; }
+  .cube:nth-child(4) { top: 40%; left: 70%; animation-delay: -15s; }
+  h2 {
     font-family: 'Orbitron', sans-serif;
     font-size: 4.8rem;
     font-weight: 900;
-    background: linear-gradient(90deg, #ffea00, #ff0080, #00f0ff, #ffea00);
+    background: linear-gradient(90deg, var(--accent-cyan), var(--accent-purple), var(--accent-cyan));
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
-    text-shadow: 0 0 40px rgba(255,234,0,0.6);
+    text-shadow: 0 0 40px var(--glow-cyan);
     letter-spacing: 10px;
     margin-bottom: 0.5rem;
-    animation: pulse 4s infinite;
+    animation: glitch 2s infinite;
     text-transform: uppercase;
   }
-  @keyframes pulse {
-    0%,100% { opacity: 0.95; transform: scale(1); }
-    50% { opacity: 1; transform: scale(1.04); }
+  @keyframes glitch {
+    0%, 100% { transform: translate(0); }
+    20% { transform: translate(-2px, 2px); }
+    40% { transform: translate(-2px, -2px); }
+    60% { transform: translate(2px, 2px); }
+    80% { transform: translate(2px, -2px); }
   }
   .description {
     font-size: 1.05rem;
@@ -52,6 +115,7 @@
     margin: 0 auto 2rem;
     color: rgba(255,255,255,0.9);
     font-weight: 500;
+    text-shadow: 0 0 10px rgba(0,240,255,0.2);
   }
   .form-group {
     margin: 0.85rem 0;
@@ -63,16 +127,18 @@
     border-radius: 30px;
     border: 1px solid var(--input-border);
     background: var(--input-bg);
-    backdrop-filter: blur(10px);
+    backdrop-filter: blur(20px);
     color: white;
     font-size: 0.95rem;
     text-align: center;
     transition: all 0.3s;
+    box-shadow: 0 0 10px var(--glow-cyan);
   }
   .form-group input:focus {
     outline: none;
-    border-color: var(--gold);
-    box-shadow: 0 0 15px rgba(255,234,0,0.4);
+    border-color: var(--accent-cyan);
+    box-shadow: 0 0 20px var(--glow-cyan);
+    transform: scale(1.02);
   }
   .gender-label, .dob-label {
     text-align: center;
@@ -81,8 +147,7 @@
     color: rgba(255,255,255,0.9);
     font-weight: 600;
   }
-Replace yeah?
-.gender-select {
+  .gender-select {
     display: flex;
     justify-content: center;
     gap: 22px;
@@ -99,16 +164,18 @@ Replace yeah?
     font-weight: bold;
     cursor: pointer;
     transition: all 0.3s;
+    box-shadow: 0 0 10px var(--glow-purple);
   }
   .gender-select button:hover {
-    border-color: var(--gold);
+    border-color: var(--accent-cyan);
     transform: scale(1.1);
+    box-shadow: 0 0 20px var(--glow-cyan);
   }
   .gender-select button.selected {
-    background: var(--gold);
-    color: black;
-    box-shadow: 0 0 20px rgba(255,234,0,0.6);
-    border-color: var(--gold);
+    background: var(--accent-cyan);
+    color: #0a0a23;
+    box-shadow: 0 0 20px var(--glow-cyan);
+    border-color: var(--accent-cyan);
   }
   #dob {
     width: 200px;
@@ -116,10 +183,11 @@ Replace yeah?
     border-radius: 30px;
     border: 1px solid var(--input-border);
     background: var(--input-bg);
-    backdrop-filter: blur(10px);
+    backdrop-filter: blur(20px);
     color: white;
     text-align: center;
     font-size: 0.95rem;
+    box-shadow: 0 0 10px var(--glow-purple);
   }
   #vipLabel {
     text-align: center;
@@ -128,19 +196,20 @@ Replace yeah?
     margin: 1.3rem 0 0.4rem;
     color: #ccc;
   }
-  #vipLabel.on { color: var(--gold); text-shadow: 0 0 10px var(--gold); }
+  #vipLabel.on { color: var(--accent-cyan); text-shadow: 0 0 10px var(--glow-cyan); }
   .vip-toggle {
     width: 84px; height: 40px;
-    background: #333;
+    background: #0f0f23;
     border-radius: 50px;
     position: relative;
     margin: 0 auto;
     cursor: pointer;
     border: 2px solid var(--input-border);
+    box-shadow: 0 0 10px var(--glow-purple);
   }
   .vip-circle {
     width: 36px; height: 36px;
-    background: #666;
+    background: #333;
     border-radius: 50%;
     position: absolute;
     left: 2px; top: 2px;
@@ -148,12 +217,12 @@ Replace yeah?
   }
   .vip-toggle.on .vip-circle {
     left: 44px;
-    background: var(--gold);
-    box-shadow: 0 0 15px var(--gold);
+    background: var(--accent-cyan);
+    box-shadow: 0 0 15px var(--glow-cyan);
   }
   #vipMessage {
     text-align: center;
-    color: var(--gold);
+    color: var(--accent-cyan);
     font-size: 0.88rem;
     opacity: 0;
     margin-top: 0.6rem;
@@ -165,44 +234,45 @@ Replace yeah?
     width: auto;
     border: none;
     border-radius: 50px;
-    background: linear-gradient(135deg, var(--gold), #ffd000);
-    color: black;
+    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+    color: #0a0a23;
     font-weight: bold;
     font-size: 1.05rem;
     cursor: pointer;
-    box-shadow: 0 8px 25px rgba(255,234,0,0.4);
+    box-shadow: 0 8px 25px var(--glow-cyan);
     transition: all 0.3s;
   }
   #submitBtn:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 12px 30px rgba(255,234,0,0.5);
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: 0 12px 30px var(--glow-cyan);
   }
-#fomoPopup {
-  position: fixed;
-  top: 90px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: #111;
-  color: #fff;
-  padding: 1rem 2rem; /* ← was 0.6rem 1.2rem → now much bigger */
-  border-radius: 50px; /* ← pill shape, looks premium */
-  font-size: 1.15rem; /* ← was 0.85rem → now bold & readable */
-  font-weight: 600;
-  opacity: 0;
-  transition: opacity 0.5s, transform 0.6s;
-  pointer-events: none;
-  z-index: 10000;
-  white-space: nowrap;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.6),
-              0 0 30px rgba(255,234,0,0.3); /* ← subtle gold glow */
-  border: 1px solid rgba(255,234,0,0.3);
-  min-width: 320px; /* ← forces it to be wide enough on small phones */
-  text-align: center;
-}
-#fomoPopup.show {
-  opacity: 1;
-  transform: translateX(-50%) translateY(-8px);
-}
+  #fomoPopup {
+    position: fixed;
+    top: 90px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(10,10,35,0.9);
+    color: #fff;
+    padding: 1rem 2rem;
+    border-radius: 50px;
+    font-size: 1.15rem;
+    font-weight: 600;
+    opacity: 0;
+    transition: opacity 0.5s, transform 0.6s;
+    pointer-events: none;
+    z-index: 10000;
+    white-space: nowrap;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.6),
+                0 0 30px var(--glow-cyan);
+    border: 1px solid var(--input-border);
+    min-width: 320px;
+    text-align: center;
+    backdrop-filter: blur(20px);
+  }
+  #fomoPopup.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(-8px);
+  }
   .message { text-align: center; min-height: 20px; margin: 0.5rem 0; font-size: 0.9rem; }
   footer {
     margin-top: 3rem;
@@ -213,74 +283,108 @@ Replace yeah?
     padding: 1rem 0;
   }
   footer a { color: #ccc; text-decoration: none; }
-  footer a:hover { color: var(--gold); }
+  footer a:hover { color: var(--accent-cyan); }
   .password-requirements {
-  margin-top: 12px;
-  font-size: 13.5px;
-  color: #aaa;
-  transition: all 0.3s ease;
-  opacity: 0;
-  transform: translateY(-8px);
-  pointer-events: none;
-}
-.password-requirements.visible {
-  opacity: 1;
-  transform: translateY(0);
-}
-.req-header {
-  font-weight: 600;
-  color: #fff;
-  margin-bottom: 8px;
-  font-size: 14px;
-}
-.req-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 5px 0;
-  transition: color 0.3s ease;
-}
-.req-item.met {
-  color: #4ade80 !important;
-  font-weight: 500;
-}
-.req-item .checkmark {
-  width: 16px;
-  height: 16px;
-  border: 2px solid #555;
-  border-radius: 50%;
-  position: relative;
-  flex-shrink: 0;
-  transition: all 0.3s ease;
-}
-.req-item.met .checkmark {
-  background: #4ade80;
-  border-color: #4ade80;
-  box-shadow: 0 0 12px rgba(74, 222, 128, 0.5);
-}
-.req-item.met .checkmark::after {
-  content: '✓';
-  position: absolute;
-  color: #000;
-  font-weight: bold;
-  font-size: 11px;
-  top: 49%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-}
-/* Glow effect when all are met */
-.password-requirements.all-met .req-header {
-  color: #4ade80;
-  text-shadow: 0 0 10px rgba(74, 222, 128, 0.6);
-}
+    margin-top: 12px;
+    font-size: 13.5px;
+    color: #aaa;
+    transition: all 0.3s ease;
+    opacity: 0;
+    transform: translateY(-8px);
+    pointer-events: none;
+  }
+  .password-requirements.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .req-header {
+    font-weight: 600;
+    color: #fff;
+    margin-bottom: 8px;
+    font-size: 14px;
+  }
+  .req-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 5px 0;
+    transition: color 0.3s ease;
+  }
+  .req-item.met {
+    color: var(--accent-cyan) !important;
+    font-weight: 500;
+  }
+  .req-item .checkmark {
+    width: 16px;
+    height: 16px;
+    border: 2px solid #555;
+    border-radius: 50%;
+    position: relative;
+    flex-shrink: 0;
+    transition: all 0.3s ease;
+  }
+  .req-item.met .checkmark {
+    background: var(--accent-cyan);
+    border-color: var(--accent-cyan);
+    box-shadow: 0 0 12px var(--glow-cyan);
+  }
+  .req-item.met .checkmark::after {
+    content: '✓';
+    position: absolute;
+    color: #0a0a23;
+    font-weight: bold;
+    font-size: 11px;
+    top: 49%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+  /* Glow effect when all are met */
+  .password-requirements.all-met .req-header {
+    color: var(--accent-cyan);
+    text-shadow: 0 0 10px var(--glow-cyan);
+  }
 </style>
 </head>
 <body>
-<div id="fomoPopup">Someone just joined VIP!</div>
-<h2>$STRZ</h2>
+<div class="cube-container">
+  <div class="cube">
+    <div class="cube-face front"></div>
+    <div class="cube-face back"></div>
+    <div class="cube-face right"></div>
+    <div class="cube-face left"></div>
+    <div class="cube-face top"></div>
+    <div class="cube-face bottom"></div>
+  </div>
+  <div class="cube">
+    <div class="cube-face front"></div>
+    <div class="cube-face back"></div>
+    <div class="cube-face right"></div>
+    <div class="cube-face left"></div>
+    <div class="cube-face top"></div>
+    <div class="cube-face bottom"></div>
+  </div>
+  <div class="cube">
+    <div class="cube-face front"></div>
+    <div class="cube-face back"></div>
+    <div class="cube-face right"></div>
+    <div class="cube-face left"></div>
+    <div class="cube-face top"></div>
+    <div class="cube-face bottom"></div>
+  </div>
+  <div class="cube">
+    <div class="cube-face front"></div>
+    <div class="cube-face back"></div>
+    <div class="cube-face right"></div>
+    <div class="cube-face left"></div>
+    <div class="cube-face top"></div>
+    <div class="cube-face bottom"></div>
+  </div>
+</div>
+<div id="fomoPopup">Someone just joined the Cube!</div>
+<h2>CUBE</h2>
 <div class="description">
-  Exclusive access to the hottest nights, private chats, premium hosts & VIP tables.<br>
-  Join the inner circle — where the real ones move.
+  Dive into the digital frontier: exclusive streams, immersive chats, premium creators & VIP lounges.<br>
+  Enter the cube — where vibes align in infinite dimensions.
 </div>
 <div class="form-group"><input id="name" type="text" placeholder="Full Name"></div>
 <div class="form-group"><input id="chatId" type="text" placeholder="Choose Chat Name"></div>
@@ -311,15 +415,15 @@ Replace yeah?
 <input id="dob" type="date" max="">
 <div id="vipLabel">VIP</div>
 <div class="vip-toggle" id="vipToggle"><div class="vip-circle"></div></div>
-<div id="vipMessage">You're in VIP zone, way to go!</div>
+<div id="vipMessage">You're in the Cube VIP dimension!</div>
 <button id="submitBtn">
-  <span class="btn-text">Sign Up</span>
+  <span class="btn-text">Enter Cube</span>
   <span class="spinner" id="spinner"></span>
 </button>
 <div class="message" id="message"></div>
 <footer id="footer">
-  <div>©5786 ገብር ነፍስህ (Own Your Vibe)</div>
-  <div>自分の雰囲気を自分のものにしよう • 자신의 분위기를 내 것으로 만들자</div>
+  <div>©2025 xixi.live (GO LIVE. OWN YOUR VIBE.)</div>
+  <div>Enter the infinite • Dimensions await</div>
   <div>3-1-1 Nihonbashi, Chuo-ku, Tokyo, Japan</div>
   <div style="margin-top:8px;">
     <a href="privacy.html">Privacy Policy</a> •
