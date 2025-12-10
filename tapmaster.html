@@ -696,6 +696,26 @@ bar + footer */
   70% { transform:translate(-50%,-50%) scale(1.05); }
   100% { transform:translate(-50%,-50%) scale(1); opacity:1; }
 }
+  
+/* Hide/show the action bar WITHOUT using an ID – 100% safe for your modals */
+div[style*="max-width:320px"][style*="border-radius:24px"] {
+  position: relative;                           /* keeps modal centering working */
+  transition: opacity 0.35s ease, transform 0.35s ease;
+  pointer-events: auto;
+}
+
+/* Hide during gameplay */
+body.game-mode div[style*="max-width:320px"][style*="border-radius:24px"] {
+  opacity: 0;
+  transform: translateY(50px);
+  pointer-events: none;
+}
+
+/* Show on start screen */
+body.start-mode div[style*="max-width:320px"][style*="border-radius:24px"] {
+  opacity: 1;
+  transform: translateY(0);
+}
 </style>
 </head>
 </body>
@@ -854,13 +874,17 @@ bar + footer */
       </div>
     </div>
 
- <!-- Tiny Action Bar – ONLY add id="tinyActionBar" – everything else 100% untouched -->
-<div id="tinyActionBar" style="display:flex;justify-content:center;gap:18px;padding:10px 18px;background:rgba(255,255,255,0.09);border-radius:24px;border:1px solid rgba(255,255,255,0.14);backdrop-filter:blur(16px);width:88%;max-width:320px;margin:0 auto;box-shadow:0 -8px 30px rgba(0,0,0,0.6);">
-  <button id="leaderboardBtn" class="tiny-action-btn" data-title="Leaderboard">Trophy</button>
-  <button id="rulesBtn"       class="tiny-action-btn" data-title="Game Rules">Clipboard</button>
-  <button id="bidBtn"         class="tiny-action-btn" data-title="Place Bid">Flag</button>
-  <button id="starMarketBtn"  class="tiny-action-btn" data-title="Star Market">Store</button>
+<!-- Tiny Action Bar (Leaderboard + Rules + Bid + STORE) -->
+    <div style="display:flex;justify-content:center;gap:18px;padding:10px 18px;background:rgba(255,255,255,0.09);border-radius:24px;border:1px solid rgba(255,255,255,0.14);backdrop-filter:blur(16px);width:88%;max-width:320px;margin:0 auto;box-shadow:0 -8px 30px rgba(0,0,0,0.6);">
+      <button id="leaderboardBtn" class="tiny-action-btn" data-title="Leaderboard">🏆</button>
+      <button id="rulesBtn"        class="tiny-action-btn" data-title="Game Rules">📋</button>
+      <button id="bidBtn"          class="tiny-action-btn" data-title="Place Bid">🏁</button>
+      <button id="starMarketBtn"   class="tiny-action-btn" data-title="Star Market">🏪</button>
+    </div>
+
+  </div>
 </div>
+
 
 
 
