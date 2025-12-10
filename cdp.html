@@ -63,26 +63,57 @@
     }
 
     .cards-grid {
-      display:grid; grid-template-columns:repeat(4,1fr); gap:18px;
-      perspective:1200px; padding-bottom:80px;
-    }
-    .card {
-      width:100%; height:130px; position:relative; transform-style:preserve-3d;
-      cursor:pointer; border-radius:20px; box-shadow:0 12px 40px var(--shadow);
-      border:1px solid var(--cube-green); transition:transform 0.8s cubic-bezier(0.175,0.885,0.32,1.275);
-    }
-    .card:hover { transform:scale(1.07) translateY(-12px); }
-    .card-face {
-      position:absolute; inset:0; backface-visibility:hidden; border-radius:20px;
-      display:flex; align-items:center; justify-content:center;
-      font-weight:900; font-size:15px; padding:16px; text-align:center;
-      border:1px solid var(--cube-green); box-shadow:0 0 12px rgba(0,255,136,0.4);
-    }
-    .card-back  { background:url('https://cdn.shopify.com/s/files/1/0962/6648/6067/files/Sipcard.png?v=1765319696') center/cover; }
-    .card-front { background:url('https://cdn.shopify.com/s/files/1/0962/6648/6067/files/Beige_Minimal_Romantic_Love_Questions_Card_Game_Document_2.png?v=1765346043') center/cover; color:#fff; text-shadow:2px 2px 10px #000; transform:rotateY(180deg); }
-    .card.flipped { transform:rotateY(180deg); }
-    .card.locked  { opacity:0.6; cursor:not-allowed; pointer-events:none; }
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 18px;
+  perspective: 1200px;
+  padding-bottom: 80px;
+}
 
+.card {
+  /* Remove fixed height → let aspect-ratio control it */
+  aspect-ratio: 1 / 1;           /* ← THIS is the key line */
+  position: relative;
+  transform-style: preserve-3d;
+  cursor: pointer;
+  border-radius: 20px;
+  box-shadow: 0 12px 40px var(--shadow);
+  border: 1px solid var(--cube-green);
+  transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.card:hover {
+  transform: scale(1.07) translateY(-12px);
+}
+
+.card-face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  font-size: 15px;
+  padding: 16px;
+  text-align: center;
+  border: 1px solid var(--cube-green);
+  box-shadow: 0 0 20px rgba(0, 255, 136, 0.5);   /* slightly stronger glow if you want */
+  background-size: cover;
+  background-position: center;
+}
+
+.card-back {
+  background-image: url('https://cdn.shopify.com/s/files/1/0962/6648/6067/files/Sipcard.png?v=1765319696');
+}
+
+.card-front {
+  background-image: url('https://cdn.shopify.com/s/files/1/0962/6648/6067/files/Beige_Minimal_Romantic_Love_Questions_Card_Game_Document_2.png?v=1765346043');
+  color: #fff;
+  text-shadow: 2px 2px 10px #000;
+  transform: rotateY(180deg);
+}
     .phone-modal, .final-modal {
       position:fixed; inset:0; background:rgba(0,0,0,0.96); display:none;
       align-items:center; justify-content:center; z-index:999;
@@ -135,7 +166,7 @@
 
 <p class="vip-tease">
   You’ve joined <span id="hostName">her</span> to party — pick your drink and get ready for more action,<br class="mobile-br">
-  the night just got real expensive.
+  the party's just got real interesting.
 </p>
 
 <div class="table-wrapper">
