@@ -539,6 +539,7 @@ submitBtn.onclick = async () => {
       stars: 50,
       starsToday: 0,
       starsGifted: 0,
+      lastStarDate: new Date().toISOString().split("T")[0],
       cash: 0,
       points: 0,
       gifts: 0,
@@ -554,16 +555,17 @@ submitBtn.onclick = async () => {
 
     await setDoc(userRef, userData);
 
-    // Reward inviter
+    // Reward inviter (FIXED: timestamp in top-level field)
     if (inviterDocId) {
       const bonus = isVIP ? 100 : 50;
       await updateDoc(doc(db, "users", inviterDocId), {
         hostFriends: arrayUnion({
           chatId, fullName, email,
           isVIP: !!isVIP,
-          isHost: userData.isHost,
-          timestamp: serverTimestamp()
+          isHost: userData.isHost
+          // No timestamp here — valid arrayUnion
         }),
+        hostFriendsLastUpdated: serverTimestamp(), // Timestamp in top-level field
         stars: increment(bonus),
         starsGifted: increment(bonus),
         vipCount: isVIP ? increment(1) : increment(0)
@@ -576,7 +578,7 @@ submitBtn.onclick = async () => {
     if (isVIP) triggerSprayConfetti();
 
     setTimeout(() => {
-      window.location.href = "shop.html";
+      window.location.href = "shop.html"; // Guaranteed redirect
     }, 1800);
 
   } catch (err) {
