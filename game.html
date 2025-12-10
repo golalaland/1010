@@ -550,22 +550,25 @@
 // → Custom “Ripple Reward!” notification
 // → Fraud-proof & clean
 
+// FINAL VERSION — WORKS WITH YOUR NEW invitedBy = DOC ID SYSTEM
 async function applyRewards() {
   const date = document.getElementById('reward-winners-date').value;
+  if (!date) return dopeAlert('Select a date', 'Error', 'Warning');
+
   const winnersRef = doc(db, 'winners', date);
   const snap = await getDoc(winnersRef);
   if (!snap.exists()) return dopeAlert('No winners for this date', 'Error', 'Warning');
 
   const winnersDoc = snap.data();
-  const winners = winnersDoc.winners;
-  const isBidRoyale = winnersDoc.type === "bid" || winnersDoc.type === "bid_royale" || date.includes("bid_");
+  const winners = winnersDoc.winners || [];
+  const isBidRoyale = winnersDoc.type?.includes("bid") || date.includes("bid_");
 
-  // Apply reward rules
+  // === APPLY RANK RULES ===
   const rules = Array.from(document.querySelectorAll('#reward-rules > div')).map(div => ({
-    start: parseInt(div.querySelector('.rule-start').value),
-    end: parseInt(div.querySelector('.rule-end').value),
-    cash: parseInt(div.querySelector('.rule-cash').value),
-    stars: parseInt(div.querySelector('.rule-stars').value)
+    start: parseInt(div.querySelector('.rule-start').value) || 1,
+    end: parseInt(div.querySelector('.rule-end').value) || 100,
+    cash: parseInt(div.querySelector('.rule-cash').value) || 0,
+    stars: parseInt(div.querySelector('.rule-stars').value) || 0
   }));
 
   winners.forEach(w => {
@@ -575,113 +578,38 @@ async function applyRewards() {
         break;
       }
     }
+    if (!w.rewards) w.rewards = { cash: 0, stars: 0 };
   });
 
   await updateDoc(winnersRef, { winners });
 
-  // PROCESS EACH WINNER
+  // === PROCESS EACH WINNER + RIPPLE ===
   for (let w of winners) {
-    if (w.rewards.cash <= 0 && w.rewards.stars <= 0) continue;
+    const { cash: directCash = 0, stars: directStars = 0 } = w.rewards;
+    if (directCash + directStars === 0) continue;
 
     const winnerRef = doc(db, 'users', w.uid);
     const winnerSnap = await getDoc(winnerRef);
     if (!winnerSnap.exists()) continue;
     const winnerData = winnerSnap.data();
 
-    const directCash = w.rewards.cash;
-    const directStars = w.rewards.stars;
-
-    // === RIPPLE REWARDS — invitedBy now stores DOC ID directly ===
-    if (winnerData.invitedBy) {
-      const inviterUid = winnerData.invitedBy; // direct docId
-      const inviterRef = doc(db, 'users', inviterUid);
-
-      // LEVEL 1
-      const l1Cash = Math.floor(directCash * 0.10);
-      const l1Stars = Math.floor(directStars * 0.05);
-
-      await runTransaction(db, async t => {
-        const invSnap = await t.get(inviterRef);
-        if (invSnap.exists()) {
-          const inv = invSnap.data();
-          t.update(inviterRef, {
-            cash: (inv.cash || 0) + l1Cash,
-            stars: (inv.stars || 0) + l1Stars
-          });
-        }
-      });
-
-      await addDoc(collection(db, "notifications"), {
-        recipientId: inviterUid,
-        title: "Ripple Reward!",
-        message: `Your downline just won ₦${formatNumber(directCash)}!\nYou earned +₦${formatNumber(l1Cash)} + ${formatNumber(l1Stars)} stars`,
-        type: "ripple_level1",
-        fromUser: w.uid,
-        amountCash: l1Cash,
-        amountStars: l1Stars,
-        createdAt: serverTimestamp(),
-        read: false
-      });
-
-      // LEVEL 2 — inviter’s inviter
-      const inviterSnap = await getDoc(inviterRef);
-      if (inviterSnap.exists() && inviterSnap.data().invitedBy) {
-        const grandUid = inviterSnap.data().invitedBy; // direct docId
-        const grandRef = doc(db, 'users', grandUid);
-
-        const l2Cash = Math.floor(directCash * 0.05);
-        const l2Stars = Math.floor(directStars * 0.02);
-
-        await runTransaction(db, async t => {
-          const gSnap = await t.get(grandRef);
-          if (gSnap.exists()) {
-            const g = gSnap.data();
-            t.update(grandRef, {
-              cash: (g.cash || 0) + l2Cash,
-              stars: (g.stars || 0) + l2Stars
-            });
-          }
-        });
-
-        await addDoc(collection(db, "notifications"), {
-          recipientId: grandUid,
-          title: "Ripple Reward!",
-          message: `Your downline won ₦${formatNumber(directCash)}!\nYou earned +₦${formatNumber(l2Cash)} + ${formatNumber(l2Stars)} stars`,
-          type: "ripple_level2",
-          fromUser: w.uid,
-          amountCash: l2Cash,
-          amountStars: l2Stars,
-          createdAt: serverTimestamp(),
-          read: false
-        });
-      }
-    }
-
-    // === PAY THE WINNER ===
-    await runTransaction(db, async t => {
-      const uSnap = await t.get(winnerRef);
-      const u = uSnap.data();
+    // PAY WINNER
+    await runTransaction(db, async (t) => {
+      const snap = await t.get(winnerRef);
+      const u = snap.data();
       t.update(winnerRef, {
         cash: (u.cash || 0) + directCash,
         stars: (u.stars || 0) + directStars
       });
     });
 
-    // === WINNER NOTIFICATION ===
+    // WINNER NOTIFICATION
     const rewardText = [];
-    if (directCash > 0) rewardText.push(`₦${formatNumber(directCash)} cash`);
+    if (directCash > 0) rewardText.push(`₦${formatNumber(directCash)}`);
     if (directStars > 0) rewardText.push(`${formatNumber(directStars)} stars`);
-
-    const rankText =
-      w.rank === 1 ? "CHAMPION!" :
-      w.rank === 2 ? "2ND — WARRIOR!" :
-      w.rank === 3 ? "3RD — LEGEND!" :
-      `TOP ${w.rank}`;
-
+    const rankText = w.rank === 1 ? "CHAMPION!" : w.rank === 2 ? "2ND — WARRIOR!" : w.rank === 3 ? "3RD — LEGEND!" : `TOP ${w.rank}`;
     const title = isBidRoyale ? "BID ROYALE VICTORY!" : "TapMaster Winner!";
-    const message = isBidRoyale
-      ? `${rankText}\nYou crushed the arena and won ${rewardText.join(" + ")}`
-      : `You placed #${w.rank}!\nYou won ${rewardText.join(" + ")}`;
+    const message = `${rankText}\nYou won ${rewardText.join(' + ')}`;
 
     await addDoc(collection(db, "notifications"), {
       recipientId: w.uid,
@@ -694,11 +622,54 @@ async function applyRewards() {
       createdAt: serverTimestamp(),
       read: false
     });
+
+    // RIPPLE REWARDS — NOW WORKS WITH invitedBy = DOC ID
+    let currentUid = winnerData.invitedBy;  // ← THIS IS NOW THE REAL DOC ID!
+    let level = 1;
+
+    while (currentUid && level <= 2) {
+      const uplineRef = doc(db, 'users', currentUid);
+      const uplineSnap = await getDoc(uplineRef);
+      if (!uplineSnap.exists()) break;
+
+      const uplineData = uplineSnap.data();
+
+      const cashPercent = level === 1 ? 0.10 : 0.05;
+      const starsPercent = level === 1 ? 0.05 : 0.02;
+
+      const rippleCash = Math.floor(directCash * cashPercent);
+      const rippleStars = Math.floor(directStars * starsPercent);
+
+      if (rippleCash + rippleStars > 0) {
+        await runTransaction(db, async (t) => {
+          const snap = await t.get(uplineRef);
+          const u = snap.data();
+          t.update(uplineRef, {
+            cash: (u.cash || 0) + rippleCash,
+            stars: (u.stars || 0) + rippleStars
+          });
+        });
+
+        await addDoc(collection(db, "notifications"), {
+          recipientId: currentUid,
+          title: "Ripple Reward!",
+          message: `Your downline won ₦${formatNumber(directCash)}!\nYou earned +₦${formatNumber(rippleCash)} + ${formatNumber(rippleStars)} stars`,
+          type: `ripple_level${level}`,
+          fromUser: w.uid,
+          amountCash: rippleCash,
+          amountStars: rippleStars,
+          createdAt: serverTimestamp(),
+          read: false
+        });
+      }
+
+      currentUid = uplineData.invitedBy;  // Go up one level
+      level++;
+    }
   }
 
-  dopeAlert("REWARDS + RIPPLE SENT TO EVERYONE!", "EMPIRE PAID", "Crown", 8000);
+  dopeAlert("EMPIRE PAID — REWARDS + RIPPLE SENT!", "SUCCESS", "Crown", 8000);
 }
-
     async function loadConfigs() {
       const configRef = doc(db, 'configs', 'game');
       const snap = await getDoc(configRef);
