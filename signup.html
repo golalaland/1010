@@ -546,7 +546,6 @@ submitBtn.onclick = async () => {
       views: 0,
       inviteeGiftStars: 0,
       inviteeGiftShown: false,
-      vipCount: 0,
       hostFriends: [],
       usernameColor: '#' + Math.floor(Math.random() * 16777215).toString(16),
       createdAt: serverTimestamp(),
@@ -578,7 +577,7 @@ if (inviterDocId) {
 
     // Optional clean stats (safe to keep)
     referralCount: increment(1),
-    vipReferralCount: isVIP ? increment(1) : increment(0),
+    vipCount: isVIP ? increment(1) : increment(0),
     hostReferralCount: !isVIP ? increment(1) : increment(0)
   }).catch(err => {
     console.warn("Failed to update inviter:", err);
