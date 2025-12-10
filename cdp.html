@@ -340,7 +340,7 @@
     DOM.phoneModal.classList.add('active');
     DOM.phoneConfirm.onclick = async () => {
       const phone = DOM.phoneInput.value.trim();
-      if (!phone || phone.length < 10) return finalModal('Invalid phone');
+      if (!phone || phone.length < 10) return finalModal1('Invalid phone');
 
       DOM.phoneModal.classList.remove('active'); DOM.phoneInput.value = ''; showSpinner();
 
@@ -364,7 +364,7 @@
 
         card.classList.add('locked');
         DOM.finalMessage.innerHTML = `
-        <strong>Congratulations!</strong><br><br>
+
         You picked card <strong>#${card.dataset.number}</strong><br>
         Drink: <strong>${card.dataset.drink}</strong><br><br>
         We'll deliver to:<br><strong>${phone}</strong>
