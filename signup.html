@@ -555,26 +555,34 @@ submitBtn.onclick = async () => {
 
     await setDoc(userRef, userData);
 
-  // REWARD INVITER — CLEAN & ACCURATE (KEEPS isVIP EXACTLY AS BEFORE)
+// REWARD INVITER — 100% SAFE & WORKING (NO serverTimestamp() in arrayUnion)
 if (inviterDocId) {
-  const bonusStars = isVIP ? 100 : 50;  // Your original logic
+  const bonusStars = isVIP ? 100 : 50;
 
   await updateDoc(doc(db, "users", inviterDocId), {
+    // CLEAN ARRAY — NO serverTimestamp() inside!
     hostFriends: arrayUnion({
       chatId,
       fullName,
       email,
       phone,
-      isVIP: !!isVIP,  // ← EXACTLY LIKE YOUR OLD CODE (keeps compatibility)
-      isHost: userData.isHost,
-      joinedAt: serverTimestamp()  // Clean timestamp
+      isVIP: !!isVIP,           // ← Keeps your old code working perfectly
+      isHost: !isVIP && gender === 'Female',
+      joinedAt: Date.now()      // ← Use client timestamp (safe)
     }),
-    hostFriendsLastUpdated: serverTimestamp(),  // Top-level timestamp
+
+    // These are top-level → serverTimestamp() is allowed
+    hostFriendsLastUpdated: serverTimestamp(),
+
     stars: increment(bonusStars),
-    referralCount: increment(1),  // Bonus: Total referrals
-    vipReferralCount: isVIP ? increment(1) : increment(0),  // Bonus: VIP count
-    hostReferralCount: !isVIP ? increment(1) : increment(0)  // Bonus: Host count
-  }).catch(console.warn);
+
+    // Optional clean stats (safe to keep)
+    referralCount: increment(1),
+    vipReferralCount: isVIP ? increment(1) : increment(0),
+    hostReferralCount: !isVIP ? increment(1) : increment(0)
+  }).catch(err => {
+    console.warn("Failed to update inviter:", err);
+  });
 }
 
     // SUCCESS — FULL REDIRECT
