@@ -7,7 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Poppins:wght@300;500;700&display=swap" rel="stylesheet">
 <style>
   :root {
-    --neon: #00ff88;
+    --neon: #00ff88;          /* main CUBE green */
     --neon-dark: #00cc70;
     --deep: #000a05;
     --glow: rgba(0, 255, 136, 0.6);
@@ -28,7 +28,6 @@
     overflow-x: hidden;
   }
 
-  /* Video / poster background – drop your own file here */
   .hero-video {
     position: fixed;
     top: 0; left: 0;
@@ -46,7 +45,6 @@
     z-index: -2;
   }
 
-  /* Neon particles */
   .particles {
     position: fixed;
     top: 0; left: 0;
@@ -141,7 +139,6 @@
     transition: all 0.4s;
     box-shadow: 0 0 20px var(--glow);
   }
- 1}
   .gender-select button:hover,
   .gender-select button.selected {
     background: var(--neon);
@@ -151,7 +148,7 @@
   }
 
   #dob {
-    width:  width: 220px;
+    width: 220px;
     padding: 1rem;
     border-radius: 50px;
     border: 1px solid var(--input-border);
@@ -164,7 +161,7 @@
 
   .vip-toggle {
     width: 90px; height: 46px;
-    background: #001a0a;
+    background: var(--deep);
     border-radius: 50px;
     position: relative;
     margin: 1.5rem auto;
@@ -247,7 +244,6 @@
 </head>
 <body>
 
-  <!-- Replace with your own video / fallback poster -->
   <video class="hero-video" autoplay muted loop playsinline poster="https://cube.xixi.live/poster.jpg">
     <source src="https://cube.xixi.live/promo.mp4" type="video/mp4">
   </video>
@@ -273,16 +269,16 @@
   <div class="form-group"><input type="email" placeholder="Email Address" id="email"></div>
   <div class="form-group"><input type="password" placeholder="Create Password (min 6 chars)" id="password"></div>
 
-  <div class="gender-label">Select Your Gender</div>
+  <div class="gender-label" style="text-align:center;margin:1.5rem 0;color:#88ffcc;">Select Your Gender</div>
   <div class="gender-select">
     <button id="femaleBtn">F</button>
     <button id="maleBtn">M</button>
   </div>
 
-  <div class="dob-label">Select Your Birth Date</div>
+  <div class="dob-label" style="text-align:center;color:#88ffcc;margin:1rem 0;">Select Your Birth Date</div>
   <input type="date" id="dob" max="">
 
-  <div id="vipLabel">VIP</div>
+  <div id="vipLabel" style="text-align:center;color:#88ffcc;margin:2rem 0 0.5rem;">VIP Access</div>
   <div class="vip-toggle" id="vipToggle"><div class="vip-circle"></div></div>
   <div id="vipMessage">You're now in the green room</div>
 
