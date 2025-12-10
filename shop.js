@@ -433,10 +433,10 @@ const renderTabContent = (type) => {
   if (!currentUser?.isHost) return;
 
   if (type === 'vip') {
-    const vipCount = currentUser.hostVIP || 0;
+    const vipReferralCount = currentUser.hostVIP || 0;
     DOM.tabContent.innerHTML = `
       <div class="stat-block" style="margin-bottom:12px;">
-        <div class="stat-value" id="vip-stat">${formatNumber(vipCount)}</div>
+        <div class="stat-value" id="vip-stat">${formatNumber(vipReferralCount)}</div>
         <div class="stat-label">VIPs Signed Up</div>
       </div>
     `;
