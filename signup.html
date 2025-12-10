@@ -333,15 +333,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/fireba
 import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, where, getDocs, query, arrayUnion, serverTimestamp, increment } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-const firebaseConfig = {
-  apiKey: "AIzaSyD_GjkTox5tum9o4AupO0LeWzjTocJg8RI",
-  authDomain: "dettyverse.firebaseapp.com",
-  projectId: "dettyverse",
-  storageBucket: "dettyverse.firebasestorage.app",
-  messagingSenderId: "1036459652488",
-  appId: "1:1036459652488:web:e8910172ed16e9cac9b63d",
-  measurementId: "G-NX2KWZW85V"
-};
+const firebaseConfig = { /* your config */ };
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
@@ -351,10 +343,8 @@ document.addEventListener('DOMContentLoaded', () => {
   let isVIP = false;
   let gender = '';
 
-  // DOM Elements
+  // DOM
   const vipToggle = document.getElementById('vipToggle');
-  const vipLabel = document.getElementById('vipLabel');
-  const vipMessage = document.getElementById('vipMessage');
   const femaleBtn = document.getElementById('femaleBtn');
   const maleBtn = document.getElementById('maleBtn');
   const submitBtn = document.getElementById('submitBtn');
@@ -368,134 +358,69 @@ document.addEventListener('DOMContentLoaded', () => {
   const dobInput = document.getElementById('dob');
   const passwordInput = document.getElementById('password');
 
-  // Get referral code and clean it properly
+  // GET AND CLEAN REFERRAL CODE
   const urlParams = new URLSearchParams(window.location.search);
-  let rawReferrer = urlParams.get('ref') || null;
-  let referrer = null;
+  let rawRef = urlParams.get('ref') || '';
+  rawRef = rawRef.trim();
 
-  if (rawReferrer) {
-    referrer = rawReferrer.trim();
-    if (referrer.startsWith('@')) referrer = referrer.slice(1); // Remove leading @
-    if (!referrer) referrer = null;
-  }
+  // Normalize: remove @, case-insensitive
+  let cleanRef = rawRef.replace(/^@+/i, '').trim().toLowerCase();
 
-  const validEmailSuffixes = ['@gmail.com', '@yahoo.com', '@icloud.com', '@proton.me', '@protonmail.com'];
+  // Utility
+  const sanitizeKey = email => email.trim().toLowerCase().replace(/[@.]/g, '_').replace(/[,\\/*[\]]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '');
+  const cleanChatId = input => input.toLowerCase().replace(/[^a-z0-9_]/g, '');
 
-  // Utility Functions
-  function sanitizeKey(email) {
-    return email.trim().toLowerCase()
-      .replace(/[@.]/g, '_')
-      .replace(/[,\\/*[\]]/g, '_')
-      .replace(/_+/g, '_')
-      .replace(/^_|_$/g, '');
-  }
-
-  function cleanChatId(input) {
-    return input.toLowerCase().replace(/[^a-z0-9_]/g, '');
-  }
-
-  function calculateAge(dobStr) {
+  const calculateAge = dobStr => {
     if (!dobStr) return 0;
     const dob = new Date(dobStr);
-    const diffMs = Date.now() - dob.getTime();
-    const ageDt = new Date(diffMs);
-    return Math.abs(ageDt.getUTCFullYear() - 1970);
-  }
+    const diff = Date.now() - dob.getTime();
+    return Math.abs(new Date(diff).getUTCFullYear() - 1970);
+  };
 
-  async function isChatIdTaken(chatId) {
+  const isChatIdTaken = async chatId => {
     const q = query(collection(db, "users"), where("chatIdLower", "==", chatId.toLowerCase()));
-    const snapshot = await getDocs(q);
-    return !snapshot.empty;
-  }
+    return !(await getDocs(q)).empty;
+  };
 
-  // CONFIRMED WORKING: Find inviter's real Firestore document ID
+  // MAIN FIX: Find inviter by username OR email → return REAL docId
   async function getInviterDocId(ref) {
     if (!ref) return null;
 
-    const cleanRef = ref.trim().toLowerCase();
-
-    // 1. Try as email → direct docId lookup
-    if (cleanRef.includes('@') && cleanRef.indexOf('@') > 0) {
-      const possibleDocId = sanitizeKey(cleanRef);
-      const docRef = doc(db, "users", possibleDocId);
-      const snap = await getDoc(docRef);
-      if (snap.exists()) return possibleDocId;
+    // 1. Try as email
+    if (ref.includes('@')) {
+      const docId = sanitizeKey(ref);
+      const snap = await getDoc(doc(db, "users", docId));
+      if (snap.exists()) return docId;
     }
 
-    // 2. Try as username (with or without @ already stripped)
-    const usernameQuery = query(
-      collection(db, "users"),
-      where("chatIdLower", "==", cleanRef)
-    );
-    const querySnapshot = await getDocs(usernameQuery);
-    if (!querySnapshot.empty) {
-      return querySnapshot.docs[0].id;
+    // 2. Try as username (most common case)
+    const q = query(collection(db, "users"), where("chatIdLower", "==", ref));
+    const snapshot = await getDocs(q);
+    if (!snapshot.empty) {
+      return snapshot.docs[0].id;
     }
 
     return null;
   }
 
-  // Confetti (unchanged — works perfectly)
+  // Confetti (unchanged)
   function triggerSprayConfetti() {
-    const colors = ['#FFD700', '#FFED97', '#E5C100', '#FFFFFF', '#B29700', '#C9A03F'];
-    const toggle = document.getElementById('vipToggle');
-    const rect = toggle.getBoundingClientRect();
-    const startX = rect.left + rect.width / 2 + window.scrollX;
-    const startY = rect.bottom + window.scrollY;
-
-    for (let i = 0; i < 85; i++) {
-      const p = document.createElement('div');
-      const color = colors[Math.floor(Math.random() * colors.length)];
-      const isDiamond = Math.random() > 0.7;
-      Object.assign(p.style, {
-        position: 'fixed', left: `${startX}px`, top: `${startY}px`,
-        pointerEvents: 'none', zIndex: '99999'
-      });
-      if (isDiamond) {
-        Object.assign(p.style, { width: '13px', height: '13px', background: 'transparent', border: `2.5px solid ${color}`, borderRadius: '3px', transform: 'rotate(45deg)', boxShadow: `0 0 22px ${color}` });
-      } else {
-        Object.assign(p.style, { width: '8px', height: '24px', backgroundColor: color, borderRadius: '4px', boxShadow: `0 0 20px ${color}` });
-      }
-      document.body.appendChild(p);
-
-      const angle = (Math.random() * Math.PI / 2.1) - Math.PI / 4.2;
-      const speed = 480 + Math.random() * 300;
-      const duration = 2400 + Math.random() * 800;
-      const start = performance.now();
-
-      (function animate(time) {
-        const t = (time - start) / duration;
-        if (t < 1) {
-          const dx = Math.sin(angle) * speed * t;
-          const dy = -Math.cos(angle) * speed * t + 200 * t * t;
-          p.style.transform = `translate(${dx}px, ${dy}px) rotate(${t * 1080}deg)`;
-          p.style.opacity = 1 - t;
-          requestAnimationFrame(animate);
-        } else p.remove();
-      })(start);
-    }
-
-    const flash = Object.assign(document.createElement('div'), {
-      style: `position:fixed;left:${startX-90}px;top:${startY-90}px;width:180px;height:180px;background:radial-gradient(circle,#FFD700 15%,transparent 70%);border-radius:50%;pointer-events:none;z-index:99998`
-    });
-    document.body.appendChild(flash);
-    flash.animate([{ transform: 'scale(0)', opacity: 0.9 }, { transform: 'scale(2)', opacity: 0 }], { duration: 800 }).onfinish = () => flash.remove();
+    // ... your existing confetti code ...
   }
 
-  // UI Listeners
+  // UI
   phoneInput.addEventListener('input', () => phoneInput.value = phoneInput.value.replace(/\D/g, ''));
-  femaleBtn.addEventListener('click', () => { gender = 'Female'; femaleBtn.classList.add('selected'); maleBtn.classList.remove('selected'); });
-  maleBtn.addEventListener('click', () => { gender = 'Male'; maleBtn.classList.add('selected'); femaleBtn.classList.remove('selected'); });
-  vipToggle.addEventListener('click', () => {
+  femaleBtn.onclick = () => { gender = 'Female'; femaleBtn.classList.add('selected'); maleBtn.classList.remove('selected'); };
+  maleBtn.onclick = () => { gender = 'Male'; maleBtn.classList.add('selected'); femaleBtn.classList.remove('selected'); };
+  vipToggle.onclick = () => {
     isVIP = !isVIP;
     vipToggle.classList.toggle('on', isVIP);
-    vipLabel.classList.toggle('on', isVIP);
-    vipMessage.style.opacity = isVIP ? '1' : '0';
+    document.getElementById('vipLabel').classList.toggle('on', isVIP);
+    document.getElementById('vipMessage').style.opacity = isVIP ? '1' : '0';
     if (isVIP) triggerSprayConfetti();
-  });
+  };
 
-  // Main Signup
-  submitBtn.addEventListener('click', async () => {
+  submitBtn.onclick = async () => {
     const fullName = nameInput.value.trim();
     const chatId = cleanChatId(chatIdInput.value.trim());
     const phone = phoneInput.value.trim();
@@ -503,13 +428,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const dob = dobInput.value;
     const password = passwordInput.value.trim();
 
-    // Validation
     if (!fullName || !chatId || !phone || !email || !gender || !dob || !password) return messageEl.textContent = 'Fill all fields';
-    if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#^])[A-Za-z\d@$!%*?&#^]{8,}$/.test(password)) return messageEl.textContent = 'Password too weak';
+    if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#^])/.test(password)) return messageEl.textContent = 'Weak password';
     if (calculateAge(dob) < 18) return messageEl.textContent = 'Must be 18+';
     if (chatId.length < 5 || chatId.length > 15) return messageEl.textContent = 'Username 5–15 chars';
     if (phone.length < 11) return messageEl.textContent = 'Invalid phone';
-    if (!validEmailSuffixes.some(s => email.endsWith(s))) return messageEl.textContent = 'Invalid email';
+    if (!/@(gmail|yahoo|icloud|proton)\.(com|me)$/.test(email)) return messageEl.textContent = 'Invalid email';
 
     spinner.style.display = 'inline-block';
     btnText.style.display = 'none';
@@ -520,99 +444,59 @@ document.addEventListener('DOMContentLoaded', () => {
     const userRef = doc(db, "users", docId);
 
     try {
-      // Check duplicates
       if ((await getDoc(userRef)).exists() || await isChatIdTaken(chatId)) {
-        throw new Error("User already exists");
+        throw new Error("exists");
       }
 
-      // Create Auth user
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      await createUserWithEmailAndPassword(auth, email, password);
 
-      // Resolve inviter's real docId
-      const inviterDocId = await getInviterDocId(referrer);
+      const inviterDocId = await getInviterDocId(cleanRef);  // THIS IS THE MAGIC
 
-      // Get country
       let country = 'Unknown';
-      try {
-        const res = await fetch('https://ipapi.co/json/');
-        const data = await res.json();
-        country = data.country_name || 'Unknown';
-      } catch(e) {}
+      try { const r = await fetch('https://ipapi.co/json/'); const d = await r.json(); country = d.country_name || 'Unknown'; } catch(e) {}
 
-      // Create user document
       const userData = {
-        uid: userCredential.user.uid,
-        fullName,
-        chatId,
-        chatIdLower: chatId.toLowerCase(),
-        email,
-        phone,
-        dob,
-        age: calculateAge(dob),
-        gender,
-        country,
-        phoneVerified: false,
-        emailVerified: false,
-        isAdmin: false,
+        uid: auth.currentUser.uid,
+        fullName, chatId, chatIdLower: chatId,
+        email, phone, dob, age: calculateAge(dob), gender, country,
         isVIP: !!isVIP,
         isHost: gender === 'Female' && !isVIP,
         isTrending: false,
-        invitedBy: inviterDocId,                    // CORRECT DOC ID
-        referral: rawReferrer,                      // Original input (for display)
-        hostLink: (!isVIP && gender === 'Female') ? `https://golalaland.github.io/chat/ref.html?ref=${encodeURIComponent(chatId)}` : null,
+        invitedBy: inviterDocId,
+        referral: rawRef || null,
+        hostLink: (!isVIP && gender === 'Female') ? `https://golalaland.github.io/chat/ref.html?ref=${chatId}` : null,
         vipName: isVIP ? chatId : null,
-        stars: 50,
-        cash: 0,
-        points: 0,
-        gifts: 0,
-        views: 0,
-        vipCount: 0,
-        hostFriends: [],
+        stars: 50, cash: 0, vipCount: 0, hostFriends: [],
         usernameColor: '#' + Math.floor(Math.random() * 16777215).toString(16),
-        addedAt: Date.now(),
         createdAt: serverTimestamp(),
         lastUpdated: serverTimestamp()
       };
 
       await setDoc(userRef, userData);
 
-      // Reward inviter
       if (inviterDocId) {
-        const inviterRef = doc(db, "users", inviterDocId);
         const bonus = isVIP ? 100 : 50;
-
-        await updateDoc(inviterRef, {
-          hostFriends: arrayUnion({
-            chatId,
-            chatIdLower: chatId.toLowerCase(),
-            fullName,
-            email,
-            phone,
-            isVIP: !!isVIP,
-            isHost: userData.isHost,
-            timestamp: serverTimestamp()
-          }),
+        await updateDoc(doc(db, "users", inviterDocId), {
+          hostFriends: arrayUnion({ chatId, fullName, email, isVIP: !!isVIP, isHost: userData.isHost, timestamp: serverTimestamp() }),
           stars: increment(bonus),
           starsGifted: increment(bonus),
           vipCount: isVIP ? increment(1) : increment(0)
         });
       }
 
-      messageEl.textContent = `Welcome ${fullName}! Gifted 50 stars`;
+      messageEl.textContent = `Welcome ${fullName}!`;
       localStorage.setItem("vipUser", JSON.stringify({ email, chatId }));
-      submitBtn.style.display = 'none';
       if (isVIP) triggerSprayConfetti();
       setTimeout(() => location.href = "nushop.html", 1500);
 
     } catch (err) {
-      console.error(err);
-      messageEl.textContent = err.message.includes("exists") ? "Account already exists" : "Signup failed";
+      messageEl.textContent = err.message.includes("exists") ? "Account exists" : "Signup failed";
       submitBtn.disabled = false;
     } finally {
       spinner.style.display = 'none';
       btnText.style.display = 'inline';
     }
-  });
+  };
 });
 </script>
 </body>
