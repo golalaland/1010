@@ -696,23 +696,23 @@ bar + footer */
   70% { transform:translate(-50%,-50%) scale(1.05); }
   100% { transform:translate(-50%,-50%) scale(1); opacity:1; }
 }
-/* ADD THESE 4 LINES ONLY – everything else stays 100% exactly as you have it */
+/* ADD ONLY THESE 3 LINES TO YOUR CSS – everything else remains exactly as you have it */
 
 #tinyActionBar {
+  position: relative;                     /* new – gives modals a clean centering anchor */
   transition: opacity 0.35s ease, transform 0.35s ease;
 }
 
-/* Show on start screen */
-body.start-mode #tinyActionBar {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-/* Hide during gameplay – clean disappear, no layout shift */
 body.game-mode #tinyActionBar {
   opacity: 0;
   transform: translateY(40px);
-  pointer-events: none;   /* prevents accidental taps */
+  pointer-events: none;
+}
+
+/* this one already existed in your code, just keep it */
+body.start-mode #tinyActionBar {
+  opacity: 1;
+  transform: translateY(0);
 }
 </style>
 </head>
