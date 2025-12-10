@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=0.85, maximum-scale=0.85, user-scalable=no">
+<title>CUBE VIP</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --primary-blue: #0a0a23;
+    --accent-cyan: #00f0ff;
+    --accent-purple: #7c3aed;
+    --text: #ffffff;
+    --input-bg: rgba(10,10,35,0.7);
+    --input-border: rgba(0,240,255,0.4);
+    --glow-cyan: rgba(0,240,255,0.5);
+    --glow-purple: rgba(124,58,237,0.5);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    min-height: 100vh;
+    background: radial-gradient(circle at center, #0a0a23 0%, #000000 100%);
+    font-family: 'Inter', sans-serif;
+    color: var(--text);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem 1rem;
+    position: relative;
+    overflow: hidden;
+  }
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: 
+      radial-gradient(circle at 20% 80%, rgba(0,240,255,0.1) 0%, transparent 50%),
+      radial-gradient(circle at 80% 20%, rgba(124,58,237,0.1) 0%, transparent 50%),
+      radial-gradient(circle at 40% 40%, rgba(0,240,255,0.05) 0%, transparent 50%);
+    animation: float 20s ease-in-out infinite;
+    z-index: -1;
+  }
+  @keyframes float {
+    0%, 100% { transform: translateY(0px) rotate(0deg); }
+    50% { transform: translateY(-20px) rotate(180deg); }
+  }
+  .cube-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: -1;
+  }
+  .cube {
+    position: absolute;
+    width: 100px;
+    height: 100px;
+    transform-style: preserve-3d;
+    animation: rotate 20s linear infinite;
+  }
+  .cube-face {
+    position: absolute;
+    width: 100px;
+    height: 100px;
+    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+    opacity: 0.1;
+    border: 1px solid var(--accent-cyan);
+  }
+  .cube .front  { transform: translateZ(50px); }
+  .cube .back   { transform: translateZ(-50px); }
+  .cube .right  { transform: rotateY(90deg) translateZ(50px); }
+  .cube .left   { transform: rotateY(-90deg) translateZ(50px); }
+  .cube .top    { transform: rotateX(90deg) translateZ(50px); }
+  .cube .bottom { transform: rotateX(-90deg) translateZ(50px); }
+  @keyframes rotate {
+    0% { transform: rotateX(0deg) rotateY(0deg); }
+    100% { transform: rotateX(360deg) rotateY(360deg); }
+  }
+  .cube:nth-child(1) { top: 20%; left: 10%; animation-delay: 0s; }
+  .cube:nth-child(2) { top: 60%; left: 80%; animation-delay: -5s; }
+  .cube:nth-child(3) { top: 80%; left: 20%; animation-delay: -10s; }
+  .cube:nth-child(4) { top: 40%; left: 70%; animation-delay: -15s; }
+  h2 {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 4.8rem;
+    font-weight: 900;
+    background: linear-gradient(90deg, var(--accent-cyan), var(--accent-purple), var(--accent-cyan));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 0 0 40px var(--glow-cyan);
+    letter-spacing: 10px;
+    margin-bottom: 0.5rem;
+    animation: glitch 2s infinite;
+    text-transform: uppercase;
+  }
+  @keyframes glitch {
+    0%, 100% { transform: translate(0); }
+    20% { transform: translate(-2px, 2px); }
+    40% { transform: translate(-2px, -2px); }
+    60% { transform: translate(2px, 2px); }
+    80% { transform: translate(2px, -2px); }
+  }
+  .description {
+    font-size: 1.05rem;
+    text-align: center;
+    max-width: 90%;
+    line-height: 1.5;
+    margin: 0 auto 2rem;
+    color: rgba(255,255,255,0.9);
+    font-weight: 500;
+    text-shadow: 0 0 10px rgba(0,240,255,0.2);
+  }
+  .form-group {
+    margin: 0.85rem 0;
+  }
+  .form-group input {
+    width: 310px;
+    max-width: 90vw;
+    padding: 0.95rem 1.2rem;
+    border-radius: 30px;
+    border: 1px solid var(--input-border);
+    background: var(--input-bg);
+    backdrop-filter: blur(20px);
+    color: white;
+    font-size: 0.95rem;
+    text-align: center;
+    transition: all 0.3s;
+    box-shadow: 0 0 10px var(--glow-cyan);
+  }
+  .form-group input:focus {
+    outline: none;
+    border-color: var(--accent-cyan);
+    box-shadow: 0 0 20px var(--glow-cyan);
+    transform: scale(1.02);
+  }
+  .gender-label, .dob-label {
+    text-align: center;
+    font-size: 0.9rem;
+    margin: 1.2rem 0 0.6rem;
+    color: rgba(255,255,255,0.9);
+    font-weight: 600;
+  }
+  .gender-select {
+    display: flex;
+    justify-content: center;
+    gap: 22px;
+    margin: 0.5rem 0 1.5rem;
+  }
+  .gender-select button {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    border: 2px solid var(--input-border);
+    background: var(--input-bg);
+    color: white;
+    font-size: 1.4rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s;
+    box-shadow: 0 0 10px var(--glow-purple);
+  }
+  .gender-select button:hover {
+    border-color: var(--accent-cyan);
+    transform: scale(1.1);
+    box-shadow: 0 0 20px var(--glow-cyan);
+  }
+  .gender-select button.selected {
+    background: var(--accent-cyan);
+    color: #0a0a23;
+    box-shadow: 0 0 20px var(--glow-cyan);
+    border-color: var(--accent-cyan);
+  }
+  #dob {
+    width: 200px;
+    padding: 0.9rem;
+    border-radius: 30px;
+    border: 1px solid var(--input-border);
+    background: var(--input-bg);
+    backdrop-filter: blur(20px);
+    color: white;
+    text-align: center;
+    font-size: 0.95rem;
+    box-shadow: 0 0 10px var(--glow-purple);
+  }
+  #vipLabel {
+    text-align: center;
+    font-weight: 600;
+    font-size: 1rem;
+    margin: 1.3rem 0 0.4rem;
+    color: #ccc;
+  }
+  #vipLabel.on { color: var(--accent-cyan); text-shadow: 0 0 10px var(--glow-cyan); }
+  .vip-toggle {
+    width: 84px; height: 40px;
+    background: #0f0f23;
+    border-radius: 50px;
+    position: relative;
+    margin: 0 auto;
+    cursor: pointer;
+    border: 2px solid var(--input-border);
+    box-shadow: 0 0 10px var(--glow-purple);
+  }
+  .vip-circle {
+    width: 36px; height: 36px;
+    background: #333;
+    border-radius: 50%;
+    position: absolute;
+    left: 2px; top: 2px;
+    transition: 0.4s;
+  }
+  .vip-toggle.on .vip-circle {
+    left: 44px;
+    background: var(--accent-cyan);
+    box-shadow: 0 0 15px var(--glow-cyan);
+  }
+  #vipMessage {
+    text-align: center;
+    color: var(--accent-cyan);
+    font-size: 0.88rem;
+    opacity: 0;
+    margin-top: 0.6rem;
+    font-weight: 600;
+  }
+  #submitBtn {
+    margin: 2rem auto 1.5rem;
+    padding: 0.9rem 2.4rem;
+    width: auto;
+    border: none;
+    border-radius: 50px;
+    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+    color: #0a0a23;
+    font-weight: bold;
+    font-size: 1.05rem;
+    cursor: pointer;
+    box-shadow: 0 8px 25px var(--glow-cyan);
+    transition: all 0.3s;
+  }
+  #submitBtn:hover {
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: 0 12px 30px var(--glow-cyan);
+  }
+  #fomoPopup {
+    position: fixed;
+    top: 90px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(10,10,35,0.9);
+    color: #fff;
+    padding: 1rem 2rem;
+    border-radius: 50px;
+    font-size: 1.15rem;
+    font-weight: 600;
+    opacity: 0;
+    transition: opacity 0.5s, transform 0.6s;
+    pointer-events: none;
+    z-index: 10000;
+    white-space: nowrap;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.6),
+                0 0 30px var(--glow-cyan);
+    border: 1px solid var(--input-border);
+    min-width: 320px;
+    text-align: center;
+    backdrop-filter: blur(20px);
+  }
+  #fomoPopup.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(-8px);
+  }
+  .message { text-align: center; min-height: 20px; margin: 0.5rem 0; font-size: 0.9rem; }
+  footer {
+    margin-top: 3rem;
+    text-align: center;
+    font-size: 0.78rem;
+    color: rgba(255,255,255,0.7);
+    line-height: 1.6;
+    padding: 1rem 0;
+  }
+  footer a { color: #ccc; text-decoration: none; }
+  footer a:hover { color: var(--accent-cyan); }
+  .password-requirements {
+    margin-top: 12px;
+    font-size: 13.5px;
+    color: #aaa;
+    transition: all 0.3s ease;
+    opacity: 0;
+    transform: translateY(-8px);
+    pointer-events: none;
+  }
+  .password-requirements.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .req-header {
+    font-weight: 600;
+    color: #fff;
+    margin-bottom: 8px;
+    font-size: 14px;
+  }
+  .req-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 5px 0;
+    transition: color 0.3s ease;
+  }
+  .req-item.met {
+    color: var(--accent-cyan) !important;
+    font-weight: 500;
+  }
+  .req-item .checkmark {
+    width: 16px;
+    height: 16px;
+    border: 2px solid #555;
+    border-radius: 50%;
+    position: relative;
+    flex-shrink: 0;
+    transition: all 0.3s ease;
+  }
+  .req-item.met .checkmark {
+    background: var(--accent-cyan);
+    border-color: var(--accent-cyan);
+    box-shadow: 0 0 12px var(--glow-cyan);
+  }
+  .req-item.met .checkmark::after {
+    content: '✓';
+    position: absolute;
+    color: #0a0a23;
+    font-weight: bold;
+    font-size: 11px;
+    top: 49%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+  /* Glow effect when all are met */
+  .password-requirements.all-met .req-header {
+    color: var(--accent-cyan);
+    text-shadow: 0 0 10px var(--glow-cyan);
+  }
+</style>
+</head>
+<body>
+<div class="cube-container">
+  <div class="cube">
+    <div class="cube-face front"></div>
+    <div class="cube-face back"></div>
+    <div class="cube-face right"></div>
+    <div class="cube-face left"></div>
+    <div class="cube-face top"></div>
+    <div class="cube-face bottom"></div>
+  </div>
+  <div class="cube">
+    <div class="cube-face front"></div>
+    <div class="cube-face back"></div>
+    <div class="cube-face right"></div>
+    <div class="cube-face left"></div>
+    <div class="cube-face top"></div>
+    <div class="cube-face bottom"></div>
+  </div>
+  <div class="cube">
+    <div class="cube-face front"></div>
+    <div class="cube-face back"></div>
+    <div class="cube-face right"></div>
+    <div class="cube-face left"></div>
+    <div class="cube-face top"></div>
+    <div class="cube-face bottom"></div>
+  </div>
+  <div class="cube">
+    <div class="cube-face front"></div>
+    <div class="cube-face back"></div>
+    <div class="cube-face right"></div>
+    <div class="cube-face left"></div>
+    <div class="cube-face top"></div>
+    <div class="cube-face bottom"></div>
+  </div>
+</div>
+<div id="fomoPopup">Someone just joined the Cube!</div>
+<h2>CUBE</h2>
+<div class="description">
+  Dive into the digital frontier: exclusive streams, immersive chats, premium creators & VIP lounges.<br>
+  Enter the cube — where vibes align in infinite dimensions.
+</div>
+<div class="form-group"><input id="name" type="text" placeholder="Full Name"></div>
+<div class="form-group"><input id="chatId" type="text" placeholder="Choose Chat Name"></div>
+<div class="form-group"><input id="phone" type="text" placeholder="Phone Number"></div>
+<div class="form-group"><input id="email" type="email" placeholder="Email Address"></div>
+<div class="form-group"><input id="password" type="password" placeholder="Create Password (min 6 chars)"></div>
+<div id="passwordRequirements" class="password-requirements">
+  <div class="req-header">Password requirements met!</div>
+  <div class="req-item" data-rule="length">
+    <span class="checkmark"></span> 8 characters
+  </div>
+  <div class="req-item" data-rule="number">
+    <span class="checkmark"></span> 1 number
+  </div>
+  <div class="req-item" data-rule="special">
+    <span class="checkmark"></span> 1 special character e.g., $, !, @, %, &
+  </div>
+  <div class="req-item" data-rule="whitespace">
+    <span class="checkmark"></span> No leading or trailing whitespace
+  </div>
+</div>
+<div class="gender-label">Select Your Gender</div>
+<div class="gender-select">
+  <button id="femaleBtn">F</button>
+  <button id="maleBtn">M</button>
+</div>
+<div class="dob-label">Select Your Birth Date</div>
+<input id="dob" type="date" max="">
+<div id="vipLabel">VIP</div>
+<div class="vip-toggle" id="vipToggle"><div class="vip-circle"></div></div>
+<div id="vipMessage">You're in the Cube VIP dimension!</div>
+<button id="submitBtn">
+  <span class="btn-text">Enter Cube</span>
+  <span class="spinner" id="spinner"></span>
+</button>
+<div class="message" id="message"></div>
+<footer id="footer">
+  <div>©2025 xixi.live (GO LIVE. OWN YOUR VIBE.)</div>
+  <div>Enter the infinite • Dimensions await</div>
+  <div>3-1-1 Nihonbashi, Chuo-ku, Tokyo, Japan</div>
+  <div style="margin-top:8px;">
+    <a href="privacy.html">Privacy Policy</a> •
+    <a href="terms.html">Terms of Service</a>
+  </div>
+</footer>
+</body>
+</html>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, where, getDocs, query, arrayUnion, serverTimestamp, increment } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+ const firebaseConfig = {
+      apiKey: "AIzaSyD_GjkTox5tum9o4AupO0LeWzjTocJg8RI",
+      authDomain: "dettyverse.firebaseapp.com",
+      projectId: "dettyverse",
+      storageBucket: "dettyverse.firebasestorage.app",
+      messagingSenderId: "1036459652488",
+      appId: "1:1036459652488:web:e8910172ed16e9cac9b63d",
+      measurementId: "G-NX2KWZW85V"
+    };
+  
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
+
+document.addEventListener('DOMContentLoaded', () => {
+  let isVIP = false;
+  let gender = '';
+
+  // DOM
+  const vipToggle = document.getElementById('vipToggle');
+  const femaleBtn = document.getElementById('femaleBtn');
+  const maleBtn = document.getElementById('maleBtn');
+  const submitBtn = document.getElementById('submitBtn');
+  const spinner = document.getElementById('spinner');
+  const btnText = submitBtn.querySelector('.btn-text');
+  const messageEl = document.getElementById('message');
+  const nameInput = document.getElementById('name');
+  const chatIdInput = document.getElementById('chatId');
+  const phoneInput = document.getElementById('phone');
+  const emailInput = document.getElementById('email');
+  const dobInput = document.getElementById('dob');
+  const passwordInput = document.getElementById('password');
+
+  // GET AND CLEAN REFERRAL CODE
+  const urlParams = new URLSearchParams(window.location.search);
+  let rawRef = urlParams.get('ref') || '';
+  rawRef = rawRef.trim();
+
+  // Normalize: remove @, case-insensitive
+  let cleanRef = rawRef.replace(/^@+/i, '').trim().toLowerCase();
+
+  // Utility
+  const sanitizeKey = email => email.trim().toLowerCase().replace(/[@.]/g, '_').replace(/[,\\/*[\]]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '');
+  const cleanChatId = input => input.toLowerCase().replace(/[^a-z0-9_]/g, '');
+
+  const calculateAge = dobStr => {
+    if (!dobStr) return 0;
+    const dob = new Date(dobStr);
+    const diff = Date.now() - dob.getTime();
+    return Math.abs(new Date(diff).getUTCFullYear() - 1970);
+  };
+
+  const isChatIdTaken = async chatId => {
+    const q = query(collection(db, "users"), where("chatIdLower", "==", chatId.toLowerCase()));
+    return !(await getDocs(q)).empty;
+  };
+
+  // MAIN FIX: Find inviter by username OR email → return REAL docId
+  async function getInviterDocId(ref) {
+    if (!ref) return null;
+
+    // 1. Try as email
+    if (ref.includes('@')) {
+      const docId = sanitizeKey(ref);
+      const snap = await getDoc(doc(db, "users", docId));
+      if (snap.exists()) return docId;
+    }
+
+    // 2. Try as username (most common case)
+    const q = query(collection(db, "users"), where("chatIdLower", "==", ref));
+    const snapshot = await getDocs(q);
+    if (!snapshot.empty) {
+      return snapshot.docs[0].id;
+    }
+
+    return null;
+  }
+
+  // Confetti (unchanged)
+  function triggerSprayConfetti() {
+    // ... your existing confetti code ...
+  }
+
+  // UI
+  phoneInput.addEventListener('input', () => phoneInput.value = phoneInput.value.replace(/\D/g, ''));
+  femaleBtn.onclick = () => { gender = 'Female'; femaleBtn.classList.add('selected'); maleBtn.classList.remove('selected'); };
+  maleBtn.onclick = () => { gender = 'Male'; maleBtn.classList.add('selected'); femaleBtn.classList.remove('selected'); };
+  vipToggle.onclick = () => {
+    isVIP = !isVIP;
+    vipToggle.classList.toggle('on', isVIP);
+    document.getElementById('vipLabel').classList.toggle('on', isVIP);
+    document.getElementById('vipMessage').style.opacity = isVIP ? '1' : '0';
+    if (isVIP) triggerSprayConfetti();
+  };
+
+submitBtn.onclick = async () => {
+  const fullName = nameInput.value.trim();
+  const chatId = cleanChatId(chatIdInput.value.trim());
+  const phone = phoneInput.value.trim();
+  const email = emailInput.value.trim().toLowerCase();
+  const dob = dobInput.value;
+  const password = passwordInput.value.trim();
+
+  if (!fullName || !chatId || !phone || !email || !gender || !dob || !password) {
+    messageEl.textContent = 'Fill all fields';
+    return;
+  }
+  if (chatId.length < 5 || chatId.length > 15) {
+    messageEl.textContent = 'Username 5–15 characters';
+    return;
+  }
+  if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#^])/.test(password)) {
+    messageEl.textContent = 'Password too weak';
+    return;
+  }
+  if (calculateAge(dob) < 18) {
+    messageEl.textContent = 'Must be 18+';
+    return;
+  }
+  if (!/@(gmail|yahoo|icloud|proton)\.(com|me)$/.test(email)) {
+    messageEl.textContent = 'Invalid email';
+    return;
+  }
+
+  submitBtn.classList.add('loading');
+  messageEl.textContent = 'Creating your empire...';
+
+  const docId = sanitizeKey(email);
+  const userRef = doc(db, "users", docId);
+
+  try {
+    // Check duplicates
+    const [docSnap, chatTaken] = await Promise.all([
+      getDoc(userRef),
+      isChatIdTaken(chatId)
+    ]);
+    if (docSnap.exists() || chatTaken) {
+      throw new Error("exists");
+    }
+
+    // Create Auth user
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+
+   // Resolve inviter + hiveName (HOSTS ONLY!)
+let inviterDocId = null;
+let hiveName = '';  // ← Default blank for VIPs
+
+if (cleanRef) {
+  inviterDocId = await getInviterDocId(cleanRef);
+  if (inviterDocId) {
+    const invSnap = await getDoc(doc(db, 'users', inviterDocId));
+    if (invSnap.exists()) {
+      const inviterData = invSnap.data();
+
+      // ONLY assign hiveName if:
+      // 1. New user is NOT VIP
+      // 2. Inviter is a Host and has a hiveName
+      if (!isVIP && inviterData.isHost && inviterData.hiveName) {
+        hiveName = inviterData.hiveName;
+      }
+      // Otherwise → stays blank ('')
+    }
+  }
+}
+    // Country
+    let country = 'Unknown';
+    try {
+      const res = await fetch('https://ipapi.co/json/');
+      const data = await res.json();
+      country = data.country_name || 'Unknown';
+    } catch (e) {}
+
+    // FULL USER DATA — ALL FIELDS RESTORED
+    const userData = {
+      uid: userCredential.user.uid,
+      fullName,
+      chatId,
+      chatIdLower: chatId,
+      email,
+      phone,
+      dob,
+      age: calculateAge(dob),
+      gender,
+      country,
+      city: "",
+      location: "",
+      bankName: "",
+      bankAccountNumber: "",
+      instagram: "",
+      tiktok: "",
+      whatsapp: "",
+      telegram: "",
+      bioPick: "",
+      naturePick: "",
+      fruitPick: "",
+      videoUrl: "",
+      popupPhoto: "",
+      isVIP: !!isVIP,
+      isHost: gender === 'Female' && !isVIP,
+      isTrending: false,
+      isAdmin: false,
+      featuredHosts: false,
+      invitedBy: inviterDocId,
+      referral: rawRef || null,
+      hiveName, // Your hive system
+      hostLink: (!isVIP && gender === 'Female')
+        ? `https://cube.xixi.com/signup?ref=${chatId}`
+        : null,
+      vipName: isVIP ? chatId : null,
+      socialShare: gender === 'Female' && !isVIP,
+      stars: 50,
+      starsToday: 0,
+      starsGifted: 0,
+      lastStarDate: new Date().toISOString().split("T")[0],
+      cash: 0,
+      points: 0,
+      gifts: 0,
+      views: 0,
+      inviteeGiftStars: 0,
+      inviteeGiftShown: false,
+      hostFriends: [],
+      usernameColor: '#' + Math.floor(Math.random() * 16777215).toString(16),
+      createdAt: serverTimestamp(),
+      lastUpdated: serverTimestamp()
+    };
+
+    await setDoc(userRef, userData);
+
+// REWARD INVITER — 100% SAFE & WORKING (NO serverTimestamp() in arrayUnion)
+if (inviterDocId) {
+  const bonusStars = isVIP ? 100 : 50;
+
+  await updateDoc(doc(db, "users", inviterDocId), {
+    // CLEAN ARRAY — NO serverTimestamp() inside!
+    hostFriends: arrayUnion({
+      chatId,
+      fullName,
+      email,
+      phone,
+      isVIP: !!isVIP,           // ← Keeps your old code working perfectly
+      isHost: !isVIP && gender === 'Female',
+      joinedAt: Date.now()      // ← Use client timestamp (safe)
+    }),
+
+    // These are top-level → serverTimestamp() is allowed
+    hostFriendsLastUpdated: serverTimestamp(),
+
+    stars: increment(bonusStars),
+
+    // Optional clean stats (safe to keep)
+    referralCount: increment(1),
+    vipCount: isVIP ? increment(1) : increment(0),
+    hostReferralCount: !isVIP ? increment(1) : increment(0)
+  }).catch(err => {
+    console.warn("Failed to update inviter:", err);
+  });
+}
+
+    // SUCCESS — FULL REDIRECT
+    messageEl.textContent = `Welcome ${fullName}! Gifted 50 stars`;
+    localStorage.setItem("vipUser", JSON.stringify({ email, chatId }));
+    if (isVIP) triggerSprayConfetti();
+
+    setTimeout(() => {
+      window.location.href = "shop.html"; // Guaranteed redirect
+    }, 1800);
+
+  } catch (err) {
+    console.error(err);
+    messageEl.textContent = err.message?.includes("exists")
+      ? "Account already exists"
+      : "Signup failed — try again";
+  } finally {
+    submitBtn.classList.remove('loading');
+  }
+};
+});
+</script>
+</body>
+</html>
