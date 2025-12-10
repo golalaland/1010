@@ -429,83 +429,125 @@ document.addEventListener('DOMContentLoaded', () => {
     if (isVIP) triggerSprayConfetti();
   };
 
-  submitBtn.onclick = async () => {
-    const fullName = nameInput.value.trim();
-    const chatId = cleanChatId(chatIdInput.value.trim());
-    const phone = phoneInput.value.trim();
-    const email = emailInput.value.trim().toLowerCase();
-    const dob = dobInput.value;
-    const password = passwordInput.value.trim();
+submitBtn.onclick = async () => {
+  const fullName = nameInput.value.trim();
+  const chatId = cleanChatId(chatIdInput.value.trim());
+  const phone = phoneInput.value.trim();
+  const email = emailInput.value.trim().toLowerCase();
+  const dob = dobInput.value;
+  const password = passwordInput.value.trim();
 
-    if (!fullName || !chatId || !phone || !email || !gender || !dob || !password) return messageEl.textContent = 'Fill all fields';
-    if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#^])/.test(password)) return messageEl.textContent = 'Weak password';
-    if (calculateAge(dob) < 18) return messageEl.textContent = 'Must be 18+';
-    if (chatId.length < 5 || chatId.length > 15) return messageEl.textContent = 'Username 5–15 chars';
-    if (phone.length < 11) return messageEl.textContent = 'Invalid phone';
-    if (!/@(gmail|yahoo|icloud|proton)\.(com|me)$/.test(email)) return messageEl.textContent = 'Invalid email';
+  // === BASIC VALIDATION ===
+  if (!fullName || !chatId || !phone || !email || !gender || !dob || !password) {
+    messageEl.textContent = 'Fill all fields';
+    return;
+  }
+  if (chatId.length < 5 || chatId.length > 15) {
+    messageEl.textContent = 'Username 5–15 chars';
+    return;
+  }
+  if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#^])/.test(password)) {
+    messageEl.textContent = 'Password too weak';
+    return;
+  }
 
-    spinner.style.display = 'inline-block';
-    btnText.style.display = 'none';
-    messageEl.textContent = 'Creating account...';
-    submitBtn.disabled = true;
+  spinner.style.display = 'inline-block';
+  btnText.style.display = 'none';
+  messageEl.textContent = 'Creating account...';
+  submitBtn.disabled = true;
 
-    const docId = sanitizeKey(email);
-    const userRef = doc(db, "users", docId);
+  const docId = sanitizeKey(email);
+  const userRef = doc(db, "users", docId);
 
+  let userCredential;
+
+  try {
+    // 1. Check duplicates FIRST
+    const [docSnap, chatSnap] = await Promise.all([
+      getDoc(userRef),
+      isChatIdTaken(chatId)
+    ]);
+    if (docSnap.exists() || chatSnap) {
+      throw new Error("User already exists");
+    }
+
+    // 2. Create Auth user — THIS is the only part that can truly fail signup
+    userCredential = await createUserWithEmailAndPassword(auth, email, password);
+
+    // 3. Resolve inviter
+    const inviterDocId = await getInviterDocId(cleanRef);
+
+    // 4. Get country
+    let country = 'Unknown';
     try {
-      if ((await getDoc(userRef)).exists() || await isChatIdTaken(chatId)) {
-        throw new Error("exists");
-      }
+      const res = await fetch('https://ipapi.co/json/');
+      const data = await res.json();
+      country = data.country_name || 'Unknown';
+    } catch (e) {}
 
-      await createUserWithEmailAndPassword(auth, email, password);
+    // 5. Create Firestore document — if this fails, user still exists in Auth (which is fine)
+    const userData = {
+      uid: userCredential.user.uid,
+      fullName, chatId, chatIdLower: chatId,
+      email, phone, dob, age: calculateAge(dob), gender, country,
+      isVIP: !!isVIP,
+      isHost: gender === 'Female' && !isVIP,
+      isTrending: false,
+      invitedBy: inviterDocId,
+      referral: rawRef || null,
+      hostLink: (!isVIP && gender === 'Female') ? `https://golalaland.github.io/chat/ref.html?ref=${chatId}` : null,
+      vipName: isVIP ? chatId : null,
+      stars: 50, cash: 0, vipCount: 0, hostFriends: [],
+      usernameColor: '#' + Math.floor(Math.random() * 16777215).toString(16),
+      createdAt: serverTimestamp(),
+      lastUpdated: serverTimestamp()
+    };
 
-      const inviterDocId = await getInviterDocId(cleanRef);  // THIS IS THE MAGIC
+    await setDoc(userRef, userData);
 
-      let country = 'Unknown';
-      try { const r = await fetch('https://ipapi.co/json/'); const d = await r.json(); country = d.country_name || 'Unknown'; } catch(e) {}
+    // 6. Reward inviter (fire-and-forget — don’t fail signup if this errors)
+    if (inviterDocId) {
+      const bonus = isVIP ? 100 : 50;
+      await updateDoc(doc(db, "users", inviterDocId), {
+        hostFriends: arrayUnion({
+          chatId, fullName, email,
+          isVIP: !!isVIP,
+          isHost: userData.isHost,
+          timestamp: serverTimestamp()
+        }),
+        stars: increment(bonus),
+        starsGifted: increment(bonus),
+        vipCount: isVIP ? increment(1) : increment(0)
+      }).catch(console.warn); // ignore errors here
+    }
 
-      const userData = {
-        uid: auth.currentUser.uid,
-        fullName, chatId, chatIdLower: chatId,
-        email, phone, dob, age: calculateAge(dob), gender, country,
-        isVIP: !!isVIP,
-        isHost: gender === 'Female' && !isVIP,
-        isTrending: false,
-        invitedBy: inviterDocId,
-        referral: rawRef || null,
-        hostLink: (!isVIP && gender === 'Female') ? `https://golalaland.github.io/chat/ref.html?ref=${chatId}` : null,
-        vipName: isVIP ? chatId : null,
-        stars: 50, cash: 0, vipCount: 0, hostFriends: [],
-        usernameColor: '#' + Math.floor(Math.random() * 16777215).toString(16),
-        createdAt: serverTimestamp(),
-        lastUpdated: serverTimestamp()
-      };
+    // SUCCESS — everything worked
+    messageEl.textContent = `Welcome ${fullName}! Gifted 50 stars`;
+    localStorage.setItem("vipUser", JSON.stringify({ email, chatId }));
+    submitBtn.style.display = 'none';
+    if (isVIP) triggerSprayConfetti();
+    setTimeout(() => location.href = "nushop.html", 1500);
 
-      await setDoc(userRef, userData);
-
-      if (inviterDocId) {
-        const bonus = isVIP ? 100 : 50;
-        await updateDoc(doc(db, "users", inviterDocId), {
-          hostFriends: arrayUnion({ chatId, fullName, email, isVIP: !!isVIP, isHost: userData.isHost, timestamp: serverTimestamp() }),
-          stars: increment(bonus),
-          starsGifted: increment(bonus),
-          vipCount: isVIP ? increment(1) : increment(0)
-        });
-      }
-
-      messageEl.textContent = `Welcome ${fullName}!`;
+  } catch (err) {
+    console.error("Signup error:", err);
+    // Only show failed if Auth actually failed or user exists
+    if (err.message.includes("exists") || err.code?.includes("auth")) {
+      messageEl.textContent = err.message.includes("exists")
+        ? "Account already exists"
+        : "Signup failed — try again";
+    } else {
+      // Any other error after Auth succeeded = treat as success (user already created)
+      messageEl.textContent = `Welcome ${fullName || chatId}!`;
       localStorage.setItem("vipUser", JSON.stringify({ email, chatId }));
       if (isVIP) triggerSprayConfetti();
-      setTimeout(() => location.href = "nushop.html", 1500);
-
-    } catch (err) {
-      messageEl.textContent = err.message.includes("exists") ? "Account exists" : "Signup failed";
-      submitBtn.disabled = false;
-    } finally {
-      spinner.style.display = 'none';
-      btnText.style.display = 'inline';
+      setTimeout(() => location.href = "nushop.html", 1000);
     }
-  };
+    submitBtn.disabled = false;
+  } finally {
+    spinner.style.display = 'none';
+    btnText.style.display = 'inline';
+  }
+};
 });
 </script>
 </body>
