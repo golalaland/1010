@@ -391,22 +391,29 @@ const loadCurrentUser = async () => {
       }
 
       // INVITER REWARD (when someone joins YOUR link)
-      const friends = Array.isArray(data.hostFriends) ? data.hostFriends : [];
-      const pending = friends.find(f => f.email && !f.giftShown);
-      if (pending) {
-        const name = pending.chatId || pending.vipName || pending.email.split('@')[0];
-        const stars = pending.giftStars || 200;
+     // INVITER REWARD — FIXED: NO 200, USES isVIP FOR CORRECT STARS
+const friends = Array.isArray(data.hostFriends) ? data.hostFriends : [];
 
-        showReward(
-          `You've been gifted <b>+${stars} Stars</b> — <b>${name}</b> just joined your Tab!`,
-          'Congratulations!'
-        );
+const pending = friends.find(f => f.email && !f.giftShown);
 
-        const updated = friends.map(f =>
-          f.email === pending.email ? { ...f, giftShown: true, giftStars: stars } : f
-        );
-        await updateDoc(userRef, { hostFriends: updated });
-      }
+if (pending) {
+  const name = pending.chatId || pending.fullName || pending.email.split('@')[0];
+  const stars = pending.isVIP ? 100 : 50;  // ← REAL amount: 100 for VIP, 50 for Host
+
+  showReward(
+    `You've been gifted <b>+${stars} Stars</b> — <b>${name}</b> just joined your Hive!`,
+    'Empire Growing!'
+  );
+
+  // Only mark as shown — keep giftStars if you want, but we don't need it
+  const updated = friends.map(f =>
+    f.email === pending.email 
+      ? { ...f, giftShown: true }
+      : f
+  );
+
+  await updateDoc(userRef, { hostFriends: updated });
+}
     });
 
   } catch (e) {
