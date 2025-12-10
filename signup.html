@@ -479,7 +479,7 @@ submitBtn.onclick = async () => {
 
    // Resolve inviter + hiveName (HOSTS ONLY!)
 let inviterDocId = null;
-let hiveName = 'Unassigned';
+let hiveName = '';  // ← Default blank for VIPs
 
 if (cleanRef) {
   inviterDocId = await getInviterDocId(cleanRef);
@@ -488,15 +488,16 @@ if (cleanRef) {
     if (invSnap.exists()) {
       const inviterData = invSnap.data();
 
-      // ONLY inherit hiveName if inviter is a HOST (not VIP)
-      if (inviterData.isHost && inviterData.hiveName) {
+      // ONLY assign hiveName if:
+      // 1. New user is NOT VIP
+      // 2. Inviter is a Host and has a hiveName
+      if (!isVIP && inviterData.isHost && inviterData.hiveName) {
         hiveName = inviterData.hiveName;
       }
-      // If inviter is VIP → hiveName stays 'Unassigned'
+      // Otherwise → stays blank ('')
     }
   }
 }
-
     // Country
     let country = 'Unknown';
     try {
