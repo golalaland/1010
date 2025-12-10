@@ -72,13 +72,16 @@
 
 .card {
   width: 100%;
-  height: 170px;                  /* keep your current height or adjust as you like */
+  /* height: 130px;         ← delete this */
+  aspect-ratio: 4242 / 6000;   /* ← exact ratio of your real images */
+  /* or use the simplified version below */
+  aspect-ratio: 0.707 / 1;     /* same thing, just shorter to type */
+  
   position: relative;
   transform-style: preserve-3d;
   cursor: pointer;
-  border-radius: 20px;            /* keeps the rounded corners on the images */
-  transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  /* ← removed box-shadow and border completely */
+  border-radius: 20px;
+  transition: transform 0.8s cubic-bezier(0.175,0.885,0.32,1.275);
 }
 
 .card:hover {
