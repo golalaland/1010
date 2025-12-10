@@ -658,8 +658,8 @@ async function applyRewards() {
 
         await addDoc(collection(db, "notifications"), {
           recipientId: currentUid,
-          title: "Ripple Reward!",
-          message: `Your downline won ₦${formatNumber(directCash)}!\nYou earned +₦${formatNumber(rippleCash)} + ${formatNumber(rippleStars)} stars`,
+          title: "Ripple Reward!🤑",
+          message: `Your friend won ₦${formatNumber(directCash)}!\nYou earned +₦${formatNumber(rippleCash)} + ${formatNumber(rippleStars)} stars`,
           type: `ripple_level${level}`,
           fromUser: w.uid,
           amountCash: rippleCash,
