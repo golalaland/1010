@@ -450,6 +450,14 @@ submitBtn.onclick = async () => {
     messageEl.textContent = 'Password too weak';
     return;
   }
+  if (calculateAge(dob) < 18) {
+    messageEl.textContent = 'Must be 18+';
+    return;
+  }
+  if (!/@(gmail|yahoo|icloud|proton)\.(com|me)$/.test(email)) {
+    messageEl.textContent = 'Invalid email';
+    return;
+  }
 
   spinner.style.display = 'inline-block';
   btnText.style.display = 'none';
@@ -459,10 +467,8 @@ submitBtn.onclick = async () => {
   const docId = sanitizeKey(email);
   const userRef = doc(db, "users", docId);
 
-  let userCredential;
-
   try {
-    // 1. Check duplicates FIRST
+    // 1. Check duplicates
     const [docSnap, chatSnap] = await Promise.all([
       getDoc(userRef),
       isChatIdTaken(chatId)
@@ -471,11 +477,21 @@ submitBtn.onclick = async () => {
       throw new Error("User already exists");
     }
 
-    // 2. Create Auth user — THIS is the only part that can truly fail signup
-    userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    // 2. Create Auth user
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
 
-    // 3. Resolve inviter
-    const inviterDocId = await getInviterDocId(cleanRef);
+    // 3. Resolve inviter + hiveName
+    let inviterDocId = null;
+    let hiveName = 'Unassigned'; // Default filler
+    if (cleanRef) {
+      inviterDocId = await getInviterDocId(cleanRef);
+      if (inviterDocId) {
+        const inviterSnap = await getDoc(doc(db, 'users', inviterDocId));
+        if (inviterSnap.exists()) {
+          hiveName = inviterSnap.data().hiveName || 'Unassigned'; // Inherit inviter’s hive
+        }
+      }
+    }
 
     // 4. Get country
     let country = 'Unknown';
@@ -485,19 +501,32 @@ submitBtn.onclick = async () => {
       country = data.country_name || 'Unknown';
     } catch (e) {}
 
-    // 5. Create Firestore document — if this fails, user still exists in Auth (which is fine)
+    // 5. Create Firestore document
     const userData = {
       uid: userCredential.user.uid,
-      fullName, chatId, chatIdLower: chatId,
-      email, phone, dob, age: calculateAge(dob), gender, country,
+      fullName,
+      chatId,
+      chatIdLower: chatId,
+      email,
+      phone,
+      dob,
+      age: calculateAge(dob),
+      gender,
+      country,
       isVIP: !!isVIP,
       isHost: gender === 'Female' && !isVIP,
       isTrending: false,
       invitedBy: inviterDocId,
       referral: rawRef || null,
-      hostLink: (!isVIP && gender === 'Female') ? `https://golalaland.github.io/chat/ref.html?ref=${chatId}` : null,
+      hiveName, // NEW FIELD — inherited or Unassigned
+      hostLink: (!isVIP && gender === 'Female') 
+  ? `https://cube.xixi.com/signup?ref=${chatId}` 
+  : null,
       vipName: isVIP ? chatId : null,
-      stars: 50, cash: 0, vipCount: 0, hostFriends: [],
+      stars: 50,
+      cash: 0,
+      vipCount: 0,
+      hostFriends: [],
       usernameColor: '#' + Math.floor(Math.random() * 16777215).toString(16),
       createdAt: serverTimestamp(),
       lastUpdated: serverTimestamp()
@@ -505,12 +534,14 @@ submitBtn.onclick = async () => {
 
     await setDoc(userRef, userData);
 
-    // 6. Reward inviter (fire-and-forget — don’t fail signup if this errors)
+    // 6. Reward inviter (fire-and-forget)
     if (inviterDocId) {
       const bonus = isVIP ? 100 : 50;
       await updateDoc(doc(db, "users", inviterDocId), {
         hostFriends: arrayUnion({
-          chatId, fullName, email,
+          chatId,
+          fullName,
+          email,
           isVIP: !!isVIP,
           isHost: userData.isHost,
           timestamp: serverTimestamp()
@@ -518,30 +549,23 @@ submitBtn.onclick = async () => {
         stars: increment(bonus),
         starsGifted: increment(bonus),
         vipCount: isVIP ? increment(1) : increment(0)
-      }).catch(console.warn); // ignore errors here
+      }).catch(console.warn);
     }
 
-    // SUCCESS — everything worked
+    // SUCCESS
     messageEl.textContent = `Welcome ${fullName}! Gifted 50 stars`;
     localStorage.setItem("vipUser", JSON.stringify({ email, chatId }));
     submitBtn.style.display = 'none';
     if (isVIP) triggerSprayConfetti();
-    setTimeout(() => location.href = "nushop.html", 1500);
+    setTimeout(() => location.href = "shop.html", 1500);
 
   } catch (err) {
     console.error("Signup error:", err);
-    // Only show failed if Auth actually failed or user exists
-    if (err.message.includes("exists") || err.code?.includes("auth")) {
-      messageEl.textContent = err.message.includes("exists")
-        ? "Account already exists"
-        : "Signup failed — try again";
-    } else {
-      // Any other error after Auth succeeded = treat as success (user already created)
-      messageEl.textContent = `Welcome ${fullName || chatId}!`;
-      localStorage.setItem("vipUser", JSON.stringify({ email, chatId }));
-      if (isVIP) triggerSprayConfetti();
-      setTimeout(() => location.href = "nushop.html", 1000);
-    }
+    messageEl.textContent = err.message.includes("exists")
+      ? "Account already exists"
+      : err.code?.includes("auth")
+      ? "Signup failed — try again"
+      : `Welcome ${fullName || chatId}!`; // Fallback success if Auth worked
     submitBtn.disabled = false;
   } finally {
     spinner.style.display = 'none';
