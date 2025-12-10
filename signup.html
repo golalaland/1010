@@ -555,22 +555,27 @@ submitBtn.onclick = async () => {
 
     await setDoc(userRef, userData);
 
-    // Reward inviter (FIXED: timestamp in top-level field)
-    if (inviterDocId) {
-      const bonus = isVIP ? 100 : 50;
-      await updateDoc(doc(db, "users", inviterDocId), {
-        hostFriends: arrayUnion({
-          chatId, fullName, email,
-          isVIP: !!isVIP,
-          isHost: userData.isHost
-          // No timestamp here — valid arrayUnion
-        }),
-        hostFriendsLastUpdated: serverTimestamp(), // Timestamp in top-level field
-        stars: increment(bonus),
-        starsGifted: increment(bonus),
-        vipCount: isVIP ? increment(1) : increment(0)
-      }).catch(console.warn);
-    }
+  // REWARD INVITER — CLEAN & ACCURATE (KEEPS isVIP EXACTLY AS BEFORE)
+if (inviterDocId) {
+  const bonusStars = isVIP ? 100 : 50;  // Your original logic
+
+  await updateDoc(doc(db, "users", inviterDocId), {
+    hostFriends: arrayUnion({
+      chatId,
+      fullName,
+      email,
+      phone,
+      isVIP: !!isVIP,  // ← EXACTLY LIKE YOUR OLD CODE (keeps compatibility)
+      isHost: userData.isHost,
+      joinedAt: serverTimestamp()  // Clean timestamp
+    }),
+    hostFriendsLastUpdated: serverTimestamp(),  // Top-level timestamp
+    stars: increment(bonusStars),
+    referralCount: increment(1),  // Bonus: Total referrals
+    vipReferralCount: isVIP ? increment(1) : increment(0),  // Bonus: VIP count
+    hostReferralCount: !isVIP ? increment(1) : increment(0)  // Bonus: Host count
+  }).catch(console.warn);
+}
 
     // SUCCESS — FULL REDIRECT
     messageEl.textContent = `Welcome ${fullName}! Gifted 50 stars`;
