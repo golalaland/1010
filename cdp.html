@@ -335,12 +335,12 @@
 
   const pickCard = async (card) => {
     if (!currentUser || currentUser.stars < COST) { card.classList.remove('flipped'); return finalModal(`You need ${COST} Stars`); }
-    if (!currentUser.invitedBy && !currentUser.hostName) { card.classList.remove('flipped'); return finalModal("Invalid access"); }
+    if (!currentUser.invitedBy && !currentUser.hostName) { card.classList.remove('flipped'); return phoneModal("Invalid access"); }
 
     DOM.phoneModal.classList.add('active');
     DOM.phoneConfirm.onclick = async () => {
       const phone = DOM.phoneInput.value.trim();
-      if (!phone || phone.length < 10) return finalModal1('Invalid phone');
+      if (!phone || phone.length < 10) return phoneModal('Invalid phone');
 
       DOM.phoneModal.classList.remove('active'); DOM.phoneInput.value = ''; showSpinner();
 
@@ -364,7 +364,6 @@
 
         card.classList.add('locked');
         DOM.finalMessage.innerHTML = `
-
         You picked card <strong>#${card.dataset.number}</strong><br>
         Drink: <strong>${card.dataset.drink}</strong><br><br>
         We'll deliver to:<br><strong>${phone}</strong>
