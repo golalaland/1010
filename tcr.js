@@ -4677,28 +4677,41 @@ functionfunction showChat() {
   }
 }
 
+// Hide chat (for logged-out users)
 function hideChat() {
-  const msg = document.getElementById('messages');
-  if (msg) {
-    msg.classList.remove('visible');
-    msg.classList.add('hidden');
-  }
+  const msg = document.getElementById('messages');
+  if (msg) {
+    msg.classList.remove('visible');
+    msg.classList.add('hidden');
+  }
 }
 
-// Run on page load
+// Show chat (for logged-in users)
+function showChat() {
+  const msg = document.getElementById('messages');
+  if (msg) {
+    msg.classList.remove('hidden');
+    msg.classList.add('visible');
+  }
+}
+
+// On page load — auto show/hide chat
 if (document.body.classList.contains('logged-in') || localStorage.getItem('user')) {
-  showChat();
+  showChat();
 } else {
-  hideChat();
+  hideChat();
 }
 
-// Call these after login / logout
+// After successful login
 function onLoginSuccess() {
-  document.body.classList.add('logged-in');
-  showChat();
+  document.body.classList.add('logged-in');
+  localStorage.setItem('user', 'true');
+  showChat();
 }
 
+// After logout
 function onLogout() {
-  document.body.classList.remove('logged-in');
-  hideChat();
+  document.body.classList.remove('logged-in');
+  localStorage.removeItem('user');
+  hideChat();
 }
