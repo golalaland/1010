@@ -4669,13 +4669,6 @@ function showDeleteConfirm(id, title) {
   // Close when clicking outside
   modal.onclick = (e) => e.target === modal && modal.remove();
 }
-functionfunction showChat() {
-  const msg = document.getElementById('messages');
-  if (msg) {
-    msg.classList.remove('hidden');
-    msg.classList.add('visible');
-  }
-}
 
 // Hide chat (for logged-out users)
 function hideChat() {
