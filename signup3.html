@@ -159,49 +159,66 @@
     box-shadow: 0 0 20px rgba(195,246,12,0.3);
   }
 
-   #vipLabel {
-    text-align: center;
-    font-weight: 600;
-    font-size: 1rem;
-    margin: 1.3rem 0 0.4rem;
-    color: #ccc;
-  }
+/* === VIP TOGGLE – NOW FULLY GREEN & WORKS WITH YOUR OLD JS === */
+#vipLabel {
+  text-align: center;
+  font-weight: 600;
+  font-size: 1rem;
+  margin: 1.8rem 0 0.5rem;
+  color: #666;
+  transition: all 0.4s;
+}
+#vipLabel.on {
+  color: var(--neon);                     /* #c3f60c */
+  text-shadow: 0 0 20px var(--neon);
+}
 
-  #vipLabel.on { color: var(--gold); text-shadow: 0 0 10px var(--gold); }
+.vip-toggle {
+  width: 90px;
+  height: 46px;
+  background: rgba(20, 40, 0, 0.7);
+  border-radius: 50px;
+  position: relative;
+  margin: 0 auto;
+  cursor: pointer;
+  border: 2px solid var(--neon);
+  box-shadow: 0 0 20px rgba(195,246,12,0.3);
+  transition: all 0.4s;
+}
+.vip-toggle:hover {
+  box-shadow: 0 0 30px var(--neon);
+}
 
-  .vip-toggle {
-    width: 84px; height: 40px;
-    background: #333;
-    border-radius: 50px;
-    position: relative;
-    margin: 0 auto;
-    cursor: pointer;
-    border: 2px solid var(--input-border);
-  }
+.vip-circle {
+  width: 40px;
+  height: 40px;
+  background: #333;
+  border-radius: 50%;
+  position: absolute;
+  left: 3px;
+  top: 3px;
+  transition: 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+  box-shadow: 0 0 15px rgba(0,0,0,0.6);
+}
+.vip-toggle.on .vip-circle {
+  left: 47px;
+  background: var(--neon);                 /* #c3f60c */
+  box-shadow: 0 0 30px var(--neon), 0 0 60px rgba(195,246,12,0.8);
+}
 
-  .vip-circle {
-    width: 36px; height: 36px;
-    background: #666;
-    border-radius: 50%;
-    position: absolute;
-    left: 2px; top: 2px;
-    transition: 0.4s;
-  }
-
-  .vip-toggle.on .vip-circle {
-    left: 44px;
-    background: var(--gold);
-    box-shadow: 0 0 15px var(--gold);
-  }
-
-  #vipMessage {
-    text-align: center;
-    color: var(--gold);
-    font-size: 0.88rem;
-    opacity: 0;
-    margin-top: 0.6rem;
-    font-weight: 600;
-  }
+#vipMessage {
+  text-align: center;
+  color: var(--neon);
+  font-size: 0.95rem;
+  font-weight: 700;
+  opacity: 0;
+  margin-top: 0.8rem;
+  text-shadow: 0 0 20px var(--neon);
+  transition: opacity 0.5s;
+}
+.vip-toggle.on ~ #vipMessage {
+  opacity: 1;
+}
 
   #submitBtn {
     margin: 2.5rem auto;
