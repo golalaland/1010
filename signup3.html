@@ -245,7 +245,7 @@
 <body>
 
   <video class="hero-video" autoplay muted loop playsinline poster="https://cube.xixi.live/poster.jpg">
-    <source src="https://cube.xixi.live/promo.mp4" type="video/mp4">
+    <source src="https://cdn.shopify.com/videos/c/o/v/87837772a4ac49c78d6c8f01c6c738ae.mp4" type="video/mp4">
   </video>
   <div class="hero-overlay"></div>
 
@@ -260,34 +260,25 @@
 
   <div id="fomoPopup">Someone just unlocked VIP… you next?</div>
 
-<div style="margin: 2rem 0 2.5rem; text-align: center;">
+<div style="margin: 2.5rem 0 3rem; text-align: center; width: 100%;">
   <img src="https://cdn.shopify.com/s/files/1/0962/6648/6067/files/HABA_HOUSE.png?v=1765412962"
        alt="CUBE"
        style="
-         height: 220px;                /* huge & dominant */
+         height: 65vh;                 /* takes up most of the screen height */
+         max-height: 420px;            /* caps it on very tall screens */
          width: auto;
-         max-width: 92vw;              /* never overflows on phones */
+         max-width: 94vw;
          object-fit: contain;
-         filter: drop-shadow(0 0 40px #c3f60c) 
-                 drop-shadow(0 0 80px rgba(195,246,12,0.6));
-         animation: logoGlow 4s infinite alternate;
+         filter: drop-shadow(0 0 0 60px #c3f60c)
+                 drop-shadow(0 0 120px rgba(195,246,12,0.8));
+         animation: intenseGlow 3.5s infinite alternate;
        ">
-  <div class="tagline" style="
-         margin-top: 1rem;
-         font-size: 1.15rem;
-         letter-spacing: 4px;
-         color: #e0ff80;
-         text-shadow: 0 0 25px #c3f60c;
-       ">
-    Private • Cyber • No Limits
-  </div>
 </div>
 
-<!-- Optional extra pulse for maximum impact -->
 <style>
-  @keyframes logoGlow {
-    0%   { filter: drop-shadow(0 0 40px #c3f60c) drop-shadow(0 0 80px rgba(195,246,12,0.6)); }
-    100% { filter: drop-shadow(0 0 55px #c3f60c) drop-shadow(0 0 110px rgba(195,246,12,0.9)); }
+  @keyframes intenseGlow {
+    0%   { filter: drop-shadow(0 0 60px #c3f60c) drop-shadow(0 0 120px rgba(195,246,12,0.8)); }
+    100% { filter: drop-shadow(0 0 80px #c3f60c) drop-shadow(0 0 160px rgba(195,246,12,1)); }
   }
 </style>
 
