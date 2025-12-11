@@ -166,16 +166,12 @@
   font-size: 1rem;
   margin: 1.8rem 0 0.5rem;
   color: #666;
-  transition: color 0.4s;
+  transition: 0.4s;
 }
-#vipLabel.on {
-  color: var(--neon);
-  text-shadow: 0 0 20px var(--neon);
-}
+#vipLabel.on { color: var(--neon); text-shadow: 0 0 20px var(--neon); }
 
 .vip-toggle {
-  width: 90px;
-  height: 46px;
+  width: 90px; height: 46px;
   background: rgba(20,40,0,0.7);
   border-radius: 50px;
   position: relative;
@@ -186,14 +182,12 @@
 }
 
 .vip-circle {
-  width: 40px;
-  height: 40px;
+  width: 40px; height: 40px;
   background: #333;
   border-radius: 50%;
   position: absolute;
-  left: 3px;
-  top: 3px;
-  transition: 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+  left: 3px; top: 3px;
+  transition: 0.5s cubic-bezier(0.68,-0.55,0.27,1.55);
 }
 
 .vip-toggle.on .vip-circle {
@@ -212,11 +206,6 @@
   opacity: 0;
   transition: opacity 0.5s ease;
   pointer-events: none;
-}
-
-/* THIS LINE CONTROLS THE MESSAGE APPEAR/DISAPPEAR */
-.vip-toggle.on ~ #vipMessage {
-  opacity: 1;
 }
 
   #submitBtn {
