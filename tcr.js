@@ -4679,32 +4679,21 @@ function hideChat() {
   }
 }
 
-// Show chat (for logged-in users)
-function showChat() {
-  const msg = document.getElementById('messages');
-  if (msg) {
-    msg.classList.remove('hidden');
-    msg.classList.add('visible');
-  }
+function updateChatState() {
+  const isLoggedIn = document.body.classList.contains('logged-in');
+  document.getElementById('messages')?.classList.toggle('logged-in', isLoggedIn);
 }
 
-// On page load — auto show/hide chat
-if (document.body.classList.contains('logged-in') || localStorage.getItem('user')) {
-  showChat();
-} else {
-  hideChat();
-}
+// Run immediately when page loads
+updateChatState();
 
-// After successful login
+// Call these two functions from your existing login/logout code
 function onLoginSuccess() {
-  document.body.classList.add('logged-in');
-  localStorage.setItem('user', 'true');
-  showChat();
+  document.body.classList.add('logged-in');
+  updateChatState();
 }
 
-// After logout
 function onLogout() {
-  document.body.classList.remove('logged-in');
-  localStorage.removeItem('user');
-  hideChat();
+  document.body.classList.remove('logged-in');
+  updateChatState();
 }
