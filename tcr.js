@@ -1738,11 +1738,6 @@ try {
 }
 });
 
-// Run on page load
-if (localStorage.getItem('user') || document.body.classList.contains('logged-in')) {
-  document.body.classList.add('logged-in');
-}
-
 // Call this exact line after successful login
 // document.body.classList.add('logged-in');
 
