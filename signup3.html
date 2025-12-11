@@ -208,15 +208,18 @@
 
 #vipMessage {
   text-align: center;
+  ;
   color: var(--neon);
   font-size: 0.95rem;
   font-weight: 700;
   opacity: 0;
   margin-top: 0.8rem;
   text-shadow: 0 0 20px var(--neon);
-  transition: opacity 0.5s;
+  transition: opacity 0.5s ease;
 }
-.vip-toggle.on ~ #vipMessage {
+
+/* This is the key fix */
+.vip-toggle.on + #vipMessage {
   opacity: 1;
 }
 
