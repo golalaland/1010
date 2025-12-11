@@ -159,36 +159,49 @@
     box-shadow: 0 0 20px rgba(195,246,12,0.3);
   }
 
+   #vipLabel {
+    text-align: center;
+    font-weight: 600;
+    font-size: 1rem;
+    margin: 1.3rem 0 0.4rem;
+    color: #ccc;
+  }
+
+  #vipLabel.on { color: var(--gold); text-shadow: 0 0 10px var(--gold); }
+
   .vip-toggle {
-    width: 90px; height: 46px;
-    background: var(--deep);
+    width: 84px; height: 40px;
+    background: #333;
     border-radius: 50px;
     position: relative;
-    margin: 1.5rem auto;
+    margin: 0 auto;
     cursor: pointer;
-    border: 2px solid var(--neon);
-    box-shadow: 0 0 25px var(--glow);
+    border: 2px solid var(--input-border);
   }
+
   .vip-circle {
-    width: 40px; height: 40px;
-    background: var(--neon);
+    width: 36px; height: 36px;
+    background: #666;
     border-radius: 50%;
     position: absolute;
-    left: 3px; top: 3px;
-    transition: 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55);
-    box-shadow: 0 0 20px var(--neon);
+    left: 2px; top: 2px;
+    transition: 0.4s;
   }
-  .vip-toggle.on .vip-circle { left: 47px; }
+
+  .vip-toggle.on .vip-circle {
+    left: 44px;
+    background: var(--gold);
+    box-shadow: 0 0 15px var(--gold);
+  }
 
   #vipMessage {
-    color: var(--neon);
     text-align: center;
-    font-weight: 700;
-    text-shadow: 0 0 15px var(--neon);
+    color: var(--gold);
+    font-size: 0.88rem;
     opacity: 0;
-    transition: 0.5s;
+    margin-top: 0.6rem;
+    font-weight: 600;
   }
-  .vip-toggle.on ~ #vipMessage { opacity: 1; }
 
   #submitBtn {
     margin: 2.5rem auto;
