@@ -7,17 +7,17 @@
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Poppins:wght@300;500;700&display=swap" rel="stylesheet">
 <style>
   :root {
-    --neon: #c3f60c;          /* main CUBE green */
-    --neon-dark: #00cc70;
-    --deep: #000a05;
-    --glow: rgba(0, 255, 136, 0.6);
-    --input-bg: rgba(0, 20, 10, 0.65);
-    --input-border: rgba(0, 255, 136, 0.5);
+    --neon: #c3f60c;          /* YOUR official CUBE green */
+    --neon-dark: #a0d00a;
+    --deep: #0a1400;
+    --glow: rgba(195, 246, 12, 0.6);
+    --input-bg: rgba(10, 25, 0, 0.65);
+    --input-border: rgba(195, 246, 12, 0.5);
   }
   * { margin:0; padding:0; box-sizing:border-box; }
   body {
     min-height: 100vh;
-    background: linear-gradient(135deg, #001a0a, #002215, #000000);
+    background: linear-gradient(135deg, #0a1400, #111900, #000000);
     font-family: 'Poppins', sans-serif;
     color: #ffffff;
     display: flex;
@@ -35,7 +35,7 @@
     object-fit: cover;
     z-index: -3;
     opacity: 0.35;
-    filter: brightness(0.6) contrast(1.3) hue-rotate(90deg);
+    filter: brightness(0.6) contrast(1.3);
   }
   .hero-overlay {
     position: fixed;
@@ -54,24 +54,24 @@
   }
   .particle {
     position: absolute;
-    width: 4px; height: 4px;
+    width: 5px; height: 5px;
     background: var(--neon);
     border-radius: 50%;
-    box-shadow: 0 0 15px var(--neon);
+    box-shadow: 0 0 20px var(--neon);
     animation: float 15s infinite linear;
   }
   @keyframes float {
     0% { transform: translateY(100vh) translateX(0); opacity: 0; }
     10% { opacity: 1; }
     90% { opacity: 1; }
-    100% { transform: translateY(-100px) translateX(100px); opacity: 0; }
+    100% { transform: translateY(-100px) translateX(120px); opacity: 0; }
   }
 
   h1 {
     font-family: 'Orbitron', sans-serif;
     font-size: 5.5rem;
     font-weight: 900;
-    background: linear-gradient(90deg, var(--neon), #00ffaa, var(--neon));
+    background: linear-gradient(90deg, var(--neon), #e0ff4a, var(--neon));
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -95,7 +95,7 @@
     font-weight: 300;
     letter-spacing: 3px;
     text-transform: uppercase;
-    color: #88ffcc;
+    color: #e0ff80;
     text-shadow: 0 0 20px var(--neon);
   }
 
@@ -112,12 +112,12 @@
     text-align: center;
     margin: 0.8rem 0;
     transition: all 0.4s;
-    box-shadow: 0 0 20px rgba(0,255,136,0.3);
+    box-shadow: 0 0 20px rgba(195,246,12,0.3);
   }
   .form-group input:focus {
     outline: none;
     border-color: var(--neon);
-    box-shadow: 0 0 30px var(--glow);
+    box-shadow: 0 0 35px var(--glow);
     transform: scale(1.03);
   }
 
@@ -131,7 +131,7 @@
     width: 70px; height: 70px;
     border-radius: 50%;
     border: 2px solid var(--neon);
-    background: rgba(0,255,136,0.15);
+    background: rgba(195,246,12,0.15);
     color: #fff;
     font-size: 1.8rem;
     font-weight: bold;
@@ -144,7 +144,7 @@
     background: var(--neon);
     color: #000;
     transform: scale(1.15);
-    box-shadow: 0 0 40px var(--neon);
+    box-shadow: 0 0 45px var(--neon);
   }
 
   #dob {
@@ -156,7 +156,7 @@
     backdrop-filter: blur(15px);
     color: white;
     text-align: center;
-    box-shadow: 0 0 20px rgba(0,255,136,0.3);
+    box-shadow: 0 0 20px rgba(195,246,12,0.3);
   }
 
   .vip-toggle {
@@ -214,8 +214,8 @@
     top: 100px;
     left: 50%;
     transform: translateX(-50%);
-    background: rgba(0,20,10,0.9);
-    color: #88ffcc;
+    background: rgba(10,25,0,0.9);
+    color: #e0ff80;
     padding: 1.2rem 2.5rem;
     border: 1px solid var(--neon);
     border-radius: 50px;
@@ -236,9 +236,9 @@
   footer {
     margin-top: 4rem;
     font-size: 0.8rem;
-    color: #88ffcc;
+    color: #c3f60c;
     text-align: center;
-    opacity: 0.8;
+    opacity: 0.85;
   }
 </style>
 </head>
@@ -269,16 +269,16 @@
   <div class="form-group"><input type="email" placeholder="Email Address" id="email"></div>
   <div class="form-group"><input type="password" placeholder="Create Password (min 6 chars)" id="password"></div>
 
-  <div class="gender-label" style="text-align:center;margin:1.5rem 0;color:#88ffcc;">Select Your Gender</div>
+  <div class="gender-label" style="text-align:center;margin:1.5rem 0;color:#e0ff80;">Select Your Gender</div>
   <div class="gender-select">
     <button id="femaleBtn">F</button>
     <button id="maleBtn">M</button>
   </div>
 
-  <div class="dob-label" style="text-align:center;color:#88ffcc;margin:1rem 0;">Select Your Birth Date</div>
+  <div class="dob-label" style="text-align:center;color:#e0ff80;margin:1rem 0;">Select Your Birth Date</div>
   <input type="date" id="dob" max="">
 
-  <div id="vipLabel" style="text-align:center;color:#88ffcc;margin:2rem 0 0.5rem;">VIP Access</div>
+  <div id="vipLabel" style="text-align:center;color:#e0ff80;margin:2rem 0 0.5rem;">VIP Access</div>
   <div class="vip-toggle" id="vipToggle"><div class="vip-circle"></div></div>
   <div id="vipMessage">You're now in the green room</div>
 
