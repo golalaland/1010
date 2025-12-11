@@ -1,4 +1,3 @@
-
 <!doctype html>
 <html lang="en">
 <head>
@@ -433,42 +432,6 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   margin: 2px 0;
   transition: text-shadow 0.3s ease-in-out;
 }
-@keyframes buzzTextPulse {
-  0%, 100% { transform: translateY(0) scale(1); }
-  50% { transform: translateY(-4px) scale(1.02); }
-}
-@keyframes buzzFloat {
-  0% { transform: translateY(0); }
-  50% { transform: translateY(-8px); }
-  100% { transform: translateY(0); }
-}
-@keyframes buzzParticles {
-  0% { transform: translate(0, 0) rotate(0deg); }
-  100% { transform: translate(40px, -60px) rotate(360deg); }
-}
-@keyframes stickerPop {
-  0% { transform: scale(0.8) translateY(20px); opacity: 0; }
-  60% { transform: scale(1.05); }
-  100% { transform: scale(1) translateY(0); opacity: 1; }
-}
-@keyframes confettiFall {
-  0% { transform: translateY(-100%) rotate(0deg); opacity: 1; }
-  100% { transform: translateY(120%) rotate(720deg); opacity: 0; }
-}
-@keyframes stickerFlash {
-  0% { opacity: 0.8; } 100% { opacity: 0; }
-}
-@keyframes stickerAnnounce {
-  0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
-  50% { transform: translate(-50%, -50%) scale(1.1); }
-  100% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
-}
-.screen-shake { animation: screenShake 0.5s ease-in-out !important; }
-@keyframes screenShake {
-  0%, 100% { transform: translateX(0); }
-  10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
-  20%, 40%, 60%, 80% { transform: translateX(5px); }
-}
 .room-subtitle {
   opacity: 1;
   transition: opacity 0.4s ease, transform 0.4s ease;
@@ -485,38 +448,288 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 .buzz-btn:hover{animation:buzzPulse 1.5s infinite;}
 @keyframes buzzPulse{0%{box-shadow:0 0 0 0 rgba(255,20,147,0.18)}70%{box-shadow:0 0 0 12px rgba(255,20,147,0)}100%{box-shadow:0 0 0 0 rgba(255,20,147,0)}}
 
-/* profile glass bar */
-.profile{display:none;flex-direction:column;gap:8px;margin-top:10px;}
-.profile-card{background:var(--glass);padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);display:flex;flex-direction:column;gap:8px;}
-.profile-top{display:flex;align-items:center;justify-content:space-between;gap:10px;}
-.profile-left{display:flex;flex-direction:column;gap:2px;}
-.profile-name{font-weight:800;}
-.profile-label{color: var(--accent);font-weight: 800;font-size: 10px;}
-.profile-value{color: #fff;font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", "Courier New", monospace;font-weight: 400;font-size: 11px;}
-.profile-value span,.profile-value .icon{margin-left:2px;}
-.profile-actions{display:flex;gap:8px;align-items:center;justify-content:flex-end;}
-.smalla-btn{padding:4px 10px;border-radius:8px;background: var(--accent);border: 0;color: #000;cursor: pointer;font-weight:700;font-size:12px;text-decoration: none;transition: transform .15s, box-shadow .15s;}
-.smalla-btn:hover{transform: translateY(-2px);box-shadow: 0 4px 10px rgba(255,20,147,0.3);}
-.star-popup{position:fixed;left:50%;top:18%;transform:translateX(-50%);background:var(--card);padding:8px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.05);display:none;z-index:1000;color:var(--accent);font-size:13px;white-space:nowrap;text-align:center;}
-.onlineCount{font-size:11px;color:var(--muted);}
-#authBox{display:flex;justify-content:center;margin:12px 0;}
-  .send-area input{padding:10px;font-size:13px;}
-  .buzz-btn,.send-btn{padding:8px 10px;font-size:13px;}
+/* ULTIMATE PIMPED PROFILE CARD – SAME EXACT DIMENSIONS */
+.profile {
+  display: none;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
 }
+
+.profile-card {
+  background: var(--glass);
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  
+  /* PIMP LEVEL 9000 */
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.37),
+    0 0 20px rgba(0, 0, 255, 0.05) inset,
+    0 0 30px rgba(138, 43, 226, 0.08) inset; /* subtle purple/blue inner glow */
+  border: 1px solid;
+  border-image: linear-gradient(135deg, 
+    rgba(255, 255, 255, 0.15) 0%, 
+    rgba(255, 255, 255, 0.03) 50%, 
+    rgba(138, 43, 226, 0.3) 100%) 1;
+  background: linear-gradient(135deg,
+    rgba(255, 255, 255, 0.08) 0%,
+    rgba(255, 255, 255, 0.02) 50%,
+    rgba(138, 43, 226, 0.08) 100%),
+    var(--glass);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Subtle moving glow orbit (pure CSS, no size impact) */
+.profile-card::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 12px;
+  background: conic-gradient(from 0deg at 50% 50%,
+    transparent 0deg,
+    rgba(138, 43, 226, 0.4) 60deg,
+    rgba(0, 255, 255, 0.4) 120deg,
+    transparent 180deg,
+    rgba(255, 0, 255, 0.4) 300deg,
+    transparent 360deg);
+  animation: orbit 12s linear infinite;
+  opacity: 0;
+  transition: opacity 0.4s;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.profile-card:hover::before {
+  opacity: 0.7;
+}
+
+@keyframes orbit {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.profile-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.profile-left {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.profile-name {
+  font-weight: 800;
+  font-size: 15px;
+  background: linear-gradient(90deg, #fff, #c0c0ff);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+.profile-label {
+  color: var(--accent);
+  font-weight: 800;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  text-shadow: 0 0 8px currentColor;
+}
+
+.profile-value {
+  color: #e0e0ff;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", "Courier New", monospace;
+  font-weight: 500;
+  font-size: 11px;
+  text-shadow: 0 0 6px rgba(100, 200, 255, 0.4);
+  letter-spacing: 0.3px;
+}
+
+.profile-value span,
+.profile-value .icon {
+  margin-left: 2px;
+  filter: drop-shadow(0 0 4px rgba(100, 200, 255, 0.6));
+}
+
+.profile-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+/* Optional: make buttons/icons pop more on hover */
+.profile-actions > * {
+  transition: all 0.25s ease;
+  filter: grayscale(0.3) brightness(1.1);
+}
+
+.profile-actions > *:hover {
+  transform: translateY(-2px) scale(1.1);
+  filter: grayscale(0) brightness(1.5) drop-shadow(0 0 10px rgba(138, 43, 226, 0.6));
+}
+/* ███████ SMALLA BTN – NOW LOOKS LIKE A $500M WEB3 PROJECT ███████ */
+.smalla-btn {
+  padding: 4px 10px;
+  border-radius: 8px;
+  background: var(--accent);
+  border: 0;
+  color: #000;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 12px;
+  text-decoration: none;
+  position: relative;
+  overflow: hidden;
+  transition: all .2s cubic-bezier(0.2, 0.8, 0.4, 1);
+  /* NEW INSANE GLASSY SHINE + BORDER GLOW */
+  background: linear-gradient(135deg, #ff1493, #ff69b4, #ff8cc0);
+  box-shadow: 
+    0 2px 8px rgba(255, 20, 147, 0.4),
+    inset 0 1px 2px rgba(255, 255, 255, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.smalla-btn::before {
+  content: '';
+  position: absolute;
+  top: 0; left: -100%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+  transition: 0.6s;
+}
+.smalla-btn:hover::before {
+  left: 100%;
+}
+.smalla-btn:hover {
+  transform: translateY(-3px) scale(1.05);
+  box-shadow: 0 8px 20px rgba(255, 20, 147, 0.5), 0 0 20px rgba(255, 20, 147, 0.6);
+  filter: brightness(1.15);
+}
+
+/* ███████ STAR POPUP – NEON TOAST VIBES ███████ */
+.star-popup {
+  position: fixed;
+  left: 50%;
+  top: 18%;
+  transform: translateX(-50%);
+  background: var(--card);
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.05);
+  display: none;
+  z-index: 1000;
+  color: var(--accent);
+  font-size: 13px;
+  white-space: nowrap;
+  text-align: center;
+
+  /* PIMPED */
+  background: rgba(20, 20, 40, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 105, 180, 0.4);
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    0 0 30px rgba(255, 20, 147, 0.4);
+  text-shadow: 0 0 10px currentColor;
+  animation: popupFloat 4s infinite ease-in-out;
+}
+@keyframes popupFloat {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50% { transform: translateX(-50%) translateY(-6px); }
+}
+
+/* ███████ ONLINE COUNT – SUBTLE NEON PULSE ███████ */
+.onlineCount {
+  font-size: 11px;
+  color: var(--muted);
+  text-shadow: 0 0 8px rgba(255, 20, 147, 0.4);
+  animation: pulseGlow 3s infinite alternate;
+}
+@keyframes pulseGlow { 
+  from { text-shadow: 0 0 8px rgba(255, 20, 147, 0.4); }
+  to   { text-shadow: 0 0 16px rgba(255, 20, 147, 0.7); }
+}
+
+/* ███████ GOOGLE BTN – LOOKS LIKE APPLE DESIGNED IT ███████ */
+.google-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #FF69B4, #FF1493);
+  color: #fff;
+  font-weight: 600;
+  font-size: 14px;
+  border: none;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 4px 10px rgba(255,20,147,0.4);
+  transition: all .25s ease;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+.google-btn::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(255,255,255,0.3) 0%, transparent 70%);
+  opacity: 0;
+  transition: 0.5s;
+}
+.google-btn:hover::after { opacity: 1; }
+.google-btn:hover {
+  transform: translateY(-4px) scale(1.04);
+  box-shadow: 0 12px 30px rgba(255,20,147,0.6), 0 0 30px rgba(255,20,147,0.5);
+}
+
+/* ███████ ROOM SUBTITLE – CYBERPUNK TITLE CARD ███████ */
 .room-subtitle {
-  font-size: 12px;              /* same as #helloText */
-  font-weight: 600;             /* slightly lighter than HELLO */
+  font-size: 12px;
+  font-weight: 600;
   text-align: center;
   margin-top: 4px;
-  font-family: 'Montserrat', sans-serif; /* Montserrat font */
+  font-family: 'Montserrat', sans-serif;
   color: var(--accent);
   letter-spacing: 0.5px;
   opacity: 0.85;
-  transition: color 0.2s ease;
+  transition: all 0.3s ease;
+  
+  /* PIMPED TO OBLIVION */
+  background: linear-gradient(90deg, #ff1493, #ff8cc0, #ff69b4, #ff1493);
+  background-size: 300% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 0 20px rgba(255, 20, 147, 0.6);
+  animation: gradientShift 6s ease infinite;
 }
-
 .room-subtitle:hover {
-  color: #fff;                  /* subtle hover effect */
+  -webkit-text-fill-color: #fff;
+  text-shadow: 0 0 30px #ff1493;
+  animation: none;
+}
+@keyframes gradientShift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
 }
 
 .gift-alert {
@@ -677,412 +890,202 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   100% { transform: translate(var(--x,0), calc(var(--y,0) - 20px)) scale(0.5); opacity: 0; }
 }
 
-/* ---------- Auth Inputs ---------- */
-#authBox{display:flex;justify-content:center;margin-top:12px;}
-#emailAuthWrapper{display:flex;flex-direction:column;align-items:center;gap:10px;width:100%;}
-#emailAuthWrapper input.auth-input{
-  width:90%; max-width:320px;
-  padding:12px 16px;
-  border-radius:999px;
-  border:1px solid rgba(255,255,255,0.08);
-  background-color:#0e0e0e;
-  color:#fff;
-  font-size:16px;
-  outline:none;
-  transition: all 0.2s ease-in-out;
-}
-
-#emailAuthWrapper input.auth-input:focus{
-  border-color:var(--accent);
-  box-shadow:0 0 12px rgba(255,20,147,0.15);
-}
-/* ---------- CUBE GREEN GOOGLE BUTTON ---------- */
-.google-btn {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 20px;
-  border-radius: 999px;
-  background: linear-gradient(135deg, #c3f60c, #a0d00a);
+/* ----------------------------
+   🚨 BUZZ Glow
+----------------------------- */
+.buzz-highlight {
+  display: inline-block;
+  padding: 5px 12px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 0.95rem;
+  font-family: 'Arial', sans-serif;
   color: #000;
-  font-weight: 600;
-  font-size: 14px;
-  border: none;
-  cursor: pointer;
-  box-shadow: 
-     0 4px 10px rgba(195,246,12,0.25),     /* very subtle base shadow */
-    0 0 8px rgba(195,246,12,0.1);        /* ← this is your 1% glow */
-  transition: transform .2s, box-shadow .2s;
-  width: auto;
-  justify-content: center;
+  background: rgba(0, 255, 255, 0.2);
+  box-shadow: 0 0 12px var(--buzz-color, #00FFFF);
+  animation: buzz-pulse 0.8s ease-in-out infinite alternate; /* faster for urgency */
 }
 
-.google-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 
-    0 6px 14px rgba(195,246,12,0.35),
-    0 0 0 12px rgba(195,246,12,0.25);     /* slightly stronger on hover */
+/* Pulse animation for BUZZ — short, urgent bursts */
+@keyframes buzz-pulse {
+  0% { transform: scale(1); opacity: 0.7; box-shadow: 0 0 12px var(--buzz-color, #00FFFF); }
+  50% { transform: scale(1.3); opacity: 1; box-shadow: 0 0 30px var(--buzz-color, #00FFFF); }
+  100% { transform: scale(1); opacity: 0.7; box-shadow: 0 0 12px var(--buzz-color, #00FFFF); }
 }
 
-.google-btn img {
-  width: 18px;
-  height: 18px;
-  background: #fff;
-  border-radius: 4px;
-  padding: 2px;
-}
-
-/* Mobile – exactly like your original */
-@media (max-width: 420px) {
-  .google-btn {
-    width: 90%;
-    max-width: 320px;
-  }
-}
-
-/* ──────── MANUAL GLOW CONTROL (just change the number below) ──────── */
-.google-btn.glow-1   { box-shadow: 0 4px 10px rgba(195,246,12,0.25), 0 0  8px rgba(195,246,12,0.10); } /* 1% glow   ← current */
-.google-btn.glow-2   { box-shadow: 0 4px 10px rgba(195,246,12,0.30), 0 0 16px rgba(195,246,12,0.25); } /* 2% glow */
-.google-btn.glow-5   { box-shadow: 0 4px 10px rgba(195,246,12,0.40), 0 0 30px rgba(195,246,12,0.60); } /* 5% glow */
-.google-btn.glow-max { box-shadow: 0 6px 20px rgba(195,246,12,0.60), 0 0 50px rgba(195,246,12,1); }   /* nuclear */
-.video-controls {
-  position: absolute;
-  bottom: 12px;
-  right: 12px;
-  display: flex;
-  gap: 10px;
-  opacity: 0;
-  transition: opacity 0.4s ease;
-  pointer-events: none;
-  z-index: 2;
-}
-
-.video-controls.visible {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-.video-controls button {
-  background: rgba(0, 0, 0, 0.55);
-  border: none;
-  border-radius: 50%;
-  width: 42px;
-  height: 42px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: background 0.3s ease, transform 0.2s ease;
-}
-
-.video-controls button:hover {
-  background: rgba(255, 255, 255, 0.2);
-  transform: scale(1.08);
-}
-
-.video-controls svg {
-  pointer-events: none;
-}
-/* ====== Featured Hosts Styles ====== */
-.featured-btn {
-  background: linear-gradient(90deg, #ff007a, #ffa500);
+/* AUTH INPUTS – NOW LOOK LIKE A $500M DATING APP */
+#emailAuthWrapper input.auth-input {
+  width: 90%; max-width: 320px;
+  padding: 12px 16px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background-color: #0e0e0e;
   color: #fff;
-  border: none;
-  border-radius: 25px;
-  padding: 10px 20px;
   font-size: 16px;
-  font-weight: 600;
-  cursor: pointer;
-  display: block;
-  margin: 20px auto;
-  box-shadow: 0 0 10px rgba(255, 0, 122, 0.6);
-  transition: transform 0.2s;
-}
-.featured-btn:hover { transform: scale(1.05); }
-
-/* 🌟 Featured Hosts Modal (Centered) */
-.featured-modal {
-  display: none;             /* hidden by default */
-  position: fixed;
-  inset: 0;                  /* top:0; right:0; bottom:0; left:0 */
-  z-index: 10000;
-  background: rgba(0,0,0,0.85);
-  backdrop-filter: blur(10px);
-
-  display: flex;             /* Flex container */
-  justify-content: center;   /* horizontal center */
-  align-items: center;       /* vertical center */
-}
-
-/* 🔲 Compact modal card */
-.featured-modal-content {
-  position: relative;
-  background: #111;
-  border-radius: 18px;
-  width: 82%; /* smaller screen-inside-screen look */
-  max-width: 320px; /* tighter fit for mobile */
-  color: #fff;
-  box-shadow: 0 0 25px rgba(255, 255, 255, 0.08);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  animation: modalPop 0.25s ease-out;
-  transform: translateY(0);
-}
-
-/* ❌ Close button */
-.featured-close {
-  position: absolute;
-  top: 8px;
-  right: 12px;
-  color: #fff;
-  font-size: 20px;
-  cursor: pointer;
-  opacity: 0.9;
-  z-index: 10;
-}
-.featured-close:hover {
-  opacity: 1;
-}
-
-/* 🎥 Video area (smaller height for compactness) */
-.featured-host-video-container {
-  width: 100%;
-  aspect-ratio: 9 / 14; /* slightly shorter than portrait */
-  background: #000;
-  border-radius: 18px 18px 0 0;
-  overflow: hidden;
-}
-.featured-host-video-container iframe {
-  width: 100%;
-  height: 100%;
-  border: none;
-  object-fit: cover;
-}
-
-/* 👤 Info and actions section */
-.featured-host-footer {
-  padding: 10px 14px;
-  background: #1a1a1a;
-  text-align: center;
-  font-size: 0.9rem;
-}
-
-/* Username + Details */
-.featured-host-username {
-  font-weight: 600;
-  font-size: 1.05em;
-}
-.featured-host-details {
-  font-size: 0.85em;
-  opacity: 0.8;
-  margin-bottom: 6px;
-}
-
-/* 🎁 Gift slider section */
-.gift-slider-container {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 10px;
-  padding: 8px 10px;
-  margin-top: 8px;
-  backdrop-filter: blur(4px);
-}
-
-/* Pink gradient slider */
-#giftSlider {
-  flex: 1;
-  appearance: none;
-  height: 6px;
-  border-radius: 4px;
-  background: linear-gradient(90deg, #ff4da6, #ff80c8);
   outline: none;
-  cursor: pointer;
+  position: relative;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  background: rgba(20, 20, 30, 0.6);
+  backdrop-filter: blur(12px);
+  box-shadow: 
+    inset 0 2px 8px rgba(0,0,0,0.6),
+    0 0 20px rgba(255, 20, 147, 0.1);
+}
+
+#emailAuthWrapper input.auth-input:focus {
+  border-color: transparent;
+  box-shadow: 
+    0 0 20px rgba(255, 20, 147, 0.5),
+    0 0 40px rgba(255, 20, 147, 0.3),
+    inset 0 1px 3px rgba(255,255,255,0.2);
+  background: rgba(30, 10, 40, 0.7);
+  transform: scale(1.02);
+}
+
+/* GLOWING INNER RING ON FOCUS */
+#emailAuthWrapper input.auth-input:focus::before {
+  content: '';
+  position: absolute;
+  inset: 2px;
+  border-radius: 999px;
+  background: linear-gradient(45deg, #ff1493, #ff69b4);
+  opacity: 0.4;
+  filter: blur(8px);
+  pointer-events: none;
+}
+
+/* GOOGLE BTN – ALREADY PIMPED, JUST UPPING THE ANTE */
+.google-btn {
+  /* keeping your existing size */
+  background: linear-gradient(135deg, #FF1493, #FF69B4, #FF8CC4);
+  box-shadow: 
+    0 4px 15px rgba(255, 20, 147, 0.5),
+    inset 0 1px 3px rgba(255,255,255,0.3);
+  border: 1px solid rgba(255,255,255,0.2);
+  position: relative;
+  overflow: hidden;
+}
+.google-btn::before {
+  content: '';
+  position: absolute;
+  top: -50%; left: -50%;
+  width: 200%; height: 200%;
+  background: radial-gradient(circle, rgba(255,255,255,0.3) 0%, transparent 60%);
+  opacity: 0;
+  transition: 0.6s;
+}
+.google-btn:hover::before { opacity: 0.7; }
+
+/* VIDEO CONTROLS – FLOATING ORBS FROM THE FUTURE */
+.video-controls button {
+  background: rgba(15, 15, 35, 0.8);
+  border: 1px solid rgba(255, 20, 147, 0.4);
+  box-shadow: 
+    0 4px 15px rgba(0,0,0,0.6),
+    0 0 20px rgba(255, 20, 147, 0.3);
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+}
+.video-controls button:hover {
+  background: rgba(255, 20, 147, 0.25);
+  transform: scale(1.15) translateY(-4px);
+  box-shadow: 0 0 30px rgba(255, 20, 147, 0.8);
+  border-color: #ff1493;
+}
+
+/* FEATURED HOSTS MODAL – PURE CYBERLUXURY */
+.featured-modal-content {
+  background: linear-gradient(135deg, rgba(15,5,30,0.95), rgba(5,5,20,0.95));
+  border: 1px solid rgba(255, 20, 147, 0.4);
+  box-shadow: 
+    0 0 60px rgba(255, 20, 147, 0.4),
+    inset 0 0 40px rgba(255, 20, 147, 0.1);
+  backdrop-filter: blur(20px);
+}
+
+/* SUBTLE ANIMATED BORDER ORBIT */
+.featured-modal-content::before {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 20px;
+  background: conic-gradient(from 0deg, transparent, #ff1493, #ff69b4, transparent);
+  opacity: 0.6;
+  animation: orbitSlow 15s linear infinite;
+  z-index: -1;
+}
+@keyframes orbitSlow { to { transform: rotate(360deg); } }
+
+/* GIFT SLIDER – CANDY-COATED NEON */
+#giftSlider {
+  height: 6px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 4px;
+  position: relative;
+  overflow: hidden;
+}
+#giftSlider::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, #ff1493, #ff69b4, #ff8cc0);
+  border-radius: 4px;
+  opacity: 0.8;
 }
 #giftSlider::-webkit-slider-thumb {
-  appearance: none;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background: #ff4da6;
-  border: 2px solid #fff;
-  transition: 0.2s ease;
-}
-#giftSlider::-webkit-slider-thumb:hover {
-  transform: scale(1.1);
+  background: #fff;
+  border: 3px solid #ff1493;
+  box-shadow: 0 0 20px #ff69b4;
+  transform: scale(1.2);
 }
 
-/* Gift button */
+/* GIFT BUTTON – FEELS EXPENSIVE */
 .featured-gift-btn {
-  padding: 5px 10px;
-  border-radius: 6px;
-  background: linear-gradient(135deg, #ff4081, #ff80ab);
-  border: none;
-  color: #fff;
-  font-weight: 600;
-  cursor: pointer;
-  transition: 0.25s ease;
+  background: linear-gradient(135deg, #ff1493, #ff4081);
+  box-shadow: 0 4px 15px rgba(255, 20, 147, 0.6);
+  border: 1px solid rgba(255,255,255,0.2);
+  position: relative;
+  overflow: hidden;
 }
 .featured-gift-btn:hover {
-  transform: scale(1.05);
+  transform: translateY(-3px) scale(1.08);
+  box-shadow: 0 10px 30px rgba(255, 20, 147, 0.8);
 }
 
-.gift-slider-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 6px;
-  margin-top: 6px;
+/* VIDEO HINT – ELEGANT TOAST */
+.video-hint {
+  background: linear-gradient(135deg, rgba(255,20,147,0.9), rgba(255,105,180,0.8));
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.2);
+  box-shadow: 0 8px 32px rgba(255,20,147,0.4);
+  text-shadow: 0 0 10px #000;
+}
+.video-hint.show {
+  animation: hintFloat 3s infinite ease-in-out;
+}
+@keyframes hintFloat {
+  0%,100% { transform: translateX(-50%) translateY(0); }
+  50% { transform: translateX(-50%) translateY(-8px); }
 }
 
-#giftAmount, #giftAmount + span {
-  vertical-align: middle;
-  line-height: 1;
-}
-#giftAmount + span {
-  transform: translateY(0);
-}
-
-/* 🖼 Avatar list */
-.featured-host-list {
-  display: flex;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 6px;
-  padding: 8px;
-}
-.featured-host-list img {
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
-  cursor: pointer;
-  border: 2px solid transparent;
-  transition: border 0.25s, transform 0.25s;
-}
+/* AVATAR LIST – GLOW ON ACTIVE */
 .featured-host-list img.active {
-  border: 2px solid #ff4da6;
-  transform: scale(1.05);
+  border: 3px solid #ff1493;
+  box-shadow: 0 0 20px #ff69b4;
+  transform: scale(1.12);
 }
 
-/* Bottom nav buttons */
-.featured-nav-buttons {
-  display: flex;
-  justify-content: space-between;
-  padding: 8px 14px 14px;
-  font-size: 0.85rem;
-}
-.featured-nav-buttons a {
-  color: #fff;
-  text-decoration: none;
-  font-weight: 600;
-}
-
-/* Animation */
-@keyframes modalPop {
-  from {
-    transform: scale(0.9);
-    opacity: 0;
-  }
-  to {
-    transform: scale(1);
-    opacity: 1;
-  }
-}
-
-/* PULSING ONLINE COUNT DOT + GLOW – COPY-PASTE THIS */
+/* FINAL TOUCH – PULSING ONLINE INDICATOR (if you have a dot) */
 #onlineWrapper::before {
   content: '●';
   color: #ff1493;
   font-size: 12px;
-  animation: pulseDot 2s infinite ease-in-out;
+  animation: pulseDot 2s infinite;
   margin-right: 6px;
-  text-shadow: 0 0 12px #ff1493;
 }
-
 @keyframes pulseDot {
-  0%, 100% { 
-    opacity: 0.7; 
-    transform: scale(1); 
-  }
-  50% { 
-    opacity: 1; 
-    transform: scale(1.4); 
-    text-shadow: 0 0 20px #ff69b4;
-  }
-}
-.featured-host-video-container {
-  position: relative;
-  overflow: hidden;
-}
-/* hint at bottom center, fades smoothly */
-.video-hint {
-  position: absolute;
-  left: 50%;
-  bottom: 18px;
-  transform: translateX(-50%);
-  background: rgba(0,0,0,0.6);
-  color: #fff;
-  padding: 8px 12px;
-  border-radius: 18px;
-  font-size: 13px;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.35s ease, transform 0.25s ease;
-  z-index: 5;
-  white-space: nowrap;
-}
-
-.video-hint.show {
-  opacity: 1;
-  transform: translateX(-50%) translateY(0);
-}
-/* ensure container allows pointer gestures without zooming */
-#featuredHostVideo {
-  touch-action: manipulation;
-  -webkit-user-select: none;
-  -ms-touch-action: manipulation;
-}
-
-.gift-spinner {
-  display: inline-block;
-  width: 16px;
-  height: 16px;
-  border: 2px solid rgba(255,255,255,0.3);
-  border-top: 2px solid #fff;
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-  vertical-align: middle;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg);}
-  100% { transform: rotate(360deg);}
-}
-/* ---------- Video Wrapper ---------- */
-.video-wrapper {
-    position: relative;
-    width: 100%;
-    max-width: 800px; /* adjust as needed */
-    margin: 0 auto;
-}
-
-.video-wrapper video {
-    width: 100%;
-    height: auto;
-    display: block;
-    border-radius: 8px;
-}
-
-/* ---------- Controls Under Video ---------- */
-#videoUnderControls {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px; /* reduced from 8px */
-    margin-top: 6px; /* reduced from 12px */
+  0%,100% { opacity: 0.6; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.3); }
 }
 
 #helloText,
@@ -1819,18 +1822,6 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
     background: rgba(255, 51, 102, 0.22);
     transform: translateY(0);
   }
-  #uploadHighlightBtn.uploading .btn-text {
-  opacity: 0;
-}
-
-@keyframes pulse {
-  0%,100% { transform:scale(1); }
-  50% { transform:scale(1.28); }
-}
-@keyframes blink {
-  0%,100% { opacity:1; }
-  50% { opacity:0.4; }
-}
 </style>
 </head>
 <body>
@@ -1928,7 +1919,7 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 <!-- VIP Access Button -->
 <button id="whitelistLoginBtn" class="google-btn">
   <img src="https://cdn.shopify.com/s/files/1/0962/6648/6067/files/VIP__128_x_128_px.svg?v=1761812907" alt="VIP Ticket">
-  Sign in with $STRZ
+  Sign in as VIP
 </button>
 
     <!-- Google Sign-In Button -->
@@ -1948,7 +1939,7 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   </div>
 </div>
 
-<div id="messages"></div>   <!-- completely empty = shows placeholder -->
+<div id="messages"></div>
 
 
 
@@ -2001,36 +1992,11 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
     <h3 id="hostPanelTitle">Loading...</h3>
 
     <!-- 🧭 TAB HEADER -->
-   <!-- TAB HEADER -->
-<div class="tab-header" style="display:flex; gap:12px; padding:12px; border-bottom:1px solid #333;">
-  <button class="tab-btn" data-tab="mediaTab">Profile</button>
-  <button class="tab-btn" data-tab="infoTab">Tools</button>
-  <button id="notificationsTabBtn" class="tab-btn" data-tab="notificationsTab" style="position:relative;">
-    Notifications
-    <span id="notif-badge" style="
-      position:absolute; top:-8px; right:-10px;
-      background:#ff006e; color:#fff; font-size:10px; font-weight:900;
-      width:20px; height:20px; border-radius:50%;
-      display:none; align-items:center; justify-content:center;
-      box-shadow:0 0 16px #ff006e88;
-      animation:pulse 2s infinite;
-    ">0</span>
-  </button>
-</div>
-
-<!-- NOTIFICATIONS TAB -->
-<div id="notificationsTab" class="tab-content" style="display:none; max-height:400px; overflow-y:auto;">
-  <div style="padding:8px 12px 4px; text-align:right;">
-  <button id="markAllRead" style="
-  font-size:11px; padding:6px 12px; border:none; border-radius:8px;
-  font-weight:700; transition:all 0.3s; cursor:pointer;
-  background:#333; color:#999;
-">Clear all</button>
-  </div>
-  <div id="notificationsList" style="padding:0 8px;">
-    <!-- Items will appear here -->
-  </div>
-</div>
+    <div class="tab-header">
+      <button class="tab-btn active" data-tab="mediaTab">Profile</button>
+      <button class="tab-btn" data-tab="infoTab">Tools</button>
+      <button class="tab-btn" data-tab="notificationsTab">Notifications</button>
+    </div>
 
     <!-- 🎥 MEDIA TAB -->
     <div id="mediaTab" class="tab-content active" style="max-height:500px; overflow-y:auto; padding-right:8px;">
@@ -2164,230 +2130,76 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 
   
 
-
-
-
-<!-- HIGHLIGHTS ($ELL CONTENT) — FINAL POLISHED VERSION -->
-<div id="sellContentBar" style="margin:40px auto 0; max-width:440px; font-family:'Inter', system-ui, -apple-system, sans-serif;">
-  <div style="text-align:center; margin-bottom:28px;">
-    <h2 style="
-      margin:0; font-size:28px; font-weight:900; letter-spacing:-1px;
-      background:linear-gradient(90deg,#ff2e78,#ff8c2e,#ff2e78);
-      -webkit-background-clip:text; -webkit-text-fill-color:transparent;
-      background-size:200% auto; animation:gradient 4s linear infinite;
-    ">
-      HIGHLIGHTS
-    </h2>
-    <p style="margin:8px 0 0; color:#888; font-size:14.5px; font-weight:500;">
-      Upload premium clips • Earn <span style="color:#00ff9d; font-weight:700;">STRZ</span> on unlock
-    </p>
-  </div>
-
-  <!-- Main Card -->
-  <div style="
-    background:rgba(12,12,14,0.75); backdrop-filter:blur(20px);
-    border:1px solid rgba(255,255,255,0.08); border-radius:24px;
-    padding:32px 28px; box-shadow:0 20px 40px rgba(0,0,0,0.5),
-                               inset 0 1px 0 rgba(255,255,255,0.05);
-    position:relative; overflow:hidden;
-  ">
-    <div style="position:absolute; inset:0; pointer-events:none;
-                 background:radial-gradient(circle at 30% 30%, rgba(255,0,110,0.12), transparent 50%);
-                 opacity:0.6;"></div>
-
-    <div style="position:relative; z-index:2;">
-
-      <!-- Video Upload (File or URL) — PERFECTLY CENTERED -->
-      <div style="margin-bottom:22px; text-align:center;">
-        <div style="color:#e0e0e0; font-size:14px; font-weight:600; margin-bottom:12px;">
-          Video <span style="color:#666; font-weight:500;">(MP4 • max 500MB)</span>
-        </div>
-
-        <!-- Upload Button (Small & Clean) -->
-        <label for="highlightUploadInput" style="
-          display:inline-block; padding:10px 20px; background:#111111; border:1px solid #333;
-          border-radius:12px; cursor:pointer; transition:0.25s;
-          color:#ff2e78; font-size:14px; font-weight:600;
-        "
-        onmouseover="this.style.background='#1a1a1a'; this.style.borderColor='#ff2e78'"
-        onmouseout="this.style.background='#111111'; this.style.borderColor='#333'">
-          Upload from device
-        </label>
-        <input type="file" id="highlightUploadInput" accept="video/*" style="display:none;">
-
-     <!-- OR Divider — Clean, uppercase, no background box -->
-<div style="margin:18px 0; position:relative; height:20px; overflow:hidden;">
-  <div style="
-    position:absolute; top:50%; left:0; right:0; height:1px; 
-    background:#333; transform:translateY(-50%);
-  "></div>
-  <div style="
-    position:absolute; top:50%; left:50%; transform:translate(-50%, -50%);
-    color:#888; font-size:13px; font-weight:700; letter-spacing:1px;
-    text-transform:uppercase; padding:0 12px; background:transparent;
-    z-index:2;
-  ">
-    OR
-  </div>
-</div>
-
-      <!-- Video URL — with proper label, same style as others -->
-<div style="margin-bottom:20px;">
-  <label style="
-    display:flex; align-items:center; gap:8px;
-    color:#e0e0e0; font-size:14px; font-weight:600;
-    margin-bottom:10px; height:20px; line-height:1;
-  ">
-    <span>Video URL</span>
-    <!-- remove or uncomment if you want it later →
-    <span style="color:#666; font-weight:500; font-size:13.5px; white-space:nowrap;">(optional)</span>
-    ← -->
-  </label>
-
-  <input type="text" id="highlightVideoInput" placeholder="https://youtube.com/watch?v=..." 
-         style="
-           width:100%; padding:14px 16px; background:#0a0a0a; border:1px solid #333;
-           border-radius:12px; color:#fff; font-size:14.5px; transition:0.25s;
-         "
-         onfocus="this.style.borderColor='#ff2e78'; this.style.background='#111'"
-         onblur="this.style.borderColor='#333'; this.style.background='#0a0a0a'">
-</div>
-   <!-- Title — now 100% aligned with Video URL & Description -->
-<div style="margin-bottom:20px;">
-  <label style="
-    display:flex; align-items:center; gap:8px;
-    color:#e0e0e0; font-size:14px; font-weight:600;
-    margin-bottom:10px; height:20px; line-height:1;
-  ">
-    <span>Title</span>
-  </label>
-
-  <input type="text" id="highlightTitleInput" placeholder="e.g. Insane 1v5 ace in OT"
-         style="
-           width:100%; padding:14px 16px; background:#0a0a0a; border:1px solid #333;
-           border-radius:12px; color:#fff; font-size:15px; transition:0.25s;
-         "
-         onfocus="this.style.borderColor='#ff2e78'; this.style.background='#111'"
-         onblur="this.style.borderColor='#333'; this.style.background='#0a0a0a'">
-</div>
-
-<!-- Description — aligned left like Title -->
-<div style="margin-bottom:24px; text-align:left;">
-  <label style="
-    display:flex; align-items:center; gap:8px;
-    color:#e0e0e0; font-size:14px; font-weight:600;
-    margin-bottom:10px; height:20px; line-height:1;
-  ">
-    <span>Description</span>
-    <span style="color:#666; font-weight:500; font-size:13.5px; white-space:nowrap;">
-      (optional)
-    </span>
-  </label>
-
-  <textarea id="highlightDescInput" placeholder="What's the lore behind this clip?"
-            style="
-              width:100%; padding:14px 16px; background:#0a0a0a; border:1px solid #333;
-              border-radius:12px; color:#ddd; font-size:14.5px; min-height:90px;
-              resize:vertical; box-sizing:border-box; transition:0.25s;
-              text-align:left; /* ← THIS FIXES IT */
-            "
-            onfocus="this.style.borderColor='#ff2e78'; this.style.background='#111'"
-            onblur="this.style.borderColor='#333'; this.style.background='#0a0a0a'"></textarea>
-</div>
-
-
-    <!-- Price — MAXIMUM COMPACT & PERFECTLY BALANCED -->
-<div style="margin-bottom:28px; text-align:center;">
-  <div style="color:#e0e0e0; font-size:14px; font-weight:600; margin-bottom:10px;">Unlock Price</div>
-  
-  <div style="
-    display:inline-flex; align-items:center; gap:9px;
-    background:#0a0a0a; padding:9px 16px; border-radius:14px;
-    border:1px solid #333; line-height:1;
-  ">
-    <input type="tel" id="highlightPriceInput" value="50" min="10" maxlength="5"
-           style="
-             width:78px; background:transparent; border:none; outline:none;
-             color:#00ff9d; font-size:25px; font-weight:800; text-align:center;
-             padding:0; margin:0; height:36px;
-           "
-           onfocus="this.parentNode.style.borderColor='#00ff9d'; this.parentNode.style.boxShadow='0 0 0 3px rgba(0,255,157,0.18)'"
-           onblur="this.parentNode.style.borderColor='#333'; this.parentNode.style.boxShadow='none'">
-
-    <span style="
-      font-size:25px; font-weight:800; color:#808080; letter-spacing:-0.5px;
-      margin-top:-1px; /* perfect optical alignment */
-    ">STRZ</span>
-  </div>
-</div>
-
-     <!-- Upload Button -->
-<div style="text-align:center;">
-  <button id="uploadHighlightBtn" style="
-    padding:10px 24px;
-    background:linear-gradient(90deg,#ff2e78,#ff5e2e);
-    color:#fff;
-    border:none;
-    border-radius:40px;
-    font-weight:600;
-    font-size:14px;
-    cursor:pointer;
-    letter-spacing:0.4px;
-    transition:all 0.3s ease;
-    position:relative;
-  "
-  onmouseover="this.style.opacity='0.9'"
-  onmouseout="this.style.opacity='1'">
-    <span class="btn-text">Post</span>
-  </button>
-</div>
-
-      <div id="highlightUploadStatus" style="margin-top:20px; text-align:center; font-size:14px; font-weight:600; min-height:24px; color:#00ff9d; opacity:0; transition:opacity .4s;"></div>
-    </div>
-  </div>
-
-  <style>
-    @keyframes gradient { 0%,100%{background-position:0% 50%} 50%{background-position:100% 50%} }
-  </style>
-</div>
-  
-<!-- MY CLIPS ON SALE — THE DOPEST PANEL IN THE EMPIRE -->
-<div id="myClipsPanel" style="margin:40px auto 20px; max-width:900px; font-family:system-ui,sans-serif;">
-  <h2 style="
+<!-- 💰 Highlights ($ell Content) -->
+<div id="sellContentBar" style="margin-top:30px; font-family: system-ui, sans-serif;">
+  <h5 style="
     text-align:center;
-    font-size:28px;
-    font-weight:900;
-    background:linear-gradient(90deg,#00ffea,#ff00c8,#ffea00);
+    margin-bottom:10px;
+    font-weight:700;
+    font-size:21px;
+    background:linear-gradient(90deg,#ff006e,#ff8c00);
     -webkit-background-clip:text;
     -webkit-text-fill-color:transparent;
-    margin:0 0 20px;
-    letter-spacing:1px;
   ">
-    MY CLIPS LIST
-  </h2>
-  <p style="text-align:center; color:#aaa; font-size:14px; margin:-10px 0 30px;">
-    Your uploaded highlights · Delete anytime · Earn from your clips
+    Highlights ($ell Content) 🎬
+  </h5>
+  <p style="font-size:12.5px; color:#ccc; text-align:center; margin:0 0 12px;">
+    Upload short video highlights to showcase or sell · Earn STRZ ⭐ when people unlock them.
   </p>
 
-  <div id="myClipsGrid" style="
-    display:grid;
-    grid-template-columns:repeat(auto-fill, minmax(280px, 1fr));
-    gap:18px;
-    padding:10px;
-  ">
-    <!-- CLIPS WILL BE INJECTED HERE BY JS -->
-  </div>
+  <div style="max-width:360px; margin:0 auto; display:flex; flex-direction:column; gap:12px;">
 
-  <div id="noClipsMessage" style="
-    text-align:center;
-    padding:60px 20px;
-    color:#666;
-    font-size:16px;
-    display:none;
-  ">
-    <div style="font-size:60px; margin-bottom:20px;">.____.</div>
-    You haven't uploaded any clips yet.<br>
-    <span style="color:#ffcc00">Upload to start earning $STRZ!</span>
+    <!-- Direct video upload (this is now the main way) -->
+    <div>
+      <h3 style="font-size:14px; font-weight:600; color:#fff; margin:0 0 6px;">Video File</h3>
+      <input type="file" id="highlightUploadInput" accept="video/*"
+             style="padding:8px; font-size:14px; border-radius:8px; border:1px solid #444; background:#111; color:#fff;" />
+      <small style="color:#888; font-size:11px;">Max ~500 MB · MP4 works best</small>
+    </div>
+
+    <!-- Video URL (optional) -->
+<div>
+  <h3 style="font-size:14px; font-weight:600; color:#fff; margin:0 0 6px;">Or paste a video URL</h3>
+  <input type="text" id="highlightVideoInput" placeholder="https://cdn.shopify.com/... or TikTok/Instagram link"
+         style="width:100%; padding:10px; font-size:14px; border-radius:8px; border:1px solid #444; background:#111; color:#fff;" />
+  <small style="color:#888; font-size:11px;">Leave empty to upload directly</small>
+</div>
+
+
+    <!-- Title & Description -->
+    <div>
+      <h3 style="font-size:14px; font-weight:600; color:#fff; margin:0 0 6px;">Title</h3>
+      <input type="text" id="highlightTitleInput" placeholder="e.g. Insane clutch play"
+             style="width:100%; padding:10px; font-size:14px; border-radius:8px; border:1px solid #444; background:#111; color:#fff;" />
+    </div>
+
+    <div>
+      <h3 style="font-size:14px; font-weight:600; color:#fff; margin:0 0 6px;">Description (optional)</h3>
+      <textarea id="highlightDescInput" placeholder="What happened in this clip?"
+                style="width:100%; padding:10px; font-size:14px; border-radius:8px; border:1px solid #444; background:#111; color:#fff; resize:vertical; min-height:60px;"></textarea>
+    </div>
+
+    <!-- Price -->
+    <div>
+      <h3 style="font-size:14px; font-weight:600; color:#fff; margin:0 0 6px;">Unlock Price</h3>
+      <div style="display:flex; align-items:center; gap:8px;">
+        <input type="tel" id="highlightPriceInput" value="50" min="10"
+               style="width:100px; padding:10px; font-size:16px; border-radius:8px; border:1px solid #444; background:#111; color:#fff; text-align:center;" />
+        <span style="font-size:20px;">⭐</span>
+      </div>
+    </div>
+
+    <!-- Smaller centered upload button -->
+    <div style="text-align:center;">
+      <button id="uploadHighlightBtn"
+              style="padding:6px 13px; background:linear-gradient(90deg,#ff0099,#ff6600);
+                     color:#fff; border:none; border-radius:6px; font-weight:600; font-size:13px; cursor:pointer;"
+              onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
+        Upload
+      </button>
+    </div>
+
+    <div id="highlightUploadStatus" style="font-size:12px; color:#ffcc00; text-align:center;"></div>
   </div>
 </div>
   
@@ -2398,10 +2210,19 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
     </div>
   </div>
 </div>
-
+<!-- 🔔 NOTIFICATIONS TAB -->
+<div id="notificationsTab" class="tab-content" style="display:none; max-height:400px; overflow-y:auto;">
+  <div class="notifications-header">
+    <h3>Notifications</h3>
+    <button id="markAllRead" class="themed-btn small">Mark all as read</button>
+  </div>
+  <div id="notificationsList" class="notifications-list">
+    <p style="opacity:0.7;">No new notifications yet.</p>
+  </div>
+</div>
 
 <div class="star-popup" id="starPopup">
-  <div id="starText">You've just earned +1 STRZ! ⭐</div>
+  <div id="starText">You've just earned +1 star! ⭐</div>
 </div>
 
 
