@@ -1817,6 +1817,19 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   0%,100% { opacity:1; }
   50% { opacity:0.4; }
 }
+/* 1. Completely hide the messages container while the login form exists */
+#emailAuthWrapper ~ #messages {
+  display: none;
+}
+
+/* 2. When user is logged in, you hide the login form → chat appears automatically */
+body.logged-in #emailAuthWrapper,
+body.logged-in #emailAuthWrapper ~ #messages {
+  display: none;           /* login form gone */
+}
+body.logged-in #messages {
+  display: flex;           /* chat + perfect empty state appears */
+}
 </style>
 </head>
 <body>
