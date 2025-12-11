@@ -4669,30 +4669,36 @@ function showDeleteConfirm(id, title) {
   // Close when clicking outside
   modal.onclick = (e) => e.target === modal && modal.remove();
 }
-function updateChatVisibility() {
-  const isLoggedIn = document.body.classList.contains('logged-in');
-  const messagesContainer = document.getElementById('messages');
-
-  if (isLoggedIn && messagesContainer) {
-    messagesContainer.classList.add('visible');
-    messagesContainer.classList.remove('hidden');
-  } else {
-    messagesContainer.classList.add('hidden');
-    messagesContainer.classList.remove('visible');
+functionfunction showChat() {
+  const msg = document.getElementById('messages');
+  if (msg) {
+    msg.classList.remove('hidden');
+    msg.classList.add('visible');
   }
 }
 
-// Run on load
-updateChatVisibility();
-
-// Call this after login
-function onLoginSuccess() {
-  document.body.classList.add('logged-in');
-  updateChatVisibility();
+function hideChat() {
+  const msg = document.getElementById('messages');
+  if (msg) {
+    msg.classList.remove('visible');
+    msg.classList.add('hidden');
+  }
 }
 
-// Call this on logout / sign-out
+// Run on page load
+if (document.body.classList.contains('logged-in') || localStorage.getItem('user')) {
+  showChat();
+} else {
+  hideChat();
+}
+
+// Call these after login / logout
+function onLoginSuccess() {
+  document.body.classList.add('logged-in');
+  showChat();
+}
+
 function onLogout() {
   document.body.classList.remove('logged-in');
-  updateChatVisibility();
+  hideChat();
 }
