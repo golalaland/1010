@@ -4680,31 +4680,3 @@ function showDeleteConfirm(id, title) {
   // Close when clicking outside
   modal.onclick = (e) => e.target === modal && modal.remove();
 }
-
-// Hide chat (for logged-out users)
-function hideChat() {
-  const msg = document.getElementById('messages');
-  if (msg) {
-    msg.classList.remove('visible');
-    msg.classList.add('hidden');
-  }
-}
-
-function updateChatState() {
-  const isLoggedIn = document.body.classList.contains('logged-in');
-  document.getElementById('messages')?.classList.toggle('logged-in', isLoggedIn);
-}
-
-// Run immediately when page loads
-updateChatState();
-
-// Call these two functions from your existing login/logout code
-function onLoginSuccess() {
-  document.body.classList.add('logged-in');
-  updateChatState();
-}
-
-function onLogout() {
-  document.body.classList.remove('logged-in');
-  updateChatState();
-}
