@@ -147,51 +147,52 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 #guestMsg{font-size:16px;font-weight:700;margin:4px 0;color:var(--accent);text-align:center;}
 
 
-/* Chat container – the one and only block you need */
+/* Chat messages container – PERFECT empty + filled states */
 #messages {
-  flex: 1 1 100%;                    /* takes all remaining height */
-  min-height: 0;                     /* mandatory flex fix */
-  overflow-y: auto;
-  padding: 20px 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  background: #000;
-  border-radius: 8px;
-  position: relative;
-  
-  /* Start completely invisible + zero height impact when not logged in */
-  height: 0;
-  opacity: 0;
-  transition: opacity 0.25s ease;
+  flex: 1 1 100%;              /* takes ALL available space */
+  min-height: 0;                /* crucial for flex shrinking */
+  overflow-y: auto;
+  padding: 20px 12px;           /* more breathing room */
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;  /* messages stick to top when few */
+  gap: 10px;
+  background: #000;
+  border-radius: 8px;
+  box-sizing: border-box;
+  position: relative;
+
+  /* This forces it to act like it already has a lot of content */
+  min-height: 300px;            /* fallback for very small screens */
 }
 
-/* When user is logged in → full height + visible */
-#messages.logged-in {
-  height: auto;
-  min-height: 400px;      /* change this number if you want it taller on empty */
-  opacity: 1;
+/* The magic: invisible spacer that ONLY exists when chat is empty */
+#messages:empty::after {
+  content: "";
+  flex: 1 1 auto;               /* pushes the input bar all the way down */
+  min-height: 400px;            /* change this number to control how "tall" empty chat feels */
 }
 
-/* Empty-state text – only when logged in AND really empty */
-#messages.logged-in:empty::before {
-  content: "No one’s messaged yet — be the first!";
-  font-size: 16px;
-  font-weight: 500;
-  color: rgba(255,255,255,0.45);
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  pointer-events: none;
-  user-select: none;
+/* Beautiful centered placeholder when empty */
+#messages:empty::before {
+  content: "No one’s messaged yet — be the first!";
+  font-size: 16px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.45);
+  text-align: center;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  user-select: none;
+  width: 80%;
 }
 
-/* Invisible spacer that pushes the input bar down when empty */
-#messages.logged-in:empty::after {
-  content: "";
-  flex: 999 1 auto;         /* super strong flex grow */
-  min-height: 500px;        /* increase if you want even more space */
+/* Optional: subtle animation when real messages start arriving */
+#messages:not(:empty)::before,
+#messages:not(:empty)::after {
+  display: none;
 }
 
 /* 🔥 Message bubble */
