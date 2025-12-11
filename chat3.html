@@ -8,20 +8,14 @@
 <title>Xixi</title>
 <link rel="icon" href="data:," />
 <style>
-:root {
-  --bg:           #000;                                    /* pure black */
-  --card:         #0a1400;                                 /* deep black-green tint */
-  --muted:        #88a066;                                 /* desaturated lime for subtle text */
-  --accent:       #c3f60c;     /* YOUR EXACT CUBE NEON GREEN */
-  --glass:        rgba(195, 246, 12, 0.06);                 /* barely-there green glass */
-  --pulse-color:  #c3f60c;     /* main pulse/glow */
-  --buzz-color:   #e0ff4a;     /* slightly lighter green for extra highlights (optional) */
-  
-  /* Easy glow control – use anywhere */
-  --glow-1:       rgba(195, 246, 12, 0.15);
-  --glow-2:       rgba(195, 246, 12, 0.35);
-  --glow-3:       rgba(195, 246, 12, 0.65);
-  --glow-max:     rgba(195, 246, 12, 1);
+:root{
+  --bg:#000;
+  --card:#111;
+  --muted:#aaa;
+  --accent:#39FF14;   /* neon-green */
+  --glass: rgba(255,255,255,0.03);
+  --pulse-color: #39FF14; 
+  --buzz-color: #0FF;     
 }
 #videoWrapper .nav-buttons {
   display: flex;
@@ -152,95 +146,81 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 
 #guestMsg{font-size:16px;font-weight:700;margin:4px 0;color:var(--accent);text-align:center;}
 
-/* PITCH-BLACK COSMIC CHAT — CUBE EDITION */
+/* PITCH BLACK SPACE CHAT — CUBE EDITION */
 #messages {
   flex: 1;
   overflow-y: auto;
-  padding: 20px 10px 80px;           /* extra bottom space for input */
+  padding: 20px 12px 100px;           /* generous space at bottom for input */
   display: flex;
-  flex;
   flex-direction: column;
-  gap: 12px;
-  background: #000;                  /* pure void */
+  gap: 14px;                         /* breathing room between messages */
+  background: #000;                   /* absolute black void */
   margin-bottom: 70px;
   box-sizing: border-box;
   position: relative;
-  scrollbar-width: none;             /* Firefox — hides scrollbar */
-  -ms-overflow-style: none;          /* IE/Edge */
+  
+  /* Hide scrollbar but keep scrolling */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
+#messages::-webkit-scrollbar { display: none; }
 
-#messages::-webkit-scrollbar {
-  display: none;                     /* Chrome/Safari — invisible scroll */
-}
-
-/* Individual message bubble — barely there */
+/* Completely invisible container — text only */
 .msg {
-  max-width: 86%;
-  padding: 9px 12px;
-  border-radius: 12px;
-  background: rgba(195, 246, 12, 0.04);   /* 4% green glass — almost invisible */
-  backdrop-filter: blur(8px);
-  border: 1px solid rgba(195, 246, 12, 0.08);
-  box-shadow: 
-    0 4px 12px rgba(0,0,0,0.6),
-    0 0 12px rgba(195,246,12,0.07);      /* tiny CUBE glow */
-  animation: msgFloatIn 0.6s ease-out forwards;
+  padding: 0;
+  margin: 0;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  border-radius: 0;
+  max-width: 92%;
+  line-height: 1.5;
+  animation: msgAppear 0.7s ease-out forwards;
   opacity: 0;
-  transform: translateY(20px);
+  transform: translateY(15px);
 }
 
-/* My messages — subtle hot pink void style */
 .msg.me {
   align-self: flex-end;
-  background: rgba(255, 20, 147, 0.05);
-  border: 1px solid rgba(255, 20, 147, 0.12);
-  box-shadow: 
-    0 4px 12px rgba(0,0,0,0.6),
-    0 0 14px rgba(255,20,147,0.15);
+  text-align: right;
 }
 
-/* Fade-in animation */
-@keyframes msgFloatIn {
+/* Subtle float-in animation */
+@keyframes msgAppear {
   to {
     opacity: 1;
     transform: translateY(0);
   }
 }
 
-/* Username + message on same line */
+/* Username — neon green glow, bold */
 .msg .meta {
-  font-weight: 700;
-  font-size: 13px;
-  color: #c3f60c;
-  text-shadow: 0 0 8px #c3f60c;
   display: inline;
-  margin-right: 6px;
+  font-weight: 800;
+  font-size: 13.5px;
+  color: #c3f60c;
+  text-shadow: 
+    0 0 10px #c3f60c,
+    0 0 20px rgba(195,246,12,0.6);
+  margin-right: 7px;
 }
 
+/* Message text — clean white with faint green tint */
 .msg .content {
-  font-size: 13.5px;
-  color: #e8ffb0;
   display: inline;
+  font-size: 14px;
+  color: #e8ffb0;
+  text-shadow: 0 0 8px rgba(195,246,12,0.3);
   word-break: break-word;
 }
 
-/* Bottom-right "New" button */
-.scroll-to-bottom-btn {
-  position: absolute;
-  right: 12px;
-  bottom: 82px; /* above your 70px margin */
-  width: 44px; height: 44px;
-  background: #9147ff;
-  color: white;
-  border: none;
-  border-radius: 50%;
-  font-weight: bold;
-  cursor: pointer;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.4);
-  z-index: 10;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+/* Optional: tiny breathing pulse on new messages */
+.msg.new {
+  animation: msgAppear 0.8s ease-out, pulseGlow 3s infinite alternate;
+}
+@keyframes pulseGlow {
+  from { text-shadow: 0 0 8px rgba(195,246,12,0.3); }
+  to   { text-shadow: 0 0 20px rgba(195,246,12,0.7); }
 }
 
 /* Center arrow */
