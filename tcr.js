@@ -4669,3 +4669,30 @@ function showDeleteConfirm(id, title) {
   // Close when clicking outside
   modal.onclick = (e) => e.target === modal && modal.remove();
 }
+function updateChatVisibility() {
+  const isLoggedIn = document.body.classList.contains('logged-in');
+  const messagesContainer = document.getElementById('messages');
+
+  if (isLoggedIn && messagesContainer) {
+    messagesContainer.classList.add('visible');
+    messagesContainer.classList.remove('hidden');
+  } else {
+    messagesContainer.classList.add('hidden');
+    messagesContainer.classList.remove('visible');
+  }
+}
+
+// Run on load
+updateChatVisibility();
+
+// Call this after login
+function onLoginSuccess() {
+  document.body.classList.add('logged-in');
+  updateChatVisibility();
+}
+
+// Call this on logout / sign-out
+function onLogout() {
+  document.body.classList.remove('logged-in');
+  updateChatVisibility();
+}
