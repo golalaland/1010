@@ -260,15 +260,36 @@
 
   <div id="fomoPopup">Someone just unlocked VIP… you next?</div>
 
-<!-- Replace this whole block in your existing code -->
-<div class="logo-container" style="margin: 1.5rem 0 2rem;">
-  <img src="https://cdn.shopify.com/s/files/1/0962/6648/6067/files/HABA_HOUSE.png?v=1765412962" 
-       alt="CUBE" 
-       style="height: 110px; width: auto; max-width: 90vw; object-fit: contain; filter: drop-shadow(0 0 30px #c3f60c);">
-  <div class="tagline" style="margin-top: 0.8rem; color:#e0ff80; text-shadow: 0 0 20px #c3f60c;">
+<div style="margin: 2rem 0 2.5rem; text-align: center;">
+  <img src="https://cdn.shopify.com/s/files/1/0962/6648/6067/files/HABA_HOUSE.png?v=1765412962"
+       alt="CUBE"
+       style="
+         height: 190px;                /* huge & dominant */
+         width: auto;
+         max-width: 92vw;              /* never overflows on phones */
+         object-fit: contain;
+         filter: drop-shadow(0 0 40px #c3f60c) 
+                 drop-shadow(0 0 80px rgba(195,246,12,0.6));
+         animation: logoGlow 4s infinite alternate;
+       ">
+  <div class="tagline" style="
+         margin-top: 1rem;
+         font-size: 1.15rem;
+         letter-spacing: 4px;
+         color: #e0ff80;
+         text-shadow: 0 0 25px #c3f60c;
+       ">
     Private • Cyber • No Limits
   </div>
 </div>
+
+<!-- Optional extra pulse for maximum impact -->
+<style>
+  @keyframes logoGlow {
+    0%   { filter: drop-shadow(0 0 40px #c3f60c) drop-shadow(0 0 80px rgba(195,246,12,0.6)); }
+    100% { filter: drop-shadow(0 0 55px #c3f60c) drop-shadow(0 0 110px rgba(195,246,12,0.9)); }
+  }
+</style>
 
   <div class="form-group"><input type="text" placeholder="Full Name" id="name"></div>
   <div class="form-group"><input type="text" placeholder="Choose Chat Name" id="chatId"></div>
