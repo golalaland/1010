@@ -146,20 +146,52 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 
 #guestMsg{font-size:16px;font-weight:700;margin:4px 0;color:var(--accent);text-align:center;}
 
-/* messages */
-/* 🔥 Chat messages container */
+/* Chat messages container – PERFECT empty + filled states */
 #messages {
-  flex: 1;
+  flex: 1 1 100%;              /* takes ALL available space */
+  min-height: 0;                /* crucial for flex shrinking */
   overflow-y: auto;
-  padding: 8px;
+  padding: 20px 12px;           /* more breathing room */
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  border-radius: 8px;
+  justify-content: flex-start;  /* messages stick to top when few */
+  gap: 10px;
   background: #000;
-  margin-bottom: 70px;          /* your safe-zone for input bar */
+  border-radius: 8px;
   box-sizing: border-box;
-  position: relative;           /* already there – perfect! */
+  position: relative;
+
+  /* This forces it to act like it already has a lot of content */
+  min-height: 300px;            /* fallback for very small screens */
+}
+
+/* The magic: invisible spacer that ONLY exists when chat is empty */
+#messages:empty::after {
+  content: "";
+  flex: 1 1 auto;               /* pushes the input bar all the way down */
+  min-height: 400px;            /* change this number to control how "tall" empty chat feels */
+}
+
+/* Beautiful centered placeholder when empty */
+#messages:empty::before {
+  content: "No one’s messaged yet — be the first!";
+  font-size: 16px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.45);
+  text-align: center;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  user-select: none;
+  width: 80%;
+}
+
+/* Optional: subtle animation when real messages start arriving */
+#messages:not(:empty)::before,
+#messages:not(:empty)::after {
+  display: none;
 }
 
 /* 🔥 Message bubble */
@@ -468,10 +500,6 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
 .star-popup{position:fixed;left:50%;top:18%;transform:translateX(-50%);background:var(--card);padding:8px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.05);display:none;z-index:1000;color:var(--accent);font-size:13px;white-space:nowrap;text-align:center;}
 .onlineCount{font-size:11px;color:var(--muted);}
 #authBox{display:flex;justify-content:center;margin:12px 0;}
-.google-btn{display:flex;align-items:center;gap:8px;padding:12px 20px;border-radius:999px;background:linear-gradient(135deg,#FF69B4,#FF1493);color:#fff;font-weight:600;font-size:14px;border:none;cursor:pointer;box-shadow:0 4px 10px rgba(255,20,147,0.4);transition:transform .2s, box-shadow .2s;}
-.google-btn:hover{transform:translateY(-2px);box-shadow:0 6px 14px rgba(255,20,147,0.6);}
-.google-btn img{width:18px;height:18px;background:#fff;border-radius:4px;padding:2px;}
-@media (max-width:420px){
   .send-area input{padding:10px;font-size:13px;}
   .buzz-btn,.send-btn{padding:8px 10px;font-size:13px;}
 }
@@ -668,15 +696,55 @@ html,body{height:100%;margin:0;font-family:'XiXi',Inter,system-ui,Segoe UI,Robot
   border-color:var(--accent);
   box-shadow:0 0 12px rgba(255,20,147,0.15);
 }
-
-/* ---------- Buttons ---------- */
-.google-btn{
-  display:flex;align-items:center;gap:8px;padding:12px 20px;border-radius:999px;background:linear-gradient(135deg,#FF69B4,#FF1493);color:#fff;font-weight:600;font-size:14px;border:none;cursor:pointer;box-shadow:0 4px 10px rgba(255,20,147,0.4);transition:transform .2s, box-shadow .2s;width:90%;max-width:320px;justify-content:center;
+/* ---------- CUBE GREEN GOOGLE BUTTON ---------- */
+.google-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #c3f60c, #a0d00a);
+  color: #000;
+  font-weight: 600;
+  font-size: 14px;
+  border: none;
+  cursor: pointer;
+  box-shadow: 
+     0 4px 10px rgba(195,246,12,0.25),     /* very subtle base shadow */
+    0 0 8px rgba(195,246,12,0.1);        /* ← this is your 1% glow */
+  transition: transform .2s, box-shadow .2s;
+  width: auto;
+  justify-content: center;
 }
-.google-btn img{width:18px;height:18px;background:#fff;border-radius:4px;padding:2px;}
-.google-btn:hover{transform:translateY(-2px);box-shadow:0 6px 14px rgba(255,20,147,0.6);}
 
+.google-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 
+    0 6px 14px rgba(195,246,12,0.35),
+    0 0 0 12px rgba(195,246,12,0.25);     /* slightly stronger on hover */
+}
 
+.google-btn img {
+  width: 18px;
+  height: 18px;
+  background: #fff;
+  border-radius: 4px;
+  padding: 2px;
+}
+
+/* Mobile – exactly like your original */
+@media (max-width: 420px) {
+  .google-btn {
+    width: 90%;
+    max-width: 320px;
+  }
+}
+
+/* ──────── MANUAL GLOW CONTROL (just change the number below) ──────── */
+.google-btn.glow-1   { box-shadow: 0 4px 10px rgba(195,246,12,0.25), 0 0  8px rgba(195,246,12,0.10); } /* 1% glow   ← current */
+.google-btn.glow-2   { box-shadow: 0 4px 10px rgba(195,246,12,0.30), 0 0 16px rgba(195,246,12,0.25); } /* 2% glow */
+.google-btn.glow-5   { box-shadow: 0 4px 10px rgba(195,246,12,0.40), 0 0 30px rgba(195,246,12,0.60); } /* 5% glow */
+.google-btn.glow-max { box-shadow: 0 6px 20px rgba(195,246,12,0.60), 0 0 50px rgba(195,246,12,1); }   /* nuclear */
 .video-controls {
   position: absolute;
   bottom: 12px;
