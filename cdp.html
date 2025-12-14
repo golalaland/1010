@@ -8,7 +8,7 @@
     :root {
       --bg: #010409;
       --text: #fff;
-      --cube-green: #00ff9d;
+      --cube-green: #d2f84a;
       --shadow: rgba(0,0,0,0.8);
       --dev-zoom: 100; /* ← Change this number only (90–130) for your private zoom */
     }
@@ -21,7 +21,7 @@
     .container { width:100%; max-width:480px; height:100vh; padding:20px; text-align:center; overflow-y:auto; -webkit-overflow-scrolling:touch; }
 
     .title {
-      font-size:36px; font-weight:900;
+      font-size:25px; font-weight:900;
       background:linear-gradient(90deg,#00ff9d,#39ff14);
       -webkit-background-clip:text; -webkit-text-fill-color:transparent;
       margin:10px 0 6px;
@@ -57,7 +57,7 @@
     }
 
     .table-wrapper {
-      background: url('https://cdn.shopify.com/s/files/1/0962/6648/6067/files/Beige_Minimal_Romantic_Love_Questions_Card_Game_Document_4.png?v=1765375124') center/cover no-repeat;
+      background: url('https://cdn.shopify.com/s/files/1/0962/6648/6067/files/Untitled_design_1.jpg?v=1765639244') center/cover no-repeat;
       border-radius:24px; padding:30px 20px; margin:40px 0;
       box-shadow: inset 0 0 60px rgba(0,0,0,0.8); border:2px solid #111;
     }
@@ -149,12 +149,29 @@
 }
 .mobile-br { display:none; }
 @media (max-width: 420px) { .mobile-br { display:block; } }
+.sip-logo {
+  display: block;
+  margin: 0 auto 9px auto; /* center and add spacing below */
+  max-width: 190px;          /* adjust size as needed */
+  height: auto;
+}
+.title {
+  display: none;
+}
+  </style>
+</head>
+<body>
+ <div class="container">
+    <!-- Logo above SIP PICKER -->
+    <img src="https://cdn.shopify.com/s/files/1/0962/6648/6067/files/HABA_HOUSE.png?v=1765412962" 
+         alt="HabaHouse Logo" 
+         class="sip-logo">
 
-
-  <div class="container">
     <div class="title">SIP PICKER</div>
-    <div class="welcome" id="welcomeMsg">Welcome <span id="username">Guest</span>, you're on <span id="hostName">no one</span>'s VIP!</div>
-
+    <div class="welcome" id="welcomeMsg">
+      Welcome <span id="username">Guest</span>, you're on <span id="hostName">no one</span>'s VIP!
+    </div>
+   
     <div class="balance">
       <div class="item"><span class="label">STRZ BALANCE:</span> <span class="value"><span id="stars-count">0</span> ⭐️</span></div>
       <div class="item"><span class="label">CASH BALANCE:</span> <span class="value">₦<span id="cash-count">0</span></span></div>
@@ -165,8 +182,9 @@
   <h2 class="pick-title">PICK A CARD</h2>
 
 <p class="vip-tease">
-  You’ve joined <span id="hostName">her</span> to party — pick your drink and get ready for more action,<br class="mobile-br">
-  the party's just got real interesting.
+  You’ve joined <span id="hostName"> her</span> to party — pick a drink and she gets one too FREE.
+  get ready for more action,<br class="mobile-br">
+  this party's just got real interesting.
 </p>
 
 <div class="table-wrapper">
@@ -275,7 +293,7 @@
       currentUser = { uid, ...data, email: stored.email };
 
       DOM.username.textContent = currentUser.chatId || stored.email.split('@')[0];
-      const host = currentUser.hostName || currentUser.invitedBy || 'someone';
+      const host = currentUser.hostName || currentUser.referral || 'someone';
       DOM.hostName.textContent = host.startsWith('@') ? host.slice(1) : host;
 
       DOM.stars.textContent = (currentUser.stars || 0).toLocaleString();
